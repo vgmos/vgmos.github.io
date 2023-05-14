@@ -1,3 +1,1 @@
-This is an experimental blog (personal website?) in its nascent stages.
-
-Content: Philosophical ruminations, circuits
+This is an experimental personal website (blog?) in its nascent stages.
