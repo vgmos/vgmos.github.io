@@ -17,7 +17,7 @@ links:
     url: https://github.com/vgmos/yflash
 ---
 
-## Context
+## Device Questions, Circuit Models
 
 The Technion period carried the strongest bridge between device-level questions and circuit-level modeling. It included work around memory behavior, neuromorphic ideas, and the practical difficulty of making models useful to other researchers.
 

@@ -16,7 +16,7 @@ links:
     url: https://github.com/vgmos
 ---
 
-## Context
+## A Selective Closing Chapter
 
 Georgia Tech marks the last part of the university research arc before the site turns toward professional practice and broader reflective writing.
 

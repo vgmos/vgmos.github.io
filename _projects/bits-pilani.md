@@ -16,7 +16,7 @@ links:
     url: https://github.com/vgmos
 ---
 
-## Context
+## Where the Thread Started
 
 BITS was the beginning of the technical thread: electronics, circuits, computation, open-ended projects, and the first serious attempts to connect coursework with research taste.
 
