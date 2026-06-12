@@ -1,0 +1,22 @@
+---
+layout: page
+---
+
+{{ content }}
+
+{% assign sorted_projects = site.projects | sort: "date" | reverse %}
+
+<div class="project-index">
+  {% for project in sorted_projects %}
+    <article class="list-item project-summary">
+      <p class="item-meta">{{ project.institution }} | {{ project.period }} | {{ project.status }}</p>
+      <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
+      {% if project.summary %}
+        <p>{{ project.summary }}</p>
+      {% endif %}
+      {% if project.topics %}
+        <p class="topic-line">{{ project.topics | join: " | " }}</p>
+      {% endif %}
+    </article>
+  {% endfor %}
+</div>

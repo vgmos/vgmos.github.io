@@ -1,0 +1,56 @@
+---
+layout: default
+---
+
+<div class="home-shell">
+  <section class="intro-section">
+    <p class="eyebrow">Analog design, reflective writing, and restored research notes</p>
+    <h1>Vasu Gupta</h1>
+    <div class="intro-copy">
+      {{ content }}
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-heading">
+      <h2>Latest Writing</h2>
+      <a href="{{ '/writing/' | relative_url }}">All writing</a>
+    </div>
+    <div class="item-list">
+      {% for post in site.posts limit:3 %}
+        <article class="list-item">
+          <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} | {{ post.tags | join: ", " }}{% endif %}</p>
+          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+          {% if post.excerpt %}
+            <p>{{ post.excerpt | strip_html | truncate: 180 }}</p>
+          {% endif %}
+        </article>
+      {% else %}
+        <p class="quiet-note">Writing will begin here as old notes are restored and new essays are drafted.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-heading">
+      <h2>Selected Projects</h2>
+      <a href="{{ '/projects/' | relative_url }}">Project archive</a>
+    </div>
+    <div class="item-list">
+      {% assign sorted_projects = site.projects | sort: "date" | reverse %}
+      {% for project in sorted_projects limit:3 %}
+        <article class="list-item">
+          <p class="item-meta">{{ project.institution }} | {{ project.period }}</p>
+          <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
+          {% if project.summary %}
+            <p>{{ project.summary }}</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section-block note-section">
+    <p>Older university and research material is being restored carefully. The first pass creates a readable map; deeper technical reconstruction will follow where the work still has useful lessons.</p>
+  </section>
+</div>

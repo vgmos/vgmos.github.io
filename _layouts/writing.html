@@ -1,0 +1,41 @@
+---
+layout: page
+---
+
+{{ content }}
+
+<div class="writing-index">
+  <h2>Recent Notes</h2>
+  <div class="item-list">
+    {% for post in site.posts %}
+      <article class="list-item">
+        <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} | {{ post.tags | join: ", " }}{% endif %}</p>
+        <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+        {% if post.excerpt %}
+          <p>{{ post.excerpt | strip_html | truncate: 220 }}</p>
+        {% endif %}
+      </article>
+    {% else %}
+      <p class="quiet-note">No notes have been published yet.</p>
+    {% endfor %}
+  </div>
+
+  {% if site.tags.size > 0 %}
+    <h2>Tags</h2>
+    <div class="tag-index">
+      {% assign sorted_tags = site.tags | sort %}
+      {% for tag in sorted_tags %}
+        <section id="{{ tag[0] | slugify }}" class="tag-group">
+          <h3>{{ tag[0] }}</h3>
+          <ul>
+            {% for post in tag[1] %}
+              <li><a href="{{ post.url | relative_url }}">{{ post.title }}</a> <span>{{ post.date | date: "%Y" }}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <p class="archive-link"><a href="{{ '/archive/' | relative_url }}">Chronological archive</a></p>
+</div>
