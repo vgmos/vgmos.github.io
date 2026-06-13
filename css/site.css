@@ -245,7 +245,8 @@ h3 {
 
 .post-content blockquote {
   color: var(--ink-soft);
-  border-left-color: var(--accent);
+  border-left: 0;
+  padding-left: 0;
 }
 
 pre,
