@@ -12,10 +12,10 @@ layout: default
       </time>
       {% assign author = page.author | default: site.author %}
       {% if author %}
-        | <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ author }}</span></span>
+        · <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ author }}</span></span>
       {% endif %}
       {% if page.tags and page.tags.size > 0 %}
-        |
+        ·
         {% for tag in page.tags %}
           <a class="meta-tag" href="{{ '/writing/' | relative_url }}#{{ tag | slugify }}">{{ tag }}</a>{% unless forloop.last %}, {% endunless %}
         {% endfor %}

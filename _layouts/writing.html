@@ -9,7 +9,7 @@ layout: page
   <div class="item-list">
     {% for post in site.posts %}
       <article class="list-item">
-        <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} | {{ post.tags | join: ", " }}{% endif %}</p>
+        <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} · {{ post.tags | join: ", " }}{% endif %}</p>
         <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
         {% if post.excerpt %}
           <p>{{ post.excerpt | strip_html | truncate: 220 }}</p>
