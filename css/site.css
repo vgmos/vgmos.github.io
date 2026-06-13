@@ -75,6 +75,11 @@ a:hover {
   text-decoration: none;
 }
 
+.site-nav .page-link--active {
+  color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
 .wrapper {
   max-width: 900px;
 }
