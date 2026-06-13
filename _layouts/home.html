@@ -4,29 +4,9 @@ layout: default
 
 <div class="home-shell">
   <section class="intro-section">
-    <h1>Analog design, technical judgment, and reflective writing</h1>
+    <h1>Analog IC design and engineering judgment</h1>
     <div class="intro-copy">
       {{ content }}
-    </div>
-  </section>
-
-  <section class="section-block">
-    <div class="section-heading">
-      <h2>Latest Writing</h2>
-      <a href="{{ '/writing/' | relative_url }}">All writing</a>
-    </div>
-    <div class="item-list">
-      {% for post in site.posts limit:3 %}
-        <article class="list-item">
-          <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} · {{ post.tags | join: ", " }}{% endif %}</p>
-          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
-          {% if post.excerpt %}
-            <p>{{ post.excerpt | strip_html | truncate: 180 }}</p>
-          {% endif %}
-        </article>
-      {% else %}
-        <p class="quiet-note">Writing will begin here as new essays and technical notes are drafted.</p>
-      {% endfor %}
     </div>
   </section>
 
@@ -54,6 +34,27 @@ layout: default
   </section>
 
   <section class="section-block note-section">
-    <p>Project pages are intentionally selective: they focus on the design question, the evidence behind the work, and the engineering judgment that still carries forward.</p>
+    <p>Core threads: power IC and LED-driver modeling, noise-shaping data converters, device/circuit modeling, and early hardware-acceleration work.</p>
   </section>
+
+  <section class="section-block">
+    <div class="section-heading">
+      <h2>Latest Writing</h2>
+      <a href="{{ '/writing/' | relative_url }}">All writing</a>
+    </div>
+    <div class="item-list">
+      {% for post in site.posts limit:3 %}
+        <article class="list-item">
+          <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} · {{ post.tags | join: ", " }}{% endif %}</p>
+          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+          {% if post.excerpt %}
+            <p>{{ post.excerpt | strip_html | truncate: 180 }}</p>
+          {% endif %}
+        </article>
+      {% else %}
+        <p class="quiet-note">Writing will begin here as new essays and technical notes are drafted.</p>
+      {% endfor %}
+    </div>
+  </section>
+
 </div>

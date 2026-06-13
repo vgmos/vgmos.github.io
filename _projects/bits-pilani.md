@@ -21,7 +21,7 @@ links:
 
 ## Where the Thread Started
 
-BITS was the beginning of the technical thread: electronics, circuits, computation, open-ended projects, and the first serious attempts to connect coursework with research taste.
+BITS was the beginning of the technical thread: electronics, circuits, computation, open-ended projects, and the first serious attempts to connect coursework with engineering taste.
 
 ## Curated Project Pages
 
@@ -32,7 +32,7 @@ BITS was the beginning of the technical thread: electronics, circuits, computati
 
 - The CEERI practice-school report and seminar deck, because they show a complete early engineering workflow: problem framing, hardware/software tools, implementation, and measured outcomes.
 - The lab-oriented op-amp project, because it marks the first serious analog design thread: gm/ID thinking, Cadence Virtuoso, device sizing, and tradeoff language.
-- Shorter notes on microprocessors, course projects, and early simulation practice can become essays later, but they should not crowd the main portfolio.
+- Shorter notes on microprocessors, course projects, and early simulation practice can become essays later, but they should not crowd the main project list.
 
 The undergraduate thesis work that happened through Technion sits on the Technion page, because that material became a separate research thread rather than a BITS coursework artifact.
 

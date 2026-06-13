@@ -22,7 +22,7 @@ links:
 
 This project sits at the boundary between converter architecture and circuit implementation: how far can a mostly dynamic SAR ADC be pushed toward high resolution before noise, loop-filter overhead, and capacitor size erase the efficiency advantage?
 
-My source trail begins with a Fall 2019 special-problem report on noise-shaping SAR ADCs. That work focused on behavioral models: second- and third-order error-feedback structures, EF/CIFF variants, NTF tuning, Delta-Sigma toolbox experiments, MATLAB scripts, and Simulink models. The later public anchor is the Georgia Tech team publication on a fully dynamic third-order NS-SAR ADC.
+The source trail begins with a Fall 2019 special-problem report on noise-shaping SAR ADCs. That work focused on behavioral models: second- and third-order error-feedback structures, EF/CIFF variants, NTF tuning, Delta-Sigma toolbox experiments, MATLAB scripts, and Simulink models. The later public anchor is the Georgia Tech team publication on a fully dynamic third-order NS-SAR ADC.
 
 ## Design Question
 
@@ -32,7 +32,7 @@ Noise shaping changes the bargain. Instead of treating quantization noise as som
 
 ## Contribution Shape
 
-The Fall 2019 modeling work explored NTF behavior, SQNR, OSR, zero placement, and out-of-band gain for error-feedback and CIFF-style structures. It was not a solo chip claim; it was the modeling and architectural thinking that made the later collaboration legible to me.
+The Fall 2019 modeling work explored NTF behavior, SQNR, OSR, zero placement, and out-of-band gain for error-feedback and CIFF-style structures. That modeling formed the architecture-level context for the later collaboration.
 
 The published chip used a single-amplifier EF-CIFF structure, hardware-reusing kT/C noise cancellation, and fully dynamic operation. The reported prototype achieved 13.8 ENOB, 84.8 dB SNDR over 625 kHz bandwidth, and 119 uW power in 65 nm CMOS.
 
@@ -41,10 +41,10 @@ The published chip used a single-amplifier EF-CIFF structure, hardware-reusing k
 - ISSCC 2021 paper: "A 13.8-ENOB 0.4pF-CIN 3rd-Order Noise-Shaping SAR in a Single-Amplifier EF-CIFF Structure with Fully Dynamic Hardware-Reusing kT/C Noise Cancelation."
 - IEEE JSSC 2021 article: "A 13.8-ENOB Fully Dynamic Third-Order Noise-Shaping SAR ADC in a Single-Amplifier EF-CIFF Structure With Hardware-Reusing kT/C Noise Cancellation."
 - Fall 2019 Georgia Tech special-problem report titled "Noise Shaping SAR ADC."
-- OneDrive NS-SAR folders with MATLAB scripts, Simulink models, EF-CIFF notes, and SAR digital-circuit sketches.
+- NS-SAR project folders with MATLAB scripts, Simulink models, EF-CIFF notes, and SAR digital-circuit sketches.
 
 ## What I Learned
 
 This project sharpened a pattern that shows up across analog design: the architecture is doing more than arranging blocks. It is allocating imperfection. In a noise-shaping ADC, every choice about loop structure, capacitor size, quantizer behavior, and dynamic reuse is also a choice about where error is allowed to live.
 
-It also taught me to be careful with collaborative work. The right public framing is not ownership theatre. It is a precise account of the technical thread I contributed to and the team result it connected with.
+It also reinforced how to frame collaborative research with precision: describe the technical thread, name the evidence, and keep the team result distinct from the individual contribution.

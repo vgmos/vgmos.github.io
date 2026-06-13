@@ -17,7 +17,7 @@ summary: An early analog-design project using gm/ID methodology and Cadence simu
 description: BITS Pilani lab-oriented project on designing a two-stage unbuffered op-amp with gm/ID methodology, Cadence Virtuoso, and 45 nm GPDK.
 ---
 
-This is the first clear analog-design thread in the project record: not yet polished research, but a serious attempt to move from textbook circuit familiarity into sizing, tradeoffs, and simulation closure.
+This is the first clear analog-design thread in the project record: a serious move from textbook circuit familiarity into sizing, tradeoffs, and simulation closure.
 
 The work plan was dated August 27, 2017 for EEE F366, a Lab Oriented Project at BITS Pilani. The objective was direct: design a two-stage unbuffered operational amplifier using semi-empirical and analytic gm/ID methods, then implement and simulate it in Cadence Virtuoso using the 45 nm GPDK process.
 
@@ -43,4 +43,4 @@ The useful lesson was not a final performance number. It was the first encounter
 - Cadence simulation turns theory into closure only when the assumptions are explicit.
 - Compensation and swing constraints are not finishing touches; they shape the architecture from the beginning.
 
-I would be careful about overclaiming this project publicly. Its value is best presented as a design-process milestone: the point where analog IC design stopped being a set of elegant textbook figures and became a practice of sizing, simulating, and defending tradeoffs.
+Its value is best presented as a design-process milestone: the point where analog IC design stopped being a set of elegant textbook figures and became a practice of sizing, simulating, and defending tradeoffs.

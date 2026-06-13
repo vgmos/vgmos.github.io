@@ -21,7 +21,7 @@ links:
 
 ## A Selective Closing Chapter
 
-Georgia Tech marks the last part of the university research arc before the site turns toward professional practice and broader reflective writing. The strongest public thread is the move between power-conversion modeling and high-resolution data-converter architecture.
+Georgia Tech marks the last part of the university research arc before the site turns toward professional analog design. The strongest public thread is the move between power-conversion modeling and high-resolution data-converter architecture.
 
 ## Curated Project Pages
 
