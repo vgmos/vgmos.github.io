@@ -9,10 +9,10 @@ topics:
   - circuits
   - memory
   - computation
-status: Era index
+status: Undergraduate engineering portfolio
 date: 2019-05-01
 updated: 2026-06-12
-summary: A curated map of the undergraduate work that still has enough source material to reconstruct with care.
+summary: A selective map of undergraduate projects that show the early path from computation and embedded systems toward analog circuit design.
 description: A curated map of undergraduate projects from BITS Pilani, including image-processing acceleration, analog circuit design, and early technical notes.
 links:
   - label: GitHub profile
@@ -30,12 +30,12 @@ BITS was the beginning of the technical thread: electronics, circuits, computati
 
 ## What Else Belongs Here
 
-- The CEERI practice-school report and seminar deck, because they show a complete early research workflow: problem framing, hardware/software tools, implementation, and measured outcomes.
+- The CEERI practice-school report and seminar deck, because they show a complete early engineering workflow: problem framing, hardware/software tools, implementation, and measured outcomes.
 - The lab-oriented op-amp project, because it marks the first serious analog design thread: gm/ID thinking, Cadence Virtuoso, device sizing, and tradeoff language.
-- Shorter notes on microprocessors, course projects, and early simulation practice can become essays later, but they should not crowd the main archive.
+- Shorter notes on microprocessors, course projects, and early simulation practice can become essays later, but they should not crowd the main portfolio.
 
 The undergraduate thesis work that happened through Technion sits on the Technion page, because that material became a separate research thread rather than a BITS coursework artifact.
 
-## Restoration Notes
+## Editorial Standard
 
-This pass is intentionally selective. The original personal archive contains many fragments; only the work with enough surviving evidence and public-facing technical value should become project pages.
+This section is intentionally selective. Only work with enough source evidence and public-facing technical value should become a project page.

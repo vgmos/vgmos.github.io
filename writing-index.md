@@ -1,12 +1,12 @@
 ---
 layout: page
-title: Blog Archive
-permalink: /archive/
+title: Writing Index
+permalink: /writing/index/
 ---
 
-An older, chronological view of everything posted here.
+A chronological view of everything posted here.
 
-<ul class="archive-list">
+<ul class="index-list">
   {% for post in site.posts %}
     <li>
       <span class="list-date">{{ post.date | date: "%Y" }}</span>

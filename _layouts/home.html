@@ -4,7 +4,7 @@ layout: default
 
 <div class="home-shell">
   <section class="intro-section">
-    <h1>Analog design, reflective writing, and restored research notes</h1>
+    <h1>Analog design, technical judgment, and reflective writing</h1>
     <div class="intro-copy">
       {{ content }}
     </div>
@@ -25,7 +25,7 @@ layout: default
           {% endif %}
         </article>
       {% else %}
-        <p class="quiet-note">Writing will begin here as old notes are restored and new essays are drafted.</p>
+        <p class="quiet-note">Writing will begin here as new essays and technical notes are drafted.</p>
       {% endfor %}
     </div>
   </section>
@@ -33,7 +33,7 @@ layout: default
   <section class="section-block">
     <div class="section-heading">
       <h2>Selected Projects</h2>
-      <a href="{{ '/projects/' | relative_url }}">Project archive</a>
+      <a href="{{ '/projects/' | relative_url }}">All projects</a>
     </div>
     <div class="item-list">
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
@@ -54,6 +54,6 @@ layout: default
   </section>
 
   <section class="section-block note-section">
-    <p>Older university and research material is being restored carefully. The first pass creates a readable map; deeper technical reconstruction will follow where the work still has useful lessons.</p>
+    <p>Project pages are intentionally selective: they focus on the design question, the evidence behind the work, and the engineering judgment that still carries forward.</p>
   </section>
 </div>

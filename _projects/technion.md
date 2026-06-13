@@ -1,8 +1,8 @@
 ---
 title: Technion Research Projects
 institution: Technion
-period: 2019-2021
-role: Research collaborator in memory and circuit modeling work
+period: 2018-2019
+role: Undergraduate thesis researcher and modeling contributor
 kind: era
 featured: false
 topics:
@@ -10,11 +10,11 @@ topics:
   - memory devices
   - Verilog-A
   - modeling
-status: Era index
-date: 2021-09-01
+status: BITS thesis with Technion supervision; Y-Flash modeling work
+date: 2019-12-01
 updated: 2026-06-12
-summary: Research-era work around memory devices, modeling, and circuit-level thinking, preserved for a deeper technical reconstruction.
-description: Research-era work around memory devices, modeling, and circuit-level thinking, preserved for a deeper technical reconstruction.
+summary: Undergraduate thesis and modeling work around trainable DACs, floating-gate memristive devices, Verilog-A, and neuromorphic circuit design.
+description: Technion-supervised undergraduate thesis and modeling work around trainable DACs, floating-gate memristive devices, Verilog-A, and neuromorphic circuit design.
 links:
   - label: Y-Flash repository
     url: https://github.com/vgmos/yflash
@@ -22,14 +22,20 @@ links:
 
 ## Device Questions, Circuit Models
 
-The Technion period carried the strongest bridge between device-level questions and circuit-level modeling. It included work around memory behavior, neuromorphic ideas, and the practical difficulty of making models useful to other researchers.
+The Technion thread carried the strongest bridge between device-level questions and circuit-level modeling. The center of the work was a BITS thesis, supervised on campus by Prof. Pravin Mane and off campus by Prof. Shahar Kvatinsky, on a data-intelligent DAC using a trainable integrated circuit.
 
-## What Belongs Here
+The thesis title captures the ambition: **Full-custom design of DIDACTIC: A data-intelligent digital to analog converter using trainable integrated circuit**. The source material also includes a detailed 2018 work plan for Verilog-A modeling, Y-Flash device modeling, neuromorphic array exploration, circuit/layout design, and final thesis submission in December 2018.
 
-- Technical notes on Y-Flash and related modeling work.
-- Verilog-A and simulation context where it can be safely documented.
-- A retrospective on what makes a model useful rather than merely clever.
+## Technical Shape
 
-## Restoration Notes
+The durable technical question was not simply "can a memory device act like a synapse?" It was how to turn a device idea into something a circuit designer can simulate, stress, and place inside a larger system.
 
-This page should eventually become one of the deeper project records. The first substantial rewrite should separate public technical material from anything that depended on collaborators, unpublished details, or old NDA boundaries.
+That made the useful artifacts practical:
+
+- A BITS thesis on a trainable DAC, reporting an ANN-inspired, fault-tolerant DAC architecture using stochastic-gradient-style training and HfO2 memristor-based 2T1R synaptic conductance.
+- A Y-Flash modeling thread with Verilog-A models and a public repository.
+- Conference-manuscript work on modeling a floating-gate memristive device for CAD of neuromorphic computing, including SPICE modeling, small-signal schematics, stochastic behavior, Monte Carlo simulation, layout, DRC, LVS, and extraction.
+
+## What I Learned
+
+This period made circuit modeling feel less like documentation and more like design infrastructure. A useful model has to compress physics without lying about it. It has to be simple enough to compose, accurate enough to guide decisions, and honest enough to expose where the device is still immature.
