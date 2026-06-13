@@ -37,14 +37,18 @@ layout: default
     </div>
     <div class="item-list">
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
-      {% for project in sorted_projects limit:3 %}
-        <article class="list-item">
-          <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
-          <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
-          {% if project.summary %}
-            <p>{{ project.summary }}</p>
-          {% endif %}
-        </article>
+      {% assign project_count = 0 %}
+      {% for project in sorted_projects %}
+        {% if project.featured and project_count < 3 %}
+          {% assign project_count = project_count | plus: 1 %}
+          <article class="list-item">
+            <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
+            <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
+            {% if project.summary %}
+              <p>{{ project.summary }}</p>
+            {% endif %}
+          </article>
+        {% endif %}
       {% endfor %}
     </div>
   </section>

@@ -8,15 +8,34 @@ layout: page
 
 <div class="project-index">
   {% for project in sorted_projects %}
-    <article class="list-item project-summary">
-      <p class="item-meta">{{ project.institution }} · {{ project.period }} · {{ project.status }}</p>
-      <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
-      {% if project.summary %}
-        <p>{{ project.summary }}</p>
-      {% endif %}
-      {% if project.topics %}
-        <p class="topic-line">{{ project.topics | join: " · " }}</p>
-      {% endif %}
-    </article>
+    {% unless project.kind == "era" %}
+      <article class="list-item project-summary">
+        <p class="item-meta">{{ project.institution }} · {{ project.period }} · {{ project.status }}</p>
+        <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
+        {% if project.summary %}
+          <p>{{ project.summary }}</p>
+        {% endif %}
+        {% if project.topics %}
+          <p class="topic-line">{{ project.topics | join: " · " }}</p>
+        {% endif %}
+      </article>
+    {% endunless %}
   {% endfor %}
+
+  <section class="section-block">
+    <div class="section-heading">
+      <h2>Era Indexes</h2>
+    </div>
+    {% for project in sorted_projects %}
+      {% if project.kind == "era" %}
+        <article class="list-item project-summary">
+          <p class="item-meta">{{ project.institution }} · {{ project.period }} · {{ project.status }}</p>
+          <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
+          {% if project.summary %}
+            <p>{{ project.summary }}</p>
+          {% endif %}
+        </article>
+      {% endif %}
+    {% endfor %}
+  </section>
 </div>

@@ -3,12 +3,14 @@ title: Technion Research Projects
 institution: Technion
 period: 2019-2021
 role: Research collaborator in memory and circuit modeling work
+kind: era
+featured: false
 topics:
   - neuromorphic circuits
   - memory devices
   - Verilog-A
   - modeling
-status: Scaffolded for restoration
+status: Era index
 date: 2021-09-01
 updated: 2026-06-12
 summary: Research-era work around memory devices, modeling, and circuit-level thinking, preserved for a deeper technical reconstruction.
