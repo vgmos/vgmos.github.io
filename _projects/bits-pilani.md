@@ -11,6 +11,7 @@ status: Scaffolded for restoration
 date: 2019-05-01
 updated: 2026-06-12
 summary: Early circuit and computation work from the undergraduate years, now being organized into a clearer technical and personal record.
+description: Early circuit and computation work from the undergraduate years, now being organized into a clearer technical and personal record.
 links:
   - label: GitHub profile
     url: https://github.com/vgmos

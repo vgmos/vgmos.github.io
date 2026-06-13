@@ -11,6 +11,7 @@ status: Scaffolded for restoration
 date: 2021-12-01
 updated: 2026-06-12
 summary: Graduate-era technical notes and project fragments, to be curated into a concise archive rather than a comprehensive transcript.
+description: Graduate-era technical notes and project fragments, to be curated into a concise archive rather than a comprehensive transcript.
 links:
   - label: GitHub profile
     url: https://github.com/vgmos

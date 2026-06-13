@@ -12,6 +12,7 @@ status: Scaffolded for restoration
 date: 2021-09-01
 updated: 2026-06-12
 summary: Research-era work around memory devices, modeling, and circuit-level thinking, preserved for a deeper technical reconstruction.
+description: Research-era work around memory devices, modeling, and circuit-level thinking, preserved for a deeper technical reconstruction.
 links:
   - label: Y-Flash repository
     url: https://github.com/vgmos/yflash

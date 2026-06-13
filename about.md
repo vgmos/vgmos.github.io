@@ -2,6 +2,7 @@
 layout: page
 title: About
 permalink: /about/
+description: About Vasu Gupta and the purpose of this personal, professional, and reflective blog.
 ---
 
 I am Vasu Gupta, an analog IC design engineer with a long-standing interest in circuits, computation, memory, and the ways technical work shapes a person.
