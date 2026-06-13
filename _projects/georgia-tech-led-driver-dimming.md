@@ -27,140 +27,49 @@ The easy story is that brightness follows average LED current. The more useful s
 
 High-power LEDs are current-controlled devices. Their luminous flux increases with current, but it bends over at high current instead of scaling forever. A DC-DC LED driver also has its own loss profile: controller loss, gate-drive loss, switch loss, inductor loss, and output-capacitor energy movement.
 
-So the design question becomes:
+So the design question becomes: how much useful light does each control method deliver per input watt across the actual LED driver chain?
 
-<figure class="tech-diagram led-system" aria-label="LED driver energy path">
-  <div class="flow-row">
-    <div class="flow-node source">
-      <strong>12 V automotive input</strong>
-      <span>cold crank, load dump, board-level constraints</span>
-    </div>
-    <div class="flow-arrow" aria-hidden="true">-></div>
-    <div class="flow-node converter">
-      <strong>Buck-boost SL driver</strong>
-      <span>4.7 uH, 2 MHz, current regulation</span>
-    </div>
-    <div class="flow-arrow" aria-hidden="true">-></div>
-    <div class="flow-node load">
-      <strong>Four power LEDs</strong>
-      <span>about 13.3 V at 1 A peak current</span>
-    </div>
-    <div class="flow-arrow" aria-hidden="true">-></div>
-    <div class="flow-node light">
-      <strong>Luminous flux</strong>
-      <span>light per input watt, not just current</span>
-    </div>
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="{{ '/assets/projects/led-driver-dimming/power-stage.png' | relative_url }}" alt="Original IECON schematic of the switched-inductor buck-boost LED driver power stage feeding four LEDs.">
   </div>
-  <figcaption>Brightness control has to be read through the whole chain: source, converter, LED load, and light output.</figcaption>
+  <figcaption>Original IECON Fig. 2 power stage: the synchronous buck-boost switched-inductor LED driver used for the dimming comparison.</figcaption>
 </figure>
 
 In the thesis, I modeled a representative 12 V automotive buck-boost LED driver delivering up to 1 A into four CREE XP-E2 class LEDs. The analysis folded together the LED electro-optical curve, the LED I-V curve, converter efficiency, and SPICE validation. That let me compare dimming methods by luminous efficiency, power loss, and dimming range instead of by habit or datasheet folklore.
 
 ## Dimming Methods
 
-The work compared analog dimming against three PWM variants.
-
-<figure class="tech-diagram dimming-map" aria-label="Dimming techniques compared">
-  <div class="dimming-method analog">
-    <h3>Analog</h3>
-    <p>Continuously regulate LED current. At low light, sparse inductor packets in DCM can make the average current very small.</p>
-    <span>Best for efficiency over most of the range</span>
-  </div>
-  <div class="dimming-method shutdown">
-    <h3>Shutdown PWM</h3>
-    <p>Turn the power stage on and off at a much lower dimming frequency. The eye averages the pulses.</p>
-    <span>Simple, but rise/fall time limits low dimming</span>
-  </div>
-  <div class="dimming-method shunt">
-    <h3>Shunt PWM</h3>
-    <p>Add a switch in parallel with the LEDs to discharge the output node faster during PWM off-time.</p>
-    <span>Improves turn-off behavior with extra switch loss</span>
-  </div>
-  <div class="dimming-method series">
-    <h3>Series PWM</h3>
-    <p>Add a series switch and preserve the output-capacitor voltage so the LED current can reconnect quickly.</p>
-    <span>Excellent dimming range, more circuitry</span>
-  </div>
-  <figcaption>All four methods can control brightness. They do not spend power the same way.</figcaption>
-</figure>
+The work compared analog dimming against three PWM variants: shutdown PWM, shunt-switched PWM, and series-switched PWM. All four can control perceived brightness. They do not spend power the same way.
 
 The clean intuition is this: PWM keeps the LED biased at a high peak current and chops time. Because LED luminous flux saturates at high current, PWM pays a penalty for producing light at that peak operating point. Analog dimming moves the operating point itself. In this modeled driver, that removed a fundamental PWM power penalty across most of the useful light range.
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="{{ '/assets/projects/led-driver-dimming/power-loss-breakdown.png' | relative_url }}" alt="Original IECON power-loss breakdown plot comparing analog and PWM dimming losses across luminous flux.">
+  </div>
+  <figcaption>Original IECON Fig. 13 power-loss breakdown: the PWM-specific loss term dominates much of the dimming range, while shared switched-inductor losses remain common to both methods.</figcaption>
+</figure>
 
 ## Result
 
 The headline result was not "PWM is bad." PWM is useful, especially when color consistency, control simplicity, or a very high dimming ratio matter. The result was more precise: in this switched-inductor automotive setup, analog dimming gave the best luminous efficiency over most of the range and could theoretically cover the full 0-100% dimming span when DCM operation and sensing limits were handled well.
 
-<div class="metric-strip" aria-label="Key project results">
-  <div>
-    <strong>up to 57%</strong>
-    <span>higher luminous efficiency for analog dimming over PWM in the modeled range</span>
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="{{ '/assets/projects/led-driver-dimming/luminous-efficiency.png' | relative_url }}" alt="Original IECON luminous-efficiency plot showing analog dimming peaking near 93 lumens per watt and PWM near 59 lumens per watt.">
   </div>
-  <div>
-    <strong>0-100%</strong>
-    <span>theoretical analog dimming range through CCM and DCM current control</span>
-  </div>
-  <div>
-    <strong>1.5-5%</strong>
-    <span>model-to-SPICE agreement for key power, light, and dimming-range checks</span>
-  </div>
-</div>
+  <figcaption>Original IECON Fig. 9 luminous-efficiency result: analog peaks near 93 L/W, while PWM remains near 59 L/W in the modeled setup.</figcaption>
+</figure>
 
-<table class="dimming-table">
-  <caption>Comparison from the thesis and IECON analysis</caption>
-  <thead>
-    <tr>
-      <th>Parameter</th>
-      <th>Analog</th>
-      <th>Shutdown PWM</th>
-      <th>Shunt PWM</th>
-      <th>Series PWM</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Luminous efficiency</th>
-      <td>45-93 lm/W</td>
-      <td>59 lm/W</td>
-      <td>59 lm/W</td>
-      <td>59 lm/W</td>
-    </tr>
-    <tr>
-      <th>LED-current rise + fall time</th>
-      <td>N/A</td>
-      <td>&lt;= 100 us</td>
-      <td>&lt;= 120 us</td>
-      <td>&lt;= 10 ns</td>
-    </tr>
-    <tr>
-      <th>Dimming range</th>
-      <td>0-100%</td>
-      <td>1-100%</td>
-      <td>1.2-100%</td>
-      <td>about 0-100%</td>
-    </tr>
-    <tr>
-      <th>Shared converter loss</th>
-      <td>0.18-1.4 W</td>
-      <td>&lt;= 1.4 W</td>
-      <td>&lt;= 1.4 W</td>
-      <td>&lt;= 1.4 W</td>
-    </tr>
-    <tr>
-      <th>PWM-specific loss</th>
-      <td>none</td>
-      <td>&lt;= 2.2 W</td>
-      <td>&lt;= 2.2 W</td>
-      <td>&lt;= 2.2 W</td>
-    </tr>
-    <tr>
-      <th>Extra implementation cost</th>
-      <td>current-sense accuracy at low light</td>
-      <td>minimal</td>
-      <td>extra shunt switch; capacitor and inductor energy loss</td>
-      <td>extra series switch; output-voltage preservation</td>
-    </tr>
-  </tbody>
-</table>
+This is where the "up to 57%" result comes from. PWM is flat because it keeps the LEDs at the same peak operating point and changes duty cycle. Analog dimming changes the LED current itself, so it can sit closer to the load's most efficient optical region.
+
+<figure class="source-figure source-figure--table">
+  <div class="source-figure__frame">
+    <img src="{{ '/assets/projects/led-driver-dimming/comparison-table.png' | relative_url }}" alt="Original IECON comparison table for analog, shutdown PWM, shunt-switched PWM, and series-switched PWM dimming.">
+  </div>
+  <figcaption>Original IECON Table I: comparison of luminous efficiency, dimming range, transient behavior, and added loss mechanisms.</figcaption>
+</figure>
 
 There is a useful caveat at the low end. When the output power is tiny, fixed switched-inductor losses can dominate, and PWM can briefly look better. That caveat is the point. A design engineer should not carry a rule of thumb farther than its operating region.
 
