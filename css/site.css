@@ -413,6 +413,28 @@ pre,
   border-bottom: 1px solid var(--line);
 }
 
+.site-footer {
+  border-top-color: var(--line);
+}
+
+.footer-quiet {
+  color: var(--muted);
+}
+
+.footer-links,
+.footer-description {
+  margin-bottom: 0;
+}
+
+.footer-links {
+  color: var(--ink);
+}
+
+.footer-description {
+  margin-top: 6px;
+  font-size: 0.92rem;
+}
+
 @media (max-width: 700px) {
   body {
     font-size: 16px;
