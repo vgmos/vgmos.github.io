@@ -1,7 +1,7 @@
 ---
 title: Third-Order Noise-Shaping SAR ADC
 institution: Georgia Tech
-period: Fall 2019-Sep 2021
+period: 2019-2021
 role: Research collaborator; behavioral modeling and architecture exploration
 kind: project
 featured: true
@@ -10,11 +10,11 @@ topics:
   - data converters
   - noise shaping
   - SAR ADC
-status: Fall 2019 research thread; ISSCC 2021 and IEEE JSSC 2021 collaboration
+status: Graduate research thread and ISSCC/JSSC collaboration
 date: 2021-09-09
 updated: 2026-06-12
-summary: A Georgia Tech collaboration connecting Fall 2019 NS-SAR behavioral modeling with a 13.8-ENOB third-order noise-shaping SAR ADC published at ISSCC and in IEEE JSSC.
-description: Georgia Tech research collaboration on high-resolution noise-shaping SAR ADC architecture, grounded in Fall 2019 modeling work and the later ISSCC/JSSC publication.
+summary: A Georgia Tech collaboration connecting NS-SAR behavioral modeling with a 13.8-ENOB third-order noise-shaping SAR ADC published at ISSCC and in IEEE JSSC.
+description: Georgia Tech research collaboration on high-resolution noise-shaping SAR ADC architecture, grounded in behavioral modeling work and the later ISSCC/JSSC publication.
 links:
   - label: IEEE JSSC paper DOI
     url: https://doi.org/10.1109/JSSC.2021.3108620
@@ -22,7 +22,7 @@ links:
 
 This project sits at the boundary between converter architecture and circuit implementation: how far can a mostly dynamic SAR ADC be pushed toward high resolution before noise, loop-filter overhead, and capacitor size erase the efficiency advantage?
 
-The source trail begins with a Fall 2019 special-problem report on noise-shaping SAR ADCs. That work focused on behavioral models: second- and third-order error-feedback structures, EF/CIFF variants, NTF tuning, Delta-Sigma toolbox experiments, MATLAB scripts, and Simulink models. The later public anchor is the Georgia Tech team publication on a fully dynamic third-order NS-SAR ADC.
+The source trail begins with a special-problem report on noise-shaping SAR ADCs. That work focused on behavioral models: second- and third-order error-feedback structures, EF/CIFF variants, NTF tuning, Delta-Sigma toolbox experiments, MATLAB scripts, and Simulink models. The later public anchor is the Georgia Tech team publication on a fully dynamic third-order NS-SAR ADC.
 
 ## Design Question
 
@@ -32,7 +32,7 @@ Noise shaping changes the bargain. Instead of treating quantization noise as som
 
 ## Contribution Shape
 
-The Fall 2019 modeling work explored NTF behavior, SQNR, OSR, zero placement, and out-of-band gain for error-feedback and CIFF-style structures. That modeling formed the architecture-level context for the later collaboration.
+The modeling work explored NTF behavior, SQNR, OSR, zero placement, and out-of-band gain for error-feedback and CIFF-style structures. That modeling formed the architecture-level context for the later collaboration.
 
 The published chip used a single-amplifier EF-CIFF structure, hardware-reusing kT/C noise cancellation, and fully dynamic operation. The reported prototype achieved 13.8 ENOB, 84.8 dB SNDR over 625 kHz bandwidth, and 119 uW power in 65 nm CMOS.
 
@@ -40,7 +40,7 @@ The published chip used a single-amplifier EF-CIFF structure, hardware-reusing k
 
 - ISSCC 2021 paper: "A 13.8-ENOB 0.4pF-CIN 3rd-Order Noise-Shaping SAR in a Single-Amplifier EF-CIFF Structure with Fully Dynamic Hardware-Reusing kT/C Noise Cancelation."
 - IEEE JSSC 2021 article: "A 13.8-ENOB Fully Dynamic Third-Order Noise-Shaping SAR ADC in a Single-Amplifier EF-CIFF Structure With Hardware-Reusing kT/C Noise Cancellation."
-- Fall 2019 Georgia Tech special-problem report titled "Noise Shaping SAR ADC."
+- Georgia Tech special-problem report titled "Noise Shaping SAR ADC."
 - NS-SAR project folders with MATLAB scripts, Simulink models, EF-CIFF notes, and SAR digital-circuit sketches.
 
 ## What I Learned

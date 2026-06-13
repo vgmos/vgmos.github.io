@@ -7,10 +7,14 @@ layout: page
 {% assign sorted_projects = site.projects | sort: "date" | reverse %}
 
 <div class="project-index">
+  <section class="section-block project-index-section">
+    <div class="section-heading">
+      <h2>Selected Project Work</h2>
+    </div>
   {% for project in sorted_projects %}
     {% unless project.kind == "era" %}
       <article class="list-item project-summary">
-        <p class="item-meta">{{ project.institution }} · {{ project.period }} · {{ project.status }}</p>
+        <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
         <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
         {% if project.summary %}
           <p>{{ project.summary }}</p>
@@ -21,15 +25,16 @@ layout: page
       </article>
     {% endunless %}
   {% endfor %}
+  </section>
 
-  <section class="section-block">
+  <section class="section-block project-index-section">
     <div class="section-heading">
-      <h2>Technical Arc</h2>
+      <h2>Background Threads</h2>
     </div>
     {% for project in sorted_projects %}
       {% if project.kind == "era" %}
         <article class="list-item project-summary">
-          <p class="item-meta">{{ project.institution }} · {{ project.period }} · {{ project.status }}</p>
+          <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
           <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
           {% if project.summary %}
             <p>{{ project.summary }}</p>

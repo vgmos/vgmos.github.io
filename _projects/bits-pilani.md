@@ -14,9 +14,6 @@ date: 2019-05-01
 updated: 2026-06-12
 summary: A selective map of undergraduate projects that show the early path from computation and embedded systems toward analog circuit design.
 description: A curated map of undergraduate projects from BITS Pilani, including image-processing acceleration, analog circuit design, and early technical notes.
-links:
-  - label: GitHub profile
-    url: https://github.com/vgmos
 ---
 
 ## Where the Thread Started

@@ -1,7 +1,7 @@
 ---
 title: Dimming DC-DC LED Drivers
 institution: Georgia Tech
-period: Fall 2020-Dec 2021
+period: 2020-2021
 role: MS thesis researcher, first author
 kind: project
 featured: true
@@ -10,7 +10,7 @@ topics:
   - LED drivers
   - switched-inductor converters
   - dimming
-status: MS thesis approved Dec 2021; IECON 2021 paper
+status: MS thesis and IECON publication
 date: 2021-12-10
 summary: A Georgia Tech thesis and IECON paper comparing analog and PWM dimming in switched-inductor LED drivers through luminous efficiency, power loss, and dimming range.
 description: Georgia Tech MS thesis research on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM methods through power-loss and luminous-efficiency models.

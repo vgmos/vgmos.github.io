@@ -1,7 +1,7 @@
 ---
 title: Two-Stage Unbuffered Op-Amp Design Using gm/ID
 institution: BITS Pilani
-period: Aug-Dec 2017
+period: 2017
 role: Lab-oriented project student
 kind: project
 featured: false
@@ -10,7 +10,7 @@ topics:
   - gm/ID
   - Cadence Virtuoso
   - CMOS
-status: EEE F366 work plan and Cadence/GPDK45 design notes
+status: Lab-oriented analog design project
 date: 2017-08-27
 updated: 2026-06-12
 summary: An early analog-design project using gm/ID methodology and Cadence simulations to design a two-stage unbuffered operational amplifier.
@@ -19,7 +19,7 @@ description: BITS Pilani lab-oriented project on designing a two-stage unbuffere
 
 This is the first clear analog-design thread in the project record: a serious move from textbook circuit familiarity into sizing, tradeoffs, and simulation closure.
 
-The work plan was dated August 27, 2017 for EEE F366, a Lab Oriented Project at BITS Pilani. The objective was direct: design a two-stage unbuffered operational amplifier using semi-empirical and analytic gm/ID methods, then implement and simulate it in Cadence Virtuoso using the 45 nm GPDK process.
+The work was part of EEE F366, a Lab Oriented Project at BITS Pilani. The objective was direct: design a two-stage unbuffered operational amplifier using semi-empirical and analytic gm/ID methods, then implement and simulate it in Cadence Virtuoso using the 45 nm GPDK process.
 
 ## Design Question
 
@@ -29,7 +29,7 @@ The gm/ID framing mattered because it replaces blind transistor sizing with a co
 
 ## Source Trail
 
-- Lab-oriented project work plan for EEE F366, dated August 27, 2017.
+- Lab-oriented project work plan for EEE F366.
 - Short note titled "Design of two-staged unbuffered Operational Amplifier."
 - Cadence-oriented note documenting operational-amplifier design constraints for the available technology and supply/swing assumptions.
 - Older BITS research CV listing undergraduate research with Dr. Pravin Mane on a two-stage unbuffered op-amp in GPDK45.

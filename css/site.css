@@ -1,10 +1,10 @@
 :root {
-  --ink: #20201f;
-  --ink-soft: #3a3733;
-  --muted: #69645e;
-  --soft: #f7f5f0;
-  --line: #e6e0d7;
-  --accent: #2f6f64;
+  --ink: #1f2328;
+  --ink-soft: #3d434a;
+  --muted: #66707a;
+  --soft: #f6f8fa;
+  --line: #d8dee4;
+  --accent: #276f86;
 }
 
 html {
@@ -13,7 +13,7 @@ html {
 
 body {
   color: var(--ink);
-  background: #fffdf9;
+  background: #ffffff;
   font-size: 17px;
   line-height: 1.72;
 }
@@ -75,7 +75,7 @@ a:focus-visible {
   z-index: 50;
   border-top: 0;
   border-bottom-color: var(--line);
-  background: rgba(255, 253, 249, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -133,7 +133,7 @@ h3 {
 
 .intro-section {
   max-width: 740px;
-  padding: 34px 0 18px;
+  padding: 40px 0 20px;
 }
 
 .intro-section h1 {
@@ -168,6 +168,12 @@ h3 {
   margin-top: 48px;
 }
 
+.home-shell .section-block:first-of-type {
+  margin-top: 42px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+
 .section-heading {
   display: flex;
   gap: 18px;
@@ -189,7 +195,13 @@ h3 {
 }
 
 .list-item {
-  padding: 28px 0;
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+}
+
+.item-list .list-item:first-child,
+.project-index-section .list-item:first-of-type {
+  border-top: 0;
 }
 
 .list-item h2,
@@ -208,7 +220,8 @@ h3 {
 
 .note-section {
   max-width: 740px;
-  padding: 22px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--line);
   color: var(--muted);
 }
 
@@ -363,6 +376,37 @@ pre,
   margin: 8px 0;
 }
 
+.project-index-section {
+  margin-top: 34px;
+}
+
+.resume-block {
+  margin: 20px 0 34px;
+  padding-top: 4px;
+}
+
+.resume-block dl {
+  margin: 0;
+}
+
+.resume-block div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 18px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.resume-block dt {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 400;
+}
+
+.resume-block dd {
+  margin: 0;
+}
+
 .source-figure {
   margin: 2rem 0;
   color: var(--ink);
@@ -500,7 +544,7 @@ pre,
   }
 
   .site-nav {
-    background-color: #fffdf9;
+    background-color: #ffffff;
     border-color: var(--line);
   }
 
@@ -514,10 +558,15 @@ pre,
 
   .section-heading,
   .project-facts,
+  .resume-block div,
   .fig-interactive__controls,
   .tag-index,
   .index-list li {
     display: block;
+  }
+
+  .resume-block dt {
+    margin-bottom: 4px;
   }
 
   .source-figure__frame {
