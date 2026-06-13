@@ -213,10 +213,9 @@ h3 {
 
 .restored-note {
   margin-top: 8px;
-  padding: 10px 14px;
-  border-left: 3px solid var(--accent);
-  background: var(--soft);
-  font-size: 0.92rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-style: italic;
 }
 
 .post-content,
