@@ -419,8 +419,6 @@ pre,
 
 .fig-interactive {
   box-sizing: border-box;
-  aspect-ratio: 16 / 10;
-  min-height: 400px;
   margin: 2rem 0;
   padding: 16px;
   border: 1px solid var(--line);
