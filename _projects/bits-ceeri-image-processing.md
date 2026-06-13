@@ -1,7 +1,7 @@
 ---
 title: Accelerating Image Processing on FPGA and GPGPU
 institution: BITS Pilani / CSIR-CEERI
-period: May-Jul 2017
+period: 2017
 role: Practice School-I researcher
 kind: project
 featured: true
@@ -10,7 +10,7 @@ topics:
   - FPGA
   - GPGPU
   - high-level synthesis
-status: Practice School-I report submitted Jul 12, 2017
+status: Practice School-I project
 date: 2017-07-12
 updated: 2026-06-12
 summary: A CSIR-CEERI practice-school project comparing FPGA/HLS and Jetson TX1 GPU acceleration paths for image-processing and color-object-tracking tasks.
@@ -39,7 +39,7 @@ The report measured CPU-vs-GPU timing for several operations. The Jetson GPU imp
 
 ## Sources
 
-- Practice School-I report at CSIR-CEERI, Pilani, with station start on May 22, 2017 and submission on July 12, 2017.
+- Practice School-I report at CSIR-CEERI, Pilani.
 - End-term seminar deck titled around implementing image-processing algorithms on FPGA and GPU.
 - Source code appendices for FPGA binarization and GPU object-tracking pipelines.
 

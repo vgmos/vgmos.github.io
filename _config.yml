@@ -2,19 +2,18 @@ title: Vasu Gupta
 author: Vasu Gupta
 email: vasugupta711@gmail.com
 description: >-
-  Technical project notes and essays from Vasu Gupta on analog IC design,
-  power conversion, data converters, and engineering judgment.
+  Projects and essays from Vasu Gupta on analog IC design, engineering
+  judgment, craft, and clear thinking.
 url: "https://vgmos.github.io"
 baseurl: ""
 logo: /favicon.svg
 
 theme: minima
-github_username: vgmos
-linkedin_username: vasugupta711
+linkedin_username: vgmos
 
 header_pages:
-  - writing.md
   - projects.md
+  - writing.md
   - about.md
 
 collections:
