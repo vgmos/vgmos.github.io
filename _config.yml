@@ -9,7 +9,6 @@ baseurl: ""
 logo: /favicon.svg
 
 theme: minima
-rss: rss
 github_username: vgmos
 linkedin_username: vasugupta711
 
