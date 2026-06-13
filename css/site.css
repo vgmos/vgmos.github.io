@@ -107,6 +107,7 @@ h1,
 h2,
 h3 {
   color: var(--ink);
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
 }
@@ -116,13 +117,12 @@ h1 {
 }
 
 h2 {
-  margin-top: 2.2rem;
-  font-size: 1.45rem;
+  margin-top: 3rem;
+  font-size: 1.35rem;
 }
 
 h3 {
   font-size: 1.3rem;
-  font-weight: 600;
 }
 
 .intro-section {
