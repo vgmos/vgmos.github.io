@@ -22,10 +22,6 @@ collections:
     output: true
     permalink: /projects/:name/
 
-kramdown:
-  syntax_highlighter_opts:
-    disable: true
-    
 plugins:
   - jekyll-feed
   - jekyll-sitemap

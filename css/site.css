@@ -199,6 +199,59 @@ code {
   border-radius: 4px;
 }
 
+pre,
+.highlight {
+  background: var(--soft);
+}
+
+.highlight {
+  margin: 0 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.highlight pre {
+  margin: 0;
+  padding: 1rem;
+  border: 0;
+}
+
+.highlight .c,
+.highlight .c1,
+.highlight .cm {
+  color: #6f746f;
+  font-style: italic;
+}
+
+.highlight .k,
+.highlight .kd,
+.highlight .kn,
+.highlight .nt {
+  color: #8a4b75;
+  font-weight: 600;
+}
+
+.highlight .n,
+.highlight .na,
+.highlight .nb {
+  color: var(--ink);
+}
+
+.highlight .nf,
+.highlight .nx,
+.highlight .o {
+  color: #345f8a;
+}
+
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .mi,
+.highlight .mf {
+  color: #8a5a30;
+}
+
 .post-divider {
   margin-top: 42px;
   margin-bottom: 22px;
