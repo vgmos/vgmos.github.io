@@ -22,6 +22,32 @@ a:hover {
   color: var(--accent-warm);
 }
 
+.post-content > p a,
+.post-content > ul a,
+.post-content > ol a,
+.post-content > blockquote a,
+.post-content > figure a,
+.project-body a,
+.intro-copy a,
+.note-section a {
+  text-decoration: underline;
+  text-decoration-color: rgba(47, 111, 100, 0.45);
+  text-underline-offset: 3px;
+}
+
+@supports (color: color-mix(in srgb, black, white)) {
+  .post-content > p a,
+  .post-content > ul a,
+  .post-content > ol a,
+  .post-content > blockquote a,
+  .post-content > figure a,
+  .project-body a,
+  .intro-copy a,
+  .note-section a {
+    text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
+
 .site-header {
   border-top: 0;
   border-bottom-color: var(--line);
