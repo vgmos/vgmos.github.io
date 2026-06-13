@@ -363,6 +363,196 @@ pre,
   margin: 8px 0;
 }
 
+.tech-diagram {
+  margin: 2rem 0;
+  color: var(--ink);
+}
+
+.tech-diagram figcaption,
+.dimming-table caption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.flow-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1.2fr) auto minmax(0, 1.1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.flow-node,
+.dimming-method,
+.metric-strip div {
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf1;
+}
+
+.flow-node {
+  min-height: 132px;
+  padding: 16px 14px;
+}
+
+.flow-node strong,
+.flow-node span,
+.dimming-method span,
+.metric-strip strong,
+.metric-strip span {
+  display: block;
+}
+
+.flow-node strong {
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.flow-node span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.flow-node.source {
+  border-color: #e3c97a;
+  background: #fff8df;
+}
+
+.flow-node.converter {
+  border-color: #9fbfc4;
+  background: #f0f8f8;
+}
+
+.flow-node.load {
+  border-color: #d7a48f;
+  background: #fff3ed;
+}
+
+.flow-node.light {
+  border-color: #aab884;
+  background: #f6f8e9;
+}
+
+.flow-arrow {
+  align-self: center;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.dimming-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dimming-map figcaption {
+  grid-column: 1 / -1;
+}
+
+.dimming-method {
+  min-height: 184px;
+  padding: 16px;
+  background: #fffdf9;
+}
+
+.dimming-method h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.dimming-method p {
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.dimming-method span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.dimming-method.analog {
+  border-color: #8fb9a8;
+}
+
+.dimming-method.shutdown {
+  border-color: #d6bf7b;
+}
+
+.dimming-method.shunt {
+  border-color: #b6abc9;
+}
+
+.dimming-method.series {
+  border-color: #d49b86;
+}
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 2rem 0;
+}
+
+.metric-strip div {
+  min-height: 142px;
+  padding: 18px 16px;
+  background: #f7faf7;
+}
+
+.metric-strip strong {
+  margin-bottom: 8px;
+  color: #274f48;
+  font-size: 1.55rem;
+  line-height: 1.15;
+}
+
+.metric-strip span {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.dimming-table {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  margin: 2rem 0;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.dimming-table th,
+.dimming-table td {
+  min-width: 0;
+  padding: 10px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.dimming-table thead th:first-child,
+.dimming-table tbody th {
+  width: 25%;
+}
+
+.dimming-table thead th {
+  background: #f2f6f5;
+  color: var(--ink);
+}
+
+.dimming-table tbody th {
+  background: #fbf8f1;
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .tag-index {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -472,9 +662,43 @@ pre,
   .section-heading,
   .project-facts,
   .fig-interactive__controls,
+  .flow-row,
+  .dimming-map,
+  .metric-strip,
   .tag-index,
   .archive-list li {
     display: block;
+  }
+
+  .flow-node,
+  .flow-arrow,
+  .dimming-method,
+  .metric-strip div {
+    margin-bottom: 10px;
+  }
+
+  .flow-node,
+  .dimming-method,
+  .metric-strip div {
+    min-height: 0;
+  }
+
+  .dimming-table {
+    display: block;
+    overflow-x: auto;
+    table-layout: auto;
+    font-size: 0.88rem;
+  }
+
+  .dimming-table th,
+  .dimming-table td {
+    min-width: 8.5rem;
+  }
+
+  .dimming-table thead th:first-child,
+  .dimming-table tbody th {
+    width: auto;
+    min-width: 10rem;
   }
 
   .section-heading a {
