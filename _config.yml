@@ -6,6 +6,7 @@ description: >-
   research projects across analog design, circuits, and computation.
 url: "https://vgmos.github.io"
 baseurl: ""
+logo: /favicon.svg
 
 theme: minima
 rss: rss
@@ -27,6 +28,10 @@ plugins:
   - jekyll-sitemap
 
 defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/og-default.png
   - scope:
       path: ""
       type: posts
