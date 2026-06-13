@@ -483,6 +483,11 @@ pre,
     font-size: 16px;
   }
 
+  .site-nav {
+    background-color: #fffdf9;
+    border-color: var(--line);
+  }
+
   .page-content {
     padding-top: 34px;
   }
