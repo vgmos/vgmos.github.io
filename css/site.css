@@ -26,6 +26,12 @@ a:hover {
   color: #245750;
 }
 
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .post-content > p a,
 .post-content > ul a,
 .post-content > ol a,
