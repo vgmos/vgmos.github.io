@@ -4,7 +4,6 @@
   --soft: #f7f5f0;
   --line: #e6e0d7;
   --accent: #2f6f64;
-  --accent-warm: #8a5a30;
 }
 
 html {
@@ -23,7 +22,7 @@ a {
 }
 
 a:hover {
-  color: var(--accent-warm);
+  color: #245750;
 }
 
 .post-content > p a,
@@ -50,6 +49,17 @@ a:hover {
   .note-section a {
     text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
   }
+}
+
+.post-content > p a:hover,
+.post-content > ul a:hover,
+.post-content > ol a:hover,
+.post-content > blockquote a:hover,
+.post-content > figure a:hover,
+.project-body a:hover,
+.intro-copy a:hover,
+.note-section a:hover {
+  text-decoration-color: var(--accent);
 }
 
 .site-header {
@@ -258,28 +268,26 @@ pre,
 .highlight .c,
 .highlight .c1,
 .highlight .cm {
-  color: #6f746f;
+  color: var(--muted);
   font-style: italic;
 }
 
 .highlight .k,
+.highlight .kc,
 .highlight .kd,
 .highlight .kn,
 .highlight .nt {
-  color: #8a4b75;
+  color: var(--ink);
   font-weight: 600;
 }
 
 .highlight .n,
 .highlight .na,
-.highlight .nb {
-  color: var(--ink);
-}
-
+.highlight .nb,
 .highlight .nf,
 .highlight .nx,
 .highlight .o {
-  color: #345f8a;
+  color: var(--ink);
 }
 
 .highlight .s,
@@ -287,7 +295,7 @@ pre,
 .highlight .s2,
 .highlight .mi,
 .highlight .mf {
-  color: #8a5a30;
+  color: var(--accent);
 }
 
 .post-divider {

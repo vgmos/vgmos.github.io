@@ -7,7 +7,6 @@ if (figure) {
   const muted = color("--muted", "#69645e");
   const line = color("--line", "#e6e0d7");
   const accent = color("--accent", "#2f6f64");
-  const warm = color("--accent-warm", "#8a5a30");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   figure.innerHTML = `
@@ -85,7 +84,7 @@ if (figure) {
       el("text", { x: left, y: top - 10, fill: muted, "font-size": 16 }, "Vfinal"),
       el("text", { x: left + plotWidth - 92, y: top + plotHeight + 34, fill: muted, "font-size": 16 }, "time"),
       el("text", { x: left + 8, y: top + plotHeight - 10, fill: muted, "font-size": 16 }, "0"),
-      el("text", { x: left + 16, y: top + 30, fill: warm, "font-size": 16 }, `tau = ${tau} ms`)
+      el("text", { x: left + 16, y: top + 30, fill: accent, "font-size": 16 }, `tau = ${tau} ms`)
     );
 
     for (let i = 1; i <= 5; i += 1) {
