@@ -348,29 +348,25 @@ pre,
 }
 
 .project-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
   margin: 0 0 30px;
-  background: var(--line);
-  border: 1px solid var(--line);
 }
 
 .project-facts div {
-  padding: 14px 16px;
-  background: #fffdf9;
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
 }
 
 .project-facts dt {
+  flex: 0 0 7rem;
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 0.92rem;
+  font-weight: 400;
 }
 
 .project-facts dd {
-  margin: 4px 0 0;
+  margin: 0;
+  color: var(--ink);
 }
 
 .project-links ul,
