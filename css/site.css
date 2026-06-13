@@ -1,5 +1,6 @@
 :root {
   --ink: #20201f;
+  --ink-soft: #3a3733;
   --muted: #69645e;
   --soft: #f7f5f0;
   --line: #e6e0d7;
@@ -137,7 +138,7 @@ h3 {
 
 .intro-copy {
   font-size: 1.14rem;
-  color: #3a3733;
+  color: var(--ink-soft);
 }
 
 .eyebrow,
@@ -239,7 +240,7 @@ h3 {
 }
 
 .post-content blockquote {
-  color: #514d48;
+  color: var(--ink-soft);
   border-left-color: var(--accent);
 }
 
@@ -349,7 +350,7 @@ pre,
 }
 
 .project-dek {
-  color: #3a3733;
+  color: var(--ink-soft);
   font-size: 1.12rem;
 }
 
