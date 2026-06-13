@@ -7,6 +7,10 @@
   --accent-warm: #8a5a30;
 }
 
+html {
+  scroll-padding-top: 76px;
+}
+
 body {
   color: var(--ink);
   background: #fffdf9;
