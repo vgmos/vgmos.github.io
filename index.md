@@ -1,6 +1,5 @@
 ---
 layout: home
-title: Home
 ---
 
 I am Vasu Gupta, an analog circuit designer and engineer writing at the edge of technical work, reflection, discipline, and inner life.
