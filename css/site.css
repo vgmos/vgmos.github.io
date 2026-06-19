@@ -193,11 +193,6 @@ h3,
   font-size: 1.35rem;
 }
 
-.post-content .section-heading h2,
-.post-content .writing-index > h2 {
-  font-size: 2rem;
-}
-
 .section-heading a,
 .index-link a {
   font-size: 0.92rem;
@@ -224,11 +219,6 @@ h3,
   margin: 0 0 8px;
   font-size: 1.3rem;
   line-height: 1.2;
-}
-
-.post-content .list-item h2,
-.post-content .list-item h3 {
-  font-size: 1.625rem;
 }
 
 .list-item p {
@@ -555,16 +545,6 @@ pre,
   .section-heading a {
     display: inline-block;
     margin-bottom: 12px;
-  }
-
-  .post-content .section-heading h2,
-  .post-content .writing-index > h2 {
-    font-size: 1.75rem;
-  }
-
-  .post-content .list-item h2,
-  .post-content .list-item h3 {
-    font-size: 1.375rem;
   }
 
   .post_navi {
