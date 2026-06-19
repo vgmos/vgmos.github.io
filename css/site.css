@@ -151,7 +151,6 @@ h3 {
 .item-meta,
 .post-meta,
 .list-date,
-.list-tags,
 .topic-line,
 .updated-note,
 .quiet-note {
@@ -233,10 +232,6 @@ h3 {
 .post-title,
 .project-header h1 {
   margin-bottom: 10px;
-}
-
-.meta-tag {
-  color: var(--muted);
 }
 
 .updated-note {
@@ -364,14 +359,12 @@ pre,
 }
 
 .project-links ul,
-.tag-group ul,
 .index-list {
   margin-left: 0;
   list-style: none;
 }
 
 .project-links li,
-.tag-group li,
 .index-list li {
   margin: 8px 0;
 }
@@ -450,21 +443,6 @@ pre,
   margin-left: auto;
 }
 
-.tag-index {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px 34px;
-}
-
-.tag-group {
-  padding-top: 10px;
-}
-
-.tag-group h3 {
-  margin-top: 0;
-}
-
-.tag-group span,
 .index-list span {
   color: var(--muted);
   font-size: 0.9rem;
@@ -538,7 +516,6 @@ pre,
   .project-facts,
   .resume-block div,
   .fig-interactive__controls,
-  .tag-index,
   .index-list li {
     display: block;
   }
