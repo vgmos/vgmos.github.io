@@ -17,7 +17,19 @@ but they are intentionally omitted from this index.
     </div>
   {% for project in sorted_projects %}
     {% unless project.kind == "era" %}
-      <article class="list-item project-summary">
+      {% assign project_slug = project.slug %}
+      {% if project_slug == nil or project_slug == "" %}
+        {% assign project_slug = project.path | split: "/" | last | replace: ".md", "" %}
+      {% endif %}
+      {% assign timeline_meta = site.data.timeline[project.institution] %}
+      {% assign timeline_group = project.institution %}
+      {% if timeline_meta.group %}
+        {% assign timeline_group = timeline_meta.group %}
+      {% elsif timeline_meta.label %}
+        {% assign timeline_group = timeline_meta.label %}
+      {% endif %}
+      {% assign timeline_project_year = project.period | replace: "–", "-" | split: "-" | first | strip %}
+      <article class="list-item project-summary" id="proj-{{ project_slug }}" data-vtl-project data-institution="{{ timeline_group | escape }}" data-vtl-year="{{ timeline_project_year | escape }}">
         <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
         <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
         {% if project.summary %}
@@ -30,4 +42,5 @@ but they are intentionally omitted from this index.
     {% endunless %}
   {% endfor %}
   </section>
+  {% include projects-timeline.html %}
 </div>

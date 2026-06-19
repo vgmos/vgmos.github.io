@@ -363,6 +363,14 @@ pre,
   margin-top: 34px;
 }
 
+.project-index {
+  position: relative;
+}
+
+.project-summary {
+  scroll-margin-top: 92px;
+}
+
 .resume-block {
   margin: 20px 0 34px;
   padding-top: 4px;

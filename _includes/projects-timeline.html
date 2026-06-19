@@ -1,0 +1,717 @@
+{% assign sorted_projects = site.projects | sort: "date" | reverse %}
+{% assign timeline_seen = "|" %}
+{% assign timeline_tick_seen = "|" %}
+{% assign timeline_count = 0 %}
+
+{% capture timeline_entries %}
+  {% for project in sorted_projects %}
+    {% unless project.kind == "era" %}
+      {% assign raw_institution = project.institution | default: "" %}
+      {% if raw_institution != "" %}
+        {% assign timeline_meta = site.data.timeline[raw_institution] %}
+        {% assign timeline_label = raw_institution %}
+        {% assign timeline_years = project.period %}
+        {% assign timeline_group = raw_institution %}
+
+        {% if timeline_meta %}
+          {% if timeline_meta.label %}
+            {% assign timeline_label = timeline_meta.label %}
+          {% endif %}
+          {% if timeline_meta.years %}
+            {% assign timeline_years = timeline_meta.years %}
+          {% endif %}
+          {% if timeline_meta.group %}
+            {% assign timeline_group = timeline_meta.group %}
+          {% elsif timeline_meta.label %}
+            {% assign timeline_group = timeline_meta.label %}
+          {% endif %}
+        {% endif %}
+
+        {% assign timeline_marker = "|" | append: timeline_group | append: "|" %}
+        {% assign timeline_is_new_group = false %}
+        {% unless timeline_seen contains timeline_marker %}
+          {% assign timeline_is_new_group = true %}
+          {% assign timeline_seen = timeline_seen | append: timeline_group | append: "|" %}
+          {% assign timeline_count = timeline_count | plus: 1 %}
+        {% endunless %}
+
+        {% assign project_slug = project.slug %}
+        {% if project_slug == nil or project_slug == "" %}
+          {% assign project_slug = project.path | split: "/" | last | replace: ".md", "" %}
+        {% endif %}
+        {% assign target_id = "proj-" | append: project_slug %}
+
+        {% if timeline_is_new_group and timeline_count == 1 %}
+  <a class="vtl-node" href="#{{ target_id }}" data-vtl-node data-inst="{{ timeline_group | escape }}" data-target="#{{ target_id }}">
+    <span class="vtl-meta">
+      <span class="vtl-name">{{ timeline_label }}</span>
+      <span class="vtl-year">{{ timeline_years }}</span>
+    </span>
+    <span class="vtl-dot" aria-hidden="true"></span>
+  </a>
+        {% endif %}
+
+        {% assign timeline_project_year = project.period | replace: "–", "-" | split: "-" | first | strip %}
+        {% assign timeline_tick_marker = "|" | append: timeline_group | append: ":" | append: timeline_project_year | append: "|" %}
+        {% unless timeline_tick_seen contains timeline_tick_marker %}
+          {% assign timeline_tick_seen = timeline_tick_seen | append: timeline_group | append: ":" | append: timeline_project_year | append: "|" %}
+  <a class="vtl-tick" href="#{{ target_id }}" data-vtl-tick data-inst="{{ timeline_group | escape }}" data-vtl-year="{{ timeline_project_year | escape }}" data-target="#{{ target_id }}" aria-label="{{ timeline_project_year }}: {{ project.title | escape }}">
+    <span class="vtl-tick-label">{{ timeline_project_year }}</span>
+    <span class="vtl-tick-mark" aria-hidden="true"></span>
+  </a>
+        {% endunless %}
+
+        {% if timeline_is_new_group and timeline_count > 1 %}
+          {% assign project_slug = project.slug %}
+          {% if project_slug == nil or project_slug == "" %}
+            {% assign project_slug = project.path | split: "/" | last | replace: ".md", "" %}
+          {% endif %}
+          {% assign target_id = "proj-" | append: project_slug %}
+  <a class="vtl-node" href="#{{ target_id }}" data-vtl-node data-inst="{{ timeline_group | escape }}" data-target="#{{ target_id }}">
+    <span class="vtl-meta">
+      <span class="vtl-name">{{ timeline_label }}</span>
+      <span class="vtl-year">{{ timeline_years }}</span>
+    </span>
+    <span class="vtl-dot" aria-hidden="true"></span>
+  </a>
+        {% endif %}
+      {% endif %}
+    {% endunless %}
+  {% endfor %}
+{% endcapture %}
+
+{% if timeline_count > 1 %}
+<style>
+  .vtl {
+    --vtl-ink: #111;
+    --vtl-brand: #424242;
+    --vtl-muted: #828282;
+    --vtl-hair: #e8e8e8;
+    --vtl-bg: #fdfdfd;
+    --vtl-link: #2a7ae2;
+    --vtl-accent: var(--vtl-brand);
+    position: fixed;
+    top: 50%;
+    right: calc((100vw - 740px) / 2 - 236px);
+    z-index: 25;
+    width: 216px;
+    color: var(--vtl-muted);
+    font: 400 12px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) translateX(10px);
+    transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .vtl.is-visible {
+    opacity: 0.72;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .vtl.is-visible.is-scrolling,
+  .vtl:hover,
+  .vtl:focus-within {
+    opacity: 1;
+  }
+
+  .vtl-line {
+    position: absolute;
+    right: 6px;
+    width: 2px;
+    background: var(--vtl-hair);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .vtl-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 0;
+    background: var(--vtl-accent);
+    border-radius: 2px;
+    transition: height 0.25s ease;
+  }
+
+  .vtl-node,
+  .vtl-node:visited,
+  .vtl-tick,
+  .vtl-tick:visited {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 14px;
+    align-items: center;
+    column-gap: 14px;
+    width: 100%;
+    padding: 13px 0;
+    color: var(--vtl-muted);
+    text-align: right;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .vtl-node:hover,
+  .vtl-tick:hover {
+    color: var(--vtl-muted);
+    text-decoration: none;
+  }
+
+  .vtl-tick,
+  .vtl-tick:visited {
+    min-height: 24px;
+    padding: 3px 0;
+    color: #a6a6a6;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .vtl-tick-label {
+    opacity: 0.72;
+    transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .vtl-tick-mark {
+    justify-self: center;
+    width: 5px;
+    height: 5px;
+    border: 1px solid #d3d3d3;
+    border-radius: 50%;
+    background: var(--vtl-bg);
+    transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .vtl-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.2;
+  }
+
+  .vtl-name {
+    color: var(--vtl-muted);
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+  }
+
+  .vtl-year {
+    color: #a6a6a6;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.2s ease;
+  }
+
+  .vtl-dot {
+    justify-self: center;
+    width: 9px;
+    height: 9px;
+    border: 2px solid #cfcfcf;
+    border-radius: 50%;
+    background: var(--vtl-bg);
+    transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .vtl-node:hover .vtl-name {
+    color: var(--vtl-brand);
+  }
+
+  .vtl-node:hover .vtl-dot {
+    border-color: var(--vtl-brand);
+  }
+
+  .vtl-tick:hover .vtl-tick-label,
+  .vtl-tick:focus-visible .vtl-tick-label,
+  .vtl-tick.is-active .vtl-tick-label {
+    color: var(--vtl-brand);
+    opacity: 1;
+    transform: translateX(-1px);
+  }
+
+  .vtl-tick:hover .vtl-tick-mark,
+  .vtl-tick:focus-visible .vtl-tick-mark,
+  .vtl-tick.is-active .vtl-tick-mark {
+    width: 7px;
+    height: 7px;
+    border-color: var(--vtl-accent);
+    background: var(--vtl-accent);
+    box-shadow: 0 0 0 3px rgba(66, 66, 66, 0.08);
+  }
+
+  .vtl-node.is-active .vtl-name {
+    color: var(--vtl-ink);
+    font-weight: 500;
+  }
+
+  .vtl-node.is-active .vtl-year {
+    color: var(--vtl-muted);
+  }
+
+  .vtl-node.is-active .vtl-dot {
+    width: 13px;
+    height: 13px;
+    border-color: var(--vtl-accent);
+    background: var(--vtl-accent);
+    box-shadow: 0 0 0 4px rgba(66, 66, 66, 0.1);
+  }
+
+  .vtl-node:focus-visible,
+  .vtl-tick:focus-visible {
+    outline: 2px solid var(--vtl-link);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  @media (max-width: 1199px) {
+    .vtl {
+      right: 18px;
+      width: auto;
+    }
+
+    .vtl-node,
+    .vtl-tick {
+      grid-template-columns: 14px;
+      column-gap: 0;
+    }
+
+    .vtl-meta {
+      position: absolute;
+      top: 50%;
+      right: 22px;
+      align-items: flex-end;
+      padding: 4px 8px;
+      border: 1px solid var(--vtl-hair);
+      border-radius: 6px;
+      background: var(--vtl-bg);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-50%) translateX(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .vtl-node:hover .vtl-meta,
+    .vtl-node.is-active .vtl-meta,
+    .vtl-node:focus-visible .vtl-meta {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    .vtl-tick-label {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      padding: 3px 7px;
+      border: 1px solid var(--vtl-hair);
+      border-radius: 999px;
+      background: var(--vtl-bg);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-50%) translateX(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .vtl-tick:hover .vtl-tick-label,
+    .vtl-tick.is-active .vtl-tick-label,
+    .vtl-tick:focus-visible .vtl-tick-label {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+  }
+
+  @media (max-width: 979px) {
+    .vtl {
+      top: auto;
+      right: max(14px, env(safe-area-inset-right));
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      left: max(14px, env(safe-area-inset-left));
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: auto;
+      height: 36px;
+      padding: 7px 18px;
+      border: 1px solid rgba(66, 66, 66, 0.1);
+      border-radius: 999px;
+      background: rgba(253, 253, 253, 0.68);
+      -webkit-backdrop-filter: blur(16px) saturate(1.18);
+      backdrop-filter: blur(16px) saturate(1.18);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.86),
+        0 12px 34px rgba(31, 35, 40, 0.11);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(14px);
+      transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+
+    .vtl.is-visible {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(14px);
+    }
+
+    .vtl.is-visible.is-scrolling,
+    .vtl:focus-within {
+      opacity: 0.96;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .vtl-line {
+      top: 50%;
+      right: 22px;
+      left: 22px;
+      width: auto;
+      height: 2px;
+      background: rgba(66, 66, 66, 0.12);
+      transform: translateY(-50%);
+    }
+
+    .vtl-fill {
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      transition: width 0.18s ease;
+    }
+
+    .vtl-node,
+    .vtl-tick,
+    .vtl-node:visited,
+    .vtl-tick:visited {
+      z-index: 1;
+      display: flex;
+      flex: 0 0 22px;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      min-height: 22px;
+      height: 22px;
+      padding: 0;
+      text-align: center;
+    }
+
+    .vtl-meta {
+      display: none;
+    }
+
+    .vtl-dot {
+      width: 8px;
+      height: 8px;
+      border-width: 1px;
+    }
+
+    .vtl-node.is-active .vtl-dot {
+      width: 11px;
+      height: 11px;
+      box-shadow: 0 0 0 4px rgba(66, 66, 66, 0.09);
+    }
+
+    .vtl-tick-mark {
+      width: 4px;
+      height: 4px;
+      border-color: rgba(66, 66, 66, 0.22);
+    }
+
+    .vtl-tick:hover .vtl-tick-mark,
+    .vtl-tick:focus-visible .vtl-tick-mark,
+    .vtl-tick.is-active .vtl-tick-mark {
+      width: 6px;
+      height: 6px;
+      box-shadow: 0 0 0 3px rgba(66, 66, 66, 0.08);
+    }
+
+    .vtl-tick-label {
+      top: -27px;
+      right: auto;
+      left: 50%;
+      padding: 3px 8px;
+      border: 1px solid rgba(66, 66, 66, 0.1);
+      border-radius: 999px;
+      background: rgba(253, 253, 253, 0.84);
+      color: var(--vtl-brand);
+      font-size: 10.5px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateX(-50%) translateY(4px);
+    }
+
+    .vtl-tick:hover .vtl-tick-label,
+    .vtl-tick.is-active .vtl-tick-label,
+    .vtl-tick:focus-visible .vtl-tick-label {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vtl,
+    .vtl *,
+    .vtl::before,
+    .vtl::after {
+      transition: none !important;
+    }
+  }
+</style>
+
+<nav class="vtl" aria-label="Projects timeline" data-vtl>
+  <span class="vtl-line" aria-hidden="true"><span class="vtl-fill"></span></span>
+{{ timeline_entries }}
+</nav>
+
+<script>
+  (function () {
+    var rail = document.querySelector("[data-vtl]");
+    if (!rail) {
+      return;
+    }
+
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var line = rail.querySelector(".vtl-line");
+    var fill = rail.querySelector(".vtl-fill");
+    var nodes = Array.prototype.slice.call(rail.querySelectorAll("[data-vtl-node]"));
+    var ticks = Array.prototype.slice.call(rail.querySelectorAll("[data-vtl-tick]"));
+    var articles = Array.prototype.slice.call(document.querySelectorAll("[data-vtl-project]"));
+    var groups = nodes.map(function (node) {
+      return {
+        key: node.getAttribute("data-inst"),
+        node: node,
+        target: document.querySelector(node.getAttribute("data-target"))
+      };
+    }).filter(function (group) {
+      return group.target;
+    });
+    var centers = [];
+    var lineStart = 0;
+    var isHorizontal = false;
+    var frameRequested = false;
+    var idleTimer = null;
+    var mobileQuery = window.matchMedia("(max-width: 979px)");
+
+    if (groups.length < 2 || !line || !fill || articles.length < 2) {
+      rail.setAttribute("hidden", "");
+      return;
+    }
+
+    function setActive(index, activeArticle) {
+      groups.forEach(function (group, groupIndex) {
+        var active = groupIndex === index;
+        group.node.classList.toggle("is-active", active);
+        if (active) {
+          group.node.setAttribute("aria-current", "location");
+        } else {
+          group.node.removeAttribute("aria-current");
+        }
+      });
+
+      ticks.forEach(function (tick) {
+        var active = activeArticle &&
+          tick.getAttribute("data-inst") === activeArticle.getAttribute("data-institution") &&
+          tick.getAttribute("data-vtl-year") === activeArticle.getAttribute("data-vtl-year");
+
+        tick.classList.toggle("is-active", !!active);
+      });
+    }
+
+    function groupIndexForKey(key) {
+      for (var index = 0; index < groups.length; index += 1) {
+        if (groups[index].key === key) {
+          return index;
+        }
+      }
+      return 0;
+    }
+
+    function measure() {
+      var railBox = rail.getBoundingClientRect();
+      isHorizontal = mobileQuery.matches;
+
+      if (isHorizontal) {
+        centers = groups.map(function (group) {
+          var dot = group.node.querySelector(".vtl-dot");
+          var dotBox = dot.getBoundingClientRect();
+          return dotBox.left - railBox.left + dotBox.width / 2;
+        });
+
+        lineStart = centers[0];
+        line.style.top = "50%";
+        line.style.left = lineStart + "px";
+        line.style.right = "auto";
+        line.style.width = Math.max(0, centers[centers.length - 1] - lineStart) + "px";
+        line.style.height = "2px";
+        fill.style.width = "0";
+        fill.style.height = "2px";
+        return;
+      }
+
+      centers = groups.map(function (group) {
+        var dot = group.node.querySelector(".vtl-dot");
+        var dotBox = dot.getBoundingClientRect();
+        return dotBox.top - railBox.top + dotBox.height / 2;
+      });
+
+      lineStart = centers[0];
+      line.style.top = lineStart + "px";
+      line.style.right = "";
+      line.style.left = "";
+      line.style.width = "";
+      line.style.height = Math.max(0, centers[centers.length - 1] - lineStart) + "px";
+      fill.style.width = "";
+    }
+
+    function activeArticleFromScroll(referenceY, maxScroll, scrollY) {
+      var activeArticle = articles[0];
+      var bestDistance = Infinity;
+
+      articles.forEach(function (article) {
+        var box = article.getBoundingClientRect();
+        var distance = 0;
+
+        if (box.top > referenceY) {
+          distance = box.top - referenceY;
+        } else if (box.bottom < referenceY) {
+          distance = referenceY - box.bottom;
+        }
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          activeArticle = article;
+        }
+      });
+
+      if (maxScroll - scrollY < 4) {
+        activeArticle = articles[articles.length - 1];
+      }
+
+      return activeArticle;
+    }
+
+    function update() {
+      var doc = document.documentElement;
+      var scrollY = window.pageYOffset || doc.scrollTop || 0;
+      var maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      var scrollable = maxScroll > 40;
+      var referenceY = window.innerHeight * 0.3;
+      var activeArticle = activeArticleFromScroll(referenceY, maxScroll, scrollY);
+      var activeIndex = groupIndexForKey(activeArticle.getAttribute("data-institution"));
+      var here = centers[activeIndex] || centers[0] || 0;
+      var next = centers[activeIndex + 1] !== undefined ? centers[activeIndex + 1] : here;
+      var intra = 0;
+
+      rail.classList.toggle("is-visible", scrollable && scrollY > 20);
+      setActive(activeIndex, activeArticle);
+
+      if (groups[activeIndex + 1]) {
+        var startBox = groups[activeIndex].target.getBoundingClientRect();
+        var nextBox = groups[activeIndex + 1].target.getBoundingClientRect();
+        intra = Math.max(0, Math.min(1, (referenceY - startBox.top) / Math.max(1, nextBox.top - startBox.top)));
+      }
+
+      if (maxScroll - scrollY < 4) {
+        intra = 1;
+      }
+
+      if (isHorizontal) {
+        fill.style.width = Math.max(0, here + intra * (next - here) - lineStart) + "px";
+        fill.style.height = "2px";
+      } else {
+        fill.style.height = Math.max(0, here + intra * (next - here) - lineStart) + "px";
+      }
+
+      frameRequested = false;
+    }
+
+    function requestUpdate() {
+      if (!frameRequested) {
+        frameRequested = true;
+        window.requestAnimationFrame(update);
+      }
+    }
+
+    function markScrolling() {
+      if (reduceMotion) {
+        return;
+      }
+
+      rail.classList.add("is-scrolling");
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(function () {
+        rail.classList.remove("is-scrolling");
+      }, mobileQuery.matches ? 860 : 520);
+    }
+
+    nodes.forEach(function (node) {
+      node.addEventListener("click", function (event) {
+        var targetSelector = node.getAttribute("data-target");
+        var target = document.querySelector(targetSelector);
+
+        if (!target) {
+          return;
+        }
+
+        event.preventDefault();
+        target.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start"
+        });
+
+        if (history.pushState) {
+          history.pushState(null, "", targetSelector);
+        }
+
+        setActive(groupIndexForKey(node.getAttribute("data-inst")), target);
+      });
+    });
+
+    ticks.forEach(function (tick) {
+      tick.addEventListener("click", function (event) {
+        var targetSelector = tick.getAttribute("data-target");
+        var target = document.querySelector(targetSelector);
+
+        if (!target) {
+          return;
+        }
+
+        event.preventDefault();
+        target.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start"
+        });
+
+        if (history.pushState) {
+          history.pushState(null, "", targetSelector);
+        }
+
+        setActive(groupIndexForKey(tick.getAttribute("data-inst")), target);
+      });
+    });
+
+    window.addEventListener("scroll", function () {
+      markScrolling();
+      requestUpdate();
+    }, { passive: true });
+
+    window.addEventListener("resize", function () {
+      measure();
+      requestUpdate();
+    });
+
+    measure();
+    update();
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () {
+        measure();
+        update();
+      });
+    }
+  }());
+</script>
+{% endif %}
