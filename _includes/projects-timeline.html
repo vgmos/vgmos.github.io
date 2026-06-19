@@ -92,7 +92,7 @@
     --vtl-accent: var(--vtl-brand);
     position: fixed;
     top: 50%;
-    right: calc((100vw - 740px) / 2 - 236px);
+    right: max(72px, calc((100vw - 740px) / 2 - 236px));
     z-index: 25;
     width: 216px;
     color: var(--vtl-muted);
@@ -268,7 +268,7 @@
 
   @media (max-width: 1199px) {
     .vtl {
-      right: 18px;
+      right: max(64px, env(safe-area-inset-right));
       width: auto;
     }
 
@@ -283,10 +283,9 @@
       top: 50%;
       right: 22px;
       align-items: flex-end;
-      padding: 4px 8px;
-      border: 1px solid var(--vtl-hair);
-      border-radius: 6px;
-      background: var(--vtl-bg);
+      padding: 0;
+      border: 0;
+      background: transparent;
       opacity: 0;
       pointer-events: none;
       transform: translateY(-50%) translateX(4px);
@@ -305,10 +304,9 @@
       position: absolute;
       top: 50%;
       right: 20px;
-      padding: 3px 7px;
-      border: 1px solid var(--vtl-hair);
-      border-radius: 999px;
-      background: var(--vtl-bg);
+      padding: 0;
+      border: 0;
+      background: transparent;
       opacity: 0;
       pointer-events: none;
       transform: translateY(-50%) translateX(4px);
