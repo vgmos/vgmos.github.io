@@ -1,17 +1,14 @@
 <footer class="site-footer h-card">
   <data class="u-url" href="{{ "/" | relative_url }}"></data>
 
-  <div class="wrapper footer-quiet">
-    <p class="footer-links">
-      <span class="p-name">{{ site.author | default: site.title | escape }}</span>
+  <div class="wrapper footer-minimal">
+    <p class="footer-line">
       {%- if site.email -%}
-        <span aria-hidden="true"> · </span><a class="u-email" href="mailto:{{ site.email }}">{{ site.email }}</a>
+        <a class="u-email" href="mailto:{{ site.email }}" aria-label="Email {{ site.author | default: site.title | escape }}">Email</a>
       {%- endif -%}
       {%- if site.linkedin_username -%}
         <span aria-hidden="true"> · </span><a href="https://www.linkedin.com/in/{{ site.linkedin_username }}/">LinkedIn</a>
       {%- endif -%}
-      <span aria-hidden="true"> · </span><a href="{{ "/feed.xml" | relative_url }}">RSS</a>
     </p>
-    <p class="footer-description">{{ site.description | escape }}</p>
   </div>
 </footer>
