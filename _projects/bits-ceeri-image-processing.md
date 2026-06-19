@@ -4,7 +4,7 @@ institution: BITS Pilani / CSIR-CEERI
 period: 2017
 role: Practice School-I researcher
 kind: project
-featured: true
+featured: false
 topics:
   - image processing
   - FPGA
