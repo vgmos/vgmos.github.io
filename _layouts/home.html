@@ -45,7 +45,7 @@ layout: default
     <div class="item-list">
       {% for post in site.posts limit:3 %}
         <article class="list-item">
-          <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}{% if post.tags %} · {{ post.tags | join: ", " }}{% endif %}</p>
+          <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}</p>
           <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
           {% if post.excerpt %}
             <p>{{ post.excerpt | strip_html | truncate: 180 }}</p>
