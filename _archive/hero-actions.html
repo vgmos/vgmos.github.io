@@ -1,0 +1,33 @@
+ARCHIVED 2026-06-19 — hero call-to-action buttons.
+
+Removed from the `.home-hero` section in `_layouts/home.html`, and the matching
+styles removed from `css/site.css`. Kept here for possible future use — this
+`_archive/` folder is ignored by Jekyll, so nothing in it is published.
+
+TO RESTORE:
+  1. Paste the markup below into `_layouts/home.html`, immediately after the
+     `<p class="hero-lede">…</p>` line inside `<section class="home-hero">`.
+  2. Paste the CSS below back into the homepage block of `css/site.css`. It
+     reuses the existing `--ease` token and the `hero-rise` keyframe. Optionally
+     re-add `.home-hero .hero-actions` to the reduced-motion `animation: none`
+     group and `.home-hero .hero-primary .arr` to the `transition: none` group.
+
+----- markup -----
+  <div class="hero-actions">
+    <a class="hero-primary" href="{{ '/#technical' | relative_url }}" data-scroll>See the work <span class="arr" aria-hidden="true">&rarr;</span></a>
+    <a class="hero-secondary" href="{{ '/about/' | relative_url }}">About &amp; résumé</a>
+  </div>
+
+----- css -----
+  .home-hero .hero-actions {
+    display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center;
+    margin-top: 30px; animation: hero-rise 0.7s 0.24s var(--ease) both;
+  }
+  .home-hero .hero-primary {
+    display: inline-flex; align-items: center; gap: 8px; font-weight: 500;
+    text-decoration: none; padding-bottom: 3px; border-bottom: 1.5px solid var(--accent);
+  }
+  .home-hero .hero-primary .arr { transition: transform 0.22s var(--ease); }
+  .home-hero .hero-primary:hover .arr { transform: translateX(4px); }
+  .home-hero .hero-secondary { color: var(--muted); font-weight: 500; text-decoration: none; }
+  .home-hero .hero-secondary:hover { color: var(--ink); }
