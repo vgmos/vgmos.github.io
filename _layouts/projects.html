@@ -5,6 +5,10 @@ layout: page
 {{ content }}
 
 {% assign sorted_projects = site.projects | sort: "date" | reverse %}
+{% comment %}
+Background thread pages remain in _projects with kind: era for archive/reference,
+but they are intentionally omitted from this index.
+{% endcomment %}
 
 <div class="project-index">
   <section class="section-block project-index-section">
@@ -25,22 +29,5 @@ layout: page
       </article>
     {% endunless %}
   {% endfor %}
-  </section>
-
-  <section class="section-block project-index-section">
-    <div class="section-heading">
-      <h2>Background Threads</h2>
-    </div>
-    {% for project in sorted_projects %}
-      {% if project.kind == "era" %}
-        <article class="list-item project-summary">
-          <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
-          <h2><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h2>
-          {% if project.summary %}
-            <p>{{ project.summary }}</p>
-          {% endif %}
-        </article>
-      {% endif %}
-    {% endfor %}
   </section>
 </div>
