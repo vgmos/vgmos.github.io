@@ -531,3 +531,213 @@ pre,
     display: block;
   }
 }
+
+/* ===================================================================
+   Homepage redesign — hero, sliding nav underline, reveals, footer.
+   Ported from the clarity prototype; reuses the :root tokens above.
+   =================================================================== */
+
+/* --- hero --- */
+.home-hero {
+  padding: 8px 0 54px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.home-hero .hero-eyebrow {
+  margin: 0 0 18px;
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.home-hero .hero-title {
+  margin: 0 0 0.5em;
+  font-size: clamp(2rem, 5.4vw, 3.2rem);
+  line-height: 1.07;
+  letter-spacing: -0.026em;
+  max-width: 18ch;
+  text-wrap: balance;
+}
+.home-hero .hero-lede {
+  margin: 0;
+  max-width: 34rem;
+  color: var(--ink-soft);
+  font-size: 1.18rem;
+  line-height: 1.62;
+}
+/* a little air before the first section (overrides the home-shell reset) */
+.home-hero + .home-shell .section-block:first-of-type { margin-top: 54px; }
+
+/* hero load-in — one "rise" gesture, staggered */
+@keyframes hero-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.home-hero .hero-eyebrow { animation: hero-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.home-hero .hero-title   { animation: hero-rise 0.7s 0.08s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.home-hero .hero-lede    { animation: hero-rise 0.7s 0.16s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* --- project / writing title hover arrow --- */
+.list-item h3 .go {
+  display: inline-block;
+  margin-left: 0.35em;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.list-item:hover h3 .go,
+.list-item:focus-within h3 .go { opacity: 1; transform: none; }
+
+/* --- sliding nav underline (desktop only) --- */
+@media (min-width: 601px) {
+  .site-nav .trigger { position: relative; }
+  .site-nav .page-link--active { box-shadow: none; } /* the slider replaces the static underline */
+  .nav-underline {
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 2px;
+    width: 0;
+    background: var(--accent);
+    border-radius: 2px;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), width 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+    pointer-events: none;
+  }
+}
+@media (max-width: 600px) {
+  .nav-underline { display: none; }
+}
+
+/* --- scroll reveals (only hide once JS is active, so content is safe without it) --- */
+.js-on .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.js-on .reveal.is-visible { opacity: 1; transform: none; }
+.js-on .item-list .reveal:nth-child(2) { transition-delay: 0.05s; }
+.js-on .item-list .reveal:nth-child(3) { transition-delay: 0.10s; }
+.js-on .item-list .reveal:nth-child(4) { transition-delay: 0.15s; }
+
+/* --- footer --- */
+.site-footer {
+  margin-top: 64px;
+  border-top: 1px solid var(--line);
+  background: var(--soft);
+}
+.site-footer .wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 26px;
+  padding: 28px 0 34px;
+}
+.site-footer .footer-name { margin: 0; font-weight: 600; color: var(--ink); }
+.site-footer .footer-links { display: flex; gap: 22px; margin-right: auto; }
+.site-footer .footer-links a { color: var(--muted); text-decoration: none; }
+.site-footer .footer-links a:hover { color: var(--accent); }
+.site-footer .footer-copy { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+@media (max-width: 600px) {
+  .site-footer .wrapper { flex-direction: column; }
+  .site-footer .footer-links { margin-right: 0; }
+}
+
+/* --- reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .home-hero .hero-eyebrow,
+  .home-hero .hero-title,
+  .home-hero .hero-lede { animation: none; }
+  .js-on .reveal { opacity: 1; transform: none; transition: none; }
+  .nav-underline { transition: none; }
+  .list-item h3 .go { transition: none; }
+}
+
+/* ===================================================================
+   Refinement pass — typographic hierarchy, vertical rhythm, sharper
+   text rendering, and a cohesive (restrained) motion layer.
+   One easing curve is shared across every transition/animation.
+   =================================================================== */
+
+:root {
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 0.2s;
+  --dur: 0.4s;
+}
+
+/* crisper type on macOS / hi-dpi laptops */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* keep the column's horizontal padding *inside* its width so the content
+   never overflows the viewport on narrow screens */
+.wrapper { box-sizing: border-box; }
+
+/* section headings: a clear ink heading marked with the teal underline
+   motif (echoes the nav + favicon), distinct from the teal titles below */
+.home-shell .section-heading h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+/* the teal underline motif (echoes the nav + favicon) marks a section
+   without competing with the teal project titles below it */
+.home-shell .section-heading h2::after {
+  content: "";
+  display: block;
+  width: 30px;
+  height: 3px;
+  margin-top: 14px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.home-shell .section-heading { margin-bottom: 24px; }
+.home-shell .section-block { margin-top: 82px; }
+
+/* list items: a little more air + steadier internal rhythm */
+.home-shell .list-item { padding: 28px 0; }
+.home-shell .list-item .item-meta { margin-bottom: 9px; }
+.home-shell .list-item h3 { line-height: 1.28; margin-bottom: 10px; }
+
+/* comfortable mobile gutters + smoother headline/lede scaling */
+@media (max-width: 700px) {
+  .wrapper { padding-right: 22px; padding-left: 22px; }
+  .home-hero { padding-bottom: 36px; }
+  .home-hero .hero-title { font-size: clamp(1.9rem, 7.6vw, 3.2rem); }
+  .home-hero .hero-lede { font-size: 1.12rem; }
+  .home-shell .section-block { margin-top: 60px; }
+  .home-shell .list-item { padding: 24px 0; }
+  .home-shell .section-heading h2 { font-size: 1.4rem; }
+}
+
+/* === motion ======================================================== */
+
+/* page-to-page: a quiet crossfade between documents (Chrome);
+   falls back to a normal navigation everywhere else */
+@view-transition { navigation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.32s;
+  animation-timing-function: var(--ease);
+}
+
+/* hover/focus colour transitions, all on the shared easing */
+.site-title,
+.list-item h3 a,
+.site-nav .page-link,
+.site-footer .footer-links a { transition: color var(--dur-fast) var(--ease); }
+
+/* project / writing rows respond on hover: the whole row eases right a
+   few pixels as the arrow arrives — one small, deliberate gesture */
+.home-shell .list-item > * { transition: transform var(--dur) var(--ease); }
+.home-shell .list-item:hover > *,
+.home-shell .list-item:focus-within > * { transform: translateX(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
+  .home-shell .list-item > * { transition: none; transform: none; }
+}

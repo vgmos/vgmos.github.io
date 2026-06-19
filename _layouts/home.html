@@ -2,40 +2,42 @@
 layout: default
 ---
 
+<section class="home-hero">
+  <p class="hero-eyebrow">Analog &amp; power IC design</p>
+  <h1 class="hero-title">A working notebook for engineering judgment.</h1>
+  <p class="hero-lede">I design analog and power integrated circuits — power conversion, data converters, and device-aware modeling. This site keeps the strongest work legible: the design question, my role, the evidence, and what each project taught me about thinking clearly.</p>
+</section>
+
 <div class="home-shell">
-  <section class="section-block">
+  <section class="section-block" id="technical">
     <div class="section-heading">
-      <h2>Selected Projects</h2>
-      <a href="{{ '/projects/' | relative_url }}">All projects</a>
+      <h2>Technical</h2>
     </div>
     <div class="item-list">
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
-      {% assign project_count = 0 %}
       {% for project in sorted_projects %}
-        {% if project.featured and project_count < 3 %}
-          {% assign project_count = project_count | plus: 1 %}
-          <article class="list-item">
+        {% unless project.kind == "era" %}
+          <article class="list-item reveal">
             <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
-            <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
+            <h3><a href="{{ project.url | relative_url }}">{{ project.title }}<span class="go" aria-hidden="true">&rarr;</span></a></h3>
             {% if project.summary %}
               <p>{{ project.summary }}</p>
             {% endif %}
           </article>
-        {% endif %}
+        {% endunless %}
       {% endfor %}
     </div>
   </section>
 
-  <section class="section-block">
+  <section class="section-block" id="writing">
     <div class="section-heading">
-      <h2>Latest Writing</h2>
-      <a href="{{ '/writing/' | relative_url }}">All writing</a>
+      <h2>Writing</h2>
     </div>
     <div class="item-list">
-      {% for post in site.posts limit:3 %}
-        <article class="list-item">
+      {% for post in site.posts %}
+        <article class="list-item reveal">
           <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}</p>
-          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}<span class="go" aria-hidden="true">&rarr;</span></a></h3>
           {% if post.excerpt %}
             <p>{{ post.excerpt | strip_html | truncate: 180 }}</p>
           {% endif %}
@@ -45,5 +47,4 @@ layout: default
       {% endfor %}
     </div>
   </section>
-
 </div>
