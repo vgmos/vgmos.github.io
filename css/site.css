@@ -715,13 +715,27 @@ body {
 
 /* === motion ======================================================== */
 
-/* page-to-page: a quiet crossfade between documents (Chrome);
-   falls back to a normal navigation everywhere else */
+/* page-to-page: a quiet crossfade between documents (current Chrome and
+   Safari 18.2+); falls back to a normal navigation elsewhere. A solid html
+   background avoids a flash mid-transition, and touch devices use a shorter
+   fade, where long transitions are more prone to stutter (e.g. iOS Safari). */
+html { background-color: #fff; }
 @view-transition { navigation: auto; }
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.32s;
+  animation-duration: 0.24s;
   animation-timing-function: var(--ease);
+}
+@media (pointer: coarse) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation-duration: 0.18s; }
+}
+
+/* browsers without view-transition support (e.g. older iOS Safari) get a
+   quick fade-in on each page load, so navigations still feel smooth */
+@supports not (view-transition-name: none) {
+  @keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .page-content { animation: page-fade-in 0.32s var(--ease) both; }
 }
 
 /* hover/focus colour transitions, all on the shared easing */
@@ -739,5 +753,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
+  .page-content { animation: none !important; }
   .home-shell .list-item > * { transition: none; transform: none; }
 }
