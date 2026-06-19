@@ -4,8 +4,9 @@
      2. smooth in-page scrolling for nav + hero anchors (with header offset)
      3. scroll-spy: the underline follows the section you're reading
      4. one-time "rise + fade" reveals as content scrolls in
+     5. controlled same-origin page fade without native View Transition snapshots
    Degrades cleanly: content is only hidden once `.js-on` is set, in-page
-   links fall back to normal navigation off the homepage, and
+   links fall back to normal navigation when motion is reduced, and
    prefers-reduced-motion is fully respected.
    ===================================================================== */
 (function () {
@@ -14,7 +15,33 @@
   var root = document.documentElement;
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var desktop = window.matchMedia("(min-width: 601px)");
+  var pageTransitionKey = "vgmos-page-transition";
+  var pageTransitionMs = 150;
   root.classList.add("js-on");
+
+  if (root.classList.contains("is-transitioning-in")) {
+    try {
+      sessionStorage.removeItem(pageTransitionKey);
+    } catch (error) {}
+
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        root.classList.add("is-transition-ready");
+        window.setTimeout(function () {
+          root.classList.remove("is-transitioning-in");
+          root.classList.remove("is-transition-ready");
+        }, pageTransitionMs + 80);
+      });
+    });
+  }
+
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) {
+      root.classList.remove("is-transitioning-out");
+      root.classList.remove("is-transitioning-in");
+      root.classList.remove("is-transition-ready");
+    }
+  });
 
   function hashOf(a) {
     var h = a.getAttribute("href") || "";
@@ -69,6 +96,46 @@
       var toggle = document.getElementById("nav-trigger"); // close the mobile menu
       if (toggle) toggle.checked = false;
     });
+  });
+
+  /* -------------------------------- controlled same-origin page transition */
+  function transitionableLink(a, event) {
+    if (!a || reduce || event.defaultPrevented || event.button !== 0) return null;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+    if (a.hasAttribute("download")) return null;
+    if (a.target && a.target !== "_self") return null;
+
+    var url;
+    try {
+      url = new URL(a.href, window.location.href);
+    } catch (error) {
+      return null;
+    }
+
+    if (url.origin !== window.location.origin) return null;
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (url.pathname === window.location.pathname &&
+        url.search === window.location.search &&
+        url.hash) return null;
+    if (url.href === window.location.href) return null;
+
+    return url;
+  }
+
+  document.addEventListener("click", function (event) {
+    var a = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+    var url = transitionableLink(a, event);
+    if (!url) return;
+
+    event.preventDefault();
+    try {
+      sessionStorage.setItem(pageTransitionKey, "1");
+    } catch (error) {}
+
+    root.classList.add("is-transitioning-out");
+    window.setTimeout(function () {
+      window.location.href = url.href;
+    }, pageTransitionMs);
   });
 
   /* ------------------------------------- scroll-spy → drives the underline */
