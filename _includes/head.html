@@ -25,4 +25,6 @@
       src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
       onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
   {%- endif -%}
+
+  <script defer src="{{ '/js/ui.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"></script>
 </head>
