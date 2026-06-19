@@ -38,8 +38,7 @@ a:focus-visible {
 .post-content > blockquote a,
 .post-content > figure a,
 .project-body a,
-.intro-copy a,
-.note-section a {
+.intro-copy a {
   text-decoration: underline;
   text-decoration-color: rgba(47, 111, 100, 0.45);
   text-underline-offset: 3px;
@@ -52,8 +51,7 @@ a:focus-visible {
   .post-content > blockquote a,
   .post-content > figure a,
   .project-body a,
-  .intro-copy a,
-  .note-section a {
+  .intro-copy a {
     text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
   }
 }
@@ -64,8 +62,7 @@ a:focus-visible {
 .post-content > blockquote a:hover,
 .post-content > figure a:hover,
 .project-body a:hover,
-.intro-copy a:hover,
-.note-section a:hover {
+.intro-copy a:hover {
   text-decoration-color: var(--accent);
 }
 
@@ -215,13 +212,6 @@ h3 {
 .item-meta {
   margin: 0 0 7px;
   font-size: 0.88rem;
-}
-
-.note-section {
-  max-width: 740px;
-  padding: 24px 0 0;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
 }
 
 .post-header,
