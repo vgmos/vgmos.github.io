@@ -14,10 +14,14 @@ layout: default
       {% if author %}
         · <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ author }}</span></span>
       {% endif %}
+      {% if page.status %}
+        · {{ page.status }}
+      {% endif %}
+      {% assign post_updated = page.last_updated | default: page.updated %}
+      {% if post_updated %}
+        · Last updated {{ post_updated | date: "%B %-d, %Y" }}
+      {% endif %}
     </p>
-    {%- if page.updated -%}
-      <p class="updated-note">Updated {{ page.updated | date: "%B %-d, %Y" }}.</p>
-    {%- endif -%}
   </header>
 
   <div class="post-content e-content" itemprop="articleBody">

@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Writing Index
+title: Notebook Index
 permalink: /writing/index/
 ---
 
