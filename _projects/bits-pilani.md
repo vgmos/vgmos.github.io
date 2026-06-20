@@ -1,7 +1,7 @@
 ---
 title: BITS Pilani Research Notes
 institution: BITS Pilani
-period: 2015-2019
+period: 2015–2019
 role: Undergraduate researcher and engineering student
 kind: era
 featured: false
