@@ -659,7 +659,8 @@ pre,
   flex-wrap: wrap;
   align-items: baseline;
   gap: 10px 26px;
-  padding: 28px 0 34px;
+  padding-top: 28px;
+  padding-bottom: 34px;
 }
 .site-footer .footer-name { margin: 0; font-weight: 600; color: var(--ink); }
 .site-footer .footer-links { display: flex; gap: 22px; margin-right: auto; }
