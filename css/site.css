@@ -662,6 +662,8 @@ pre,
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --dur-fast: 0.2s;
   --dur: 0.4s;
+  --page-fade-out: 70ms;
+  --page-fade-in: 110ms;
 }
 
 /* crisper type on macOS / hi-dpi laptops */
@@ -720,24 +722,37 @@ body {
    snapshot flash before the new document paints. */
 html { background-color: #fff; }
 
-body::before {
-  content: "";
+.page-transition {
   position: fixed;
   inset: 0;
   z-index: 9999;
   background: #fff;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.16s var(--ease);
+  transform: translateZ(0);
+  will-change: opacity;
+  contain: paint;
+  transition:
+    opacity var(--page-fade-in) var(--ease),
+    visibility 0s linear var(--page-fade-in);
 }
 
-html.is-transitioning-out body::before,
-html.is-transitioning-in body::before {
+html.is-transitioning-out .page-transition,
+html.is-transitioning-in .page-transition {
   opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--page-fade-out) var(--ease),
+    visibility 0s;
 }
 
-html.is-transitioning-in.is-transition-ready body::before {
+html.is-transitioning-in.is-transition-ready .page-transition {
   opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--page-fade-in) var(--ease),
+    visibility 0s linear var(--page-fade-in);
 }
 
 /* hover/focus colour transitions, all on the shared easing */
@@ -753,6 +768,6 @@ html.is-transitioning-in.is-transition-ready body::before {
 .home-shell .list-item:focus-within > * { transform: translateX(4px); }
 
 @media (prefers-reduced-motion: reduce) {
-  body::before { transition: none !important; }
+  .page-transition { transition: none !important; }
   .home-shell .list-item > * { transition: none; transform: none; }
 }

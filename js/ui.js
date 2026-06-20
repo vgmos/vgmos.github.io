@@ -16,7 +16,8 @@
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var desktop = window.matchMedia("(min-width: 601px)");
   var pageTransitionKey = "vgmos-page-transition";
-  var pageTransitionMs = 150;
+  var pageTransitionOutMs = 70;
+  var pageTransitionInMs = 110;
   root.classList.add("js-on");
 
   if (root.classList.contains("is-transitioning-in")) {
@@ -30,7 +31,7 @@
         window.setTimeout(function () {
           root.classList.remove("is-transitioning-in");
           root.classList.remove("is-transition-ready");
-        }, pageTransitionMs + 80);
+        }, pageTransitionInMs + 50);
       });
     });
   }
@@ -133,9 +134,20 @@
     } catch (error) {}
 
     root.classList.add("is-transitioning-out");
-    window.setTimeout(function () {
+
+    var startedAt = Date.now();
+    var navigate = function () {
       window.location.href = url.href;
-    }, pageTransitionMs);
+    };
+    var finishAfterPaint = function () {
+      window.setTimeout(navigate, Math.max(0, pageTransitionOutMs - (Date.now() - startedAt)));
+    };
+
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(finishAfterPaint);
+    } else {
+      window.setTimeout(navigate, pageTransitionOutMs);
+    }
   });
 
   /* ------------------------------------- scroll-spy → drives the underline */
