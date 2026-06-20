@@ -73,7 +73,7 @@ This is where the "up to 57%" result comes from. PWM is flat because it keeps th
 
 There is a useful caveat at the low end. When the output power is tiny, fixed switched-inductor losses can dominate, and PWM can briefly look better. That caveat is the point. A design engineer should not carry a rule of thumb farther than its operating region.
 
-## What I Learned As A Designer
+## What I Learned as a Designer
 
 This work helped move me from circuit familiarity toward design judgment. It forced me to stop treating "efficiency" as one number and start asking which loss is active, which loss scales, and which loss is an artifact of the control method.
 
