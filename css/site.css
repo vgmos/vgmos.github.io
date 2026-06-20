@@ -103,6 +103,10 @@ a:focus-visible {
   padding: 48px 0 56px;
 }
 
+.page-content[tabindex="-1"]:focus {
+  outline: none;
+}
+
 h1,
 h2,
 h3,
@@ -563,7 +567,7 @@ pre,
 }
 
 /* ===================================================================
-   Homepage redesign — hero, sliding nav underline, reveals, footer.
+   Homepage redesign — hero, sliding nav underline, footer.
    Ported from the clarity prototype; reuses the :root tokens above.
    =================================================================== */
 
@@ -598,11 +602,8 @@ pre,
 /* a little air before the first section (overrides the home-shell reset) */
 .home-hero + .home-shell .section-block:first-of-type { margin-top: 54px; }
 
-/* hero load-in — one "rise" gesture, staggered */
-@keyframes hero-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-.home-hero .hero-eyebrow { animation: hero-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.home-hero .hero-title   { animation: hero-rise 0.7s 0.08s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.home-hero .hero-lede    { animation: hero-rise 0.7s 0.16s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+/* The first screen should be readable immediately; page-to-page motion
+   carries the living quality without animating the hero copy on load. */
 
 /* --- project / notebook title hover arrow --- */
 .list-item h3 .go {
@@ -637,17 +638,6 @@ pre,
   .nav-underline { display: none; }
 }
 
-/* --- scroll reveals (only hide once JS is active, so content is safe without it) --- */
-.js-on .reveal {
-  opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.js-on .reveal.is-visible { opacity: 1; transform: none; }
-.js-on .item-list .reveal:nth-child(2) { transition-delay: 0.05s; }
-.js-on .item-list .reveal:nth-child(3) { transition-delay: 0.10s; }
-.js-on .item-list .reveal:nth-child(4) { transition-delay: 0.15s; }
-
 /* --- footer --- */
 .site-footer {
   margin-top: 64px;
@@ -675,10 +665,6 @@ pre,
 
 /* --- reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
-  .home-hero .hero-eyebrow,
-  .home-hero .hero-title,
-  .home-hero .hero-lede { animation: none; }
-  .js-on .reveal { opacity: 1; transform: none; transition: none; }
   .nav-underline { transition: none; }
   .list-item h3 .go { transition: none; transform: none; }
   .list-item:hover h3 .go,
@@ -697,6 +683,7 @@ pre,
   --dur: 0.4s;
   --page-fade-out: 70ms;
   --page-fade-in: 110ms;
+  --content-fade: 130ms;
 }
 
 /* crisper type on macOS / hi-dpi laptops */
@@ -759,10 +746,23 @@ body {
 
 /* === motion ======================================================== */
 
-/* page-to-page: a controlled same-origin white dissolve. Avoid native
-   cross-document View Transitions here because iOS Safari can expose a gray
-   snapshot flash before the new document paints. */
+/* page-to-page: internal links use a tiny content swap so the header feels
+   continuous. The white dissolve remains as the normal-load fallback. */
 html { background-color: #fff; }
+
+.page-content {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--content-fade) var(--ease),
+    transform var(--content-fade) var(--ease);
+  will-change: opacity, transform;
+}
+
+html.is-content-hidden .page-content {
+  opacity: 0;
+  transform: translate3d(0, 5px, 0);
+}
 
 .page-transition {
   position: fixed;
@@ -804,5 +804,19 @@ html.is-transitioning-in.is-transition-ready .page-transition {
 .site-footer .footer-links a { transition: color var(--dur-fast) var(--ease); }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-transition { transition: none !important; }
+  .page-content,
+  .page-transition {
+    transition: none !important;
+  }
+}
+
+@media (hover: none), (max-width: 700px) {
+  .page-content {
+    transition-duration: 110ms;
+    will-change: opacity;
+  }
+
+  html.is-content-hidden .page-content {
+    transform: none;
+  }
 }
