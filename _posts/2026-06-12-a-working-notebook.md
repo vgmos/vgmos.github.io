@@ -8,7 +8,7 @@ tags:
   - technical
 ---
 
-This site is a working notebook for engineering judgment: project writeups, technical assumptions, evidence, and the lessons that still shape how I work.
+Why this site exists: project writeups, the assumptions behind them, the evidence, and the lessons that still shape how I work.
 
 A good project page should say what problem was worth caring about, what I actually touched, which claims are supported, and what the work taught me about design.
 

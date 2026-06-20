@@ -13,7 +13,7 @@ topics:
 status: Graduate research thread and ISSCC/JSSC collaboration
 date: 2021-09-09
 updated: 2026-06-12
-summary: A Georgia Tech collaboration connecting NS-SAR behavioral modeling with a 13.8-ENOB third-order noise-shaping SAR ADC published at ISSCC and in IEEE JSSC.
+summary: A Georgia Tech collaboration connecting NS-SAR behavioral modeling with a 13.8-ENOB third-order noise-shaping SAR ADC, published at ISSCC and in IEEE JSSC.
 description: Georgia Tech research collaboration on high-resolution noise-shaping SAR ADC architecture, grounded in behavioral modeling work and the later ISSCC/JSSC publication.
 links:
   - label: IEEE JSSC paper DOI
