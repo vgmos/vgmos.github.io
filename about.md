@@ -2,14 +2,19 @@
 layout: page
 title: About
 permalink: /about/
-description: About Vasu Gupta, analog IC design, selected work, writing, and resume context.
+description: About Vasu Gupta, analog IC design, selected work, notebook entries, and resume context.
 ---
 
 I am Vasu Gupta, an analog IC design engineer with a long-standing interest in power conversion, data converters, device modeling, and the kind of judgment that turns circuit ideas into durable engineering.
 
 My academic work moved through BITS Pilani, Technion, and Georgia Tech before settling into professional analog design. I use this site to keep the strongest parts of that path legible: the design question, my role, the evidence behind the work, and the ideas that still shape how I reason about circuits.
 
-The writing is broader than a project list, and it should be able to grow beyond engineering. Some notes are technical. Some are about craft, attention, discipline, and learning how to think clearly. The standard is the same either way: useful, precise, and restrained.
+The notebook is broader than a project list, and it should be able to grow beyond engineering. Some notes are technical. Some are about craft, attention, discipline, and learning how to think clearly. The standard is the same either way: useful, precise, and restrained.
+
+<section class="currently-thinking">
+  <h2>Currently thinking about</h2>
+  <p>Load-aware power conversion, low-noise regulation, behavioral models that expose assumptions, and how to write technical work without hiding uncertainty.</p>
+</section>
 
 ## Resume
 

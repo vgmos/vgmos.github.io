@@ -9,9 +9,11 @@ layout: default
 </section>
 
 <div class="home-shell">
-  <section class="section-block" id="technical">
+  <div class="anchor-compat" id="technical" aria-hidden="true"></div>
+  <section class="section-block" id="projects">
     <div class="section-heading">
-      <h2>Technical</h2>
+      <h2>Projects</h2>
+      <p class="section-subtitle">Selected technical work, written around the design question, evidence, role, and lesson.</p>
     </div>
     <div class="item-list">
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
@@ -29,9 +31,11 @@ layout: default
     </div>
   </section>
 
-  <section class="section-block" id="writing">
+  <div class="anchor-compat" id="writing" aria-hidden="true"></div>
+  <section class="section-block" id="notebook">
     <div class="section-heading">
-      <h2>Writing</h2>
+      <h2>Notebook</h2>
+      <p class="section-subtitle">Notes on engineering judgment, craft, attention, and clear technical thinking.</p>
     </div>
     <div class="item-list">
       {% for post in site.posts %}
@@ -43,7 +47,7 @@ layout: default
           {% endif %}
         </article>
       {% else %}
-        <p class="quiet-note">Writing will begin here as new essays and technical notes are drafted.</p>
+        <p class="quiet-note">Notebook entries will begin here as new essays and technical notes are drafted.</p>
       {% endfor %}
     </div>
   </section>

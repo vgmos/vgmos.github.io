@@ -1,8 +1,8 @@
 ---
 layout: writing
-title: Writing
+title: Notebook
 permalink: /writing/
-description: Essays and notes on engineering judgment, craft, attention, and the broader practice of thinking clearly.
+description: Notebook entries on engineering judgment, craft, attention, and the broader practice of thinking clearly.
 ---
 
-Essays and notes on engineering judgment, craft, attention, and the broader practice of thinking clearly.
+Notes on engineering judgment, craft, attention, and the broader practice of thinking clearly.

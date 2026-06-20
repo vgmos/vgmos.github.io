@@ -56,6 +56,7 @@
   var underline = nav && nav.querySelector(".nav-underline");
   var navLinks = trigger ? Array.prototype.slice.call(trigger.querySelectorAll(".page-link")) : [];
   var current = navLinks.filter(function (a) { return a.classList.contains("page-link--active"); })[0] || null;
+  var suppressSpyUntil = 0;
 
   function place(link, animate) {
     if (!underline) return;
@@ -92,6 +93,10 @@
       var target = id && document.getElementById(id);
       if (!target) return; // section isn't on this page → let it navigate to /#id
       e.preventDefault();
+      if (a.classList.contains("page-link")) {
+        suppressSpyUntil = Date.now() + 1200;
+        setCurrent(a, !reduce);
+      }
       target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
       if (history.pushState) history.pushState(null, "", "#" + id);
       var toggle = document.getElementById("nav-trigger"); // close the mobile menu
@@ -160,6 +165,7 @@
 
   if ("IntersectionObserver" in window && sections.length) {
     var spy = new IntersectionObserver(function (entries) {
+      if (Date.now() < suppressSpyUntil) return;
       entries.forEach(function (en) {
         if (en.isIntersecting) {
           var link = linkFor[en.target.id];
