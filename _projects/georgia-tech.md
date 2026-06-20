@@ -1,7 +1,7 @@
 ---
 title: Georgia Tech Technical Notes
 institution: Georgia Tech
-period: 2019-2021
+period: 2019–2021
 role: Graduate student and technical contributor
 kind: era
 featured: false

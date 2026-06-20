@@ -1,7 +1,7 @@
 ---
 title: Third-Order Noise-Shaping SAR ADC
 institution: Georgia Tech
-period: 2019-2021
+period: 2019–2021
 role: Research collaborator; behavioral modeling and architecture exploration
 kind: project
 featured: true

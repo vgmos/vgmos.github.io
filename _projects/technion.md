@@ -1,7 +1,7 @@
 ---
 title: Technion Research Projects
 institution: Technion
-period: 2018-2019
+period: 2018–2019
 role: Undergraduate thesis researcher and modeling contributor
 kind: era
 featured: false

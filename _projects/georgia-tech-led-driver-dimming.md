@@ -1,7 +1,7 @@
 ---
 title: Dimming DC-DC LED Drivers
 institution: Georgia Tech
-period: 2020-2021
+period: 2020–2021
 role: MS thesis researcher, first author
 kind: project
 featured: true
