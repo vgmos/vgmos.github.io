@@ -93,7 +93,7 @@ SAR ADCs are attractive in scaled CMOS because the CDAC switching, comparison, a
 
 An NS-SAR tries to keep the SAR efficiency while borrowing the useful part of delta-sigma thinking. After a conversion, the residue or quantization error is not simply discarded. It is filtered through a loop filter `H(z)` and re-injected into later conversions. In the ideal EF picture, the signal sees an STF close to one, while the quantization error sees `NTF = 1 - H(z)`.
 
-That makes the architecture question very concrete. Where are the NTF zeros? How much in-band quantization noise remains after integrating the NTF over the signal band? How much out-of-band gain is created? How far can `K_EF`, `k1`, `k2`, or `k3` move before the SQNR collapses?
+From there the design questions get concrete: where the NTF zeros sit, how much in-band quantization noise is left once you integrate the NTF over the signal band, how much out-of-band gain that costs, and how far `K_EF`, `k1`, `k2`, or `k3` can drift before the SQNR falls apart.
 
 ## Behavioral Modeling Record
 
@@ -106,7 +106,7 @@ The October 16, 2019 action note sets the local scope clearly: compare error-fee
 - plot zero movement and SQNR at OSR 4 and OSR 8;
 - check whether the peak comes from a broad coefficient region or a knife-edge setting.
 
-The model set started from a second-order EF baseline and expanded into single-loop third-order EF, cascaded EF-EF, CIFF-EF, and fourth-order nested variants. The numbers were not product specifications. They were a way to ask whether a loop structure buys useful in-band noise suppression without demanding an unrealistically exact coefficient ratio.
+The model set started from a second-order EF baseline and grew into single-loop third-order EF, cascaded EF-EF, CIFF-EF, and fourth-order nested variants. None of these numbers were product specifications; they were just a way to ask whether a given loop structure buys useful in-band noise suppression without leaning on an unrealistically exact coefficient ratio.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -115,7 +115,7 @@ The model set started from a second-order EF baseline and expanded into single-l
   <figcaption><strong>Behavioral third-order EF loop model.</strong> The Simulink model keeps the SAR/CDAC and residue path at loop level. The useful information is how <code>K_EF</code> and the numerator coefficients set the NTF zeros.</figcaption>
 </figure>
 
-It is easy to optimize coefficients until the plotted NTF looks excellent. Silicon is less forgiving. Those coefficients are realized through capacitor ratios, dynamic-amplifier gain, switch timing, DAC settling, and calibration. A loop that reaches high SQNR only at one narrow coefficient setting is a poor circuit target. A slightly lower peak with a wider high-SQNR region is often the better architecture.
+On paper it is easy to keep tuning coefficients until the NTF looks excellent, but silicon is less forgiving, since those coefficients have to come out of capacitor ratios, dynamic-amplifier gain, switch timing, DAC settling, and calibration. A loop that only reaches high SQNR at one narrow coefficient setting makes a poor circuit target, so a slightly lower peak with a wider high-SQNR region is usually the better choice.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -126,7 +126,7 @@ It is easy to optimize coefficients until the plotted NTF looks excellent. Silic
 
 ## Behavioral Results
 
-The table below uses the comparison spreadsheet as the primary numeric source. The values are behavioral SQNR sweep results, not measured ADC performance. The coefficient column reports the setting at the SQNR peak in the local spreadsheet.
+The numbers in the table come straight from the comparison spreadsheet. They are behavioral SQNR sweep results rather than measured ADC performance, and the coefficient column lists the setting at each SQNR peak.
 
 <!-- Evidence: Comp_MOD2-3-4.xlsx, MOD2-3 EFB.pptx slides 21-23, MATLAB Codes/MOD2_3_4 scripts/*.m -->
 
