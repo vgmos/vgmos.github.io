@@ -388,6 +388,54 @@ pre,
   margin: 8px 0;
 }
 
+.project-note {
+  margin: 1.4rem 0;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.project-table {
+  width: min(100vw - 32px, 920px);
+  margin: 1.6rem 0 2rem 50%;
+  overflow-x: auto;
+  transform: translateX(-50%);
+  -webkit-overflow-scrolling: touch;
+}
+
+.project-table table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.project-table--compact table {
+  min-width: 560px;
+}
+
+.project-table th,
+.project-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.project-table thead th {
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.project-table tbody th {
+  width: 8rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .project-index-section {
   margin-top: 34px;
 }
