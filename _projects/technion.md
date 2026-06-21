@@ -23,6 +23,8 @@ The Technion thread carried the strongest bridge between device-level questions 
 
 The thesis title captures the ambition: **Full-custom design of DIDACTIC: A data-intelligent digital to analog converter using trainable integrated circuit**. The source material also includes a detailed 2018 work plan for Verilog-A modeling, Y-Flash device modeling, neuromorphic array exploration, circuit/layout design, and final thesis submission in December 2018.
 
+The Y-Flash modeling and trainable-DAC work now has its own project page: [Y-Flash Memristive Device Modeling and Trainable DAC]({% link _projects/technion-y-flash.md %}).
+
 ## Technical Shape
 
 The durable technical question was not simply "can a memory device act like a synapse?" It was how to turn a device idea into something a circuit designer can simulate, stress, and place inside a larger system.
@@ -30,7 +32,7 @@ The durable technical question was not simply "can a memory device act like a sy
 That made the useful artifacts practical:
 
 - A BITS thesis on a trainable DAC, reporting an ANN-inspired, fault-tolerant DAC architecture using stochastic-gradient-style training and HfO2 memristor-based 2T1R synaptic conductance.
-- A Y-Flash modeling thread with Verilog-A models and simulation artifacts.
+- A Y-Flash modeling thread with Verilog-A models, small-signal analysis, DAC training simulations, and public DATE/Nature Electronics publication anchors.
 - Conference-manuscript work on modeling a floating-gate memristive device for CAD of neuromorphic computing, including SPICE modeling, small-signal schematics, stochastic behavior, Monte Carlo simulation, layout, DRC, LVS, and extraction.
 
 ## What I Learned
