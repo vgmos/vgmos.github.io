@@ -17,7 +17,7 @@
   var pageTransitionKey = "vgmos-page-transition";
   var pageTransitionOutMs = 70;
   var pageTransitionInMs = 110;
-  var contentTransitionMs = 150; /* matches --content-out: swap once the old content has cleared */
+  var contentTransitionMs = 240;
   var navInFlight = false;
   var prefetched = {};
   root.classList.add("js-on");
@@ -285,12 +285,33 @@
     }
   }
 
+  function makeExitLayer(main) {
+    if (!main) return null;
+
+    var rect = main.getBoundingClientRect();
+    var layer = document.createElement("div");
+    var clone = main.cloneNode(true);
+
+    layer.className = "page-exit-layer";
+    layer.setAttribute("aria-hidden", "true");
+    layer.style.top = rect.top + "px";
+    layer.style.left = rect.left + "px";
+    layer.style.width = rect.width + "px";
+    layer.style.height = rect.height + "px";
+
+    clone.removeAttribute("tabindex");
+    layer.appendChild(clone);
+    document.body.appendChild(layer);
+
+    return layer;
+  }
+
   function completeNavigation(url, doc, replaceHistory) {
     var nextMain = doc.querySelector("main.page-content");
     var currentMain = document.querySelector("main.page-content");
     if (!nextMain || !currentMain) {
       fallbackNavigate(url);
-      return;
+      return false;
     }
 
     syncHead(doc);
@@ -311,25 +332,44 @@
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
     focusMain(document.querySelector("main.page-content"));
+    return true;
   }
 
   function softNavigate(url, replaceHistory) {
     if (navInFlight) return;
     navInFlight = true;
-    root.classList.add("is-content-hidden");
 
-    Promise.all([fetchDocument(url), delay(contentTransitionMs)]).then(function (results) {
-      var doc = results[0];
+    fetchDocument(url).then(function (doc) {
       if (pageNeedsNormalLoad(doc)) {
         fallbackNavigate(url);
         return Promise.reject("fallback");
       }
 
-      completeNavigation(url, doc, replaceHistory);
+      var exitLayer = makeExitLayer(document.querySelector("main.page-content"));
+      root.classList.add("is-content-entering");
+
+      if (!completeNavigation(url, doc, replaceHistory)) {
+        return Promise.reject("fallback");
+      }
+
       var main = document.querySelector("main.page-content");
       if (main) void main.offsetWidth;
-      root.classList.remove("is-content-hidden");
+
+      root.classList.remove("is-content-entering");
+      if (exitLayer) {
+        void exitLayer.offsetWidth;
+        exitLayer.classList.add("is-fading");
+        window.setTimeout(function () {
+          if (exitLayer.parentNode) exitLayer.parentNode.removeChild(exitLayer);
+        }, contentTransitionMs + 80);
+      }
+
+      return delay(contentTransitionMs + 80);
     }).catch(function (error) {
+      root.classList.remove("is-content-entering");
+      Array.prototype.slice.call(document.querySelectorAll(".page-exit-layer")).forEach(function (layer) {
+        if (layer.parentNode) layer.parentNode.removeChild(layer);
+      });
       if (error !== "fallback") fallbackNavigate(url);
     }).then(function () {
       navInFlight = false;
