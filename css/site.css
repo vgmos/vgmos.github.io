@@ -683,8 +683,8 @@ pre,
   --dur: 0.4s;
   --page-fade-out: 70ms;
   --page-fade-in: 110ms;
-  --content-out: 150ms; /* quick clear */
-  --content-in: 320ms;  /* gentle, clean arrival — perceptible, not a blink */
+  --content-fade: 240ms;
+  --content-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* crisper type on macOS / hi-dpi laptops */
@@ -753,17 +753,36 @@ html { background-color: #fff; }
 
 .page-content {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
   transition:
-    opacity var(--content-in) var(--ease),
-    transform var(--content-in) var(--ease);
-  will-change: opacity, transform;
+    opacity var(--content-fade) var(--content-ease);
+  will-change: opacity;
 }
 
-html.is-content-hidden .page-content {
+html.is-content-entering .page-content {
   opacity: 0;
-  transform: translate3d(0, 6px, 0);
-  transition-duration: var(--content-out);
+}
+
+.page-exit-layer {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+  overflow: hidden;
+  background: #fff;
+  opacity: 1;
+  transform: translateZ(0);
+  will-change: opacity;
+  contain: paint;
+  transition: opacity var(--content-fade) var(--content-ease);
+}
+
+.page-exit-layer.is-fading {
+  opacity: 0;
+}
+
+.page-exit-layer .page-content {
+  opacity: 1 !important;
+  transition: none !important;
+  will-change: auto;
 }
 
 .page-transition {
@@ -813,8 +832,12 @@ html.is-transitioning-in.is-transition-ready .page-transition {
 }
 
 @media (hover: none), (max-width: 700px) {
-  /* same gentle fade on touch devices; just drop the vertical shift */
-  html.is-content-hidden .page-content {
-    transform: none;
+  .page-content {
+    transition-duration: 220ms;
+    will-change: opacity;
+  }
+
+  .page-exit-layer {
+    transition-duration: 220ms;
   }
 }
