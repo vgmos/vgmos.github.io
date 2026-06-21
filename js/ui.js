@@ -143,6 +143,15 @@
     return true;
   }
 
+  function urlWithoutHash(url) {
+    return url.pathname + url.search;
+  }
+
+  function clearHashFromAddress() {
+    if (!history.replaceState || !window.location.hash) return;
+    history.replaceState(history.state, "", window.location.pathname + window.location.search);
+  }
+
   /* ---------------------------- smooth scroll for any in-page anchor link */
   document.addEventListener("click", function (event) {
     var a = event.target && event.target.closest ? event.target.closest("a[data-scroll]") : null;
@@ -158,7 +167,7 @@
       setCurrent(a, !reduce);
     }
     scrollToHash(id, true);
-    if (history.pushState) history.pushState(null, "", "#" + id);
+    clearHashFromAddress();
     closeMobileNav();
   });
 
@@ -306,9 +315,11 @@
     return layer;
   }
 
-  function completeNavigation(url, doc, replaceHistory) {
+  function completeNavigation(url, doc, replaceHistory, transientHash) {
     var nextMain = doc.querySelector("main.page-content");
     var currentMain = document.querySelector("main.page-content");
+    var historyUrl = transientHash && url.hash ? urlWithoutHash(url) : url.href;
+
     if (!nextMain || !currentMain) {
       fallbackNavigate(url);
       return false;
@@ -317,9 +328,9 @@
     syncHead(doc);
     currentMain.replaceWith(nextMain.cloneNode(true));
     if (replaceHistory) {
-      history.replaceState({ soft: true }, "", url.href);
+      history.replaceState({ soft: true }, "", historyUrl);
     } else {
-      history.pushState({ soft: true }, "", url.href);
+      history.pushState({ soft: true }, "", historyUrl);
     }
 
     setupScrollSpy();
@@ -327,7 +338,9 @@
     closeMobileNav();
 
     if (url.hash) {
-      scrollToHash(url.hash, false);
+      if (scrollToHash(url.hash, false) && transientHash) {
+        setCurrent(navLinks.filter(function (a) { return hashOf(a) === url.hash.replace(/^#/, ""); })[0] || current, false);
+      }
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
@@ -335,7 +348,7 @@
     return true;
   }
 
-  function softNavigate(url, replaceHistory) {
+  function softNavigate(url, replaceHistory, transientHash) {
     if (navInFlight) return;
     navInFlight = true;
 
@@ -348,7 +361,7 @@
       var exitLayer = makeExitLayer(document.querySelector("main.page-content"));
       root.classList.add("is-content-entering");
 
-      if (!completeNavigation(url, doc, replaceHistory)) {
+      if (!completeNavigation(url, doc, replaceHistory, transientHash)) {
         return Promise.reject("fallback");
       }
 
@@ -389,7 +402,7 @@
     if (!url) return;
 
     event.preventDefault();
-    softNavigate(url, false);
+    softNavigate(url, false, a.hasAttribute("data-scroll"));
   });
 
   document.addEventListener("pointerenter", function (event) {
@@ -406,7 +419,7 @@
   }, { passive: true });
 
   window.addEventListener("popstate", function () {
-    softNavigate(new URL(window.location.href), true);
+    softNavigate(new URL(window.location.href), true, false);
   });
 
   syncCurrentFromLocation(false);
