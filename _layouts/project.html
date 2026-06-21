@@ -12,8 +12,6 @@ layout: default
   </header>
 
   <dl class="project-facts">
-    {% if page.role %}<div><dt>Role</dt><dd>{{ page.role }}</dd></div>{% endif %}
-    {% if page.status %}<div><dt>Status</dt><dd>{{ page.status }}</dd></div>{% endif %}
     {% if page.topics %}<div><dt>Topics</dt><dd>{{ page.topics | join: ", " }}</dd></div>{% endif %}
     {% assign project_updated = page.last_updated | default: page.updated %}
     {% if project_updated %}<div><dt>Last updated</dt><dd>{{ project_updated | date: "%B %-d, %Y" }}</dd></div>{% endif %}

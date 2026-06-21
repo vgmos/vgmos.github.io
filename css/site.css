@@ -456,11 +456,19 @@ pre,
 }
 
 .source-figure figcaption {
-  margin-top: 10px;
+  margin-top: 12px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.55;
   text-align: left;
+}
+
+.source-figure figcaption strong,
+.source-figure figcaption b {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .source-figure--wide figcaption,
