@@ -17,7 +17,7 @@
   var pageTransitionKey = "vgmos-page-transition";
   var pageTransitionOutMs = 70;
   var pageTransitionInMs = 110;
-  var contentTransitionMs = 130;
+  var contentTransitionMs = 150; /* matches --content-out: swap once the old content has cleared */
   var navInFlight = false;
   var prefetched = {};
   root.classList.add("js-on");

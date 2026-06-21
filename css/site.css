@@ -683,7 +683,8 @@ pre,
   --dur: 0.4s;
   --page-fade-out: 70ms;
   --page-fade-in: 110ms;
-  --content-fade: 130ms;
+  --content-out: 150ms; /* quick clear */
+  --content-in: 320ms;  /* gentle, clean arrival — perceptible, not a blink */
 }
 
 /* crisper type on macOS / hi-dpi laptops */
@@ -754,14 +755,15 @@ html { background-color: #fff; }
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition:
-    opacity var(--content-fade) var(--ease),
-    transform var(--content-fade) var(--ease);
+    opacity var(--content-in) var(--ease),
+    transform var(--content-in) var(--ease);
   will-change: opacity, transform;
 }
 
 html.is-content-hidden .page-content {
   opacity: 0;
-  transform: translate3d(0, 5px, 0);
+  transform: translate3d(0, 6px, 0);
+  transition-duration: var(--content-out);
 }
 
 .page-transition {
@@ -811,11 +813,7 @@ html.is-transitioning-in.is-transition-ready .page-transition {
 }
 
 @media (hover: none), (max-width: 700px) {
-  .page-content {
-    transition-duration: 110ms;
-    will-change: opacity;
-  }
-
+  /* same gentle fade on touch devices; just drop the vertical shift */
   html.is-content-hidden .page-content {
     transform: none;
   }
