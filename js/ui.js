@@ -289,7 +289,7 @@
             if (link && link !== current) setCurrent(link, !reduce);
           }
         });
-      }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+      }, { rootMargin: "-96px 0px -70% 0px", threshold: 0 });
       sections.forEach(function (s) { sectionSpy.observe(s); });
     }
   }
