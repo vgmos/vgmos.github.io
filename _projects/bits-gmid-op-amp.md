@@ -1,5 +1,5 @@
 ---
-title: Two-Stage Unbuffered Op-Amp Design Using gm/ID
+title: gm/ID Two-Stage Op-Amp
 institution: BITS Pilani
 period: 2017
 role: Undergraduate course project (EEE F366)
@@ -12,7 +12,7 @@ topics:
   - CMOS
 status: Course project, 2017
 date: 2017-08-27
-summary: My first real analog design — a two-stage op-amp in 45 nm, sized with gm/ID instead of guesswork.
+summary: A first full analog design in 45 nm, sized with the gm/ID method.
 description: A two-stage unbuffered op-amp designed with the gm/ID methodology in Cadence Virtuoso on the 45 nm GPDK, as a lab-oriented project at BITS Pilani.
 ---
 

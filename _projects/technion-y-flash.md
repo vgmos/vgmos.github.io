@@ -1,5 +1,5 @@
 ---
-title: Y-Flash Memristive Device Modeling and Trainable DAC
+title: Y-Flash Device Modeling and Trainable DAC
 institution: Technion
 period: 2018–2020
 role: Device modeling, Verilog-A, and the trainable-DAC study
@@ -13,7 +13,7 @@ topics:
   - CAD modeling
 status: DATE 2020 paper; device published in Nature Electronics 2019
 date: 2020-03-01
-summary: Turning a floating-gate memristive device into something a circuit designer can simulate — a Verilog-A model, plus a 4-bit DAC that trains its own weights.
+summary: Verilog-A modeling for a floating-gate memristive device, plus a trainable DAC study. Published at DATE 2020.
 description: Y-Flash floating-gate memristive device modeling with the Technion ASIC2 group, including Verilog-A CAD infrastructure, small-signal analysis, and a trainable DAC architecture.
 links:
   - label: DATE 2020 paper DOI

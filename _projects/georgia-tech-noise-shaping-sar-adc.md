@@ -12,7 +12,7 @@ topics:
   - SAR ADC
 status: Study preceded the group's ISSCC/JSSC 2021 chip
 date: 2021-09-09
-summary: Behavioral models of high-order noise-shaping SAR loops, and why coefficient sensitivity matters more than peak SQNR. The group's chip came later.
+summary: Behavioral models of high-order noise-shaping SAR ADC loops.
 description: Behavioral modeling of EF and CIFF noise-shaping SAR ADC loops at Georgia Tech, covering NTF zeros, OSR sweeps, coefficient sensitivity, and the ISSCC/JSSC chip that followed.
 links:
   - label: IEEE JSSC paper DOI
