@@ -10,24 +10,20 @@ topics:
   - LED drivers
   - switched-inductor converters
   - dimming
-status: MS thesis and IECON publication
+status: MS thesis and IECON 2021 paper
 date: 2021-12-10
-summary: A Georgia Tech thesis and IECON paper comparing analog and PWM dimming in switched-inductor LED drivers through luminous efficiency, power loss, and dimming range.
-description: Georgia Tech MS thesis research on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM methods through power-loss and luminous-efficiency models.
+summary: My MS thesis, on why analog and PWM dimming don't cost the same power for the same light. Published at IECON 2021.
+description: MS thesis on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM by luminous efficiency, power loss, and dimming range.
 links:
   - label: IECON 2021 paper DOI
     url: https://doi.org/10.1109/IECON48115.2021.9589840
 ---
 
-This project asked a deceptively simple power-IC question: when an LED driver dims a light, where does the energy actually go?
-
-The easy story is that brightness follows average LED current. The more useful story is that LEDs are nonlinear optical loads, and switched-inductor drivers are not ideal current sources. Once both facts are included, two dimming methods with the same average current can deliver different light for different input power. That is the part I cared about: not just making the LED dim, but making the comparison honest.
+My MS thesis at Georgia Tech was about where the energy goes when you dim an LED. I went in assuming brightness follows average LED current and the driver just supplies it. Neither holds cleanly: luminous flux bends over at high current, and a switched-inductor driver spends power differently depending on how you ask it to dim. Two methods can deliver the same average current and still produce different light from different input watts. The thesis was about pinning that down.
 
 ## Problem
 
-High-power LEDs are current-controlled devices. Their luminous flux increases with current, but it bends over at high current instead of scaling forever. A DC-DC LED driver also has its own loss profile: controller loss, gate-drive loss, switch loss, inductor loss, and output-capacitor energy movement.
-
-So the design question becomes: how much useful light does each control method deliver per input watt across the actual LED driver chain?
+High-power LEDs are current-controlled devices whose flux rises with current but saturates instead of scaling forever. The driver stacks its own losses on top: controller, gate drive, switches, inductor, output capacitor. So the comparison that matters is useful light out per input watt, through the whole chain.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -36,13 +32,13 @@ So the design question becomes: how much useful light does each control method d
   <figcaption><strong>Fig. 2 — Power stage.</strong> The synchronous buck-boost switched-inductor LED driver used for the dimming comparison.</figcaption>
 </figure>
 
-In the thesis, I modeled a representative 12 V automotive buck-boost LED driver delivering up to 1 A into four CREE XP-E2 class LEDs. The analysis folded together the LED electro-optical curve, the LED I-V curve, converter efficiency, and SPICE validation. That let me compare dimming methods by luminous efficiency, power loss, and dimming range instead of by habit or datasheet folklore.
+I modeled a representative 12 V automotive buck-boost driver delivering up to 1 A into four CREE XP-E2-class LEDs. The model folded together the LED's electro-optical curve, its I-V curve, and the converter's loss profile, with SPICE runs to check the pieces.
 
 ## Dimming Methods
 
-The work compared analog dimming against three PWM variants: shutdown PWM, shunt-switched PWM, and series-switched PWM. All four can control perceived brightness. They do not spend power the same way.
+The thesis compared analog dimming against three PWM variants: shutdown PWM, shunt-switched PWM, and series-switched PWM. All four control perceived brightness; the differences show up in where the power goes.
 
-The clean intuition is this: PWM keeps the LED biased at a high peak current and chops time. Because LED luminous flux saturates at high current, PWM pays a penalty for producing light at that peak operating point. Analog dimming moves the operating point itself. In this modeled driver, that removed a fundamental PWM power penalty across most of the useful light range.
+PWM holds the LED at a high peak current and chops time, so it keeps producing light at an operating point where the flux curve has already flattened. Analog dimming moves the operating point itself, which avoids that penalty across most of the light range. The loss breakdown makes the split visible: the PWM-specific term dominates much of the dimming range, while the shared converter losses are common to both methods.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -53,7 +49,7 @@ The clean intuition is this: PWM keeps the LED biased at a high peak current and
 
 ## Result
 
-The headline result was not "PWM is bad." PWM is useful, especially when color consistency, control simplicity, or a very high dimming ratio matter. The result was more precise: in this switched-inductor automotive setup, analog dimming gave the best luminous efficiency over most of the range and could theoretically cover the full 0-100% dimming span when DCM operation and sensing limits were handled well.
+PWM still earns its place; you want it when color consistency, control simplicity, or a very deep dimming ratio matters. But in this driver, analog dimming had better luminous efficiency over most of the range — peaking near 93 lm/W where PWM sits near 59 — and in principle it can cover the full 0–100% span if DCM operation and current sensing are handled with care.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -62,7 +58,7 @@ The headline result was not "PWM is bad." PWM is useful, especially when color c
   <figcaption><strong>Fig. 9 — Luminous efficiency.</strong> Analog peaks near 93 L/W, while PWM remains near 59 L/W in the modeled setup.</figcaption>
 </figure>
 
-This is where the "up to 57%" result comes from. PWM is flat because it keeps the LEDs at the same peak operating point and changes duty cycle. Analog dimming changes the LED current itself, so it can sit closer to the load's most efficient optical region.
+That gap is where the thesis's "up to 57%" number comes from. PWM's efficiency curve is flat because the operating point never moves; analog dimming rides closer to the LED's most efficient region.
 
 <figure class="source-figure source-figure--table">
   <div class="source-figure__frame">
@@ -71,21 +67,9 @@ This is where the "up to 57%" result comes from. PWM is flat because it keeps th
   <figcaption><strong>Table I — Method comparison.</strong> Luminous efficiency, dimming range, transient behavior, and added loss mechanisms.</figcaption>
 </figure>
 
-There is a useful caveat at the low end. When the output power is tiny, fixed switched-inductor losses can dominate, and PWM can briefly look better. That caveat is the point. A design engineer should not carry a rule of thumb farther than its operating region.
+One caveat survived every attempt to simplify it away: at very low output, the converter's fixed losses dominate and PWM can briefly come out ahead. Rules of thumb have operating regions too.
 
-## What I Learned as a Designer
-
-This work helped move me from circuit familiarity toward design judgment. It forced me to stop treating "efficiency" as one number and start asking which loss is active, which loss scales, and which loss is an artifact of the control method.
-
-It also gave me a power-IC way of thinking:
-
-- Model the load before optimizing the converter.
-- Separate physical loss from control-policy loss.
-- Use SPICE as a correlation tool, not a substitute for first-principles reasoning.
-- Treat dimming range as a transient and sensing problem, not just a percentage on a datasheet.
-- Compare techniques at the system boundary: input watts in, useful lumens out.
-
-That is still how I like to reason about analog and power design. A good circuit is not only a schematic that regulates. It is a chain of assumptions that still makes sense when current, voltage, temperature, timing, and human perception all enter the room.
+The lasting effect on me was how I read "efficiency." It's never one number. Half the job is working out which loss is active at a given operating point, which one scales, and which one is an artifact of the control method rather than the physics.
 
 ## Sources
 

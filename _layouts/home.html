@@ -4,8 +4,8 @@ layout: default
 
 <section class="home-hero">
   <p class="hero-eyebrow">Analog &amp; power IC design</p>
-  <h1 class="hero-title">A working notebook for engineering judgment.</h1>
-  <p class="hero-lede">I design analog and power integrated circuits — power conversion, data converters, and device-aware modeling. This site keeps the strongest work legible: the design question, my role, the evidence, and what each project taught me about thinking clearly.</p>
+  <h1 class="hero-title">Project write-ups and a working notebook.</h1>
+  <p class="hero-lede">I design analog and power integrated circuits — power conversion, data converters, device modeling. The projects below are longer write-ups of my research work. The notebook is shorter, and not always about circuits.</p>
 </section>
 
 <div class="home-shell">
@@ -13,7 +13,7 @@ layout: default
   <section class="section-block" id="projects">
     <div class="section-heading">
       <h2>Projects</h2>
-      <p class="section-subtitle">Selected technical work, written around the design question, evidence, role, and lesson.</p>
+      <p class="section-subtitle">Research work from BITS Pilani, the Technion, and Georgia Tech.</p>
     </div>
     <div class="item-list">
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
@@ -35,7 +35,7 @@ layout: default
   <section class="section-block" id="notebook">
     <div class="section-heading">
       <h2>Notebook</h2>
-      <p class="section-subtitle">Notes on craft, attention, and clear technical thinking.</p>
+      <p class="section-subtitle">Shorter notes. Not always about circuits.</p>
     </div>
     <div class="item-list">
       {% for post in site.posts %}
@@ -47,7 +47,7 @@ layout: default
           {% endif %}
         </article>
       {% else %}
-        <p class="quiet-note">Notebook entries will begin here as new essays and technical notes are drafted.</p>
+        <p class="quiet-note">Nothing here yet.</p>
       {% endfor %}
     </div>
   </section>
