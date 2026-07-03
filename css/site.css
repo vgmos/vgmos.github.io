@@ -482,9 +482,7 @@ pre,
 
 .source-figure--wide,
 .source-figure--table {
-  width: min(100vw - 32px, 920px);
-  margin-left: 50%;
-  transform: translateX(-50%);
+  max-width: 100%;
 }
 
 .source-figure__frame {
@@ -521,9 +519,7 @@ pre,
 
 .source-figure--wide figcaption,
 .source-figure--table figcaption {
-  max-width: 760px;
-  margin-right: auto;
-  margin-left: auto;
+  max-width: none;
 }
 
 .index-list span {
