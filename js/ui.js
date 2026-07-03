@@ -18,6 +18,10 @@
   var pageTransitionOutMs = 70;
   var pageTransitionInMs = 110;
   var contentTransitionMs = 240;
+  var mathDelimiters = [
+    { left: "$$", right: "$$", display: true },
+    { left: "\\(", right: "\\)", display: false }
+  ];
   var navInFlight = false;
   var prefetched = {};
   root.classList.add("js-on");
@@ -222,9 +226,95 @@
 
   function pageNeedsNormalLoad(doc) {
     if (!doc || !doc.querySelector("main.page-content")) return true;
-    if (doc.querySelector("main.page-content script")) return true;
-    if (doc.querySelector("link[href*='katex'], script[src*='katex']")) return true;
     return false;
+  }
+
+  function hasHeadAsset(tag, attr, value) {
+    return Array.prototype.slice.call(document.head.querySelectorAll(tag)).some(function (node) {
+      return node[attr] === value;
+    });
+  }
+
+  function copyAttributes(from, to, skip) {
+    Array.prototype.slice.call(from.attributes || []).forEach(function (attr) {
+      if (!skip || skip.indexOf(attr.name) === -1) to.setAttribute(attr.name, attr.value);
+    });
+  }
+
+  function ensureStylesheet(link) {
+    if (!link || !link.href || hasHeadAsset("link", "href", link.href)) return;
+    var next = document.createElement("link");
+    copyAttributes(link, next);
+    document.head.appendChild(next);
+  }
+
+  function ensureScript(script) {
+    if (!script || !script.src || hasHeadAsset("script", "src", script.src)) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      var next = document.createElement("script");
+      copyAttributes(script, next, ["onload"]);
+      next.async = false;
+      next.onload = resolve;
+      next.onerror = reject;
+      document.head.appendChild(next);
+    });
+  }
+
+  function waitForMathReady() {
+    if (typeof window.renderMathInElement === "function") return Promise.resolve();
+    return new Promise(function (resolve) {
+      var tries = 0;
+      var timer = window.setInterval(function () {
+        tries += 1;
+        if (typeof window.renderMathInElement === "function" || tries >= 40) {
+          window.clearInterval(timer);
+          resolve();
+        }
+      }, 50);
+    });
+  }
+
+  function ensureMathAssets(doc) {
+    if (!doc || !doc.querySelector("link[href*='katex'], script[src*='katex']")) {
+      return Promise.resolve();
+    }
+
+    Array.prototype.slice.call(doc.querySelectorAll("link[href*='katex']")).forEach(ensureStylesheet);
+
+    return Array.prototype.slice.call(doc.querySelectorAll("script[src*='katex'], script[src*='auto-render']"))
+      .reduce(function (ready, script) {
+        return ready.then(function () { return ensureScript(script); });
+      }, Promise.resolve())
+      .then(waitForMathReady);
+  }
+
+  function renderMath(main) {
+    if (typeof window.renderMathInElement !== "function") return;
+    try {
+      window.renderMathInElement(main || document.body, {
+        delimiters: mathDelimiters,
+        throwOnError: false
+      });
+    } catch (error) {}
+  }
+
+  function runMainScripts(main) {
+    if (!main) return;
+    Array.prototype.slice.call(main.querySelectorAll("script")).forEach(function (oldScript) {
+      var next = document.createElement("script");
+      copyAttributes(oldScript, next);
+      next.text = oldScript.text || oldScript.textContent || "";
+      oldScript.replaceWith(next);
+    });
+  }
+
+  function hydratePage(doc, main) {
+    runMainScripts(main);
+    return ensureMathAssets(doc).then(function () {
+      renderMath(main);
+    }).catch(function () {
+      renderMath(main);
+    });
   }
 
   function syncHead(doc) {
@@ -366,18 +456,20 @@
       }
 
       var main = document.querySelector("main.page-content");
-      if (main) void main.offsetWidth;
+      return hydratePage(doc, main).then(function () {
+        if (main) void main.offsetWidth;
 
-      root.classList.remove("is-content-entering");
-      if (exitLayer) {
-        void exitLayer.offsetWidth;
-        exitLayer.classList.add("is-fading");
-        window.setTimeout(function () {
-          if (exitLayer.parentNode) exitLayer.parentNode.removeChild(exitLayer);
-        }, contentTransitionMs + 80);
-      }
+        root.classList.remove("is-content-entering");
+        if (exitLayer) {
+          void exitLayer.offsetWidth;
+          exitLayer.classList.add("is-fading");
+          window.setTimeout(function () {
+            if (exitLayer.parentNode) exitLayer.parentNode.removeChild(exitLayer);
+          }, contentTransitionMs + 80);
+        }
 
-      return delay(contentTransitionMs + 80);
+        return delay(contentTransitionMs + 80);
+      });
     }).catch(function (error) {
       root.classList.remove("is-content-entering");
       Array.prototype.slice.call(document.querySelectorAll(".page-exit-layer")).forEach(function (layer) {
