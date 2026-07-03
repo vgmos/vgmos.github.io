@@ -13,7 +13,17 @@ layout: default
     <div class="section-heading">
       <h2>Tools</h2>
     </div>
-    <p class="quiet-note">Small tools and utilities will live here.</p>
+    <div class="item-list">
+      {% for tool in site.data.tools %}
+        <article class="list-item reveal">
+          <p class="item-meta">{{ tool.meta }}</p>
+          <h3><a href="{{ tool.url | relative_url }}">{{ tool.title }}<span class="go" aria-hidden="true">&rarr;</span></a></h3>
+          <p>{{ tool.summary }}</p>
+        </article>
+      {% else %}
+        <p class="quiet-note">Small tools and utilities will live here.</p>
+      {% endfor %}
+    </div>
   </section>
 
   <div class="anchor-compat" id="technical" aria-hidden="true"></div>
