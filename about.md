@@ -2,18 +2,21 @@
 layout: page
 title: About
 permalink: /about/
-description: About Vasu Gupta, analog IC design, selected work, notebook entries, and resume context.
+description: About Vasu Gupta — analog IC design engineer working on power conversion, data converters, and device modeling.
 ---
 
-I am Vasu Gupta, an analog IC design engineer with a long-standing interest in power conversion, data converters, device modeling, and the kind of judgment that turns circuit ideas into durable engineering.
+I'm Vasu Gupta, an analog IC design engineer. I work on power conversion, data converters, and device modeling.
 
-My academic work moved through BITS Pilani, Technion, and Georgia Tech before settling into professional analog design. I use this site to keep the strongest parts of that path legible: the design question, my role, the evidence behind the work, and the ideas that still shape how I reason about circuits.
+The path here ran through BITS Pilani, a research collaboration with the Technion, and an MS at Georgia Tech; the project pages cover that stretch in detail. These days I do professional analog design.
 
-The notebook is broader than a project list, and it should be able to grow beyond engineering. Some notes are technical. Some are about craft, attention, discipline, and learning how to think clearly. The standard is the same either way: useful, precise, and restrained.
+{% comment %}TODO(Vasu): add one sentence on your current role/company if you want it public.{% endcomment %}
+
+The notebook is for whatever doesn't fit a project page. Some of it is technical, some of it isn't.
 
 <section class="currently-thinking">
   <h2>Currently thinking about</h2>
-  <p>Load-aware power conversion, low-noise regulation, behavioral models that expose assumptions, and how to write technical work without hiding uncertainty.</p>
+  <p>Load-aware power conversion, low-noise regulation, and behavioral models that show their assumptions.</p>
+  {% comment %}TODO(Vasu): swap these for whatever you're actually chewing on this month — one concrete question beats three topic areas.{% endcomment %}
 </section>
 
 ## Resume
@@ -24,19 +27,19 @@ You can download my [resume]({% link assets/files/resume_vg_2026.pdf %}). For cu
   <dl>
     <div>
       <dt>Focus</dt>
-      <dd>Analog IC design, power management, data converters, device-aware modeling, and circuit-level design judgment.</dd>
+      <dd>Analog IC design: power management, data converters, device-aware modeling.</dd>
     </div>
     <div>
       <dt>Georgia Tech</dt>
-      <dd>MS work in analog and power IC design, including thesis research on dimming DC-DC LED drivers and research collaboration around noise-shaping SAR ADC architecture.</dd>
+      <dd>MS in analog and power IC design. Thesis on dimming DC-DC LED drivers, plus the noise-shaping SAR ADC collaboration.</dd>
     </div>
     <div>
       <dt>Technion</dt>
-      <dd>Undergraduate thesis research on trainable DACs, Y-Flash device modeling, Verilog-A models, and neuromorphic circuit concepts.</dd>
+      <dd>Undergraduate thesis research: trainable DACs, Y-Flash device modeling, Verilog-A.</dd>
     </div>
     <div>
       <dt>BITS Pilani</dt>
-      <dd>Electrical and electronics engineering foundation spanning analog design, embedded systems, hardware acceleration, and early circuit research.</dd>
+      <dd>Electrical and electronics engineering — analog design, embedded systems, hardware acceleration.</dd>
     </div>
   </dl>
 </div>

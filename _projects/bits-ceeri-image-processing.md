@@ -12,37 +12,28 @@ topics:
   - high-level synthesis
 status: Practice School-I project
 date: 2017-07-12
-updated: 2026-06-12
-summary: A CSIR-CEERI practice-school project comparing FPGA/HLS and Jetson TX1 GPU acceleration paths for image-processing and color-object-tracking tasks.
-description: BITS Pilani Practice School-I project at CSIR-CEERI on accelerating image-processing algorithms with Vivado HLS, Zynq ZC702 FPGA hardware, CUDA, OpenCV, and NVIDIA Jetson TX1.
+summary: FPGA against GPU for image processing at CSIR-CEERI, with measured speedups on a Jetson TX1 and a live object-tracking demo.
+description: Accelerating image-processing kernels two ways at CSIR-CEERI — Vivado HLS on a Zynq ZC702 FPGA, and CUDA/OpenCV on an NVIDIA Jetson TX1 — with measured CPU-vs-GPU timings.
 ---
 
-This project asked a practical embedded-computing question: when image-processing latency matters, which parts of the workload should move away from a conventional CPU?
+In summer 2017 I spent BITS's Practice School term at CSIR-CEERI working on a plain question: which image-processing work is worth moving off the CPU, and what does each alternative cost you?
 
-At CEERI, the work compared two acceleration paths. One path used Xilinx Vivado HLS to map C++/OpenCV-like image-processing code onto a Zynq ZC702 FPGA. The other used CUDA and OpenCV GPU modules on an NVIDIA Jetson TX1. Both were aimed at the same underlying goal: reduce latency for video/image workloads by matching the algorithm to a more parallel substrate.
-
-## Problem
-
-Computer vision often starts as software, but real-time systems quickly expose the cost of moving pixel operations through a sequential processor. Even simple operations become expensive when the image is large, the frame rate is fixed, and every pixel must be touched.
-
-The engineering question was less glamorous than "AI vision" and more useful: which common image-processing operations can be accelerated cleanly, and what does each platform teach about programmability, throughput, and implementation overhead?
+Two paths, same goal. One used Xilinx Vivado HLS to turn C++ image operations into hardware blocks on a Zynq ZC702 FPGA. The other used CUDA and OpenCV's GPU modules on an NVIDIA Jetson TX1. Real-time vision exposes the price of pushing pixel operations through a sequential processor quickly — even simple kernels get expensive once the image is large, the frame rate is fixed, and every pixel must be touched.
 
 ## Implementation
 
-The FPGA side used Vivado HLS 2014.4, the Xilinx toolchain, and a Zynq ZC702 board. Implemented or studied operations included pass-through video, binarization, and Sobel filtering, with C++ code synthesized into hardware-oriented blocks.
+The FPGA side ran on Vivado HLS 2014.4 and the Zynq ZC702 board. Implemented or studied operations included pass-through video, binarization, and Sobel filtering, with C++ synthesized into hardware-oriented blocks.
 
-The GPU side used CUDA, OpenCV GPU modules, and the Jetson TX1. The final real-time demonstration tracked a red object by converting video frames to HSV, thresholding by hue ranges, applying morphological opening/closing to reduce noise, and drawing the tracked path over the input feed.
+The GPU side ended in a live demo I was fond of: tracking a red object in real time by converting frames to HSV, thresholding by hue, applying morphological opening and closing to clean up the mask, and drawing the tracked path over the input feed.
 
-## Result
+## Numbers
 
-The report measured CPU-vs-GPU timing for several operations. The Jetson GPU improved RGB-to-HSV conversion by about 2.38x, morphological operations by about 4.46x, and thresholding by about 4.88x. Canny filtering was roughly comparable in that setup, which is a useful reminder that acceleration is workload-specific rather than automatic.
+The report's CPU-vs-GPU timings on the Jetson: about 2.38× faster for RGB-to-HSV conversion, 4.46× for morphological operations, 4.88× for thresholding. Canny filtering came out roughly even in that setup.
+
+The unevenness was the lesson. Acceleration is workload-specific, and what decides the win is mostly data movement — which operation dominates latency, and how many times the pixels have to cross a bus to get there.
 
 ## Sources
 
 - Practice School-I report at CSIR-CEERI, Pilani.
-- End-term seminar deck titled around implementing image-processing algorithms on FPGA and GPU.
-- Source code appendices for FPGA binarization and GPU object-tracking pipelines.
-
-## What I Learned
-
-This was an early lesson in hardware/software co-design. A faster machine is not the same as a faster system. The useful question is where the data moves, which operation dominates latency, and whether the programming model helps or hides the real bottleneck.
+- End-term seminar deck on implementing image-processing algorithms on FPGA and GPU.
+- Source code appendices for the FPGA binarization and GPU object-tracking pipelines.

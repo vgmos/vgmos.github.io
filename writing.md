@@ -2,7 +2,7 @@
 layout: writing
 title: Notebook
 permalink: /writing/
-description: Notebook entries on engineering judgment, craft, attention, and the broader practice of thinking clearly.
+description: Notebook entries from Vasu Gupta. Shorter notes, not always about circuits.
 ---
 
-Notes on engineering judgment, craft, attention, and the broader practice of thinking clearly.
+Shorter notes. Not always about circuits.
