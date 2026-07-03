@@ -652,7 +652,7 @@ pre,
   line-height: 1.62;
 }
 /* a little air before the first section (overrides the home-shell reset) */
-.home-hero + .home-shell .section-block:first-of-type { margin-top: 54px; }
+.home-hero + .home-shell .section-block:first-of-type { margin-top: 34px; }
 
 /* The first screen should be readable immediately; page-to-page motion
    carries the living quality without animating the hero copy on load. */
@@ -765,13 +765,13 @@ body {
   display: block;
   width: 30px;
   height: 3px;
-  margin-top: 14px;
+  margin-top: 10px;
   border-radius: 2px;
   background: var(--accent);
 }
 .home-shell .section-heading {
   display: block;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 .home-shell .section-subtitle {
   max-width: 38rem;
@@ -779,10 +779,10 @@ body {
   font-size: 0.96rem;
   line-height: 1.6;
 }
-.home-shell .section-block { margin-top: 82px; }
+.home-shell .section-block { margin-top: 44px; }
 
 /* list items: a little more air + steadier internal rhythm */
-.home-shell .list-item { padding: 28px 0; }
+.home-shell .list-item { padding: 18px 0; }
 .home-shell .list-item .item-meta { margin-bottom: 9px; }
 .home-shell .list-item h3 { line-height: 1.28; margin-bottom: 10px; }
 
@@ -792,8 +792,8 @@ body {
   .home-hero { padding-bottom: 36px; }
   .home-hero .hero-title { font-size: clamp(1.9rem, 7.6vw, 3.2rem); }
   .home-hero .hero-lede { font-size: 1.12rem; }
-  .home-shell .section-block { margin-top: 60px; }
-  .home-shell .list-item { padding: 24px 0; }
+  .home-shell .section-block { margin-top: 38px; }
+  .home-shell .list-item { padding: 18px 0; }
   .home-shell .section-heading h2 { font-size: 1.4rem; }
 }
 

@@ -1,5 +1,5 @@
 ---
-title: Dimming DC-DC LED Drivers
+title: Dimming DC-DC LED Driver
 institution: Georgia Tech
 period: 2020–2021
 role: MS thesis researcher, first author
@@ -12,7 +12,7 @@ topics:
   - dimming
 status: MS thesis and IECON 2021 paper
 date: 2021-12-10
-summary: My MS thesis, on why analog and PWM dimming don't cost the same power for the same light. Published at IECON 2021.
+summary: My MS thesis on analog and PWM dimming. Published at IECON 2021.
 description: MS thesis on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM by luminous efficiency, power loss, and dimming range.
 links:
   - label: IECON 2021 paper DOI

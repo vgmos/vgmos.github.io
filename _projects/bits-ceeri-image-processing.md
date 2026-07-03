@@ -1,5 +1,5 @@
 ---
-title: Accelerating Image Processing on FPGA and GPGPU
+title: FPGA and GPGPU Image Processing
 institution: BITS Pilani / CSIR-CEERI
 period: 2017
 role: Practice School-I researcher
@@ -12,7 +12,7 @@ topics:
   - high-level synthesis
 status: Practice School-I project
 date: 2017-07-12
-summary: FPGA against GPU for image processing at CSIR-CEERI, with measured speedups on a Jetson TX1 and a live object-tracking demo.
+summary: FPGA and GPU acceleration study for image-processing kernels at CSIR-CEERI.
 description: Accelerating image-processing kernels two ways at CSIR-CEERI — Vivado HLS on a Zynq ZC702 FPGA, and CUDA/OpenCV on an NVIDIA Jetson TX1 — with measured CPU-vs-GPU timings.
 ---
 
