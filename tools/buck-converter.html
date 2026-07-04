@@ -226,6 +226,140 @@ math: true
     .bc-card:nth-child(odd) { border-left: 0; padding-left: 0; }
     .bc-card:nth-child(even) { padding-right: 0; }
   }
+
+  .bc-page { max-width: 740px; }
+  .bc-header { margin-bottom: 32px; }
+  .bc-header h1 { max-width: 12.5em; }
+  .bc-dek {
+    font-family: var(--claude-serif);
+    font-size: 1.18rem;
+    line-height: 1.56;
+  }
+  .bc-presets,
+  .bc-controls,
+  .bc-results,
+  .bc-note,
+  .bc-scope .bc-scope-foot,
+  .bc-field-head label,
+  .bc-entry,
+  .bc-unit,
+  .bc-tick,
+  .bc-card {
+    font-family: var(--claude-sans);
+  }
+  .bc-schematic,
+  .bc-controls,
+  .bc-scope {
+    border-radius: 8px;
+    background: #fff;
+  }
+  .bc-presets { gap: 9px; }
+  .bc-presets span,
+  .bc-card .bc-k,
+  .bc-card .bc-s,
+  .bc-scope .bc-scope-foot {
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.48;
+  }
+  .bc-presets button {
+    min-height: 34px;
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.84rem;
+    font-weight: 500;
+    line-height: 1.08;
+    border-radius: 8px;
+    transition:
+      color 300ms var(--claude-ease),
+      border-color 300ms var(--claude-ease),
+      background-color 300ms var(--claude-ease);
+  }
+  .bc-presets button:hover,
+  .bc-presets button:focus-visible {
+    color: var(--claude-accent-deep);
+    border-color: var(--accent);
+    background-color: var(--claude-hover);
+  }
+  .bc-field-head label {
+    color: var(--ink);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .bc-entry input[type="number"] {
+    font-family: var(--claude-sans);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    transition:
+      border-color 300ms var(--claude-ease),
+      box-shadow 300ms var(--claude-ease);
+  }
+  .bc-entry input[type="number"]:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--claude-ring);
+  }
+  .bc-field input[type="range"]::-webkit-slider-thumb {
+    transition:
+      transform 300ms var(--claude-ease),
+      background-color 300ms var(--claude-ease);
+  }
+  .bc-field input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
+  }
+  .bc-field input[type="range"]::-moz-range-thumb {
+    transition:
+      transform 300ms var(--claude-ease),
+      background-color 300ms var(--claude-ease);
+  }
+  .bc-field input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.08);
+  }
+  .bc-tick {
+    font-family: var(--claude-sans);
+    font-size: 0.66rem;
+    font-weight: 500;
+    transition:
+      color 300ms var(--claude-ease),
+      background-color 300ms var(--claude-ease);
+  }
+  .bc-tick:hover,
+  .bc-tick:focus-visible {
+    color: var(--claude-accent-deep);
+    background-color: var(--claude-hover);
+  }
+  .bc-card {
+    border-radius: 8px;
+    background-color: #fff;
+    transition:
+      border-color 300ms var(--claude-ease),
+      background-color 300ms var(--claude-ease);
+  }
+  .bc-card:hover {
+    border-color: var(--claude-ring);
+    background-color: var(--claude-hover);
+  }
+  .bc-card .bc-v {
+    color: var(--ink);
+    font-family: var(--claude-sans);
+    font-size: 1.18rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .bc-panel .chan,
+  .bc-panel .tag,
+  .bc-panel .dim-name,
+  .bc-panel .dim-val,
+  .bc-schematic .lbl,
+  .bc-schematic .ph,
+  .bc-schematic .node {
+    font-family: var(--claude-sans);
+  }
+
+  @media (max-width: 700px) {
+    .bc-results { row-gap: 20px; }
+    .bc-card .bc-v { font-size: 1.12rem; }
+  }
 </style>
 
 <article class="bc-page">
