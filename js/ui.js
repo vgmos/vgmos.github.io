@@ -24,11 +24,88 @@
   ];
   var navInFlight = false;
   var prefetched = {};
+  var scrollSaveTimer = 0;
   root.classList.add("js-on");
 
   if ("scrollRestoration" in history) {
     history.scrollRestoration = "manual";
   }
+
+  function currentScrollPosition() {
+    return {
+      x: window.pageXOffset || document.documentElement.scrollLeft || 0,
+      y: window.pageYOffset || document.documentElement.scrollTop || 0
+    };
+  }
+
+  function copyState(state) {
+    var next = {};
+    if (!state || typeof state !== "object") return next;
+    Object.keys(state).forEach(function (key) {
+      next[key] = state[key];
+    });
+    return next;
+  }
+
+  function makeHistoryState(state, scroll) {
+    var next = copyState(state);
+    next.soft = true;
+    next.scroll = scroll || { x: 0, y: 0 };
+    return next;
+  }
+
+  function scrollFromState(state) {
+    var scroll = state && state.scroll;
+    if (!scroll || typeof scroll.y !== "number") return null;
+    return {
+      x: typeof scroll.x === "number" ? scroll.x : 0,
+      y: scroll.y
+    };
+  }
+
+  function scrollToPosition(scroll) {
+    if (!scroll) return;
+    window.scrollTo({
+      top: Math.max(0, scroll.y),
+      left: Math.max(0, scroll.x),
+      behavior: "auto"
+    });
+  }
+
+  function saveCurrentScroll() {
+    if (!history.replaceState) return;
+    try {
+      history.replaceState(
+        makeHistoryState(history.state, currentScrollPosition()),
+        "",
+        window.location.href
+      );
+    } catch (error) {}
+  }
+
+  function scheduleScrollSave() {
+    if (navInFlight || scrollSaveTimer) return;
+    scrollSaveTimer = window.setTimeout(function () {
+      scrollSaveTimer = 0;
+      saveCurrentScroll();
+    }, 120);
+  }
+
+  function flushScrollSave() {
+    if (scrollSaveTimer) {
+      window.clearTimeout(scrollSaveTimer);
+      scrollSaveTimer = 0;
+    }
+    saveCurrentScroll();
+  }
+
+  saveCurrentScroll();
+
+  window.addEventListener("scroll", scheduleScrollSave, { passive: true });
+  window.addEventListener("pagehide", flushScrollSave);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") flushScrollSave();
+  });
 
   if (root.classList.contains("is-transitioning-in")) {
     try {
@@ -350,6 +427,7 @@
   }
 
   function fallbackNavigate(url) {
+    flushScrollSave();
     try {
       sessionStorage.setItem(pageTransitionKey, "1");
     } catch (error) {}
@@ -405,10 +483,11 @@
     return layer;
   }
 
-  function completeNavigation(url, doc, replaceHistory, transientHash) {
+  function completeNavigation(url, doc, replaceHistory, transientHash, restoreScroll) {
     var nextMain = doc.querySelector("main.page-content");
     var currentMain = document.querySelector("main.page-content");
     var historyUrl = transientHash && url.hash ? urlWithoutHash(url) : url.href;
+    var nextScroll = restoreScroll || { x: 0, y: 0 };
 
     if (!nextMain || !currentMain) {
       fallbackNavigate(url);
@@ -418,27 +497,30 @@
     syncHead(doc);
     currentMain.replaceWith(nextMain.cloneNode(true));
     if (replaceHistory) {
-      history.replaceState({ soft: true }, "", historyUrl);
+      history.replaceState(makeHistoryState(history.state, nextScroll), "", historyUrl);
     } else {
-      history.pushState({ soft: true }, "", historyUrl);
+      history.pushState(makeHistoryState(null, nextScroll), "", historyUrl);
     }
 
     setupScrollSpy();
     syncCurrentFromLocation(false);
     closeMobileNav();
+    focusMain(document.querySelector("main.page-content"));
 
     if (url.hash) {
       if (scrollToHash(url.hash, false) && transientHash) {
         setCurrent(navLinks.filter(function (a) { return hashOf(a) === url.hash.replace(/^#/, ""); })[0] || current, false);
       }
+    } else if (restoreScroll) {
+      scrollToPosition(restoreScroll);
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
-    focusMain(document.querySelector("main.page-content"));
+    saveCurrentScroll();
     return true;
   }
 
-  function softNavigate(url, replaceHistory, transientHash) {
+  function softNavigate(url, replaceHistory, transientHash, restoreScroll) {
     if (navInFlight) return;
     navInFlight = true;
 
@@ -451,7 +533,7 @@
       var exitLayer = makeExitLayer(document.querySelector("main.page-content"));
       root.classList.add("is-content-entering");
 
-      if (!completeNavigation(url, doc, replaceHistory, transientHash)) {
+      if (!completeNavigation(url, doc, replaceHistory, transientHash, restoreScroll)) {
         return Promise.reject("fallback");
       }
 
@@ -468,7 +550,12 @@
           }, contentTransitionMs + 80);
         }
 
-        return delay(contentTransitionMs + 80);
+        return delay(contentTransitionMs + 80).then(function () {
+          if (restoreScroll) {
+            scrollToPosition(restoreScroll);
+            saveCurrentScroll();
+          }
+        });
       });
     }).catch(function (error) {
       root.classList.remove("is-content-entering");
@@ -494,6 +581,7 @@
     if (!url) return;
 
     event.preventDefault();
+    flushScrollSave();
     softNavigate(url, false, a.hasAttribute("data-scroll"));
   });
 
@@ -510,8 +598,8 @@
     if (a) prefetchLink(a, { defaultPrevented: false, button: 0 });
   }, { passive: true });
 
-  window.addEventListener("popstate", function () {
-    softNavigate(new URL(window.location.href), true, false);
+  window.addEventListener("popstate", function (event) {
+    softNavigate(new URL(window.location.href), true, false, scrollFromState(event.state));
   });
 
   syncCurrentFromLocation(false);
