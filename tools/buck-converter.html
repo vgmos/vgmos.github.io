@@ -393,9 +393,11 @@ math: true
   <section class="post-content project-body">
     <h2>The model</h2>
     <p>Across the on-time \(t_{ON}\) the inductor sees \(v_{IN} - v_{OUT}\) and its current ramps up; across the off-time \(t_{OFF}\) it sees \(-v_{OUT}\) and ramps down into the output. Volt-second balance sets the duty cycle, and the on-time ramp sets the current ripple:</p>
-    <p>$$D \equiv \frac{t_{ON}}{t_{SW}} = \frac{v_{OUT}}{v_{IN}}
-       \qquad
-       \Delta i_L = t_{ON}\!\left(\frac{v_{IN} - v_{OUT}}{L_X}\right) = \frac{(v_{IN} - v_{OUT})\, D}{f_{SW}\, L_X}$$</p>
+    <p>$$\begin{aligned}
+       D &\equiv \frac{t_{ON}}{t_{SW}} = \frac{v_{OUT}}{v_{IN}} \\
+       \Delta i_L &= t_{ON}\!\left(\frac{v_{IN} - v_{OUT}}{L_X}\right) \\
+       &= \frac{(v_{IN} - v_{OUT})\, D}{f_{SW}\, L_X}
+       \end{aligned}$$</p>
     <p>The capacitor absorbs the triangular ripple current \(i_L - i_O\). It charges for exactly half a period — from one zero-crossing of that triangle to the next — collecting \(\Delta Q = \tfrac{1}{2}\cdot\tfrac{t_{SW}}{2}\cdot\tfrac{\Delta i_L}{2} = \Delta i_L / (8 f_{SW})\). Dividing by \(C_O\), and then substituting \(\Delta i_L\), gives the ripple in two useful forms:</p>
     <p>$$\Delta v_{OUT} = \frac{\Delta i_L}{8\, f_{SW}\, C_O}
        = \frac{v_{OUT}\,(1-D)}{8\, L_X\, C_O\, f_{SW}^{2}}$$</p>
