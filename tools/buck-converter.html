@@ -22,25 +22,35 @@ math: true
 
   /* --- schematic --- */
   .bc-schematic {
-    margin: 1.6rem 0;
-    padding: 22px 12px 14px;
-    overflow-x: auto;
+    margin: 1.65rem 0 1.45rem;
+    padding: 20px 14px 13px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--paper);
-    -webkit-overflow-scrolling: touch;
   }
-  .bc-schematic svg { display: block; width: min(540px, 100%); min-width: 520px; margin: 0 auto; }
-  .bc-schematic .w { stroke: var(--ink); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .bc-schematic .contact { stroke: var(--ink); stroke-width: 1.6; fill: var(--paper); }
-  .bc-schematic .dot { fill: var(--ink); }
-  .bc-schematic .lbl { fill: var(--ink); font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-schematic .lbl tspan { font-size: 11px; }
-  .bc-schematic .ph { fill: var(--muted); font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-schematic .ph tspan { font-size: 9.5px; }
-  .bc-schematic .node { fill: var(--accent); font: 500 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-schematic .node tspan { font-size: 10px; }
-  .bc-schematic .arr { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .bc-schematic svg { display: block; width: min(620px, 100%); margin: 0 auto; }
+  .bc-schematic figcaption {
+    max-width: 620px;
+    margin: 9px auto 0;
+    color: var(--ink-soft);
+    font: 13.5px/1.35 "Times New Roman", Times, serif;
+  }
+  .bc-schematic figcaption strong { color: var(--ink); font-weight: 700; }
+  .bc-schematic .w { stroke: #111; stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .bc-schematic .power { stroke-width: 4; }
+  .bc-schematic .switch { stroke: #111; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .bc-schematic .terminal { stroke: #111; stroke-width: 2.5; fill: var(--paper); }
+  .bc-schematic .dot { fill: #111; }
+  .bc-schematic .lbl { fill: #111; font: 700 20px "Times New Roman", Times, serif; }
+  .bc-schematic .lbl tspan { font-size: 11.5px; }
+  .bc-schematic .sw-label { fill: #111; font: 700 22px "Times New Roman", Times, serif; }
+  .bc-schematic .sw-label tspan,
+  .bc-schematic .node tspan { font-size: 13px; }
+  .bc-schematic .node { fill: #111; font: 700 20px "Times New Roman", Times, serif; }
+  .bc-schematic .current { fill: #555; font: 700 19px "Times New Roman", Times, serif; }
+  .bc-schematic .current tspan { font-size: 12px; }
+  .bc-schematic .arr { stroke: #777; stroke-width: 3.2; fill: none; stroke-linecap: square; stroke-linejoin: round; }
+  .bc-schematic .arr-head { fill: #777; }
 
   /* --- presets --- */
   .bc-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 1.6rem 0 0.6rem; }
@@ -59,6 +69,42 @@ math: true
   .bc-presets button:hover { color: var(--accent); border-color: var(--accent); }
   .bc-presets button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+  /* --- mode switch --- */
+  .bc-mode {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 1rem 0 0;
+  }
+  .bc-mode-label {
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .bc-segmented {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--paper);
+  }
+  .bc-segmented button {
+    min-width: 112px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.88rem;
+    padding: 6px 14px;
+  }
+  .bc-segmented button[aria-pressed="true"] {
+    background: var(--ink);
+    color: #fff;
+  }
+  .bc-segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
   /* --- controls --- */
   .bc-controls {
     display: grid;
@@ -71,11 +117,13 @@ math: true
     border-radius: 8px;
     background: var(--soft);
   }
+  .bc-field[hidden] { display: none; }
   .bc-field { display: grid; gap: 6px; }
   .bc-field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .bc-field-head label { color: var(--ink); font-size: 0.94rem; font-weight: 600; }
   .bc-field-head .bc-entry { display: flex; align-items: baseline; gap: 5px; }
   .bc-entry input[type="number"] {
+    -moz-appearance: textfield;
     width: 5.2em;
     padding: 2px 6px;
     border: 1px solid var(--line);
@@ -86,6 +134,11 @@ math: true
     font-size: 0.94rem;
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+  .bc-entry input[type="number"]::-webkit-outer-spin-button,
+  .bc-entry input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
   .bc-entry input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .bc-entry .bc-unit { color: var(--muted); font-size: 0.88rem; min-width: 2.2em; }
@@ -175,6 +228,38 @@ math: true
   }
   .bc-note.bc-show { display: block; }
 
+  .bc-design-result {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin: 1rem 0 0.2rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+  }
+  .bc-design-result.bc-show { display: grid; }
+  .bc-design-item {
+    padding: 14px 16px;
+  }
+  .bc-design-item + .bc-design-item { border-left: 1px solid var(--line); }
+  .bc-design-k {
+    margin: 0 0 3px;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .bc-design-v {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.28rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .bc-design-s {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
   /* --- waveform scope --- */
   .bc-scope {
     box-sizing: border-box;
@@ -222,11 +307,38 @@ math: true
   }
 
   @media (max-width: 700px) {
+    .bc-mode { align-items: stretch; flex-direction: column; }
+    .bc-segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .bc-segmented button { min-width: 0; }
     .bc-controls { grid-template-columns: 1fr; padding: 16px; }
     .bc-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .bc-card:nth-child(3n + 1) { border-left: 1px solid var(--line); padding-left: 16px; }
     .bc-card:nth-child(odd) { border-left: 0; padding-left: 0; }
     .bc-card:nth-child(even) { padding-right: 0; }
+    .bc-design-result { grid-template-columns: 1fr; }
+    .bc-design-item + .bc-design-item { border-left: 0; border-top: 1px solid var(--line); }
+    .bc-page mjx-container[jax="CHTML"][display="true"],
+    .bc-page .MathJax_Display,
+    .bc-page .katex-display {
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-width: 100%;
+      padding-bottom: 2px;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .bc-schematic { padding: 16px 10px 12px; }
+    .bc-field-head { align-items: flex-start; flex-direction: column; gap: 6px; }
+    .bc-entry input[type="number"] { width: 7em; }
+    .bc-results { grid-template-columns: 1fr; }
+    .bc-card,
+    .bc-card:nth-child(3n + 1) {
+      border-left: 0;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .bc-card .bc-v { white-space: normal; }
   }
 
   .bc-page { max-width: 740px; }
@@ -371,54 +483,50 @@ math: true
     <p class="bc-dek">Set an operating point and read off the duty cycle, inductor current ripple, and output voltage ripple — with the switching waveforms drawn live. Ideal components, steady state, continuous conduction.</p>
   </header>
 
-  <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
-    <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img">
-      <!-- input source v_IN -->
-      <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
-      <circle class="contact" cx="52" cy="108" r="15"/>
-      <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
-      <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
-      <!-- top rail -->
-      <path class="w" d="M52 56 L106 56"/>
-      <!-- high-side switch (conducts during t_ON) -->
-      <circle class="contact" cx="110" cy="56" r="3"/>
-      <line class="w" x1="113" y1="53" x2="162" y2="35"/>
-      <circle class="contact" cx="166" cy="56" r="3"/>
-      <text class="ph" x="138" y="78" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
-      <path class="w" d="M169 56 L240 56"/>
-      <!-- switch node v_SW -->
-      <circle class="dot" cx="240" cy="56" r="3.2"/>
-      <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
-      <!-- low-side switch (conducts during t_OFF) -->
-      <path class="w" d="M240 56 L240 82"/>
-      <circle class="contact" cx="240" cy="86" r="3"/>
-      <line class="w" x1="238" y1="90" x2="219" y2="131"/>
-      <circle class="contact" cx="240" cy="136" r="3"/>
-      <text class="ph" x="252" y="114">t<tspan dy="2.5">OFF</tspan></text>
-      <path class="w" d="M240 139 L240 160"/>
-      <!-- switched inductor L_X -->
-      <path class="w" d="M240 56 L264 56"/>
-      <path class="w" d="M264 56 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0"/>
-      <text class="lbl" x="308" y="30" text-anchor="middle">L<tspan dy="3">X</tspan></text>
-      <path class="w" d="M352 56 L492 56"/>
-      <!-- inductor current i_L -->
-      <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
-      <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
-      <!-- output node v_OUT + C_O -->
-      <circle class="dot" cx="420" cy="56" r="3.2"/>
-      <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
-      <path class="w" d="M420 56 L420 90 M402 90 L438 90 M402 100 L438 100 M420 100 L420 160"/>
-      <text class="lbl" x="446" y="99">C<tspan dy="3">O</tspan></text>
-      <!-- load current sink i_O -->
-      <path class="w" d="M492 56 L492 93"/>
-      <circle class="contact" cx="492" cy="108" r="15"/>
-      <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
-      <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
-      <path class="w" d="M492 123 L492 160"/>
-      <!-- bottom rail + ground -->
-      <path class="w" d="M52 160 L492 160"/>
-      <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
+  <figure class="bc-schematic" aria-label="Ideal buck converter switched-inductor power path">
+    <svg viewBox="0 0 620 210" xmlns="http://www.w3.org/2000/svg" role="img">
+      <title>Ideal buck converter switched-inductor power path</title>
+
+      <!-- input terminal and current -->
+      <text class="node" x="52" y="47" text-anchor="middle">v<tspan dy="4">IN</tspan></text>
+      <circle class="terminal" cx="52" cy="82" r="18"/>
+      <circle class="terminal" cx="52" cy="82" r="8"/>
+      <path class="arr" d="M34 133H74"/>
+      <path class="arr-head" d="M74 133L60 124V142Z"/>
+      <text class="current" x="53" y="164" text-anchor="middle">i<tspan dy="4">IN</tspan></text>
+
+      <!-- top switch S_TOP -->
+      <path class="w power" d="M70 82H142"/>
+      <path class="switch" d="M142 82L228 58"/>
+      <path class="w power" d="M228 58L250 82H292"/>
+      <text class="sw-label" x="174" y="119" text-anchor="middle">S<tspan dy="5">TOP</tspan></text>
+
+      <!-- switch node and bottom switch s_BOT -->
+      <circle class="dot" cx="292" cy="82" r="8"/>
+      <path class="w power" d="M292 82V121"/>
+      <circle class="dot" cx="292" cy="121" r="5"/>
+      <path class="switch" d="M267 132L229 167"/>
+      <circle class="terminal" cx="224" cy="171" r="5"/>
+      <path class="w" d="M224 176L255 198L286 176Z"/>
+      <text class="sw-label" x="326" y="148" text-anchor="middle">s<tspan dy="5">BOT</tspan></text>
+
+      <!-- switched inductor and output terminal -->
+      <path class="w power" d="M292 82H326"/>
+      <circle class="dot" cx="335" cy="82" r="6"/>
+      <path class="w power" d="M340 82 c6 -19 20 -19 26 0 s20 19 26 0 s20 -19 26 0 s20 19 26 0"/>
+      <path class="w power" d="M444 82H542"/>
+      <text class="lbl" x="392" y="137" text-anchor="middle">L<tspan dy="4">X</tspan></text>
+      <text class="current" x="378" y="48" text-anchor="middle">i<tspan dy="4">L</tspan></text>
+      <path class="arr" d="M401 45H443"/>
+      <path class="arr-head" d="M443 45L429 36V54Z"/>
+      <text class="node" x="542" y="47" text-anchor="middle">v<tspan dy="4">OUT</tspan></text>
+      <circle class="terminal" cx="562" cy="82" r="18"/>
+      <circle class="terminal" cx="562" cy="82" r="8"/>
+      <path class="arr" d="M540 133H580"/>
+      <path class="arr-head" d="M580 133L566 124V142Z"/>
+      <text class="current" x="562" y="164" text-anchor="middle">i<tspan dy="4">O</tspan></text>
     </svg>
+    <figcaption><strong>Fig. 1.</strong> Ideal switched-inductor buck power path used for the ripple model.</figcaption>
   </figure>
 
   <div class="bc-presets" role="group" aria-label="Example operating points">
@@ -426,6 +534,14 @@ math: true
     <button type="button" data-preset="pol">12 V → 3.3 V point-of-load</button>
     <button type="button" data-preset="bus">48 V → 12 V bus converter</button>
     <button type="button" data-preset="core">5 V → 1.8 V core rail</button>
+  </div>
+
+  <div class="bc-mode">
+    <span class="bc-mode-label">Mode</span>
+    <div class="bc-segmented" role="group" aria-label="Calculator mode">
+      <button type="button" data-mode="analyze" aria-pressed="true">Analyze design</button>
+      <button type="button" data-mode="design" aria-pressed="false">Set ripple targets</button>
+    </div>
   </div>
 
   <div class="bc-controls">
@@ -460,7 +576,7 @@ math: true
       <input id="sl-fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider">
       <div class="bc-ticks" data-for="fsw"></div>
     </div>
-    <div class="bc-field">
+    <div class="bc-field" data-mode-field="analyze">
       <div class="bc-field-head">
         <label for="num-l">Inductance L<sub>X</sub></label>
         <span class="bc-entry"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
@@ -468,13 +584,42 @@ math: true
       <input id="sl-l" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
       <div class="bc-ticks" data-for="l"></div>
     </div>
-    <div class="bc-field">
+    <div class="bc-field" data-mode-field="analyze">
       <div class="bc-field-head">
         <label for="num-c">Output capacitance C<sub>O</sub></label>
         <span class="bc-entry"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
       </div>
       <input id="sl-c" type="range" min="0" max="1000" step="1" aria-label="Output capacitance slider">
       <div class="bc-ticks" data-for="c"></div>
+    </div>
+    <div class="bc-field" data-mode-field="design" hidden>
+      <div class="bc-field-head">
+        <label for="num-iripple">Current ripple target Δi<sub>L</sub>/i<sub>O</sub></label>
+        <span class="bc-entry"><input id="num-iripple" type="number" inputmode="decimal" step="1"><span class="bc-unit">%</span></span>
+      </div>
+      <input id="sl-iripple" type="range" min="0" max="1000" step="1" aria-label="Current ripple target slider">
+      <div class="bc-ticks" data-for="iripple"></div>
+    </div>
+    <div class="bc-field" data-mode-field="design" hidden>
+      <div class="bc-field-head">
+        <label for="num-vripple">Voltage ripple target Δv<sub>OUT</sub></label>
+        <span class="bc-entry"><input id="num-vripple" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">mV</span></span>
+      </div>
+      <input id="sl-vripple" type="range" min="0" max="1000" step="1" aria-label="Voltage ripple target slider">
+      <div class="bc-ticks" data-for="vripple"></div>
+    </div>
+  </div>
+
+  <div class="bc-design-result" id="bc-design-result" aria-live="polite">
+    <div class="bc-design-item">
+      <p class="bc-design-k">Suggested inductance L<sub>X</sub></p>
+      <p class="bc-design-v" id="out-design-l">—</p>
+      <p class="bc-design-s">from current ripple target</p>
+    </div>
+    <div class="bc-design-item">
+      <p class="bc-design-k">Suggested capacitance C<sub>O</sub></p>
+      <p class="bc-design-v" id="out-design-c">—</p>
+      <p class="bc-design-s">from voltage ripple target</p>
     </div>
   </div>
 
@@ -529,8 +674,8 @@ math: true
   <section class="post-content project-body">
     <h2>The model</h2>
     <p>Across the on-time \(t_{ON}\) the inductor sees \(v_{IN} - v_{OUT}\) and its current ramps up; across the off-time \(t_{OFF}\) it sees \(-v_{OUT}\) and ramps down into the output. Volt-second balance sets the duty cycle, and the on-time ramp sets the current ripple:</p>
+    <p>$$D \equiv \frac{t_{ON}}{t_{SW}} = \frac{v_{OUT}}{v_{IN}}$$</p>
     <p>$$\begin{aligned}
-       D &\equiv \frac{t_{ON}}{t_{SW}} = \frac{v_{OUT}}{v_{IN}} \\
        \Delta i_L &= t_{ON}\!\left(\frac{v_{IN} - v_{OUT}}{L_X}\right) \\
        &= \frac{(v_{IN} - v_{OUT})\, D}{f_{SW}\, L_X}
        \end{aligned}$$</p>
@@ -556,7 +701,9 @@ math: true
     iload: { min: 0.05,    max: 20,      log: true,  scale: 1,    digits: 2 },
     fsw:   { min: 50e3,    max: 6e6,     log: true,  scale: 1e-3, digits: 0 },
     l:     { min: 0.22e-6, max: 25e-6,   log: true,  scale: 1e6,  digits: 2 },
-    c:     { min: 1e-6,    max: 1000e-6, log: true,  scale: 1e6,  digits: 0 }
+    c:     { min: 1e-6,    max: 1000e-6, log: true,  scale: 1e6,  digits: 0 },
+    iripple: { min: 0.05,  max: 0.8,     log: false, scale: 100,  digits: 0 },
+    vripple: { min: 1e-3,  max: 500e-3,  log: true,  scale: 1e3, digits: 1 }
   };
 
   // clickable jump ticks under selected sliders: [value, label]
@@ -565,7 +712,9 @@ math: true
     vout: [[1, "1"], [3.3, "3.3"], [5, "5"], [12, "12"]],
     fsw:  [[500e3, "500k"], [1e6, "1M"], [2e6, "2M"]],
     l:    [[0.33e-6, "0.33"], [0.68e-6, "0.68"], [1e-6, "1"], [2.2e-6, "2.2"], [4.7e-6, "4.7"]],
-    c:    [[22e-6, "22"], [110e-6, "110"], [220e-6, "220"]]
+    c:    [[22e-6, "22"], [110e-6, "110"], [220e-6, "220"]],
+    iripple: [[0.2, "20"], [0.3, "30"], [0.4, "40"]],
+    vripple: [[5e-3, "5"], [10e-3, "10"], [20e-3, "20"], [50e-3, "50"]]
   };
 
   var PRESETS = {
@@ -573,8 +722,10 @@ math: true
     bus:  { vin: 48, vout: 12,  iload: 5, fsw: 300e3, l: 22e-6,  c: 100e-6 },
     core: { vin: 5,  vout: 1.8, iload: 3, fsw: 1e6,   l: 1e-6,   c: 100e-6 }
   };
+  var DEFAULT_TARGETS = { iripple: 0.3, vripple: 10e-3 };
 
-  var state = Object.assign({}, PRESETS.pol);
+  var state = Object.assign({}, DEFAULT_TARGETS, PRESETS.pol);
+  var mode = "analyze";
 
   /* ---------- slider <-> value mapping ---------- */
   function toSlider(key, v) {
@@ -622,6 +773,20 @@ math: true
       // cycle average of the capacitor-ripple integral (used to centre on v_OUT)
       vcMean: dIL * T * (1 - 2 * D) / (12 * s.c)
     };
+  }
+
+  function designValues(s) {
+    var D = s.vout / s.vin;
+    var dIL = Math.max(1e-12, s.iripple * s.iload);
+    var l = (s.vin - s.vout) * D / (s.fsw * dIL);
+    var c = dIL / (8 * s.fsw * s.vripple);
+    return { l: l, c: c, dIL: dIL, dV: s.vripple };
+  }
+
+  function workingState() {
+    if (mode !== "design") { return Object.assign({}, state); }
+    var d = designValues(state);
+    return Object.assign({}, state, { l: d.l, c: d.c });
   }
 
   // instantaneous values at time t (for the probe cursor)
@@ -798,36 +963,55 @@ math: true
 
   /* ---------- element registry ---------- */
   var el = {};
-  ["vin", "vout", "iload", "fsw", "l", "c"].forEach(function (k) {
+  ["vin", "vout", "iload", "fsw", "l", "c", "iripple", "vripple"].forEach(function (k) {
     el["sl-" + k] = document.getElementById("sl-" + k);
     el["num-" + k] = document.getElementById("num-" + k);
   });
   ["out-d", "out-tsw", "out-dil", "out-dil-pct", "out-dv", "out-dv-pct",
-   "out-ton", "out-toff", "out-ipk",
+   "out-ton", "out-toff", "out-ipk", "out-design-l", "out-design-c",
+   "bc-design-result",
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
+  var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
+  var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
 
   function syncInputs() {
     Object.keys(PARAMS).forEach(function (k) {
       var p = PARAMS[k];
+      if (!el["sl-" + k] || !el["num-" + k]) { return; }
       el["sl-" + k].value = toSlider(k, state[k]);
       el["num-" + k].value = (state[k] * p.scale).toFixed(p.digits).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
     });
   }
 
+  function syncModeUI() {
+    modeButtons.forEach(function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-mode") === mode ? "true" : "false");
+    });
+    modeFields.forEach(function (field) {
+      field.hidden = field.getAttribute("data-mode-field") !== mode;
+    });
+    el["bc-design-result"].className = "bc-design-result" + (mode === "design" ? " bc-show" : "");
+  }
+
   /* ---------- render ---------- */
   function render() {
-    var r = compute(state);
-    var w = sampleWaves(state, r);
+    var s = workingState();
+    var d = designValues(state);
+    var r = compute(s);
+    var w = sampleWaves(s, r);
     var tEnd = CYCLES * r.T;
 
+    syncModeUI();
+    el["out-design-l"].textContent = eng(d.l, "H");
+    el["out-design-c"].textContent = eng(d.c, "F");
     el["out-d"].textContent = (100 * r.D).toFixed(1) + " %";
     el["out-tsw"].textContent = eng(r.T, "s");
     el["out-dil"].textContent = eng(r.dIL, "A");
     el["out-dil-pct"].textContent = (100 * r.ratio).toFixed(0);
     el["out-dv"].textContent = eng(r.dV, "V");
-    el["out-dv-pct"].textContent = (100 * r.dV / state.vout).toPrecision(2);
+    el["out-dv-pct"].textContent = (100 * r.dV / s.vout).toPrecision(2);
     el["out-ton"].textContent = eng(r.D * r.T, "s");
     el["out-toff"].textContent = eng((1 - r.D) * r.T, "s");
     el["out-ipk"].textContent = eng(r.iPk, "A") + " / " + eng(r.iVal, "A");
@@ -835,10 +1019,10 @@ math: true
 
     panel(el["p-vsw"], 96, w.t, w.vsw, {
       D: r.D, T: r.T, tEnd: tEnd, drive: true,
-      ymin: -0.1 * state.vin, ymax: 1.16 * state.vin,
+      ymin: -0.1 * s.vin, ymax: 1.16 * s.vin,
       chan: [["switch node v"], ["SW", true], ["  "]],
       rail: [
-        { y: state.vin, segs: [["v"], ["IN", true]] },
+        { y: s.vin, segs: [["v"], ["IN", true]] },
         { y: 0, segs: [["0"]] }
       ]
     });
@@ -849,7 +1033,7 @@ math: true
       D: r.D, T: r.T, tEnd: tEnd,
       ymin: iMin, ymax: r.iPk + ipad,
       chan: [["inductor current i"], ["L", true], ["  "]],
-      refs: [{ y: state.iload, segs: [["i"], ["O", true]] }]
+      refs: [{ y: s.iload, segs: [["i"], ["O", true]] }]
         .concat(r.iVal < 0 ? [{ y: 0, segs: [["0"]] }] : []),
       bracket: { y1: r.iPk, y2: r.iVal, name: "Δi", sub: "L", value: eng(r.dIL, "A") }
     });
@@ -860,7 +1044,7 @@ math: true
       D: r.D, T: r.T, tEnd: tEnd, xAxis: true,
       ymin: vmin - vpad, ymax: vmax + vpad,
       chan: [["output voltage v"], ["OUT", true], [", zoomed to the ripple  "]],
-      refs: [{ y: state.vout, segs: [["v"], ["OUT", true]] }],
+      refs: [{ y: s.vout, segs: [["v"], ["OUT", true]] }],
       bracket: { y1: vmax, y2: vmin, name: "Δv", sub: "OUT", value: eng(r.dV, "V") }
     });
   }
@@ -882,10 +1066,11 @@ math: true
     var xu = (ev.clientX - rect.left) / rect.width * W;
     if (xu < M.l || xu > W - M.r) { hideProbe(); return; }
 
-    var r = compute(state);
+    var s = workingState();
+    var r = compute(s);
     var tEnd = CYCLES * r.T;
     var t = (xu - M.l) / (W - M.l - M.r) * tEnd;
-    var p = probe(state, r, t);
+    var p = probe(s, r, t);
     var vals = { "p-vsw": eng(p.vsw, "V"), "p-il": eng(p.il, "A"), "p-vout": eng(p.vc, "V", 4) };
 
     ["p-vsw", "p-il", "p-vout"].forEach(function (id) {
@@ -956,9 +1141,18 @@ math: true
     });
   });
 
+  modeButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      mode = this.getAttribute("data-mode");
+      hideProbe();
+      syncModeUI();
+      render();
+    });
+  });
+
   document.querySelectorAll(".bc-presets button").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      state = Object.assign({}, PRESETS[this.getAttribute("data-preset")]);
+      state = Object.assign({}, state, PRESETS[this.getAttribute("data-preset")]);
       syncInputs();
       render();
     });
