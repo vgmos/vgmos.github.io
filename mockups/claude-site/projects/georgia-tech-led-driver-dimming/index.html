@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Dimming DC-DC LED Driver | Vasu Gupta</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Dimming DC-DC LED Driver" />
+<meta name="author" content="Vasu Gupta" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="MS thesis on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM by luminous efficiency, power loss, and dimming range." />
+<meta property="og:description" content="MS thesis on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM by luminous efficiency, power loss, and dimming range." />
+<link rel="canonical" href="https://vgmos.github.io/projects/georgia-tech-led-driver-dimming/" />
+<meta property="og:url" content="https://vgmos.github.io/projects/georgia-tech-led-driver-dimming/" />
+<meta property="og:site_name" content="Vasu Gupta" />
+<meta property="og:image" content="https://vgmos.github.io/assets/og-default.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-12-10T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://vgmos.github.io/assets/og-default.png" />
+<meta property="twitter:title" content="Dimming DC-DC LED Driver" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Vasu Gupta"},"dateModified":"2021-12-10T00:00:00+00:00","datePublished":"2021-12-10T00:00:00+00:00","description":"MS thesis on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM by luminous efficiency, power loss, and dimming range.","headline":"Dimming DC-DC LED Driver","image":"https://vgmos.github.io/assets/og-default.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://vgmos.github.io/projects/georgia-tech-led-driver-dimming/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://vgmos.github.io/favicon.svg"},"name":"Vasu Gupta"},"url":"https://vgmos.github.io/projects/georgia-tech-led-driver-dimming/"}</script>
+<!-- End Jekyll SEO tag -->
+<script>
+    (function () {
+      try {
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+            sessionStorage.getItem("vgmos-page-transition") === "1") {
+          document.documentElement.classList.add("is-transitioning-in");
+        }
+      } catch (error) {}
+    }());
+  </script>
+  <link rel="stylesheet" href="https://vgmos.github.io/assets/main.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260704054129">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"><link type="application/atom+xml" rel="alternate" href="https://vgmos.github.io/feed.xml" title="Vasu Gupta" /><link rel="stylesheet" href="https://vgmos.github.io/css/site.css?v=20260704054129"><script defer src="/js/ui.js?v=20260704054129"></script>
+</head>
+<body><div class="page-transition" aria-hidden="true"></div>
+
+<header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/mockups/claude-site/">Vasu Gupta</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="/mockups/claude-site/#tools" data-scroll>Tools</a>
+          <a class="page-link" href="/mockups/claude-site/#projects" data-scroll>Projects</a>
+          <a class="page-link" href="/mockups/claude-site/#notebook" data-scroll>Notebook</a><a class="page-link" href="/mockups/claude-site/about/">About</a>
+          <span class="nav-underline" aria-hidden="true"></span>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="project-page">
+  <header class="project-header">
+    <p class="eyebrow">Georgia Tech · 2020–2021</p>
+    <h1>Dimming DC-DC LED Driver</h1>
+    
+      <p class="project-dek">My MS thesis on analog and PWM dimming. Published at IECON 2021.</p>
+    
+  </header>
+
+  <dl class="project-facts">
+    <div><dt>Topics</dt><dd>power IC, LED drivers, switched-inductor converters, dimming</dd></div>
+    
+    
+  </dl>
+
+  
+    <section class="project-links" aria-label="Project links">
+      <h2>Links</h2>
+      <ul>
+        
+          <li><a href="https://doi.org/10.1109/IECON48115.2021.9589840">IECON 2021 paper DOI</a></li>
+        
+      </ul>
+    </section>
+  
+
+  <div class="post-content project-body">
+    <p>My MS thesis at Georgia Tech was about where the energy goes when you dim an LED. I went in assuming brightness follows average LED current and the driver just supplies it. Neither holds cleanly: luminous flux bends over at high current, and a switched-inductor driver spends power differently depending on how you ask it to dim. Two methods can deliver the same average current and still produce different light from different input watts. The thesis was about pinning that down.</p>
+
+<h2 id="problem">Problem</h2>
+
+<p>High-power LEDs are current-controlled devices whose flux rises with current but saturates instead of scaling forever. The driver stacks its own losses on top: controller, gate drive, switches, inductor, output capacitor. So the comparison that matters is useful light out per input watt, through the whole chain.</p>
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/led-driver-dimming/power-stage.png" alt="Original IECON schematic of the switched-inductor buck-boost LED driver power stage feeding four LEDs." />
+  </div>
+  <figcaption><strong>Fig. 2 — Power stage.</strong> The synchronous buck-boost switched-inductor LED driver used for the dimming comparison.</figcaption>
+</figure>
+
+<p>I modeled a representative 12 V automotive buck-boost driver delivering up to 1 A into four CREE XP-E2-class LEDs. The model folded together the LED’s electro-optical curve, its I-V curve, and the converter’s loss profile, with SPICE runs to check the pieces.</p>
+
+<h2 id="dimming-methods">Dimming Methods</h2>
+
+<p>The thesis compared analog dimming against three PWM variants: shutdown PWM, shunt-switched PWM, and series-switched PWM. All four control perceived brightness; the differences show up in where the power goes.</p>
+
+<p>PWM holds the LED at a high peak current and chops time, so it keeps producing light at an operating point where the flux curve has already flattened. Analog dimming moves the operating point itself, which avoids that penalty across most of the light range. The loss breakdown makes the split visible: the PWM-specific term dominates much of the dimming range, while the shared converter losses are common to both methods.</p>
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/led-driver-dimming/power-loss-breakdown.png" alt="Original IECON power-loss breakdown plot comparing analog and PWM dimming losses across luminous flux." />
+  </div>
+  <figcaption><strong>Fig. 13 — Power-loss breakdown.</strong> The PWM-specific loss term dominates much of the dimming range, while shared switched-inductor losses remain common to both methods.</figcaption>
+</figure>
+
+<h2 id="result">Result</h2>
+
+<p>PWM still earns its place; you want it when color consistency, control simplicity, or a very deep dimming ratio matters. But in this driver, analog dimming had better luminous efficiency over most of the range — peaking near 93 lm/W where PWM sits near 59 — and in principle it can cover the full 0–100% span if DCM operation and current sensing are handled with care.</p>
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/led-driver-dimming/luminous-efficiency.png" alt="Original IECON luminous-efficiency plot showing analog dimming peaking near 93 lumens per watt and PWM near 59 lumens per watt." />
+  </div>
+  <figcaption><strong>Fig. 9 — Luminous efficiency.</strong> Analog peaks near 93 L/W, while PWM remains near 59 L/W in the modeled setup.</figcaption>
+</figure>
+
+<p>That gap is where the thesis’s “up to 57%” number comes from. PWM’s efficiency curve is flat because the operating point never moves; analog dimming rides closer to the LED’s most efficient region.</p>
+
+<figure class="source-figure source-figure--table">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/led-driver-dimming/comparison-table.png" alt="Original IECON comparison table for analog, shutdown PWM, shunt-switched PWM, and series-switched PWM dimming." />
+  </div>
+  <figcaption><strong>Table I — Method comparison.</strong> Luminous efficiency, dimming range, transient behavior, and added loss mechanisms.</figcaption>
+</figure>
+
+<p>One caveat survived every attempt to simplify it away: at very low output, the converter’s fixed losses dominate and PWM can briefly come out ahead. Rules of thumb have operating regions too.</p>
+
+<p>The lasting effect on me was how I read “efficiency.” It’s never one number. Half the job is working out which loss is active at a given operating point, which one scales, and which one is an artifact of the control method rather than the physics.</p>
+
+<h2 id="sources">Sources</h2>
+
+<p>The work was completed as my Georgia Tech MS thesis, <strong>Dimming DC-DC LED Drivers: Power Losses, Luminous Efficiency &amp; Best-in-Class</strong>, approved in December 2021. The conference version was published with Prof. Gabriel A. Rincón-Mora at IECON 2021 as <strong>Dimming DC-DC LED Drivers: Luminous Efficiency, Power Losses, &amp; Best-in-Class</strong>.</p>
+
+  </div>
+</article>
+
+      </div>
+    </main><footer class="site-footer" role="contentinfo">
+  <div class="wrapper">
+    <p class="footer-name">Vasu Gupta</p>
+    <nav class="footer-links" aria-label="Elsewhere">
+      <a href="https://www.linkedin.com/in/vgmos/">LinkedIn</a>
+      <a href="https://scholar.google.com/citations?hl=en&amp;user=aKQonBwAAAAJ">Google Scholar</a>
+      <a href="mailto:vasugupta711@gmail.com">Email</a>
+    </nav>
+    <p class="footer-copy">© 2026 Vasu Gupta</p>
+  </div>
+</footer>
+  <link rel="stylesheet" href="/mockups/claude-site/claude-typography.css">
+</body>
+
+</html>
