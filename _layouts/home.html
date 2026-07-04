@@ -15,7 +15,7 @@ layout: default
       {% for tool in site.data.tools %}
         <article class="list-item reveal">
           <p class="item-meta">{{ tool.meta }}</p>
-          <h3><a href="{{ tool.url | relative_url }}">{{ tool.title }}<span class="go" aria-hidden="true">&rarr;</span></a></h3>
+          <h3><a href="{{ tool.url | relative_url }}">{{ tool.title }}</a></h3>
           <p>{{ tool.summary }}</p>
         </article>
       {% else %}
@@ -35,7 +35,7 @@ layout: default
         {% unless project.kind == "era" %}
           <article class="list-item reveal">
             <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
-            <h3><a href="{{ project.url | relative_url }}">{{ project.title }}<span class="go" aria-hidden="true">&rarr;</span></a></h3>
+            <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
             {% if project.summary %}
               <p>{{ project.summary }}</p>
             {% endif %}
@@ -54,7 +54,7 @@ layout: default
       {% for post in site.posts %}
         <article class="list-item reveal">
           <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}</p>
-          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}<span class="go" aria-hidden="true">&rarr;</span></a></h3>
+          <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
           {% if post.excerpt %}
             <p>{{ post.excerpt | strip_html | truncate: 180 }}</p>
           {% endif %}
