@@ -259,6 +259,20 @@ h3,
   padding-left: 0;
 }
 
+.post-content .katex-display {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.post-content .katex-display > .katex {
+  display: inline-block;
+  min-width: max-content;
+}
+
 pre,
 code {
   border-radius: 4px;
