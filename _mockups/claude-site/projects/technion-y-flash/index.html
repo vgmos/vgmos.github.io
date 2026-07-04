@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Y-Flash Device Modeling and Trainable DAC | Vasu Gupta</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Y-Flash Device Modeling and Trainable DAC" />
+<meta name="author" content="Vasu Gupta" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Y-Flash floating-gate memristive device modeling with the Technion ASIC2 group, including Verilog-A CAD infrastructure, small-signal analysis, and a trainable DAC architecture." />
+<meta property="og:description" content="Y-Flash floating-gate memristive device modeling with the Technion ASIC2 group, including Verilog-A CAD infrastructure, small-signal analysis, and a trainable DAC architecture." />
+<link rel="canonical" href="https://vgmos.github.io/projects/technion-y-flash/" />
+<meta property="og:url" content="https://vgmos.github.io/projects/technion-y-flash/" />
+<meta property="og:site_name" content="Vasu Gupta" />
+<meta property="og:image" content="https://vgmos.github.io/assets/og-default.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-03-01T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://vgmos.github.io/assets/og-default.png" />
+<meta property="twitter:title" content="Y-Flash Device Modeling and Trainable DAC" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Vasu Gupta"},"dateModified":"2020-03-01T00:00:00+00:00","datePublished":"2020-03-01T00:00:00+00:00","description":"Y-Flash floating-gate memristive device modeling with the Technion ASIC2 group, including Verilog-A CAD infrastructure, small-signal analysis, and a trainable DAC architecture.","headline":"Y-Flash Device Modeling and Trainable DAC","image":"https://vgmos.github.io/assets/og-default.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://vgmos.github.io/projects/technion-y-flash/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://vgmos.github.io/favicon.svg"},"name":"Vasu Gupta"},"url":"https://vgmos.github.io/projects/technion-y-flash/"}</script>
+<!-- End Jekyll SEO tag -->
+<script>
+    (function () {
+      try {
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+            sessionStorage.getItem("vgmos-page-transition") === "1") {
+          document.documentElement.classList.add("is-transitioning-in");
+        }
+      } catch (error) {}
+    }());
+  </script>
+  <link rel="stylesheet" href="https://vgmos.github.io/assets/main.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260704054129">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"><link type="application/atom+xml" rel="alternate" href="https://vgmos.github.io/feed.xml" title="Vasu Gupta" /><link rel="stylesheet" href="https://vgmos.github.io/css/site.css?v=20260704054129"><script defer src="/js/ui.js?v=20260704054129"></script>
+</head>
+<body><div class="page-transition" aria-hidden="true"></div>
+
+<header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/_mockups/claude-site/">Vasu Gupta</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          <a class="page-link" href="/_mockups/claude-site/#tools" data-scroll>Tools</a>
+          <a class="page-link" href="/_mockups/claude-site/#projects" data-scroll>Projects</a>
+          <a class="page-link" href="/_mockups/claude-site/#notebook" data-scroll>Notebook</a><a class="page-link" href="/_mockups/claude-site/about/">About</a>
+          <span class="nav-underline" aria-hidden="true"></span>
+        </div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="project-page">
+  <header class="project-header">
+    <p class="eyebrow">Technion · 2018–2020</p>
+    <h1>Y-Flash Device Modeling and Trainable DAC</h1>
+    
+      <p class="project-dek">Verilog-A modeling for a floating-gate memristive device, plus a trainable DAC study. Published at DATE 2020.</p>
+    
+  </header>
+
+  <dl class="project-facts">
+    <div><dt>Topics</dt><dd>neuromorphic circuits, floating-gate devices, Verilog-A, trainable DACs, CAD modeling</dd></div>
+    
+    
+  </dl>
+
+  
+    <section class="project-links" aria-label="Project links">
+      <h2>Links</h2>
+      <ul>
+        
+          <li><a href="https://doi.org/10.23919/DATE48585.2020.9116354">DATE 2020 paper DOI</a></li>
+        
+          <li><a href="https://doi.org/10.1038/s41928-019-0331-1">Nature Electronics paper DOI</a></li>
+        
+          <li><a href="https://asic2.group/wp-content/uploads/2021/02/Y-flash-manual-1.pdf">Public ASIC2 Y-Flash Verilog-A manual</a></li>
+        
+      </ul>
+    </section>
+  
+
+  <div class="post-content project-body">
+    <p>This one started as my BITS undergraduate thesis and grew into a two-year collaboration with the ASIC2 group at the Technion. The group had a floating-gate device, Y-Flash, that behaves like an analog memristive synapse; the device itself was published in Nature Electronics. My corner of the project was everything a circuit designer would need before building with it: a Verilog-A model that runs in Cadence, MATLAB fitting and training simulations, small-signal analysis, and a trainable-DAC concept that used the device as its weights.</p>
+
+<h2 id="the-device">The Device</h2>
+
+<p>Y-Flash is two NMOS transistors sharing a floating gate, built in a commercial 180 nm CMOS flow. In subthreshold read, the threshold-voltage state sets the current, so the device acts as a tunable conductance. That makes it a candidate for vector-matrix multiplication and trainable analog weights, and an unusually practical one, since it needs no exotic materials — just standard CMOS.</p>
+
+<p>The catch is the modeling burden. Program and erase dynamics, read behavior, variability, and array disturb effects all have to end up in the simulator, or the promise stays on the device plot.</p>
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/y-flash/y-flash-iv-hysteresis.png" alt="Y-Flash memristive I-V simulation showing asymmetric hysteresis across drain-source voltage." />
+  </div>
+  <figcaption><strong>Y-Flash memristive I-V behavior.</strong> The model treats the floating-gate threshold voltage as the internal state and uses subthreshold read current as the circuit-facing conductance.</figcaption>
+</figure>
+
+<h2 id="the-model">The Model</h2>
+
+<p>The Verilog-A model was the center of my work because it made the device available to other designers. The public manual describes more than 650 distinguishable resistance levels for 50%-duty 20 µs pulse inputs, with deterministic memristive dynamics, usable directly at schematic level. Building it meant several layers:</p>
+
+<ul>
+  <li>program and erase dynamics fitted from measured Y-Flash behavior;</li>
+  <li>a read-mode equation mapping floating-gate threshold voltage to subthreshold current;</li>
+  <li>a Verilog-A implementation for Cadence Virtuoso;</li>
+  <li>parameters for coupling ratio, initial threshold voltage, programming constants, read-current scale, and simulation resolution;</li>
+  <li>a stochastic extension for Monte Carlo and variation studies;</li>
+  <li>small-signal schematics showing when the device can be treated as a passive incremental resistance.</li>
+</ul>
+
+<p>The DATE 2020 paper wraps all of this into a top-down CAD framework, from Verilog-A through Monte Carlo, layout, DRC/LVS, and extraction. Writing the equations down was the smaller half of the job. The larger half was making the device usable by designers who never characterized it.</p>
+
+<h2 id="the-trainable-dac">The Trainable DAC</h2>
+
+<p>The data-converter thread came from DIDACTIC, an idea that treats DAC calibration as a learning problem: instead of assuming a perfectly matched binary-weighted array, use analog weights and train them until the output codes land where they should. My BITS thesis developed that with an abstract memristor model. The Y-Flash version asked what changes when the weights are real floating-gate devices with asymmetric program/erase and picky read biasing.</p>
+
+<figure class="source-figure">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/y-flash/y-flash-dac.png" alt="Y-Flash based 4-bit DAC architecture with four Y-Flash cells feeding a transimpedance amplifier and an external software training loop." />
+  </div>
+  <figcaption><strong>Y-Flash 4-bit DAC concept.</strong> Four Y-Flash devices provide trainable conductance weights; an op-amp senses the summed current while an external training loop updates the device states.</figcaption>
+</figure>
+
+<p>The study used a 4×1 Y-Flash array with transimpedance sensing. In operation, the digital code selects which conductances contribute current. In training, program and erase pulses walk the threshold voltages until the analog output approaches the target code levels.</p>
+
+<p>The machine-learning framing only survives if it respects the device. Y-Flash needs high-voltage program and erase pulses, asymmetric terminal connections, careful read biasing, and offset-aware sensing, so the DAC architecture had to be built around those facts rather than around an ideal variable resistor.</p>
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/y-flash/y-flash-threshold-training.png" alt="Training plot showing four Y-Flash threshold voltages converging over roughly 300 samples." />
+  </div>
+  <figcaption><strong>Training as threshold-voltage movement.</strong> The learned DAC weights are Y-Flash threshold-voltage states, moved by program and erase pulses.</figcaption>
+</figure>
+
+<figure class="source-figure source-figure--wide">
+  <div class="source-figure__frame">
+    <img src="/assets/projects/y-flash/y-flash-dac-output.png" alt="DAC output plot comparing the initial irregular DAC response against the final trained staircase response." />
+  </div>
+  <figcaption><strong>Initial and trained DAC response.</strong> The training loop moved an irregular initial response toward the desired staircase output.</figcaption>
+</figure>
+
+<p>What this project left me with is a suspicion of clean block diagrams. The model, the circuit, and the training loop each worked fine on their own; making them agree was the actual project, and wherever they disagreed was usually where the real design information lived.</p>
+
+<h2 id="sources">Sources</h2>
+
+<ul>
+  <li>My BITS thesis: <strong>Full-custom design of DIDACTIC: A data-intelligent digital to analog converter using trainable integrated circuit</strong>, submitted November 2018.</li>
+  <li>Technion group-meeting deck: <strong>Trainable DACs using Y-flash memristive device</strong>, December 2018.</li>
+  <li>Public ASIC2 manual: <strong>Verilog-A model — Y-flash memristive device</strong>, Vasu Gupta, Loai Danial, and Shahar Kvatinsky.</li>
+  <li>DATE 2020 paper: <strong>Modeling a Floating-Gate Memristive Device for Computer Aided Design of Neuromorphic Computing</strong>, Loai Danial, Vasu Gupta, Evgeny Pikhay, Yakov Roizin, and Shahar Kvatinsky.</li>
+  <li>Nature Electronics 2019 paper: <strong>Two-terminal floating-gate transistors with a low-power memristive operation mode for analogue neuromorphic computing</strong>, Loai Danial, Evgeny Pikhay, Eric Herbelin, Nicolas Wainstein, Vasu Gupta, Nimrod Wald, Yakov Roizin, Ramez Daniel, and Shahar Kvatinsky.</li>
+</ul>
+
+  </div>
+</article>
+
+      </div>
+    </main><footer class="site-footer" role="contentinfo">
+  <div class="wrapper">
+    <p class="footer-name">Vasu Gupta</p>
+    <nav class="footer-links" aria-label="Elsewhere">
+      <a href="https://www.linkedin.com/in/vgmos/">LinkedIn</a>
+      <a href="https://scholar.google.com/citations?hl=en&amp;user=aKQonBwAAAAJ">Google Scholar</a>
+      <a href="mailto:vasugupta711@gmail.com">Email</a>
+    </nav>
+    <p class="footer-copy">© 2026 Vasu Gupta</p>
+  </div>
+</footer>
+  <link rel="stylesheet" href="/_mockups/claude-site/claude-typography.css">
+</body>
+
+</html>
