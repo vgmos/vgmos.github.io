@@ -39,7 +39,7 @@ a:focus-visible {
 .post-content > figure a,
 .project-body a {
   text-decoration: underline;
-  text-decoration-color: rgba(47, 111, 100, 0.45);
+  text-decoration-color: rgba(39, 111, 134, 0.45);
   text-underline-offset: 3px;
 }
 
@@ -271,6 +271,10 @@ h3,
 .post-content .katex-display > .katex {
   display: inline-block;
   min-width: max-content;
+}
+
+.list-item p .katex {
+  white-space: nowrap;
 }
 
 pre,
@@ -602,13 +606,17 @@ pre,
   }
 
   .section-heading,
-  .project-facts,
   .resume-block div,
   .fig-interactive__controls,
   .index-list li {
     display: block;
   }
 
+  .project-facts div {
+    display: block;
+  }
+
+  .project-facts dt,
   .resume-block dt {
     margin-bottom: 4px;
   }
@@ -642,21 +650,6 @@ pre,
   padding: 8px 0 54px;
   margin-bottom: 4px;
   border-bottom: 1px solid var(--line);
-}
-.home-hero .hero-eyebrow {
-  margin: 0 0 18px;
-  color: var(--accent);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-.home-hero .hero-title {
-  margin: 0 0 0.5em;
-  font-size: clamp(2rem, 5.4vw, 3.2rem);
-  line-height: 1.07;
-  letter-spacing: -0.026em;
-  max-width: 18ch;
-  text-wrap: balance;
 }
 .home-hero .hero-lede {
   margin: 0;
@@ -789,7 +782,6 @@ body {
 @media (max-width: 700px) {
   .wrapper { padding-right: 22px; padding-left: 22px; }
   .home-hero { padding-bottom: 36px; }
-  .home-hero .hero-title { font-size: clamp(1.9rem, 7.6vw, 3.2rem); }
   .home-hero .hero-lede { font-size: 1.12rem; }
   .home-shell .section-block { margin-top: 38px; }
   .home-shell .list-item { padding: 18px 0; }
@@ -1372,6 +1364,13 @@ h3,
   .post-content .list-item h2,
   .post-content .list-item h3 {
     font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-nav .trigger .page-link {
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
 }
 

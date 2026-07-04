@@ -24,11 +24,13 @@ math: true
   .bc-schematic {
     margin: 1.6rem 0;
     padding: 22px 12px 14px;
+    overflow-x: auto;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: #fff;
+    -webkit-overflow-scrolling: touch;
   }
-  .bc-schematic svg { display: block; width: min(540px, 100%); margin: 0 auto; }
+  .bc-schematic svg { display: block; width: min(540px, 100%); min-width: 520px; margin: 0 auto; }
   .bc-schematic .w { stroke: var(--ink); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .bc-schematic .contact { stroke: var(--ink); stroke-width: 1.6; fill: #fff; }
   .bc-schematic .dot { fill: var(--ink); }

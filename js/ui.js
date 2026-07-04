@@ -99,6 +99,8 @@
     saveCurrentScroll();
   }
 
+  var initialScroll = scrollFromState(history.state);
+  if (initialScroll) scrollToPosition(initialScroll);
   saveCurrentScroll();
 
   window.addEventListener("scroll", scheduleScrollSave, { passive: true });
@@ -521,6 +523,7 @@
   }
 
   function softNavigate(url, replaceHistory, transientHash, restoreScroll) {
+    if (!replaceHistory) flushScrollSave();
     if (navInFlight) return;
     navInFlight = true;
 
