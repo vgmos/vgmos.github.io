@@ -671,18 +671,6 @@ pre,
 /* The first screen should be readable immediately; page-to-page motion
    carries the living quality without animating the hero copy on load. */
 
-/* --- project / notebook title hover arrow --- */
-.list-item h3 .go {
-  display: inline-block;
-  margin-left: 0.35em;
-  color: var(--accent);
-  opacity: 0.45;
-  transform: translateX(0);
-  transition: opacity 180ms var(--ease), transform 180ms var(--ease);
-}
-.list-item:hover h3 .go,
-.list-item:focus-within h3 .go { opacity: 1; transform: translateX(3px); }
-
 /* --- sliding nav underline (desktop only) --- */
 @media (min-width: 601px) {
   .site-nav .trigger { position: relative; }
@@ -732,9 +720,6 @@ pre,
 /* --- reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
   .nav-underline { transition: none; }
-  .list-item h3 .go { transition: none; transform: none; }
-  .list-item:hover h3 .go,
-  .list-item:focus-within h3 .go { transform: none; }
 }
 
 /* ===================================================================
@@ -1248,28 +1233,6 @@ h3,
   text-decoration-color: rgba(39, 111, 134, 0.62);
 }
 
-.list-item h3 .go,
-.list-item h2 .go {
-  display: inline-block;
-  margin-left: 0.35em;
-  color: var(--accent);
-  font-family: var(--claude-sans);
-  font-weight: 400;
-  opacity: 0.55;
-  transform: translateX(0);
-  transition:
-    opacity 300ms var(--claude-ease),
-    transform 300ms var(--claude-ease);
-}
-
-.list-item:hover .go,
-.list-item:focus-within .go,
-.list-item a:hover .go,
-.list-item a:focus-visible .go {
-  opacity: 1;
-  transform: translateX(4px);
-}
-
 .list-item p:not(.item-meta) {
   max-width: 39rem;
   color: var(--ink-soft);
@@ -1422,10 +1385,4 @@ h3,
     scroll-behavior: auto !important;
   }
 
-  .list-item:hover .go,
-  .list-item:focus-within .go,
-  .list-item a:hover .go,
-  .list-item a:focus-visible .go {
-    transform: none;
-  }
 }
