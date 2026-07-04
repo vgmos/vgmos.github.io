@@ -271,9 +271,9 @@ h3,
   max-width: 42rem;
   color: var(--ink);
   font-family: var(--claude-serif);
-  font-size: 1.58rem;
+  font-size: 1.42rem;
   font-weight: 400;
-  line-height: 1.42;
+  line-height: 1.46;
   text-wrap: pretty;
 }
 
@@ -588,7 +588,7 @@ h3,
 
 @media (min-width: 1000px) {
   .home-hero .hero-lede {
-    font-size: 1.66rem;
+    font-size: 1.48rem;
   }
 }
 
@@ -625,8 +625,8 @@ h3,
   }
 
   .home-hero .hero-lede {
-    font-size: 1.36rem;
-    line-height: 1.43;
+    font-size: 1.22rem;
+    line-height: 1.48;
   }
 
   .home-shell .section-block {
