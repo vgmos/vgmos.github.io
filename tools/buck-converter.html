@@ -27,12 +27,12 @@ math: true
     overflow-x: auto;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--paper);
     -webkit-overflow-scrolling: touch;
   }
   .bc-schematic svg { display: block; width: min(540px, 100%); min-width: 520px; margin: 0 auto; }
   .bc-schematic .w { stroke: var(--ink); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .bc-schematic .contact { stroke: var(--ink); stroke-width: 1.6; fill: #fff; }
+  .bc-schematic .contact { stroke: var(--ink); stroke-width: 1.6; fill: var(--paper); }
   .bc-schematic .dot { fill: var(--ink); }
   .bc-schematic .lbl { fill: var(--ink); font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
   .bc-schematic .lbl tspan { font-size: 11px; }
@@ -80,7 +80,7 @@ math: true
     padding: 2px 6px;
     border: 1px solid var(--line);
     border-radius: 5px;
-    background: #fff;
+    background: var(--paper);
     color: var(--ink);
     font: inherit;
     font-size: 0.94rem;
@@ -104,7 +104,7 @@ math: true
     -webkit-appearance: none;
     width: 15px; height: 15px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--paper);
     border: 2px solid var(--accent);
     box-sizing: border-box;
     cursor: pointer;
@@ -114,7 +114,7 @@ math: true
     border: 2px solid var(--accent);
     box-sizing: border-box;
     border-radius: 50%;
-    background: #fff;
+    background: var(--paper);
     cursor: pointer;
   }
   .bc-field input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -182,7 +182,7 @@ math: true
     padding: 18px 14px 12px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--paper);
     touch-action: pan-y;
   }
   .bc-panel { margin: 0; }
@@ -201,7 +201,7 @@ math: true
     font: 400 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     font-variant-numeric: tabular-nums;
     paint-order: stroke;
-    stroke: #fff;
+    stroke: var(--paper);
     stroke-width: 3px;
   }
   .bc-panel .tag--accent { fill: var(--accent); font-weight: 500; }
@@ -253,7 +253,7 @@ math: true
   .bc-controls,
   .bc-scope {
     border-radius: 8px;
-    background: #fff;
+    background: var(--paper);
   }
   .bc-presets { gap: 9px; }
   .bc-presets span,
@@ -271,7 +271,7 @@ math: true
     font-size: 0.84rem;
     font-weight: 500;
     line-height: 1.08;
-    border-radius: 8px;
+    border-radius: 999px;
     transition:
       color 300ms var(--claude-ease),
       border-color 300ms var(--claude-ease),
@@ -331,7 +331,7 @@ math: true
   }
   .bc-card {
     border-radius: 8px;
-    background-color: #fff;
+    background-color: var(--paper);
     transition:
       border-color 300ms var(--claude-ease),
       background-color 300ms var(--claude-ease);

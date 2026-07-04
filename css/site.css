@@ -1,9 +1,10 @@
 :root {
-  --ink: #1f2328;
-  --ink-soft: #3d434a;
-  --muted: #66707a;
-  --soft: #f6f8fa;
-  --line: #d8dee4;
+  --paper: #fbfaf7;
+  --ink: #26241e;
+  --ink-soft: #4a463d;
+  --muted: #6f6a5e;
+  --soft: #f4f1ea;
+  --line: #e4dfd3;
   --accent: #276f86;
 }
 
@@ -13,7 +14,7 @@ html {
 
 body {
   color: var(--ink);
-  background: #ffffff;
+  background: var(--paper);
   font-size: 17px;
   line-height: 1.72;
 }
@@ -69,7 +70,7 @@ a:focus-visible {
   z-index: 50;
   border-top: 0;
   border-bottom-color: var(--line);
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(251, 250, 247, 0.96);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
@@ -509,7 +510,7 @@ pre,
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--paper);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -597,7 +598,7 @@ pre,
   }
 
   .site-nav {
-    background-color: #ffffff;
+    background-color: var(--paper);
     border-color: var(--line);
   }
 
@@ -791,8 +792,8 @@ body {
 /* === motion ======================================================== */
 
 /* page-to-page: internal links use a tiny content swap so the header feels
-   continuous. The white dissolve remains as the normal-load fallback. */
-html { background-color: #fff; }
+   continuous. The paper dissolve remains as the normal-load fallback. */
+html { background-color: var(--paper); }
 
 .page-content {
   opacity: 1;
@@ -810,7 +811,7 @@ html.is-content-entering .page-content {
   z-index: 30;
   pointer-events: none;
   overflow: hidden;
-  background: #fff;
+  background: var(--paper);
   opacity: 1;
   transform: translateZ(0);
   will-change: opacity;
@@ -832,7 +833,7 @@ html.is-content-entering .page-content {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: #fff;
+  background: var(--paper);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -906,7 +907,7 @@ html {
 
 body {
   color: var(--ink);
-  background: #fff;
+  background: var(--paper);
   font-family: var(--claude-serif);
   font-size: 18px;
   line-height: 1.68;
@@ -927,7 +928,7 @@ body {
 }
 
 .site-header {
-  background: rgba(255, 255, 255, 0.965);
+  background: rgba(251, 250, 247, 0.96);
 }
 
 .site-header,
@@ -1082,6 +1083,13 @@ h3,
 .project-body,
 .project-page {
   line-height: 1.66;
+}
+
+.post-content,
+.project-body,
+.project-page,
+.home-hero .hero-lede {
+  font-variant-numeric: oldstyle-nums;
 }
 
 .post-content p,
@@ -1364,6 +1372,13 @@ h3,
   .post-content .list-item h2,
   .post-content .list-item h3 {
     font-size: 1.3rem;
+  }
+
+  .post-content,
+  .project-body,
+  .project-page,
+  .home-hero .hero-lede {
+    hyphens: auto;
   }
 }
 
