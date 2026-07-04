@@ -73,12 +73,30 @@ math: true
   }
   .bc-segmented {
     display: inline-flex;
+    position: relative;
+    overflow: hidden;
     padding: 3px;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--paper);
   }
+  .bc-segmented::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 2);
+    border-radius: 999px;
+    background: var(--ink);
+    transition: transform 320ms var(--claude-ease, var(--ease));
+  }
+  .bc-segmented[data-active-mode="design"]::before {
+    transform: translateX(100%);
+  }
   .bc-segmented button {
+    position: relative;
+    z-index: 1;
     min-width: 112px;
     border: 0;
     border-radius: 999px;
@@ -88,9 +106,10 @@ math: true
     font: inherit;
     font-size: 0.88rem;
     padding: 6px 14px;
+    transition: color 220ms var(--claude-ease, var(--ease));
   }
   .bc-segmented button[aria-pressed="true"] {
-    background: var(--ink);
+    background: transparent;
     color: #fff;
   }
   .bc-segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -109,6 +128,13 @@ math: true
   }
   .bc-field[hidden] { display: none; }
   .bc-field { display: grid; gap: 6px; }
+  .bc-field.bc-field-enter {
+    animation: bcFieldIn 280ms var(--claude-ease, var(--ease)) both;
+  }
+  @keyframes bcFieldIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .bc-field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .bc-field-head label { color: var(--ink); font-size: 0.94rem; font-weight: 600; }
   .bc-field-head .bc-entry { display: flex; align-items: baseline; gap: 5px; }
@@ -219,15 +245,44 @@ math: true
   .bc-note.bc-show { display: block; }
 
   .bc-design-result {
-    display: none;
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0;
-    margin: 1rem 0 0.2rem;
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--paper);
+    border-color: transparent;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px);
+    visibility: hidden;
+    transition:
+      max-height 340ms var(--claude-ease, var(--ease)),
+      margin 340ms var(--claude-ease, var(--ease)),
+      opacity 240ms var(--claude-ease, var(--ease)),
+      transform 340ms var(--claude-ease, var(--ease)),
+      border-color 340ms var(--claude-ease, var(--ease)),
+      visibility 0s linear 340ms;
   }
-  .bc-design-result.bc-show { display: grid; }
+  .bc-design-result.bc-show {
+    max-height: 180px;
+    margin: 1rem 0 0.2rem;
+    border-color: var(--line);
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+    transition:
+      max-height 340ms var(--claude-ease, var(--ease)),
+      margin 340ms var(--claude-ease, var(--ease)),
+      opacity 260ms var(--claude-ease, var(--ease)),
+      transform 340ms var(--claude-ease, var(--ease)),
+      border-color 340ms var(--claude-ease, var(--ease)),
+      visibility 0s;
+  }
   .bc-design-item {
     padding: 14px 16px;
   }
@@ -306,6 +361,7 @@ math: true
     .bc-card:nth-child(odd) { border-left: 0; padding-left: 0; }
     .bc-card:nth-child(even) { padding-right: 0; }
     .bc-design-result { grid-template-columns: 1fr; }
+    .bc-design-result.bc-show { max-height: 260px; }
     .bc-design-item + .bc-design-item { border-left: 0; border-top: 1px solid var(--line); }
     .bc-page mjx-container[jax="CHTML"][display="true"],
     .bc-page .MathJax_Display,
@@ -484,6 +540,16 @@ math: true
       line-height: 1.3;
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bc-segmented::before,
+    .bc-design-result {
+      transition: none;
+    }
+    .bc-field.bc-field-enter {
+      animation: none;
+    }
+  }
 </style>
 
 <article class="bc-page">
@@ -552,7 +618,7 @@ math: true
 
   <div class="bc-mode">
     <span class="bc-mode-label">Mode</span>
-    <div class="bc-segmented" role="group" aria-label="Calculator mode">
+    <div class="bc-segmented" role="group" aria-label="Calculator mode" data-active-mode="analyze">
       <button type="button" data-mode="analyze" aria-pressed="true">Analyze design</button>
       <button type="button" data-mode="design" aria-pressed="false">Set ripple targets</button>
     </div>
@@ -989,6 +1055,8 @@ math: true
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
   var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
+  var modeSegmented = document.querySelector(".bc-segmented");
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
   var cancelRaf = window.cancelAnimationFrame
     ? function (id) { window.cancelAnimationFrame(id); }
@@ -1010,10 +1078,24 @@ math: true
     modeButtons.forEach(function (btn) {
       btn.setAttribute("aria-pressed", btn.getAttribute("data-mode") === mode ? "true" : "false");
     });
+    if (modeSegmented) {
+      modeSegmented.setAttribute("data-active-mode", mode);
+    }
     modeFields.forEach(function (field) {
-      field.hidden = field.getAttribute("data-mode-field") !== mode;
+      var active = field.getAttribute("data-mode-field") === mode;
+      var wasHidden = field.hidden;
+      field.hidden = !active;
+      field.classList.remove("bc-field-enter");
+      if (active && wasHidden && !(reduceMotion && reduceMotion.matches)) {
+        void field.offsetWidth;
+        field.classList.add("bc-field-enter");
+        window.setTimeout(function () {
+          field.classList.remove("bc-field-enter");
+        }, 320);
+      }
     });
     el["bc-design-result"].className = "bc-design-result" + (mode === "design" ? " bc-show" : "");
+    el["bc-design-result"].setAttribute("aria-hidden", mode === "design" ? "false" : "true");
   }
 
   /* ---------- render ---------- */
@@ -1196,7 +1278,6 @@ math: true
     btn.addEventListener("click", function () {
       mode = this.getAttribute("data-mode");
       hideProbe();
-      syncModeUI();
       renderNow();
     });
   });
