@@ -22,35 +22,25 @@ math: true
 
   /* --- schematic --- */
   .bc-schematic {
-    margin: 1.65rem 0 1.45rem;
-    padding: 20px 14px 13px;
+    margin: 1.6rem 0;
+    padding: 22px 12px 14px;
+    overflow-x: auto;
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--paper);
+    -webkit-overflow-scrolling: touch;
   }
-  .bc-schematic svg { display: block; width: min(620px, 100%); margin: 0 auto; }
-  .bc-schematic figcaption {
-    max-width: 620px;
-    margin: 9px auto 0;
-    color: var(--ink-soft);
-    font: 13.5px/1.35 "Times New Roman", Times, serif;
-  }
-  .bc-schematic figcaption strong { color: var(--ink); font-weight: 700; }
-  .bc-schematic .w { stroke: #111; stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .bc-schematic .power { stroke-width: 4; }
-  .bc-schematic .switch { stroke: #111; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .bc-schematic .terminal { stroke: #111; stroke-width: 2.5; fill: var(--paper); }
-  .bc-schematic .dot { fill: #111; }
-  .bc-schematic .lbl { fill: #111; font: 700 20px "Times New Roman", Times, serif; }
-  .bc-schematic .lbl tspan { font-size: 11.5px; }
-  .bc-schematic .sw-label { fill: #111; font: 700 22px "Times New Roman", Times, serif; }
-  .bc-schematic .sw-label tspan,
-  .bc-schematic .node tspan { font-size: 13px; }
-  .bc-schematic .node { fill: #111; font: 700 20px "Times New Roman", Times, serif; }
-  .bc-schematic .current { fill: #555; font: 700 19px "Times New Roman", Times, serif; }
-  .bc-schematic .current tspan { font-size: 12px; }
-  .bc-schematic .arr { stroke: #777; stroke-width: 3.2; fill: none; stroke-linecap: square; stroke-linejoin: round; }
-  .bc-schematic .arr-head { fill: #777; }
+  .bc-schematic svg { display: block; width: min(540px, 100%); margin: 0 auto; }
+  .bc-schematic .w { stroke: var(--ink); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .bc-schematic .contact { stroke: var(--ink); stroke-width: 1.6; fill: var(--paper); }
+  .bc-schematic .dot { fill: var(--ink); }
+  .bc-schematic .lbl { fill: var(--ink); font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .bc-schematic .lbl tspan { font-size: 11px; }
+  .bc-schematic .ph { fill: var(--muted); font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .bc-schematic .ph tspan { font-size: 9.5px; }
+  .bc-schematic .node { fill: var(--accent); font: 500 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .bc-schematic .node tspan { font-size: 10px; }
+  .bc-schematic .arr { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; }
 
   /* --- presets --- */
   .bc-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 1.6rem 0 0.6rem; }
@@ -331,14 +321,6 @@ math: true
     .bc-schematic { padding: 16px 10px 12px; }
     .bc-field-head { align-items: flex-start; flex-direction: column; gap: 6px; }
     .bc-entry input[type="number"] { width: 7em; }
-    .bc-results { grid-template-columns: 1fr; }
-    .bc-card,
-    .bc-card:nth-child(3n + 1) {
-      border-left: 0;
-      padding-left: 0;
-      padding-right: 0;
-    }
-    .bc-card .bc-v { white-space: normal; }
   }
 
   .bc-page { max-width: 740px; }
@@ -474,6 +456,34 @@ math: true
     .bc-results { row-gap: 20px; }
     .bc-card .bc-v { font-size: 1.12rem; }
   }
+
+  @media (max-width: 430px) {
+    .bc-results {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 1rem;
+    }
+    .bc-card,
+    .bc-card:nth-child(3n + 1),
+    .bc-card:nth-child(odd),
+    .bc-card:nth-child(even) {
+      border: 1px solid var(--line);
+      padding: 10px 10px 9px;
+    }
+    .bc-card .bc-k {
+      font-size: 0.72rem;
+      line-height: 1.25;
+    }
+    .bc-card .bc-v {
+      font-size: 1.04rem;
+      line-height: 1.22;
+      white-space: normal;
+    }
+    .bc-card .bc-s {
+      font-size: 0.7rem;
+      line-height: 1.3;
+    }
+  }
 </style>
 
 <article class="bc-page">
@@ -483,50 +493,54 @@ math: true
     <p class="bc-dek">Set an operating point and read off the duty cycle, inductor current ripple, and output voltage ripple — with the switching waveforms drawn live. Ideal components, steady state, continuous conduction.</p>
   </header>
 
-  <figure class="bc-schematic" aria-label="Ideal buck converter switched-inductor power path">
-    <svg viewBox="0 0 620 210" xmlns="http://www.w3.org/2000/svg" role="img">
-      <title>Ideal buck converter switched-inductor power path</title>
-
-      <!-- input terminal and current -->
-      <text class="node" x="52" y="47" text-anchor="middle">v<tspan dy="4">IN</tspan></text>
-      <circle class="terminal" cx="52" cy="82" r="18"/>
-      <circle class="terminal" cx="52" cy="82" r="8"/>
-      <path class="arr" d="M34 133H74"/>
-      <path class="arr-head" d="M74 133L60 124V142Z"/>
-      <text class="current" x="53" y="164" text-anchor="middle">i<tspan dy="4">IN</tspan></text>
-
-      <!-- top switch S_TOP -->
-      <path class="w power" d="M70 82H142"/>
-      <path class="switch" d="M142 82L228 58"/>
-      <path class="w power" d="M228 58L250 82H292"/>
-      <text class="sw-label" x="174" y="119" text-anchor="middle">S<tspan dy="5">TOP</tspan></text>
-
-      <!-- switch node and bottom switch s_BOT -->
-      <circle class="dot" cx="292" cy="82" r="8"/>
-      <path class="w power" d="M292 82V121"/>
-      <circle class="dot" cx="292" cy="121" r="5"/>
-      <path class="switch" d="M267 132L229 167"/>
-      <circle class="terminal" cx="224" cy="171" r="5"/>
-      <path class="w" d="M224 176L255 198L286 176Z"/>
-      <text class="sw-label" x="326" y="148" text-anchor="middle">s<tspan dy="5">BOT</tspan></text>
-
-      <!-- switched inductor and output terminal -->
-      <path class="w power" d="M292 82H326"/>
-      <circle class="dot" cx="335" cy="82" r="6"/>
-      <path class="w power" d="M340 82 c6 -19 20 -19 26 0 s20 19 26 0 s20 -19 26 0 s20 19 26 0"/>
-      <path class="w power" d="M444 82H542"/>
-      <text class="lbl" x="392" y="137" text-anchor="middle">L<tspan dy="4">X</tspan></text>
-      <text class="current" x="378" y="48" text-anchor="middle">i<tspan dy="4">L</tspan></text>
-      <path class="arr" d="M401 45H443"/>
-      <path class="arr-head" d="M443 45L429 36V54Z"/>
-      <text class="node" x="542" y="47" text-anchor="middle">v<tspan dy="4">OUT</tspan></text>
-      <circle class="terminal" cx="562" cy="82" r="18"/>
-      <circle class="terminal" cx="562" cy="82" r="8"/>
-      <path class="arr" d="M540 133H580"/>
-      <path class="arr-head" d="M580 133L566 124V142Z"/>
-      <text class="current" x="562" y="164" text-anchor="middle">i<tspan dy="4">O</tspan></text>
+  <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
+    <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img">
+      <!-- input source v_IN -->
+      <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
+      <circle class="contact" cx="52" cy="108" r="15"/>
+      <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
+      <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
+      <!-- top rail -->
+      <path class="w" d="M52 56 L106 56"/>
+      <!-- high-side switch (conducts during t_ON) -->
+      <circle class="contact" cx="110" cy="56" r="3"/>
+      <line class="w" x1="113" y1="53" x2="162" y2="35"/>
+      <circle class="contact" cx="166" cy="56" r="3"/>
+      <text class="ph" x="138" y="78" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
+      <path class="w" d="M169 56 L240 56"/>
+      <!-- switch node v_SW -->
+      <circle class="dot" cx="240" cy="56" r="3.2"/>
+      <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
+      <!-- low-side switch (conducts during t_OFF) -->
+      <path class="w" d="M240 56 L240 82"/>
+      <circle class="contact" cx="240" cy="86" r="3"/>
+      <line class="w" x1="238" y1="90" x2="219" y2="131"/>
+      <circle class="contact" cx="240" cy="136" r="3"/>
+      <text class="ph" x="252" y="114">t<tspan dy="2.5">OFF</tspan></text>
+      <path class="w" d="M240 139 L240 160"/>
+      <!-- switched inductor L_X -->
+      <path class="w" d="M240 56 L264 56"/>
+      <path class="w" d="M264 56 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0"/>
+      <text class="lbl" x="308" y="30" text-anchor="middle">L<tspan dy="3">X</tspan></text>
+      <path class="w" d="M352 56 L492 56"/>
+      <!-- inductor current i_L -->
+      <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
+      <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
+      <!-- output node v_OUT + C_O -->
+      <circle class="dot" cx="420" cy="56" r="3.2"/>
+      <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
+      <path class="w" d="M420 56 L420 90 M402 90 L438 90 M402 100 L438 100 M420 100 L420 160"/>
+      <text class="lbl" x="446" y="99">C<tspan dy="3">O</tspan></text>
+      <!-- load current sink i_O -->
+      <path class="w" d="M492 56 L492 93"/>
+      <circle class="contact" cx="492" cy="108" r="15"/>
+      <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
+      <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
+      <path class="w" d="M492 123 L492 160"/>
+      <!-- bottom rail + ground -->
+      <path class="w" d="M52 160 L492 160"/>
+      <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
     </svg>
-    <figcaption><strong>Fig. 1.</strong> Ideal switched-inductor buck power path used for the ripple model.</figcaption>
   </figure>
 
   <div class="bc-presets" role="group" aria-label="Example operating points">
@@ -975,6 +989,13 @@ math: true
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
   var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
+  var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
+  var cancelRaf = window.cancelAnimationFrame
+    ? function (id) { window.cancelAnimationFrame(id); }
+    : function (id) { window.clearTimeout(id); };
+  var renderFrame = 0;
+  var probeFrame = 0;
+  var probeClientX = 0;
 
   function syncInputs() {
     Object.keys(PARAMS).forEach(function (k) {
@@ -1049,6 +1070,24 @@ math: true
     });
   }
 
+  function renderNow() {
+    if (renderFrame) {
+      cancelRaf(renderFrame);
+      renderFrame = 0;
+    }
+    syncInputs();
+    render();
+  }
+
+  function scheduleRender() {
+    if (renderFrame) { return; }
+    renderFrame = raf(function () {
+      renderFrame = 0;
+      syncInputs();
+      render();
+    });
+  }
+
   /* ---------- probe cursor ---------- */
   function hideProbe() {
     ["p-vsw", "p-il", "p-vout"].forEach(function (id) {
@@ -1060,10 +1099,10 @@ math: true
     });
   }
 
-  el["bc-scope"].addEventListener("pointermove", function (ev) {
+  function updateProbe(clientX) {
     var rect = el["p-il"].getBoundingClientRect();
     if (!rect.width) { return; }
-    var xu = (ev.clientX - rect.left) / rect.width * W;
+    var xu = (clientX - rect.left) / rect.width * W;
     if (xu < M.l || xu > W - M.r) { hideProbe(); return; }
 
     var s = workingState();
@@ -1084,8 +1123,23 @@ math: true
         c.tTag.textContent = "t = " + eng(t, "s", 2);
       }
     });
+  }
+
+  el["bc-scope"].addEventListener("pointermove", function (ev) {
+    probeClientX = ev.clientX;
+    if (probeFrame) { return; }
+    probeFrame = raf(function () {
+      probeFrame = 0;
+      updateProbe(probeClientX);
+    });
   });
-  el["bc-scope"].addEventListener("pointerleave", hideProbe);
+  el["bc-scope"].addEventListener("pointerleave", function () {
+    if (probeFrame) {
+      cancelRaf(probeFrame);
+      probeFrame = 0;
+    }
+    hideProbe();
+  });
 
   /* ---------- constraints ---------- */
   function enforceBuck(changed) {
@@ -1107,15 +1161,13 @@ math: true
     el["sl-" + k].addEventListener("input", function () {
       state[k] = clampParam(k, fromSlider(k, +this.value));
       enforceBuck(k);
-      syncInputs();
-      render();
+      scheduleRender();
     });
     el["num-" + k].addEventListener("change", function () {
       var p = PARAMS[k];
       state[k] = clampParam(k, parseFloat(this.value) / p.scale);
       enforceBuck(k);
-      syncInputs();
-      render();
+      renderNow();
     });
   });
 
@@ -1134,8 +1186,7 @@ math: true
       b.addEventListener("click", function () {
         state[key] = clampParam(key, tk[0]);
         enforceBuck(key);
-        syncInputs();
-        render();
+        renderNow();
       });
       row.appendChild(b);
     });
@@ -1146,15 +1197,14 @@ math: true
       mode = this.getAttribute("data-mode");
       hideProbe();
       syncModeUI();
-      render();
+      renderNow();
     });
   });
 
   document.querySelectorAll(".bc-presets button").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state = Object.assign({}, state, PRESETS[this.getAttribute("data-preset")]);
-      syncInputs();
-      render();
+      renderNow();
     });
   });
 
