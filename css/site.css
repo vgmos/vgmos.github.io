@@ -1128,7 +1128,7 @@ h3,
 
 .project-dek,
 .bc-dek {
-  max-width: 38rem;
+  max-width: 700px;
   color: var(--ink-soft);
   font-family: var(--claude-serif);
   font-size: 1.18rem;
@@ -1234,7 +1234,7 @@ h3,
 }
 
 .list-item p:not(.item-meta) {
-  max-width: 39rem;
+  max-width: 700px;
   color: var(--ink-soft);
   font-size: 1.03rem;
   line-height: 1.62;

@@ -1,5 +1,5 @@
 # Interactive tools listed in the homepage Tools section.
-- title: Buck Converter Ripple Tool
+- title: Buck Converter Tool
   url: /tools/buck-converter/
   meta: Interactive tool · Ideal-component model
-  summary: Set \(v_{IN}\), \(v_{OUT}\), load, \(f_{SW}\), \(L_X\), and \(C_O\) with live sliders and read off \(D\), \(\Delta i_L\), and \(\Delta v_{OUT}\).
+  summary: Set \(v_{IN}\), \(v_{OUT}\), load, \(f_{SW}\), \(L_X\), and \(C_O\); read \(D\), \(\Delta i_L\), and \(\Delta v_{OUT}\) live.
