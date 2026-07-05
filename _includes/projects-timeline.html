@@ -92,7 +92,7 @@
     --vtl-link: var(--accent);
     --vtl-accent: var(--vtl-brand);
     --vtl-marker-border: var(--line);
-    --vtl-halo: var(--claude-ring, rgba(39, 111, 134, 0.22));
+    --vtl-halo: var(--claude-ring, rgba(138, 74, 56, 0.22));
     --vtl-shell-bg: var(--paper);
     --vtl-shell-highlight: rgba(255, 255, 255, 0.72);
     --vtl-shell-shadow: 0 12px 34px rgba(31, 35, 40, 0.11);
@@ -176,7 +176,7 @@
 
   .vtl-tick-label {
     opacity: 0.72;
-    transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+    transition: color 0.2s ease, opacity 0.2s ease, text-shadow 0.2s ease, transform 0.2s ease;
   }
 
   .vtl-tick-mark {
@@ -202,14 +202,14 @@
     font-weight: 400;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
   }
 
   .vtl-year {
     color: var(--vtl-faint);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
   }
 
   .vtl-dot {
@@ -222,8 +222,15 @@
     transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, background 0.2s ease;
   }
 
-  .vtl-node:hover .vtl-name {
+  .vtl-node:hover .vtl-name,
+  .vtl-node:focus-visible .vtl-name {
     color: var(--vtl-brand);
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
+  }
+
+  .vtl-node:focus-visible .vtl-year {
+    color: var(--vtl-muted);
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
   }
 
   .vtl-node:hover .vtl-dot {
@@ -235,6 +242,7 @@
   .vtl-tick.is-active .vtl-tick-label {
     color: var(--vtl-brand);
     opacity: 1;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
     transform: translateX(-1px);
   }
 
@@ -267,9 +275,7 @@
 
   .vtl-node:focus-visible,
   .vtl-tick:focus-visible {
-    outline: 2px solid var(--vtl-link);
-    outline-offset: 3px;
-    border-radius: 3px;
+    outline: none;
   }
 
   @media (max-width: 1199px) {
@@ -436,14 +442,14 @@
       top: -27px;
       right: auto;
       left: 50%;
-      padding: 3px 8px;
-      border: 1px solid var(--vtl-marker-border);
-      border-radius: 999px;
-      background: var(--vtl-shell-bg);
+      padding: 0;
+      border: 0;
+      background: transparent;
       color: var(--vtl-brand);
       font-size: 10.5px;
       font-weight: 500;
       opacity: 0;
+      text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
       transform: translateX(-50%) translateY(4px);
     }
 
