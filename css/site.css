@@ -1383,9 +1383,66 @@ h3,
 }
 
 @media (max-width: 600px) {
+  .site-header .wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+
+  .site-title,
+  .site-title:visited {
+    float: none;
+    line-height: 1.2;
+  }
+
+  .site-nav {
+    position: static;
+    float: none;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    line-height: 1;
+  }
+
+  .site-nav label[for="nav-trigger"],
+  .site-nav .menu-icon {
+    display: none;
+  }
+
+  .site-nav input ~ .trigger,
+  .site-nav input:checked ~ .trigger {
+    display: flex;
+  }
+
+  .site-nav .trigger {
+    clear: none;
+    align-items: center;
+    gap: 18px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .site-nav .trigger::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-nav .page-link,
   .site-nav .trigger .page-link {
-    padding-top: 8px;
-    padding-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .site-nav .page-link--active {
+    color: var(--ink);
+    box-shadow: inset 0 -2px 0 var(--accent);
   }
 }
 
