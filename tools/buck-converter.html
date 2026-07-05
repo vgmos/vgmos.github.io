@@ -47,7 +47,7 @@ permalink: /tools/buck-converter/
   .bc-schematic .ph.is-live { fill: var(--accent); }
   .bc-schematic .node { fill: var(--accent); font: 500 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
   .bc-schematic .node tspan { font-size: 10px; }
-  .bc-schematic .arr { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .bc-schematic .arr { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; transition: opacity var(--bc-motion) var(--claude-ease, var(--ease)); }
   .bc-schematic .arm { stroke: var(--ink); stroke-width: 2; fill: none; stroke-linecap: round; }
   .bc-schematic .halo { stroke: var(--accent); stroke-width: 6; fill: none; stroke-linecap: round; opacity: 0; }
   .bc-schematic .pivot { fill: var(--ink); }
@@ -298,8 +298,7 @@ permalink: /tools/buck-converter/
     transition: transform var(--bc-motion) var(--claude-ease, var(--ease));
   }
   .bc-segmented[data-active-index="1"]::before,
-  .bc-segmented[data-active-mode="design"]::before,
-  .bc-segmented[data-active-conduction="dcm"]::before {
+  .bc-segmented[data-active-mode="design"]::before {
     transform: translateX(100%);
   }
   .bc-segmented.bc-segmented--wide button { min-width: 168px; }
@@ -322,6 +321,29 @@ permalink: /tools/buck-converter/
     color: var(--bc-segment-selected-fg);
   }
   .bc-segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .bc-dcm-toggle {
+    min-height: 35px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink-soft);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.88rem;
+    padding: 6px 16px;
+    text-align: center;
+    transition:
+      background-color var(--bc-motion) var(--claude-ease, var(--ease)),
+      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
+      color var(--bc-motion) var(--claude-ease, var(--ease));
+  }
+  .bc-dcm-toggle[aria-pressed="true"] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .bc-dcm-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* --- controls --- */
   .bc-controls {
@@ -1193,7 +1215,7 @@ permalink: /tools/buck-converter/
   <header class="bc-header">
     <p class="eyebrow">Interactive tool · Ideal-component model</p>
     <h1>Buck Converter Tool</h1>
-    <p class="bc-dek">Use it to visualize steady-state switching waveforms, calculate operating points, and understand how converter behavior changes between conduction modes.</p>
+    <p class="bc-dek">Use it to visualize steady-state switching waveforms, calculate operating points, and understand optional fixed-frequency DCM behavior.</p>
   </header>
 
   <div class="bc-workbench">
@@ -1215,11 +1237,8 @@ permalink: /tools/buck-converter/
         </div>
 
         <div class="bc-mode">
-          <span class="bc-mode-label">Conduction</span>
-          <div class="bc-segmented bc-segmented--wide" role="group" aria-label="Conduction mode" data-active-conduction="ccm" data-active-index="0">
-            <button type="button" data-conduction="ccm" aria-pressed="true">CCM</button>
-            <button type="button" data-conduction="dcm" aria-pressed="false">Fixed-frequency DCM</button>
-          </div>
+          <span class="bc-mode-label">DCM</span>
+          <button type="button" class="bc-dcm-toggle" id="bc-dcm-toggle" aria-pressed="false" aria-controls="bc-dcm-options">Enable DCM</button>
         </div>
       </div>
 
@@ -1428,7 +1447,7 @@ permalink: /tools/buck-converter/
             <path class="w" d="M342 56 L492 56"/>
 
             <!-- inductor current i_L -->
-            <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
+            <path class="arr" id="bc-il-arrow" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
             <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
 
             <!-- output node v_OUT + C_O -->
@@ -1493,6 +1512,7 @@ permalink: /tools/buck-converter/
     <p>Across the on-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the off-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
+    <p>When Enable DCM is pressed, the tool first checks the CCM valley current against the selected zero-cross threshold. Only light-load points past that boundary use the fixed-frequency DCM solve and show a tri-state idle interval.</p>
     <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
   </section>
 </article>
@@ -1535,10 +1555,11 @@ permalink: /tools/buck-converter/
     core: { vin: 5,  vout: 1.8, iload: 3, fsw: 1e6,   l: 1e-6,   c: 100e-6 }
   };
   var DEFAULT_TARGETS = { iripple: 0.3, vripple: 10e-3, izc: 0, csw: 0, esr: 0 };
+  var DCM_IDLE_EPS = 1e-5;
 
   var state = Object.assign({}, DEFAULT_TARGETS, PRESETS.pol);
   var mode = "analyze";
-  var conduction = "ccm";
+  var dcmEnabled = false;
 
   /* ---------- slider <-> value mapping ---------- */
   function toSlider(key, v) {
@@ -1721,7 +1742,7 @@ permalink: /tools/buck-converter/
     var T = 1 / s.fsw;
     var D2 = D * (s.vin - s.vout) / s.vout;
     var D3 = 1 - D - D2;
-    if (!isFinite(D) || !isFinite(D2) || D <= 0 || D2 <= 0 || D3 <= 0) { return null; }
+    if (!isFinite(D) || !isFinite(D2) || D <= 0 || D2 <= 0 || D3 <= DCM_IDLE_EPS) { return null; }
 
     var dIL = (s.vin - s.vout) * D * T / s.l;
     var r = {
@@ -1902,6 +1923,11 @@ permalink: /tools/buck-converter/
     fallback.requestedDcm = true;
     fallback.dcmFallback = true;
 
+    if (fallback.iVal > s.izc) {
+      fallback.dcmReason = "DCM is enabled, but the CCM valley current is still above the zero-cross threshold, so this load remains in CCM.";
+      return fallback;
+    }
+
     var Ieff = s.iload - s.izc;
     if (Ieff <= 0) {
       fallback.dcmReason = "Zero-cross current is at or above load current, so no positive DCM energy packet can support the load.";
@@ -1938,7 +1964,7 @@ permalink: /tools/buck-converter/
   }
 
   function compute(s) {
-    return conduction === "dcm" ? computeDcm(s) : computeCcm(s);
+    return dcmEnabled ? computeDcm(s) : computeCcm(s);
   }
 
   function rippleForDesignCap(s, l, c) {
@@ -2196,14 +2222,12 @@ permalink: /tools/buck-converter/
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope",
    "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-pip", "bc-anim-phase", "bc-anim-desc",
    "bc-anim-duty", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow", "bc-lbl-ton",
-   "bc-lbl-toff"].forEach(function (id) {
+   "bc-lbl-toff", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
   var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
   var modeSegmented = document.querySelector(".bc-segmented");
-  var conductionButtons = Array.prototype.slice.call(document.querySelectorAll("[data-conduction]"));
-  var conductionSegmented = document.querySelector("[data-active-conduction]");
   var dcmExtraControls = Array.prototype.slice.call(document.querySelectorAll("[data-dcm-extra]"));
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
@@ -2254,18 +2278,15 @@ permalink: /tools/buck-converter/
     el["bc-design-result"].setAttribute("aria-hidden", mode === "design" ? "false" : "true");
   }
 
-  function syncConductionUI() {
-    conductionButtons.forEach(function (btn) {
-      btn.setAttribute("aria-pressed", btn.getAttribute("data-conduction") === conduction ? "true" : "false");
-    });
-    if (conductionSegmented) {
-      conductionSegmented.setAttribute("data-active-conduction", conduction);
-      conductionSegmented.setAttribute("data-active-index", conduction === "dcm" ? "1" : "0");
+  function syncDcmUI() {
+    if (el["bc-dcm-toggle"]) {
+      el["bc-dcm-toggle"].setAttribute("aria-pressed", dcmEnabled ? "true" : "false");
+      el["bc-dcm-toggle"].textContent = dcmEnabled ? "DCM enabled" : "Enable DCM";
     }
-    el["bc-dcm-options"].className = "bc-dcm-options" + (conduction === "dcm" ? " bc-show" : "");
-    el["bc-dcm-options"].setAttribute("aria-hidden", conduction === "dcm" ? "false" : "true");
+    el["bc-dcm-options"].className = "bc-dcm-options" + (dcmEnabled ? " bc-show" : "");
+    el["bc-dcm-options"].setAttribute("aria-hidden", dcmEnabled ? "false" : "true");
     dcmExtraControls.forEach(function (node) {
-      var active = conduction === "dcm";
+      var active = dcmEnabled;
       node.classList.toggle("bc-show", active);
       node.setAttribute("aria-hidden", active ? "false" : "true");
       Array.prototype.slice.call(node.querySelectorAll("input")).forEach(function (input) {
@@ -2371,8 +2392,8 @@ permalink: /tools/buck-converter/
       desc = "low-side FET conducts, i<sub>L</sub> falling";
       compactDesc = "i<sub>L</sub> falling";
     } else if (phase === "idle") {
-      label = "idle interval";
-      desc = "both FETs off, i<sub>L</sub> held at zero-cross";
+      label = "tri-state idle";
+      desc = "both FETs off, no inductor-current path";
       compactDesc = "i<sub>L</sub> zero";
       muted = true;
     }
@@ -2401,6 +2422,9 @@ permalink: /tools/buck-converter/
     el["bc-node-glow"].style.opacity = Math.max(animSchematic.state.hsGlow, 0.72 * animSchematic.state.lsGlow).toFixed(3);
     el["bc-lbl-ton"].classList.toggle("is-live", isOn);
     el["bc-lbl-toff"].classList.toggle("is-live", isLowSide);
+    if (el["bc-il-arrow"]) {
+      el["bc-il-arrow"].style.opacity = isIdle ? "0.18" : "1";
+    }
 
     if (!snap) {
       var phaseEnergy = isIdle ? 0 : (0.45 + 0.55 * (isOn ? phase.local : 1 - phase.local));
@@ -2408,7 +2432,7 @@ permalink: /tools/buck-converter/
     }
     placeAnimDots(animSchematic.flowHs, animSchematic.dist, isOn ? 1 : 0);
     placeAnimDots(animSchematic.flowLs, animSchematic.dist, isLowSide ? 1 : 0);
-    placeAnimDots(animSchematic.flowMain, animSchematic.dist, isIdle ? 0.08 : 0.95);
+    placeAnimDots(animSchematic.flowMain, animSchematic.dist, isIdle ? 0 : 0.95);
   }
 
   function drawReducedMotionSchematic() {
@@ -2470,8 +2494,8 @@ permalink: /tools/buck-converter/
 
   function syncAnimatedSchematic(s, r) {
     if (!hasAnimatedSchematic()) { return; }
-    var readonly = conduction === "dcm";
-    var dcmValid = readonly && !!r.dcmValid;
+    var dcmValid = !!r.dcmValid;
+    var readonly = dcmValid;
     var nextD = clamp(r.D || 0, 0.001, 0.96);
     var nextD2 = dcmValid ? clamp(r.D2 || 0, 0.001, Math.max(0.001, 1 - nextD)) : Math.max(0.001, 1 - nextD);
     var nextD3 = dcmValid ? Math.max(0.001, 1 - nextD - nextD2) : 0;
@@ -2496,7 +2520,7 @@ permalink: /tools/buck-converter/
 
   function applyAnimatedDutyPct(pct) {
     if (!isFinite(pct)) { return; }
-    if (conduction === "dcm") {
+    if (animSchematic.model.dcmValid) {
       syncAnimatedDutyRail(100 * animSchematic.model.D, true);
       return;
     }
@@ -2556,14 +2580,14 @@ permalink: /tools/buck-converter/
     var displayedDV = vmax - vmin;
 
     syncModeUI();
-    syncConductionUI();
+    syncDcmUI();
     syncAnimatedSchematic(s, r);
     el["out-design-l"].textContent = eng(d.l, "H");
     el["out-design-c"].textContent = d.capNoSolution ? "No solution" : eng(d.c, "F");
-    el["out-design-l-note"].textContent = conduction === "dcm" ? "CCM ripple sizing reference" : "from current ripple target";
+    el["out-design-l-note"].textContent = dcmEnabled ? "CCM ripple sizing reference" : "from current ripple target";
     el["out-design-c-note"].textContent = d.capNoSolution
       ? "ESR ripple exceeds target"
-      : (conduction === "dcm" ? "CCM ripple sizing reference" : "from voltage ripple target");
+      : (dcmEnabled ? "CCM ripple sizing reference" : "from voltage ripple target");
     el["out-d"].textContent = (100 * r.D).toFixed(1) + " %";
     el["out-tsw"].textContent = eng(r.T, "s");
     el["out-dil-label"].innerHTML = "Current ripple Δi<sub>L</sub>";
@@ -2582,7 +2606,7 @@ permalink: /tools/buck-converter/
     if (r.dcmValid) {
       el["out-toff-label"].innerHTML = "HS off-time";
       el["out-toff"].textContent = eng((r.D2 + r.D3) * r.T, "s");
-      el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + "; t<sub>IDLE</sub> = " + eng(r.tIdle, "s");
+      el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + "; t<sub>IDLE</sub> = " + eng(r.tIdle, "s") + "<br>D<sub>DECAY</sub> = " + (100 * r.D2).toFixed(1) + "%; D<sub>IDLE</sub> = " + (100 * r.D3).toFixed(1) + "%";
       if (r.idle) {
         el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / minimum";
         el["out-ipk"].textContent = eng(r.iMax, "A") + " / " + eng(r.iMin, "A");
@@ -2595,15 +2619,15 @@ permalink: /tools/buck-converter/
     }
 
     var notes = [];
-    if (mode === "design" && conduction === "dcm") {
-      notes.push("<strong>DCM target note:</strong> L<sub>X</sub> and C<sub>O</sub> are sized from the CCM ripple targets, then the plots and cards use fixed-frequency DCM with those parts.");
+    if (mode === "design" && dcmEnabled) {
+      notes.push("<strong>DCM target note:</strong> L<sub>X</sub> and C<sub>O</sub> are sized from the CCM ripple targets. Light-load points past the boundary use fixed-frequency DCM with those parts.");
     }
     if (mode === "design" && d.capNoSolution) {
       notes.push("<strong>Ripple target:</strong> ESR alone gives at least " + eng(d.minEsrRipple, "V") + " pk-pk, so no finite C<sub>O</sub> can meet the selected terminal ripple target.");
     }
     if (r.requestedDcm && !r.dcmValid) {
       notes.push("<strong>DCM boundary:</strong> " + r.dcmReason + " The plots below use the forced-CCM boundary behavior instead of drawing a fake idle interval.");
-    } else if (conduction === "ccm" && r.iVal < 0) {
+    } else if (!dcmEnabled && r.iVal < 0) {
       notes.push("<strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.");
     }
     if (notes.length) {
@@ -2827,13 +2851,13 @@ permalink: /tools/buck-converter/
     });
   });
 
-  conductionButtons.forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      conduction = this.getAttribute("data-conduction");
+  if (el["bc-dcm-toggle"]) {
+    el["bc-dcm-toggle"].addEventListener("click", function () {
+      dcmEnabled = !dcmEnabled;
       hideProbe();
       renderNow();
     });
-  });
+  }
 
   document.querySelectorAll(".bc-presets button").forEach(function (btn) {
     btn.addEventListener("click", function () {
