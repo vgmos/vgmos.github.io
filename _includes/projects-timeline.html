@@ -83,13 +83,19 @@
 {% if timeline_count > 1 %}
 <style>
   .vtl {
-    --vtl-ink: #111;
-    --vtl-brand: #424242;
-    --vtl-muted: #828282;
-    --vtl-hair: #e8e8e8;
-    --vtl-bg: #fdfdfd;
-    --vtl-link: #2a7ae2;
+    --vtl-ink: var(--ink);
+    --vtl-brand: var(--ink-soft);
+    --vtl-muted: var(--muted);
+    --vtl-faint: var(--muted);
+    --vtl-hair: var(--line);
+    --vtl-bg: var(--paper);
+    --vtl-link: var(--accent);
     --vtl-accent: var(--vtl-brand);
+    --vtl-marker-border: var(--line);
+    --vtl-halo: var(--claude-ring, rgba(39, 111, 134, 0.22));
+    --vtl-shell-bg: var(--paper);
+    --vtl-shell-highlight: rgba(255, 255, 255, 0.72);
+    --vtl-shell-shadow: 0 12px 34px rgba(31, 35, 40, 0.11);
     position: fixed;
     top: 50%;
     right: max(72px, calc((100vw - 740px) / 2 - 236px));
@@ -162,7 +168,7 @@
   .vtl-tick:visited {
     min-height: 24px;
     padding: 3px 0;
-    color: #a6a6a6;
+    color: var(--vtl-faint);
     font-size: 10.5px;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.04em;
@@ -177,7 +183,7 @@
     justify-self: center;
     width: 5px;
     height: 5px;
-    border: 1px solid #d3d3d3;
+    border: 1px solid var(--vtl-marker-border);
     border-radius: 50%;
     background: var(--vtl-bg);
     transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
@@ -200,7 +206,7 @@
   }
 
   .vtl-year {
-    color: #a6a6a6;
+    color: var(--vtl-faint);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
     transition: color 0.2s ease;
@@ -210,7 +216,7 @@
     justify-self: center;
     width: 9px;
     height: 9px;
-    border: 2px solid #cfcfcf;
+    border: 2px solid var(--vtl-marker-border);
     border-radius: 50%;
     background: var(--vtl-bg);
     transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, background 0.2s ease;
@@ -239,7 +245,7 @@
     height: 7px;
     border-color: var(--vtl-accent);
     background: var(--vtl-accent);
-    box-shadow: 0 0 0 3px rgba(66, 66, 66, 0.08);
+    box-shadow: 0 0 0 3px var(--vtl-halo);
   }
 
   .vtl-node.is-active .vtl-name {
@@ -256,7 +262,7 @@
     height: 13px;
     border-color: var(--vtl-accent);
     background: var(--vtl-accent);
-    box-shadow: 0 0 0 4px rgba(66, 66, 66, 0.1);
+    box-shadow: 0 0 0 4px var(--vtl-halo);
   }
 
   .vtl-node:focus-visible,
@@ -335,14 +341,14 @@
       width: auto;
       height: 36px;
       padding: 7px 18px;
-      border: 1px solid rgba(66, 66, 66, 0.1);
+      border: 1px solid var(--vtl-marker-border);
       border-radius: 999px;
-      background: rgba(253, 253, 253, 0.68);
+      background: var(--vtl-shell-bg);
       -webkit-backdrop-filter: blur(16px) saturate(1.18);
       backdrop-filter: blur(16px) saturate(1.18);
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.86),
-        0 12px 34px rgba(31, 35, 40, 0.11);
+        inset 0 1px 0 var(--vtl-shell-highlight),
+        var(--vtl-shell-shadow);
       opacity: 0;
       pointer-events: none;
       transform: translateY(14px);
@@ -368,7 +374,7 @@
       left: 22px;
       width: auto;
       height: 2px;
-      background: rgba(66, 66, 66, 0.12);
+      background: var(--vtl-hair);
       transform: translateY(-50%);
     }
 
@@ -409,13 +415,13 @@
     .vtl-node.is-active .vtl-dot {
       width: 11px;
       height: 11px;
-      box-shadow: 0 0 0 4px rgba(66, 66, 66, 0.09);
+      box-shadow: 0 0 0 4px var(--vtl-halo);
     }
 
     .vtl-tick-mark {
       width: 4px;
       height: 4px;
-      border-color: rgba(66, 66, 66, 0.22);
+      border-color: var(--vtl-marker-border);
     }
 
     .vtl-tick:hover .vtl-tick-mark,
@@ -423,7 +429,7 @@
     .vtl-tick.is-active .vtl-tick-mark {
       width: 6px;
       height: 6px;
-      box-shadow: 0 0 0 3px rgba(66, 66, 66, 0.08);
+      box-shadow: 0 0 0 3px var(--vtl-halo);
     }
 
     .vtl-tick-label {
@@ -431,9 +437,9 @@
       right: auto;
       left: 50%;
       padding: 3px 8px;
-      border: 1px solid rgba(66, 66, 66, 0.1);
+      border: 1px solid var(--vtl-marker-border);
       border-radius: 999px;
-      background: rgba(253, 253, 253, 0.84);
+      background: var(--vtl-shell-bg);
       color: var(--vtl-brand);
       font-size: 10.5px;
       font-weight: 500;
@@ -446,6 +452,21 @@
     .vtl-tick:focus-visible .vtl-tick-label {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  html[data-theme="dark"] .vtl {
+    --vtl-brand: var(--accent);
+    --vtl-shell-highlight: rgba(255, 255, 255, 0.06);
+    --vtl-shell-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+  }
+
+  @supports (color: color-mix(in srgb, black, white)) {
+    .vtl {
+      --vtl-faint: color-mix(in srgb, var(--muted) 72%, var(--paper));
+      --vtl-marker-border: color-mix(in srgb, var(--line) 74%, var(--muted));
+      --vtl-halo: color-mix(in srgb, var(--accent) 22%, transparent);
+      --vtl-shell-bg: color-mix(in srgb, var(--paper) 86%, transparent);
     }
   }
 

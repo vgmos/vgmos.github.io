@@ -27,6 +27,74 @@
   var scrollSaveDelayMs = 250;
   root.classList.add("js-on");
 
+  /* ----------------------------------------------------- colour theme */
+  var themeStorageKey = "vgmos-theme";
+  var themeQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  function readStoredTheme() {
+    try {
+      var stored = window.localStorage.getItem(themeStorageKey);
+      return stored === "dark" || stored === "light" ? stored : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function preferredTheme() {
+    return themeQuery && themeQuery.matches ? "dark" : "light";
+  }
+
+  function updateThemeToggle(theme) {
+    var isDark = theme === "dark";
+    var label = isDark ? "Switch to light mode" : "Switch to dark mode";
+    Array.prototype.slice.call(document.querySelectorAll(".theme-toggle")).forEach(function (button) {
+      button.setAttribute("aria-pressed", isDark ? "true" : "false");
+      button.setAttribute("aria-label", label);
+
+      var labelNode = button.querySelector(".theme-toggle__label");
+      if (labelNode) labelNode.textContent = label;
+    });
+  }
+
+  function setTheme(theme, persist) {
+    var next = theme === "dark" || theme === "light" ? theme : preferredTheme();
+    root.setAttribute("data-theme", next);
+    updateThemeToggle(next);
+
+    try {
+      document.dispatchEvent(new CustomEvent("vgmos:themechange", {
+        detail: { theme: next, persisted: !!persist }
+      }));
+    } catch (error) {}
+
+    if (!persist) return;
+    try {
+      window.localStorage.setItem(themeStorageKey, next);
+    } catch (error) {}
+  }
+
+  setTheme(readStoredTheme() || preferredTheme(), false);
+
+  document.addEventListener("click", function (event) {
+    var button = event.target && event.target.closest ? event.target.closest(".theme-toggle") : null;
+    if (!button) return;
+
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    setTheme(next, true);
+  });
+
+  if (themeQuery) {
+    var syncSystemTheme = function () {
+      if (!readStoredTheme()) setTheme(preferredTheme(), false);
+    };
+
+    if (themeQuery.addEventListener) {
+      themeQuery.addEventListener("change", syncSystemTheme);
+    } else if (themeQuery.addListener) {
+      themeQuery.addListener(syncSystemTheme);
+    }
+  }
+
   if ("scrollRestoration" in history) {
     history.scrollRestoration = "manual";
   }
