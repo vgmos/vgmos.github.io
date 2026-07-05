@@ -436,17 +436,27 @@ math: true
   }
 
   .bc-workbench {
-    margin: 1.6rem 0 0;
+    display: grid;
+    align-items: start;
+    margin: 0 0 -2rem;
   }
-  .bc-workbench-main,
-  .bc-workbench-scope {
+  .bc-workbench-main {
+    order: 2;
     min-width: 0;
+    margin-bottom: -0.4rem;
+  }
+  .bc-workbench-scope {
+    display: contents;
+  }
+  .bc-workbench .bc-schematic {
+    order: 1;
+    margin: 0 0 1.6rem;
+  }
+  .bc-workbench .bc-scope {
+    order: 3;
   }
   .bc-workbench .bc-presets {
     margin-top: 0;
-  }
-  .bc-workbench-scope {
-    align-self: start;
   }
 
   /* --- waveform scope --- */
@@ -669,7 +679,6 @@ math: true
       transform: translateX(-50%);
     }
     .bc-header,
-    .bc-schematic,
     .bc-page > .project-body {
       max-width: 740px;
       margin-right: auto;
@@ -680,19 +689,42 @@ math: true
       grid-template-columns: minmax(460px, 520px) minmax(0, 1fr);
       align-items: start;
       gap: 24px;
+      margin: 1.6rem 0 0;
     }
     .bc-workbench .bc-scope {
       margin-top: 0;
       margin-bottom: 1.4rem;
-      min-height: 550px;
+      padding: 14px 12px 10px;
+    }
+    .bc-workbench .bc-panel + .bc-panel {
+      margin-top: 6px;
     }
     .bc-workbench-main,
     .bc-workbench-scope {
       min-width: 0;
     }
+    .bc-workbench-main {
+      grid-column: 1;
+      grid-row: 1;
+      order: 0;
+      margin-bottom: 0;
+    }
     .bc-workbench-scope {
-      margin-top: 19rem;
-      min-height: 590px;
+      display: block;
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+      position: sticky;
+      top: 72px;
+    }
+    .bc-workbench .bc-schematic {
+      margin: 0 0 12px;
+      padding: 12px 10px 10px;
+      overflow-x: hidden;
+    }
+    .bc-workbench .bc-schematic svg {
+      width: 78%;
+      max-width: none;
     }
     .bc-workbench-main .bc-controls {
       gap: 16px 20px;
@@ -814,56 +846,6 @@ math: true
     <h1>Buck Converter Tool</h1>
     <p class="bc-dek">Use it to visualize steady-state switching waveforms, calculate operating points, and understand how converter behavior changes between conduction modes.</p>
   </header>
-
-  <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
-    <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img">
-      <!-- input source v_IN -->
-      <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
-      <circle class="contact" cx="52" cy="108" r="15"/>
-      <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
-      <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
-      <!-- top rail -->
-      <path class="w" d="M52 56 L106 56"/>
-      <!-- high-side switch (conducts during t_ON) -->
-      <circle class="contact" cx="110" cy="56" r="3"/>
-      <line class="w" x1="113" y1="53" x2="162" y2="35"/>
-      <circle class="contact" cx="166" cy="56" r="3"/>
-      <text class="ph" x="138" y="78" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
-      <path class="w" d="M169 56 L240 56"/>
-      <!-- switch node v_SW -->
-      <circle class="dot" cx="240" cy="56" r="3.2"/>
-      <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
-      <!-- low-side switch (conducts during t_OFF) -->
-      <path class="w" d="M240 56 L240 82"/>
-      <circle class="contact" cx="240" cy="86" r="3"/>
-      <line class="w" x1="238" y1="90" x2="219" y2="131"/>
-      <circle class="contact" cx="240" cy="136" r="3"/>
-      <text class="ph" x="252" y="114">t<tspan dy="2.5">OFF</tspan></text>
-      <path class="w" d="M240 139 L240 160"/>
-      <!-- switched inductor L_X -->
-      <path class="w" d="M240 56 L264 56"/>
-      <path class="w" d="M264 56 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0"/>
-      <text class="lbl" x="308" y="30" text-anchor="middle">L<tspan dy="3">X</tspan></text>
-      <path class="w" d="M352 56 L492 56"/>
-      <!-- inductor current i_L -->
-      <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
-      <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
-      <!-- output node v_OUT + C_O -->
-      <circle class="dot" cx="420" cy="56" r="3.2"/>
-      <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
-      <path class="w" d="M420 56 L420 90 M402 90 L438 90 M402 100 L438 100 M420 100 L420 160"/>
-      <text class="lbl" x="446" y="99">C<tspan dy="3">O</tspan></text>
-      <!-- load current sink i_O -->
-      <path class="w" d="M492 56 L492 93"/>
-      <circle class="contact" cx="492" cy="108" r="15"/>
-      <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
-      <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
-      <path class="w" d="M492 123 L492 160"/>
-      <!-- bottom rail + ground -->
-      <path class="w" d="M52 160 L492 160"/>
-      <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
-    </svg>
-  </figure>
 
   <div class="bc-workbench">
     <div class="bc-workbench-main">
@@ -1051,6 +1033,56 @@ math: true
     </div>
 
     <div class="bc-workbench-scope">
+      <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
+        <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img">
+          <!-- input source v_IN -->
+          <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
+          <circle class="contact" cx="52" cy="108" r="15"/>
+          <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
+          <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
+          <!-- top rail -->
+          <path class="w" d="M52 56 L106 56"/>
+          <!-- high-side switch (conducts during t_ON) -->
+          <circle class="contact" cx="110" cy="56" r="3"/>
+          <line class="w" x1="113" y1="53" x2="162" y2="35"/>
+          <circle class="contact" cx="166" cy="56" r="3"/>
+          <text class="ph" x="138" y="78" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
+          <path class="w" d="M169 56 L240 56"/>
+          <!-- switch node v_SW -->
+          <circle class="dot" cx="240" cy="56" r="3.2"/>
+          <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
+          <!-- low-side switch (conducts during t_OFF) -->
+          <path class="w" d="M240 56 L240 82"/>
+          <circle class="contact" cx="240" cy="86" r="3"/>
+          <line class="w" x1="238" y1="90" x2="219" y2="131"/>
+          <circle class="contact" cx="240" cy="136" r="3"/>
+          <text class="ph" x="252" y="114">t<tspan dy="2.5">OFF</tspan></text>
+          <path class="w" d="M240 139 L240 160"/>
+          <!-- switched inductor L_X -->
+          <path class="w" d="M240 56 L264 56"/>
+          <path class="w" d="M264 56 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0"/>
+          <text class="lbl" x="308" y="30" text-anchor="middle">L<tspan dy="3">X</tspan></text>
+          <path class="w" d="M352 56 L492 56"/>
+          <!-- inductor current i_L -->
+          <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
+          <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
+          <!-- output node v_OUT + C_O -->
+          <circle class="dot" cx="420" cy="56" r="3.2"/>
+          <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
+          <path class="w" d="M420 56 L420 90 M402 90 L438 90 M402 100 L438 100 M420 100 L420 160"/>
+          <text class="lbl" x="446" y="99">C<tspan dy="3">O</tspan></text>
+          <!-- load current sink i_O -->
+          <path class="w" d="M492 56 L492 93"/>
+          <circle class="contact" cx="492" cy="108" r="15"/>
+          <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
+          <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
+          <path class="w" d="M492 123 L492 160"/>
+          <!-- bottom rail + ground -->
+          <path class="w" d="M52 160 L492 160"/>
+          <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
+        </svg>
+      </figure>
+
       <div class="bc-scope" id="bc-scope">
         <figure class="bc-panel">
           <svg id="p-vsw" viewBox="0 0 680 96" xmlns="http://www.w3.org/2000/svg" aria-label="Switch node voltage waveform"></svg>
