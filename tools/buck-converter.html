@@ -3,7 +3,6 @@ layout: default
 title: Buck Converter Tool
 description: Interactive ideal-component buck converter calculator — duty cycle, inductor current ripple, and output voltage ripple with live CCM and fixed-frequency DCM switching waveforms.
 permalink: /tools/buck-converter/
-math: true
 ---
 
 {% raw %}
@@ -552,14 +551,6 @@ math: true
     .bc-dcm-options.bc-show { max-height: 150px; }
     .bc-design-row { flex-wrap: wrap; }
     .bc-design-item + .bc-design-item { border-left: 0; border-top: 1px solid var(--line); }
-    .bc-page mjx-container[jax="CHTML"][display="true"],
-    .bc-page .MathJax_Display,
-    .bc-page .katex-display {
-      overflow-x: auto;
-      overflow-y: hidden;
-      max-width: 100%;
-      padding-bottom: 2px;
-    }
   }
 
   @media (max-width: 430px) {
@@ -1192,14 +1183,10 @@ math: true
 
   <section class="post-content project-body">
     <h2>Steady-state Operation</h2>
-    <p>Across the on-time \(t_{ON}\) the inductor sees \(v_{IN} - v_{OUT}\) and its current ramps up; across the off-time \(t_{OFF}\) it sees \(-v_{OUT}\), de-energizing into the output. Volt-second balance sets the duty cycle \(D\):</p>
-    <p>$$D \equiv \frac{t_{ON}}{t_{SW}} = \frac{v_{OUT}}{v_{IN}}$$</p>
-    <p>$$\begin{aligned}
-       \Delta i_L &= t_{ON}\!\left(\frac{v_{IN} - v_{OUT}}{L_X}\right) \\
-       &= \frac{(v_{IN} - v_{OUT})\, D}{f_{SW}\, L_X}
-       \end{aligned}$$</p>
-    <p>\(\Delta i_L / i_O\) of roughly 25–50&nbsp;% is reasonable starting point.</p>
-    <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional \(C_O\) ESR box is a first-order terminal-ripple term only: it reshapes \(v_{OUT}\) by adding \(i_C R_{ESR}\), but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so \(D\) is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
+    <p>Across the on-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the off-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
+    <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
+    <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
+    <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
   </section>
 </article>
 
