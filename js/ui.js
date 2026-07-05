@@ -81,6 +81,10 @@
 
     var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     setTheme(next, true);
+
+    button.classList.remove("is-flipping");
+    void button.offsetWidth;
+    if (!reduce) button.classList.add("is-flipping");
   });
 
   if (themeQuery) {
