@@ -44,9 +44,194 @@ permalink: /tools/buck-converter/
   .bc-schematic .lbl tspan { font-size: 11px; }
   .bc-schematic .ph { fill: var(--muted); font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
   .bc-schematic .ph tspan { font-size: 9.5px; }
+  .bc-schematic .ph.is-live { fill: var(--accent); }
   .bc-schematic .node { fill: var(--accent); font: 500 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
   .bc-schematic .node tspan { font-size: 10px; }
   .bc-schematic .arr { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .bc-schematic .arm { stroke: var(--ink); stroke-width: 2; fill: none; stroke-linecap: round; }
+  .bc-schematic .halo { stroke: var(--accent); stroke-width: 6; fill: none; stroke-linecap: round; opacity: 0; }
+  .bc-schematic .pivot { fill: var(--ink); }
+  .bc-schematic .fet-node { fill: var(--accent); opacity: 0; }
+  .bc-schematic .flow-dot { fill: var(--accent); }
+  .bc-schematic .flow-geo { stroke: none; fill: none; }
+
+  .bc-schematic--animated {
+    overflow: hidden;
+    padding: 16px 12px 12px;
+  }
+  .bc-anim-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 72px;
+    align-items: center;
+    gap: 8px;
+  }
+  .bc-schematic--animated #bc-anim-schematic {
+    width: 100%;
+    max-width: 560px;
+    min-width: 0;
+    height: auto;
+    margin: 0 0 0 auto;
+  }
+  .bc-duty-control {
+    align-self: stretch;
+    min-height: 204px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: 5px;
+    color: var(--muted);
+  }
+  .bc-duty-label {
+    display: block;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.08;
+  }
+  .bc-duty-rail {
+    display: grid;
+    grid-template-columns: 18px 28px;
+    align-items: center;
+    justify-content: start;
+    gap: 4px;
+  }
+  .bc-duty-control input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 18px;
+    height: clamp(128px, 20vw, 174px);
+    margin: 0;
+    border-radius: 2px;
+    background: linear-gradient(var(--line), var(--line)) center / 3px 100% no-repeat;
+    cursor: pointer;
+    outline: none;
+  }
+  .bc-duty-control input[type="range"]::-webkit-slider-runnable-track {
+    background: transparent;
+    border: 0;
+  }
+  .bc-duty-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: var(--bc-thumb-size);
+    height: var(--bc-thumb-size);
+    box-sizing: border-box;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background: var(--paper);
+    cursor: pointer;
+    transition:
+      transform var(--bc-motion-fast) var(--claude-ease),
+      background-color var(--bc-motion-fast) var(--claude-ease);
+  }
+  .bc-duty-control input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
+  }
+  .bc-duty-control input[type="range"]::-moz-range-track {
+    width: 3px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--line);
+  }
+  .bc-duty-control input[type="range"]::-moz-range-thumb {
+    width: var(--bc-thumb-size);
+    height: var(--bc-thumb-size);
+    box-sizing: border-box;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background: var(--paper);
+    cursor: pointer;
+    transition:
+      transform var(--bc-motion-fast) var(--claude-ease),
+      background-color var(--bc-motion-fast) var(--claude-ease);
+  }
+  .bc-duty-control input[type="range"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .bc-duty-ticks {
+    position: relative;
+    width: 28px;
+    height: clamp(128px, 20vw, 174px);
+  }
+  .bc-duty-tick {
+    position: absolute;
+    right: 0;
+    transform: translateY(50%);
+    padding: 1px 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: 500 0.62rem var(--claude-sans);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--bc-motion) var(--claude-ease);
+  }
+  .bc-duty-tick::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 3px);
+    width: 4px;
+    height: 1px;
+    background: var(--muted);
+    opacity: 0.52;
+    transition: background var(--bc-motion) var(--claude-ease), opacity var(--bc-motion) var(--claude-ease);
+  }
+  .bc-duty-tick:hover,
+  .bc-duty-tick:focus-visible {
+    color: var(--claude-accent-deep);
+    outline: none;
+  }
+  .bc-duty-tick:hover::before,
+  .bc-duty-tick:focus-visible::before {
+    background: var(--accent);
+    opacity: 1;
+  }
+  .bc-duty-control.is-readonly {
+    opacity: 0.72;
+  }
+  .bc-duty-control.is-readonly input[type="range"],
+  .bc-duty-control.is-readonly .bc-duty-tick {
+    cursor: default;
+    pointer-events: none;
+  }
+  .bc-anim-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 22px;
+    margin: 9px 4px 0;
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+  .bc-anim-pip {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: transform var(--bc-motion) var(--claude-ease), background-color var(--bc-motion) var(--claude-ease);
+  }
+  .bc-anim-phase {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .bc-anim-sep {
+    color: var(--muted);
+  }
+  .bc-anim-duty {
+    color: var(--accent);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
 
   /* --- presets --- */
   .bc-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 1.6rem 0 0.6rem; }
@@ -542,6 +727,11 @@ permalink: /tools/buck-converter/
       min-width: 0;
       max-width: 560px;
     }
+    .bc-schematic--animated #bc-anim-schematic {
+      width: 100%;
+      max-width: 560px;
+      margin-left: auto;
+    }
     .bc-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .bc-card:nth-child(3n + 1) { border-left: 1px solid var(--line); padding-left: 16px; }
     .bc-card:nth-child(odd) { border-left: 0; padding-left: 0; }
@@ -555,6 +745,38 @@ permalink: /tools/buck-converter/
 
   @media (max-width: 430px) {
     .bc-schematic { padding: 16px 10px 12px; }
+    .bc-schematic--animated {
+      padding: 14px 10px 11px;
+    }
+    .bc-anim-main {
+      grid-template-columns: minmax(0, 1fr) 54px;
+      gap: 6px;
+    }
+    .bc-duty-control {
+      align-self: center;
+      min-height: 0;
+      gap: 3px;
+    }
+    .bc-duty-label {
+      font-size: 0.56rem;
+    }
+    .bc-duty-rail {
+      grid-template-columns: 16px 24px;
+      gap: 3px;
+    }
+    .bc-duty-control input[type="range"],
+    .bc-duty-ticks {
+      height: 100px;
+    }
+    .bc-duty-tick {
+      font-size: 0.56rem;
+    }
+    .bc-anim-status {
+      flex-wrap: nowrap;
+      margin-top: 7px;
+      font-size: 0.72rem;
+      gap: 4px;
+    }
     .bc-switchers .bc-segmented button { font-size: 0.8rem; padding-inline: 8px; }
     .bc-controls { padding: 14px; }
     .bc-field-head {
@@ -784,6 +1006,14 @@ permalink: /tools/buck-converter/
     .bc-workbench .bc-schematic svg {
       width: 78%;
       max-width: none;
+    }
+    .bc-workbench .bc-schematic--animated {
+      padding: 12px 10px 10px;
+    }
+    .bc-workbench .bc-schematic--animated #bc-anim-schematic {
+      width: 100%;
+      max-width: 560px;
+      margin-left: auto;
     }
     .bc-workbench-main .bc-presets {
       flex-wrap: nowrap;
@@ -1152,54 +1382,95 @@ permalink: /tools/buck-converter/
     </div>
 
     <div class="bc-workbench-scope">
-      <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
-        <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img">
-          <!-- input source v_IN -->
-          <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
-          <circle class="contact" cx="52" cy="108" r="15"/>
-          <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
-          <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
-          <!-- top rail -->
-          <path class="w" d="M52 56 L106 56"/>
-          <!-- high-side switch (conducts during t_ON) -->
-          <circle class="contact" cx="110" cy="56" r="3"/>
-          <line class="w" x1="113" y1="53" x2="162" y2="35"/>
-          <circle class="contact" cx="166" cy="56" r="3"/>
-          <text class="ph" x="138" y="78" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
-          <path class="w" d="M169 56 L240 56"/>
-          <!-- switch node v_SW -->
-          <circle class="dot" cx="240" cy="56" r="3.2"/>
-          <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
-          <!-- low-side switch (conducts during t_OFF) -->
-          <path class="w" d="M240 56 L240 82"/>
-          <circle class="contact" cx="240" cy="86" r="3"/>
-          <line class="w" x1="238" y1="90" x2="219" y2="131"/>
-          <circle class="contact" cx="240" cy="136" r="3"/>
-          <text class="ph" x="252" y="114">t<tspan dy="2.5">OFF</tspan></text>
-          <path class="w" d="M240 139 L240 160"/>
-          <!-- switched inductor L_X -->
-          <path class="w" d="M240 56 L264 56"/>
-          <path class="w" d="M264 56 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0 a11 11 0 0 1 22 0"/>
-          <text class="lbl" x="308" y="30" text-anchor="middle">L<tspan dy="3">X</tspan></text>
-          <path class="w" d="M352 56 L492 56"/>
-          <!-- inductor current i_L -->
-          <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
-          <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
-          <!-- output node v_OUT + C_O -->
-          <circle class="dot" cx="420" cy="56" r="3.2"/>
-          <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
-          <path class="w" d="M420 56 L420 90 M402 90 L438 90 M402 100 L438 100 M420 100 L420 160"/>
-          <text class="lbl" x="446" y="99">C<tspan dy="3">O</tspan></text>
-          <!-- load current sink i_O -->
-          <path class="w" d="M492 56 L492 93"/>
-          <circle class="contact" cx="492" cy="108" r="15"/>
-          <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
-          <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
-          <path class="w" d="M492 123 L492 160"/>
-          <!-- bottom rail + ground -->
-          <path class="w" d="M52 160 L492 160"/>
-          <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
-        </svg>
+      <figure class="bc-schematic bc-schematic--animated" aria-label="Animated synchronous buck converter schematic">
+        <div class="bc-anim-main">
+          <svg id="bc-anim-schematic" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated synchronous buck converter">
+            <!-- flow geometry (invisible paths dots ride along) -->
+            <path class="flow-geo" id="bc-geo-hs" d="M52 56 L240 56"/>
+            <path class="flow-geo" id="bc-geo-ls" d="M240 160 L240 56"/>
+            <path class="flow-geo" id="bc-geo-main" d="M240 56 L420 56"/>
+
+            <!-- input source v_IN -->
+            <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
+            <circle class="contact" cx="52" cy="108" r="15"/>
+            <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
+            <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
+
+            <!-- top rail -->
+            <path class="w" d="M52 56 L106 56"/>
+
+            <!-- high-side switch -->
+            <text class="ph" id="bc-lbl-ton" x="138" y="80" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
+            <line class="halo" id="bc-halo-hs" x1="110" y1="56" x2="164" y2="56"/>
+            <circle class="contact" cx="166" cy="56" r="3.4"/>
+            <line class="arm" id="bc-arm-hs" x1="110" y1="56" x2="164" y2="56"/>
+            <circle class="pivot" cx="110" cy="56" r="2.8"/>
+            <path class="w" d="M169 56 L240 56"/>
+
+            <!-- switch node v_SW -->
+            <circle class="fet-node" id="bc-node-glow" cx="240" cy="56" r="7"/>
+            <circle class="dot" cx="240" cy="56" r="3.2"/>
+            <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
+
+            <!-- low-side switch -->
+            <path class="w" d="M240 56 L240 82"/>
+            <text class="ph" id="bc-lbl-toff" x="254" y="114">t<tspan dy="2.5">OFF</tspan></text>
+            <line class="halo" id="bc-halo-ls" x1="240" y1="86" x2="240" y2="134"/>
+            <circle class="contact" cx="240" cy="136" r="3.4"/>
+            <line class="arm" id="bc-arm-ls" x1="240" y1="86" x2="240" y2="134"/>
+            <circle class="pivot" cx="240" cy="86" r="2.8"/>
+            <path class="w" d="M240 139 L240 160"/>
+
+            <!-- switched inductor L_X -->
+            <path class="w" d="M240 56 L274 56"/>
+            <path class="w" d="M274 56 C274 45 291 45 291 56 C291 45 308 45 308 56 C308 45 325 45 325 56 C325 45 342 45 342 56"/>
+            <text class="lbl" x="307" y="31" text-anchor="middle">L<tspan dy="3">X</tspan></text>
+            <path class="w" d="M342 56 L492 56"/>
+
+            <!-- inductor current i_L -->
+            <path class="arr" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
+            <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
+
+            <!-- output node v_OUT + C_O -->
+            <circle class="dot" cx="420" cy="56" r="3.2"/>
+            <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
+            <path class="w" d="M420 56 L420 89 M400 89 L440 89 M400 100 L440 100 M420 100 L420 160"/>
+            <text class="lbl" x="448" y="99">C<tspan dy="3">O</tspan></text>
+
+            <!-- load current sink i_O -->
+            <path class="w" d="M492 56 L492 93"/>
+            <circle class="contact" cx="492" cy="108" r="15"/>
+            <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
+            <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
+            <path class="w" d="M492 123 L492 160"/>
+
+            <!-- bottom rail + ground -->
+            <path class="w" d="M52 160 L492 160"/>
+            <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
+
+            <!-- dot layers (populated by JS) -->
+            <g id="bc-dots-main"></g>
+            <g id="bc-dots-hs"></g>
+            <g id="bc-dots-ls"></g>
+          </svg>
+
+          <div class="bc-duty-control" id="bc-duty-control">
+            <label class="bc-duty-label" for="bc-duty-slider">Duty D</label>
+            <div class="bc-duty-rail">
+              <input id="bc-duty-slider" type="range" min="0" max="96" step="0.1" value="25" aria-label="Duty cycle D">
+              <div class="bc-duty-ticks" id="bc-duty-ticks"></div>
+            </div>
+          </div>
+        </div>
+
+        <figcaption class="bc-anim-status" aria-live="polite">
+          <span class="bc-anim-pip" id="bc-anim-pip"></span>
+          <span class="bc-anim-phase" id="bc-anim-phase">on-time</span>
+          <span class="bc-anim-sep">·</span>
+          <span id="bc-anim-desc">high-side FET conducts, i<sub>L</sub> rising</span>
+          <span class="bc-anim-sep">·</span>
+          <span class="bc-anim-duty" id="bc-anim-duty">D = 25.0%</span>
+        </figcaption>
       </figure>
 
       <div class="bc-scope" id="bc-scope">
@@ -1922,7 +2193,10 @@ permalink: /tools/buck-converter/
   ["out-d", "out-tsw", "out-dil-label", "out-dil", "out-dil-pct", "out-dv", "out-dv-pct",
    "out-ton", "out-toff-label", "out-toff", "out-toff-note", "out-ipk-label", "out-ipk", "out-ipk-note",
    "out-design-l", "out-design-c", "out-design-l-note", "out-design-c-note", "bc-design-result", "bc-dcm-options",
-   "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope"].forEach(function (id) {
+   "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope",
+   "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-pip", "bc-anim-phase", "bc-anim-desc",
+   "bc-anim-duty", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow", "bc-lbl-ton",
+   "bc-lbl-toff"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
@@ -2000,6 +2274,277 @@ permalink: /tools/buck-converter/
     });
   }
 
+  /* ---------- animated schematic ---------- */
+  var animDutyTickValues = [10, 25, 90];
+  var animFrame = 0;
+  var animSchematic = {
+    ready: false,
+    flowMain: null,
+    flowHs: null,
+    flowLs: null,
+    dist: 0,
+    clock: 0,
+    lastT: 0,
+    lastPhase: "",
+    state: { hsAngle: -23, lsAngle: 26, hsGlow: 0, lsGlow: 0 },
+    model: { D: 0.275, D2: 0.725, D3: 0, dcmValid: false, readonly: false }
+  };
+
+  function hasAnimatedSchematic() {
+    return !!(el["bc-duty-slider"] && el["bc-arm-hs"] && el["bc-arm-ls"]);
+  }
+
+  function buildAnimFlow(pathId, layerId, spacing) {
+    var path = document.getElementById(pathId);
+    var layer = document.getElementById(layerId);
+    if (!path || !layer || !path.getTotalLength) { return null; }
+    var length = path.getTotalLength();
+    var count = Math.max(2, Math.floor(length / spacing));
+    var dots = [];
+    while (layer.firstChild) { layer.removeChild(layer.firstChild); }
+    for (var i = 0; i < count; i++) {
+      var dot = mk("circle", {
+        "class": "flow-dot",
+        r: i % 3 === 0 ? 2.5 : 2.05,
+        cx: -20,
+        cy: -20
+      });
+      layer.appendChild(dot);
+      dots.push(dot);
+    }
+    return { path: path, layer: layer, length: length, spacing: spacing, dots: dots };
+  }
+
+  function placeAnimDots(flow, offset, opacity) {
+    if (!flow) { return; }
+    flow.layer.style.opacity = Math.max(0, Math.min(1, opacity));
+    if (opacity <= 0.01) { return; }
+    flow.dots.forEach(function (dot, i) {
+      var d = (offset + i * flow.spacing) % flow.length;
+      if (d < 0) { d += flow.length; }
+      var p = flow.path.getPointAtLength(d);
+      dot.setAttribute("cx", p.x.toFixed(2));
+      dot.setAttribute("cy", p.y.toFixed(2));
+      dot.setAttribute("opacity", (0.42 + 0.58 * (1 - i / Math.max(1, flow.dots.length))).toFixed(2));
+    });
+  }
+
+  function easeAnim(current, target, dt, snap) {
+    if (snap) { return target; }
+    return current + (target - current) * (1 - Math.exp(-dt / 0.08));
+  }
+
+  function currentAnimPhase() {
+    var D = clamp(animSchematic.model.D, 0.001, 0.999);
+    var c = animSchematic.clock % 1;
+    if (animSchematic.model.dcmValid) {
+      var D2 = clamp(animSchematic.model.D2, 0.001, Math.max(0.001, 1 - D));
+      var D3 = Math.max(0.001, 1 - D - D2);
+      if (c < D) {
+        return { name: "on", local: c / D };
+      }
+      if (c < D + D2) {
+        return { name: "decay", local: (c - D) / D2 };
+      }
+      return { name: "idle", local: (c - D - D2) / D3 };
+    }
+    var off = Math.max(0.001, 1 - D);
+    return c < D
+      ? { name: "on", local: c / D }
+      : { name: "off", local: (c - D) / off };
+  }
+
+  function updateAnimStatus(phaseName) {
+    if (!hasAnimatedSchematic()) { return; }
+    var phase = phaseName || animSchematic.lastPhase || "on";
+    var compact = window.matchMedia && window.matchMedia("(max-width: 430px)").matches;
+    var label = "on-time";
+    var desc = "high-side FET conducts, i<sub>L</sub> rising";
+    var compactDesc = "i<sub>L</sub> rising";
+    var muted = false;
+    if (phase === "off") {
+      label = "off-time";
+      desc = "low-side FET freewheels, i<sub>L</sub> falling";
+      compactDesc = "i<sub>L</sub> falling";
+    } else if (phase === "decay") {
+      label = "low-side decay";
+      desc = "low-side FET conducts, i<sub>L</sub> falling";
+      compactDesc = "i<sub>L</sub> falling";
+    } else if (phase === "idle") {
+      label = "idle interval";
+      desc = "both FETs off, i<sub>L</sub> held at zero-cross";
+      compactDesc = "i<sub>L</sub> zero";
+      muted = true;
+    }
+    el["bc-anim-phase"].textContent = label;
+    el["bc-anim-desc"].innerHTML = compact ? compactDesc : desc;
+    el["bc-anim-duty"].textContent = "D = " + (100 * animSchematic.model.D).toFixed(1) + "%";
+    el["bc-anim-duty"].style.whiteSpace = "nowrap";
+    el["bc-anim-pip"].style.transform = muted ? "scale(0.66)" : "scale(1)";
+    el["bc-anim-pip"].style.backgroundColor = muted ? "var(--muted)" : "var(--accent)";
+  }
+
+  function drawAnimPhase(phase, dt, snap) {
+    if (!hasAnimatedSchematic()) { return; }
+    var isOn = phase.name === "on";
+    var isLowSide = phase.name === "off" || phase.name === "decay";
+    var isIdle = phase.name === "idle";
+    animSchematic.state.hsAngle = easeAnim(animSchematic.state.hsAngle, isOn ? 0 : -23, dt, snap);
+    animSchematic.state.lsAngle = easeAnim(animSchematic.state.lsAngle, isLowSide ? 0 : 26, dt, snap);
+    animSchematic.state.hsGlow = easeAnim(animSchematic.state.hsGlow, isOn ? 1 : 0, dt, snap);
+    animSchematic.state.lsGlow = easeAnim(animSchematic.state.lsGlow, isLowSide ? 1 : 0, dt, snap);
+
+    el["bc-arm-hs"].setAttribute("transform", "rotate(" + animSchematic.state.hsAngle.toFixed(2) + " 110 56)");
+    el["bc-arm-ls"].setAttribute("transform", "rotate(" + animSchematic.state.lsAngle.toFixed(2) + " 240 86)");
+    el["bc-halo-hs"].style.opacity = animSchematic.state.hsGlow.toFixed(3);
+    el["bc-halo-ls"].style.opacity = animSchematic.state.lsGlow.toFixed(3);
+    el["bc-node-glow"].style.opacity = Math.max(animSchematic.state.hsGlow, 0.72 * animSchematic.state.lsGlow).toFixed(3);
+    el["bc-lbl-ton"].classList.toggle("is-live", isOn);
+    el["bc-lbl-toff"].classList.toggle("is-live", isLowSide);
+
+    if (!snap) {
+      var phaseEnergy = isIdle ? 0 : (0.45 + 0.55 * (isOn ? phase.local : 1 - phase.local));
+      animSchematic.dist = (animSchematic.dist + dt * (42 + 58 * phaseEnergy)) % 10000;
+    }
+    placeAnimDots(animSchematic.flowHs, animSchematic.dist, isOn ? 1 : 0);
+    placeAnimDots(animSchematic.flowLs, animSchematic.dist, isLowSide ? 1 : 0);
+    placeAnimDots(animSchematic.flowMain, animSchematic.dist, isIdle ? 0.08 : 0.95);
+  }
+
+  function drawReducedMotionSchematic() {
+    var phase = animSchematic.model.dcmValid && animSchematic.model.D3 > 0.18
+      ? { name: "idle", local: 0.5 }
+      : { name: "on", local: 0.5 };
+    animSchematic.lastPhase = phase.name;
+    drawAnimPhase(phase, 0.016, true);
+    updateAnimStatus(phase.name);
+  }
+
+  function tickAnimatedSchematic(now) {
+    animFrame = 0;
+    if (!animSchematic.ready || (reduceMotion && reduceMotion.matches)) {
+      drawReducedMotionSchematic();
+      return;
+    }
+    if (!animSchematic.lastT) { animSchematic.lastT = now; }
+    var dt = Math.min(0.05, Math.max(0, (now - animSchematic.lastT) / 1000));
+    animSchematic.lastT = now;
+    animSchematic.clock = (animSchematic.clock + dt / 3.0) % 1;
+    var phase = currentAnimPhase();
+    drawAnimPhase(phase, dt || 0.016, false);
+    if (phase.name !== animSchematic.lastPhase) {
+      animSchematic.lastPhase = phase.name;
+      updateAnimStatus(phase.name);
+    }
+    animFrame = raf(tickAnimatedSchematic);
+  }
+
+  function startAnimatedSchematic() {
+    if (!animSchematic.ready) { return; }
+    if (reduceMotion && reduceMotion.matches) {
+      if (animFrame) {
+        cancelRaf(animFrame);
+        animFrame = 0;
+      }
+      drawReducedMotionSchematic();
+      return;
+    }
+    if (!animFrame) {
+      animSchematic.lastT = 0;
+      animFrame = raf(tickAnimatedSchematic);
+    }
+  }
+
+  function syncAnimatedDutyRail(pct, readonly) {
+    if (!hasAnimatedSchematic()) { return; }
+    var displayPct = clamp(pct, 0, 96);
+    el["bc-duty-slider"].value = displayPct.toFixed(1);
+    el["bc-duty-slider"].setAttribute("aria-valuetext", "D = " + displayPct.toFixed(1) + "%");
+    el["bc-duty-slider"].setAttribute("aria-disabled", readonly ? "true" : "false");
+    el["bc-duty-slider"].tabIndex = readonly ? -1 : 0;
+    el["bc-duty-control"].classList.toggle("is-readonly", readonly);
+    Array.prototype.slice.call(el["bc-duty-ticks"].querySelectorAll(".bc-duty-tick")).forEach(function (tick) {
+      tick.setAttribute("aria-disabled", readonly ? "true" : "false");
+    });
+  }
+
+  function syncAnimatedSchematic(s, r) {
+    if (!hasAnimatedSchematic()) { return; }
+    var readonly = conduction === "dcm";
+    var dcmValid = readonly && !!r.dcmValid;
+    var nextD = clamp(r.D || 0, 0.001, 0.96);
+    var nextD2 = dcmValid ? clamp(r.D2 || 0, 0.001, Math.max(0.001, 1 - nextD)) : Math.max(0.001, 1 - nextD);
+    var nextD3 = dcmValid ? Math.max(0.001, 1 - nextD - nextD2) : 0;
+    if (animSchematic.model.dcmValid !== dcmValid || animSchematic.model.readonly !== readonly) {
+      animSchematic.lastPhase = "";
+    }
+    animSchematic.model = { D: nextD, D2: nextD2, D3: nextD3, dcmValid: dcmValid, readonly: readonly };
+    syncAnimatedDutyRail(100 * nextD, readonly);
+    updateAnimStatus(animSchematic.lastPhase || "on");
+    startAnimatedSchematic();
+  }
+
+  function positionAnimatedDutyTicks() {
+    if (!el["bc-duty-ticks"]) { return; }
+    var thumb = sliderThumbSize();
+    Array.prototype.slice.call(el["bc-duty-ticks"].querySelectorAll(".bc-duty-tick")).forEach(function (tick) {
+      var pct = parseFloat(tick.getAttribute("data-duty"));
+      var f = clamp(pct / 96, 0, 1);
+      tick.style.bottom = "calc(" + (100 * f).toFixed(2) + "% + " + (thumb / 2 - thumb * f).toFixed(1) + "px)";
+    });
+  }
+
+  function applyAnimatedDutyPct(pct) {
+    if (!isFinite(pct)) { return; }
+    if (conduction === "dcm") {
+      syncAnimatedDutyRail(100 * animSchematic.model.D, true);
+      return;
+    }
+    var nextD = clamp(roundTo(pct, 0.1) / 100, 0, 0.96);
+    state.vout = clampParam("vout", state.vin * nextD);
+    enforceBuck("vout");
+    hideProbe();
+    renderNow();
+  }
+
+  function initAnimatedSchematic() {
+    if (!hasAnimatedSchematic() || animSchematic.ready) { return; }
+    animSchematic.ready = true;
+    animSchematic.flowHs = buildAnimFlow("bc-geo-hs", "bc-dots-hs", 34);
+    animSchematic.flowLs = buildAnimFlow("bc-geo-ls", "bc-dots-ls", 30);
+    animSchematic.flowMain = buildAnimFlow("bc-geo-main", "bc-dots-main", 32);
+
+    animDutyTickValues.forEach(function (pct) {
+      var tick = document.createElement("button");
+      tick.type = "button";
+      tick.className = "bc-duty-tick";
+      tick.tabIndex = -1;
+      tick.setAttribute("data-duty", pct);
+      tick.setAttribute("aria-label", "Set duty cycle to " + pct + "%");
+      tick.textContent = pct + "%";
+      tick.addEventListener("click", function () {
+        if (this.getAttribute("aria-disabled") === "true") { return; }
+        applyAnimatedDutyPct(pct);
+      });
+      el["bc-duty-ticks"].appendChild(tick);
+    });
+    positionAnimatedDutyTicks();
+
+    el["bc-duty-slider"].addEventListener("input", function () {
+      applyAnimatedDutyPct(parseFloat(this.value));
+    });
+
+    if (reduceMotion) {
+      var motionHandler = function () { startAnimatedSchematic(); };
+      if (reduceMotion.addEventListener) {
+        reduceMotion.addEventListener("change", motionHandler);
+      } else if (reduceMotion.addListener) {
+        reduceMotion.addListener(motionHandler);
+      }
+    }
+    startAnimatedSchematic();
+  }
+
   /* ---------- render ---------- */
   function render() {
     var s = workingState();
@@ -2012,6 +2557,7 @@ permalink: /tools/buck-converter/
 
     syncModeUI();
     syncConductionUI();
+    syncAnimatedSchematic(s, r);
     el["out-design-l"].textContent = eng(d.l, "H");
     el["out-design-c"].textContent = d.capNoSolution ? "No solution" : eng(d.c, "F");
     el["out-design-l-note"].textContent = conduction === "dcm" ? "CCM ripple sizing reference" : "from current ripple target";
@@ -2197,6 +2743,7 @@ permalink: /tools/buck-converter/
 
   window.addEventListener("resize", function () {
     hideProbe();
+    positionAnimatedDutyTicks();
     scheduleRender(false);
   });
 
@@ -2295,6 +2842,7 @@ permalink: /tools/buck-converter/
     });
   });
 
+  initAnimatedSchematic();
   syncInputs();
   render();
 }());
