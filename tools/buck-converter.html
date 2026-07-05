@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Buck Converter Ripple Tool
-description: Interactive ideal-component buck converter calculator — duty cycle, inductor current ripple, and output voltage ripple with live switching waveforms.
+title: Buck Converter Tool
+description: Interactive ideal-component buck converter calculator — duty cycle, inductor current ripple, and output voltage ripple with live CCM and fixed-frequency DCM switching waveforms.
 permalink: /tools/buck-converter/
 math: true
 ---
@@ -91,13 +91,16 @@ math: true
     background: var(--ink);
     transition: transform 320ms var(--claude-ease, var(--ease));
   }
-  .bc-segmented[data-active-mode="design"]::before {
+  .bc-segmented[data-active-index="1"]::before,
+  .bc-segmented[data-active-mode="design"]::before,
+  .bc-segmented[data-active-conduction="dcm"]::before {
     transform: translateX(100%);
   }
+  .bc-segmented.bc-segmented--wide button { min-width: 168px; }
   .bc-segmented button {
     position: relative;
     z-index: 1;
-    min-width: 112px;
+    min-width: 132px;
     border: 0;
     border-radius: 999px;
     background: transparent;
@@ -136,9 +139,22 @@ math: true
     to { opacity: 1; transform: translateY(0); }
   }
   .bc-field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .bc-field-head label { color: var(--ink); font-size: 0.94rem; font-weight: 600; }
+  .bc-field-head > label {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    color: var(--ink);
+    font-size: 0.94rem;
+    font-weight: 600;
+  }
   .bc-field-head .bc-entry { display: flex; align-items: baseline; gap: 5px; }
-  .bc-entry input[type="number"] {
+  .bc-entry--compound {
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 7px 10px;
+  }
+  .bc-entry input[type="number"],
+  .bc-inline-param input[type="number"] {
     -moz-appearance: textfield;
     width: 5.2em;
     padding: 2px 6px;
@@ -152,12 +168,55 @@ math: true
     font-variant-numeric: tabular-nums;
   }
   .bc-entry input[type="number"]::-webkit-outer-spin-button,
-  .bc-entry input[type="number"]::-webkit-inner-spin-button {
+  .bc-entry input[type="number"]::-webkit-inner-spin-button,
+  .bc-inline-param input[type="number"]::-webkit-outer-spin-button,
+  .bc-inline-param input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-  .bc-entry input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .bc-entry .bc-unit { color: var(--muted); font-size: 0.88rem; min-width: 2.2em; }
+  .bc-entry input[type="number"]:focus-visible,
+  .bc-inline-param input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .bc-entry .bc-unit,
+  .bc-inline-param .bc-unit { color: var(--muted); font-size: 0.88rem; min-width: 2.2em; }
+  .bc-inline-param {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .bc-inline-param label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .bc-inline-param input[type="number"] {
+    width: 4.6em;
+  }
+  .bc-inline-param--optional {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    visibility: hidden;
+    transition:
+      max-width 320ms var(--claude-ease, var(--ease)),
+      opacity 220ms var(--claude-ease, var(--ease)),
+      transform 320ms var(--claude-ease, var(--ease)),
+      visibility 0s linear 320ms;
+  }
+  .bc-inline-param--optional.bc-show {
+    max-width: 190px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+    transition:
+      max-width 320ms var(--claude-ease, var(--ease)),
+      opacity 240ms var(--claude-ease, var(--ease)),
+      transform 320ms var(--claude-ease, var(--ease)),
+      visibility 0s;
+  }
 
   .bc-field input[type="range"] {
     -webkit-appearance: none;
@@ -304,6 +363,58 @@ math: true
     color: var(--muted);
     font-size: 0.8rem;
   }
+  .bc-design-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .bc-design-copy {
+    min-width: 0;
+  }
+  .bc-design-param {
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  .bc-dcm-options {
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: var(--paper);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px);
+    visibility: hidden;
+    transition:
+      max-height 340ms var(--claude-ease, var(--ease)),
+      margin 340ms var(--claude-ease, var(--ease)),
+      opacity 240ms var(--claude-ease, var(--ease)),
+      transform 340ms var(--claude-ease, var(--ease)),
+      border-color 340ms var(--claude-ease, var(--ease)),
+      visibility 0s linear 340ms;
+  }
+  .bc-dcm-options.bc-show {
+    max-height: 132px;
+    margin: 1rem 0 0;
+    border-color: var(--line);
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+    transition:
+      max-height 340ms var(--claude-ease, var(--ease)),
+      margin 340ms var(--claude-ease, var(--ease)),
+      opacity 260ms var(--claude-ease, var(--ease)),
+      transform 340ms var(--claude-ease, var(--ease)),
+      border-color 340ms var(--claude-ease, var(--ease)),
+      visibility 0s;
+  }
+  .bc-dcm-options .bc-field {
+    padding: 14px 16px;
+  }
 
   /* --- waveform scope --- */
   .bc-scope {
@@ -355,6 +466,7 @@ math: true
     .bc-mode { align-items: stretch; flex-direction: column; }
     .bc-segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .bc-segmented button { min-width: 0; }
+    .bc-segmented.bc-segmented--wide button { min-width: 0; }
     .bc-controls { grid-template-columns: 1fr; padding: 16px; }
     .bc-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .bc-card:nth-child(3n + 1) { border-left: 1px solid var(--line); padding-left: 16px; }
@@ -362,6 +474,8 @@ math: true
     .bc-card:nth-child(even) { padding-right: 0; }
     .bc-design-result { grid-template-columns: 1fr; }
     .bc-design-result.bc-show { max-height: 260px; }
+    .bc-dcm-options.bc-show { max-height: 150px; }
+    .bc-design-row { flex-wrap: wrap; }
     .bc-design-item + .bc-design-item { border-left: 0; border-top: 1px solid var(--line); }
     .bc-page mjx-container[jax="CHTML"][display="true"],
     .bc-page .MathJax_Display,
@@ -376,7 +490,9 @@ math: true
   @media (max-width: 430px) {
     .bc-schematic { padding: 16px 10px 12px; }
     .bc-field-head { align-items: flex-start; flex-direction: column; gap: 6px; }
+    .bc-entry--compound { justify-content: flex-start; }
     .bc-entry input[type="number"] { width: 7em; }
+    .bc-inline-param input[type="number"] { width: 6em; }
   }
 
   .bc-page { max-width: 740px; }
@@ -388,9 +504,11 @@ math: true
     line-height: 1.56;
   }
   .bc-presets,
+  .bc-mode,
   .bc-controls,
   .bc-results,
   .bc-note,
+  .bc-dcm-options,
   .bc-scope .bc-scope-foot,
   .bc-field-head label,
   .bc-entry,
@@ -543,7 +661,9 @@ math: true
 
   @media (prefers-reduced-motion: reduce) {
     .bc-segmented::before,
-    .bc-design-result {
+    .bc-design-result,
+    .bc-dcm-options,
+    .bc-inline-param--optional {
       transition: none;
     }
     .bc-field.bc-field-enter {
@@ -555,8 +675,8 @@ math: true
 <article class="bc-page">
   <header class="bc-header">
     <p class="eyebrow">Interactive tool · Ideal-component model</p>
-    <h1>Buck Converter Ripple Tool</h1>
-    <p class="bc-dek">Set an operating point and read off the duty cycle, inductor current ripple, and output voltage ripple — with the switching waveforms drawn live. Ideal components, steady state, continuous conduction.</p>
+    <h1>Buck Converter Tool</h1>
+    <p class="bc-dek">Set an operating point and read off the duty cycle, inductor current ripple, and output voltage ripple — with the switching waveforms drawn live. Ideal components, steady state, CCM or fixed-frequency DCM.</p>
   </header>
 
   <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
@@ -618,9 +738,28 @@ math: true
 
   <div class="bc-mode">
     <span class="bc-mode-label">Mode</span>
-    <div class="bc-segmented" role="group" aria-label="Calculator mode" data-active-mode="analyze">
+    <div class="bc-segmented" role="group" aria-label="Calculator mode" data-active-mode="analyze" data-active-index="0">
       <button type="button" data-mode="analyze" aria-pressed="true">Analyze design</button>
       <button type="button" data-mode="design" aria-pressed="false">Set ripple targets</button>
+    </div>
+  </div>
+
+  <div class="bc-mode">
+    <span class="bc-mode-label">Conduction</span>
+    <div class="bc-segmented bc-segmented--wide" role="group" aria-label="Conduction mode" data-active-conduction="ccm" data-active-index="0">
+      <button type="button" data-conduction="ccm" aria-pressed="true">CCM</button>
+      <button type="button" data-conduction="dcm" aria-pressed="false">Fixed-frequency DCM</button>
+    </div>
+  </div>
+
+  <div class="bc-dcm-options" id="bc-dcm-options" aria-hidden="true">
+    <div class="bc-field">
+      <div class="bc-field-head">
+        <label for="num-izc">Zero-cross current i<sub>ZC</sub></label>
+        <span class="bc-entry"><input id="num-izc" type="number" inputmode="decimal" step="1"><span class="bc-unit">mA</span></span>
+      </div>
+      <input id="sl-izc" type="range" min="0" max="1000" step="1" aria-label="Zero-cross current slider">
+      <div class="bc-ticks" data-for="izc"></div>
     </div>
   </div>
 
@@ -651,7 +790,7 @@ math: true
     <div class="bc-field">
       <div class="bc-field-head">
         <label for="num-fsw">Switching frequency f<sub>SW</sub></label>
-        <span class="bc-entry"><input id="num-fsw" type="number" inputmode="decimal" step="1"><span class="bc-unit">kHz</span></span>
+        <span class="bc-entry"><input id="num-fsw" type="number" inputmode="decimal" step="10"><span class="bc-unit">kHz</span></span>
       </div>
       <input id="sl-fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider">
       <div class="bc-ticks" data-for="fsw"></div>
@@ -659,15 +798,29 @@ math: true
     <div class="bc-field" data-mode-field="analyze">
       <div class="bc-field-head">
         <label for="num-l">Inductance L<sub>X</sub></label>
-        <span class="bc-entry"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
+        <span class="bc-entry bc-entry--compound">
+          <span class="bc-inline-param"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
+          <span class="bc-inline-param bc-inline-param--optional" data-dcm-extra aria-hidden="true">
+            <label for="num-csw">C<sub>SW</sub></label>
+            <input id="num-csw" data-param="csw" type="number" inputmode="decimal" step="1">
+            <span class="bc-unit">pF</span>
+          </span>
+        </span>
       </div>
       <input id="sl-l" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
       <div class="bc-ticks" data-for="l"></div>
     </div>
     <div class="bc-field" data-mode-field="analyze">
       <div class="bc-field-head">
-        <label for="num-c">Output capacitance C<sub>O</sub></label>
-        <span class="bc-entry"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
+        <label for="num-c">Output cap C<sub>O</sub></label>
+        <span class="bc-entry bc-entry--compound">
+          <span class="bc-inline-param"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
+          <span class="bc-inline-param">
+            <label for="num-esr">ESR</label>
+            <input id="num-esr" data-param="esr" type="number" inputmode="decimal" step="1">
+            <span class="bc-unit">mΩ</span>
+          </span>
+        </span>
       </div>
       <input id="sl-c" type="range" min="0" max="1000" step="1" aria-label="Output capacitance slider">
       <div class="bc-ticks" data-for="c"></div>
@@ -675,7 +828,7 @@ math: true
     <div class="bc-field" data-mode-field="design" hidden>
       <div class="bc-field-head">
         <label for="num-iripple">Current ripple target Δi<sub>L</sub>/i<sub>O</sub></label>
-        <span class="bc-entry"><input id="num-iripple" type="number" inputmode="decimal" step="1"><span class="bc-unit">%</span></span>
+        <span class="bc-entry"><input id="num-iripple" type="number" inputmode="decimal" step="5"><span class="bc-unit">%</span></span>
       </div>
       <input id="sl-iripple" type="range" min="0" max="1000" step="1" aria-label="Current ripple target slider">
       <div class="bc-ticks" data-for="iripple"></div>
@@ -683,7 +836,7 @@ math: true
     <div class="bc-field" data-mode-field="design" hidden>
       <div class="bc-field-head">
         <label for="num-vripple">Voltage ripple target Δv<sub>OUT</sub></label>
-        <span class="bc-entry"><input id="num-vripple" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">mV</span></span>
+        <span class="bc-entry"><input id="num-vripple" type="number" inputmode="decimal" step="0.1" max="20"><span class="bc-unit">mV</span></span>
       </div>
       <input id="sl-vripple" type="range" min="0" max="1000" step="1" aria-label="Voltage ripple target slider">
       <div class="bc-ticks" data-for="vripple"></div>
@@ -692,14 +845,32 @@ math: true
 
   <div class="bc-design-result" id="bc-design-result" aria-live="polite">
     <div class="bc-design-item">
-      <p class="bc-design-k">Suggested inductance L<sub>X</sub></p>
-      <p class="bc-design-v" id="out-design-l">—</p>
-      <p class="bc-design-s">from current ripple target</p>
+      <div class="bc-design-row">
+        <div class="bc-design-copy">
+          <p class="bc-design-k">Suggested inductance L<sub>X</sub></p>
+          <p class="bc-design-v" id="out-design-l">—</p>
+          <p class="bc-design-s">from current ripple target</p>
+        </div>
+        <span class="bc-inline-param bc-inline-param--optional bc-design-param" data-dcm-extra aria-hidden="true">
+          <label for="num-csw-design">C<sub>SW</sub></label>
+          <input id="num-csw-design" data-param="csw" type="number" inputmode="decimal" step="1">
+          <span class="bc-unit">pF</span>
+        </span>
+      </div>
     </div>
     <div class="bc-design-item">
-      <p class="bc-design-k">Suggested capacitance C<sub>O</sub></p>
-      <p class="bc-design-v" id="out-design-c">—</p>
-      <p class="bc-design-s">from voltage ripple target</p>
+      <div class="bc-design-row">
+        <div class="bc-design-copy">
+          <p class="bc-design-k">Suggested capacitance C<sub>O</sub></p>
+          <p class="bc-design-v" id="out-design-c">—</p>
+          <p class="bc-design-s">from voltage ripple target</p>
+        </div>
+        <span class="bc-inline-param bc-design-param">
+          <label for="num-esr-design">ESR</label>
+          <input id="num-esr-design" data-param="esr" type="number" inputmode="decimal" step="1">
+          <span class="bc-unit">mΩ</span>
+        </span>
+      </div>
     </div>
   </div>
 
@@ -710,7 +881,7 @@ math: true
       <p class="bc-s">t<sub>SW</sub> = <span id="out-tsw">—</span></p>
     </div>
     <div class="bc-card">
-      <p class="bc-k">Current ripple Δi<sub>L</sub></p>
+      <p class="bc-k" id="out-dil-label">Current ripple Δi<sub>L</sub></p>
       <p class="bc-v" id="out-dil">—</p>
       <p class="bc-s"><span id="out-dil-pct">—</span> % of i<sub>O</sub>, pk-pk</p>
     </div>
@@ -725,14 +896,14 @@ math: true
       <p class="bc-s">= D · t<sub>SW</sub></p>
     </div>
     <div class="bc-card">
-      <p class="bc-k">Off-time t<sub>OFF</sub></p>
+      <p class="bc-k" id="out-toff-label">Off-time t<sub>OFF</sub></p>
       <p class="bc-v" id="out-toff">—</p>
-      <p class="bc-s">= (1 − D) · t<sub>SW</sub></p>
+      <p class="bc-s" id="out-toff-note">= (1 − D) · t<sub>SW</sub></p>
     </div>
     <div class="bc-card">
-      <p class="bc-k">i<sub>L</sub> peak / valley</p>
+      <p class="bc-k" id="out-ipk-label">i<sub>L</sub> peak / valley</p>
       <p class="bc-v" id="out-ipk">—</p>
-      <p class="bc-s">average = i<sub>O</sub></p>
+      <p class="bc-s" id="out-ipk-note">average = i<sub>O</sub></p>
     </div>
   </div>
 
@@ -765,7 +936,7 @@ math: true
     <p>The expanded form is the one worth internalizing. Output ripple is independent of load current, is set by the \(L_X C_O\) product, and falls with the <em>square</em> of switching frequency — doubling \(f_{SW}\) cuts \(\Delta v_{OUT}\) by 4×, which is why frequency is the strongest lever in the whole design and why it trades directly against switching loss in a real converter.</p>
     <p>As a design habit, a ripple ratio \(\Delta i_L / i_O\) of roughly 20–40&nbsp;% is the usual starting point — small enough for reasonable RMS losses, large enough to keep the inductor physically small.</p>
     <h2>What it ignores</h2>
-    <p>Ideal components means: no conduction or switching losses, no inductor DCR or core loss, no capacitor ESR/ESL, no dead time, and instantaneous switching. The most visible omission is capacitor ESR, which in real converters often dominates the output ripple (adding roughly \(\Delta i_L \cdot R_{ESR}\)) and turns the parabolic segments into something closer to the current triangle itself. Efficiency is exactly 1 here, so \(D\) is also the ideal conversion ratio — a real converter runs slightly higher duty to cover its losses.</p>
+    <p>Ideal components means: no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional \(C_O\) ESR box is a first-order terminal-ripple term only: it reshapes \(v_{OUT}\) by adding \(i_C R_{ESR}\), but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so \(D\) is also the ideal conversion ratio — a real converter runs slightly higher duty to cover its losses.</p>
   </section>
 </article>
 
@@ -783,7 +954,10 @@ math: true
     l:     { min: 0.22e-6, max: 25e-6,   log: true,  scale: 1e6,  digits: 2 },
     c:     { min: 1e-6,    max: 1000e-6, log: true,  scale: 1e6,  digits: 0 },
     iripple: { min: 0.05,  max: 0.8,     log: false, scale: 100,  digits: 0 },
-    vripple: { min: 1e-3,  max: 500e-3,  log: true,  scale: 1e3, digits: 1 }
+    vripple: { min: 1e-3,  max: 20e-3,   log: true,  scale: 1e3, digits: 1 },
+    izc:      { min: 0,     max: 1,       log: false, scale: 1e3, digits: 0 },
+    csw:      { min: 0,     max: Infinity, log: false, scale: 1e12, digits: 0 },
+    esr:      { min: 0,     max: Infinity, log: false, scale: 1e3, digits: 0 }
   };
 
   // clickable jump ticks under selected sliders: [value, label]
@@ -793,8 +967,9 @@ math: true
     fsw:  [[500e3, "500k"], [1e6, "1M"], [2e6, "2M"]],
     l:    [[0.33e-6, "0.33"], [0.68e-6, "0.68"], [1e-6, "1"], [2.2e-6, "2.2"], [4.7e-6, "4.7"]],
     c:    [[22e-6, "22"], [110e-6, "110"], [220e-6, "220"]],
-    iripple: [[0.2, "20"], [0.3, "30"], [0.4, "40"]],
-    vripple: [[5e-3, "5"], [10e-3, "10"], [20e-3, "20"], [50e-3, "50"]]
+    iripple: [[0.25, "25"], [0.5, "50"]],
+    vripple: [[1e-3, "1"], [2e-3, "2"], [5e-3, "5"], [10e-3, "10"]],
+    izc: [[0, "0"], [0.1, "100"], [0.25, "250"], [0.5, "500"], [1, "1000"]]
   };
 
   var PRESETS = {
@@ -802,10 +977,11 @@ math: true
     bus:  { vin: 48, vout: 12,  iload: 5, fsw: 300e3, l: 22e-6,  c: 100e-6 },
     core: { vin: 5,  vout: 1.8, iload: 3, fsw: 1e6,   l: 1e-6,   c: 100e-6 }
   };
-  var DEFAULT_TARGETS = { iripple: 0.3, vripple: 10e-3 };
+  var DEFAULT_TARGETS = { iripple: 0.3, vripple: 10e-3, izc: 0, csw: 0, esr: 0 };
 
   var state = Object.assign({}, DEFAULT_TARGETS, PRESETS.pol);
   var mode = "analyze";
+  var conduction = "ccm";
 
   /* ---------- slider <-> value mapping ---------- */
   function toSlider(key, v) {
@@ -825,6 +1001,21 @@ math: true
     return Math.min(p.max, Math.max(p.min, v));
   }
 
+  function roundTo(v, step) {
+    if (!isFinite(v) || step <= 0) { return v; }
+    return Math.round(v / step) * step;
+  }
+
+  function snapSliderValue(key, v) {
+    if (key === "vin" || key === "vout") { return roundTo(v, 0.1); }
+    if (key === "fsw") { return roundTo(v, 10e3); }
+    if (key === "iripple") { return roundTo(v, 0.05); }
+    if (key === "vripple") { return roundTo(v, 0.1e-3); }
+    if (key === "iload") { return roundTo(v, v > 1 ? 0.1 : 0.01); }
+    if (key === "l") { return roundTo(v, v > 1e-6 ? 0.1e-6 : 0.01e-6); }
+    return v;
+  }
+
   /* ---------- formatting ---------- */
   function eng(v, unit, digits) {
     if (v === 0) { return "0 " + unit; }
@@ -840,26 +1031,325 @@ math: true
   }
 
   /* ---------- physics ---------- */
-  function compute(s) {
+  function ccmChargeAt(s, r, tc) {
+    var Ton = r.D * r.T;
+    var Toff = r.T - Ton;
+    var on = tc <= Ton;
+    return on
+      ? -r.dIL / 2 * tc + (Ton > 0 ? r.dIL * tc * tc / (2 * Ton) : 0)
+      : r.dIL / 2 * (tc - Ton) - (Toff > 0 ? r.dIL * (tc - Ton) * (tc - Ton) / (2 * Toff) : 0);
+  }
+
+  function ccmRawAt(s, r, t) {
+    var tc = t % r.T;
+    var Ton = r.D * r.T;
+    var Toff = r.T - Ton;
+    var on = tc <= Ton;
+    return {
+      vsw: on ? s.vin : 0,
+      il: on
+        ? r.iVal + (Ton > 0 ? r.dIL * tc / Ton : 0)
+        : r.iPk - (Toff > 0 ? r.dIL * (tc - Ton) / Toff : 0),
+      q: ccmChargeAt(s, r, tc)
+    };
+  }
+
+  function computeCcm(s) {
     var D = s.vout / s.vin;               // duty cycle
     var T = 1 / s.fsw;                    // switching period t_SW
     var dIL = (s.vin - s.vout) * D * T / s.l;
     var dV = dIL * T / (8 * s.c);
-    return {
-      D: D, T: T, dIL: dIL, dV: dV,
+    var r = {
+      conduction: "ccm",
+      requestedDcm: false,
+      dcmValid: false,
+      D: D, D2: 1 - D, D3: 0, T: T,
+      tDecay: (1 - D) * T,
+      tIdle: 0,
+      dIL: dIL, dV: dV,
       iPk: s.iload + dIL / 2,
       iVal: s.iload - dIL / 2,
+      iZc: null,
+      iMin: s.iload - dIL / 2,
+      iMax: s.iload + dIL / 2,
+      iRipple: dIL,
       ratio: dIL / s.iload,
       // cycle average of the capacitor-ripple integral (used to centre on v_OUT)
-      vcMean: dIL * T * (1 - 2 * D) / (12 * s.c)
+      vcMean: dIL * T * (1 - 2 * D) / (12 * s.c),
+      icMean: 0
     };
+    return s.esr > 0 ? finalizeTerminalStats(s, r, true) : r;
+  }
+
+  function dcmChargeBeforeIdle(s, r) {
+    var Ton = r.D * r.T;
+    var Tdecay = r.D2 * r.T;
+    var qOnEnd = (r.iZc - s.iload) * Ton + r.dIL * Ton / 2;
+    return qOnEnd + (r.iPk - s.iload) * Tdecay - r.dIL * Tdecay / 2;
+  }
+
+  function dcmChargeAt(s, r, tc) {
+    var Ton = r.D * r.T;
+    var Tdecay = r.D2 * r.T;
+    var A = r.dIL;
+    var qOnEnd = (r.iZc - s.iload) * Ton + A * Ton / 2;
+
+    if (tc <= Ton) {
+      return (r.iZc - s.iload) * tc + (Ton > 0 ? A * tc * tc / (2 * Ton) : 0);
+    }
+    if (tc <= Ton + Tdecay) {
+      var x = tc - Ton;
+      return qOnEnd + (r.iPk - s.iload) * x - (Tdecay > 0 ? A * x * x / (2 * Tdecay) : 0);
+    }
+    var idleT = tc - Ton - Tdecay;
+    if (r.idle) {
+      return dcmChargeBeforeIdle(s, r) + interpolateIdle(r.idle, idleT).q;
+    }
+    return dcmChargeBeforeIdle(s, r) + (r.iZc - s.iload) * idleT;
+  }
+
+  function dcmChargeStats(s, r) {
+    var n = 720, sum = 0, qMin = Infinity, qMax = -Infinity;
+    for (var i = 0; i <= n; i++) {
+      var q = dcmChargeAt(s, r, i / n * r.T);
+      sum += q;
+      qMin = Math.min(qMin, q);
+      qMax = Math.max(qMax, q);
+    }
+    return { mean: sum / (n + 1), p2p: qMax - qMin };
+  }
+
+  function clamp(v, lo, hi) {
+    return Math.min(hi, Math.max(lo, v));
+  }
+
+  function idleDerivatives(s, v, i) {
+    if (v <= 0 && i > 0) {
+      return { dv: 0, di: -s.vout / s.l };
+    }
+    if (v >= s.vin && i < 0) {
+      return { dv: 0, di: (s.vin - s.vout) / s.l };
+    }
+    return { dv: -i / s.csw, di: (v - s.vout) / s.l };
+  }
+
+  function buildDcmIdle(s, r) {
+    if (s.csw <= 0 || r.tIdle <= 0) { return null; }
+    var omega = 1 / Math.sqrt(s.l * s.csw);
+    if (!isFinite(omega) || omega <= 0) { return null; }
+    var ringCycles = r.tIdle * omega / (2 * Math.PI);
+    var steps = Math.min(2400, Math.max(180, Math.ceil(ringCycles * 96)));
+    var dt = r.tIdle / steps;
+    var t = [0], v = [0], i = [r.iZc], q = [0];
+    var vv = 0, ii = r.iZc, qq = 0;
+
+    for (var n = 1; n <= steps; n++) {
+      var prevI = ii;
+      var d1 = idleDerivatives(s, vv, ii);
+      var midV = clamp(vv + d1.dv * dt / 2, 0, s.vin);
+      var midI = ii + d1.di * dt / 2;
+      var d2 = idleDerivatives(s, midV, midI);
+      vv = clamp(vv + d2.dv * dt, 0, s.vin);
+      ii = ii + d2.di * dt;
+      qq += ((prevI - s.iload) + (ii - s.iload)) * dt / 2;
+      t.push(n * dt);
+      v.push(vv);
+      i.push(ii);
+      q.push(qq);
+    }
+    return { t: t, v: v, i: i, q: q, steps: steps };
+  }
+
+  function interpolateIdle(idle, t) {
+    if (!idle || t <= 0) {
+      return { v: 0, i: idle ? idle.i[0] : 0, q: 0 };
+    }
+    var last = idle.t.length - 1;
+    if (t >= idle.t[last]) {
+      return { v: idle.v[last], i: idle.i[last], q: idle.q[last] };
+    }
+    var f = t / idle.t[last] * last;
+    var idx = Math.floor(f);
+    var a = f - idx;
+    return {
+      v: idle.v[idx] + (idle.v[idx + 1] - idle.v[idx]) * a,
+      i: idle.i[idx] + (idle.i[idx + 1] - idle.i[idx]) * a,
+      q: idle.q[idx] + (idle.q[idx + 1] - idle.q[idx]) * a
+    };
+  }
+
+  function dcmRawAt(s, r, t) {
+    var tc = t % r.T;
+    var Ton = r.D * r.T;
+    var Tdecay = r.D2 * r.T;
+    if (tc <= Ton) {
+      return {
+        vsw: s.vin,
+        il: r.iZc + (Ton > 0 ? r.dIL * tc / Ton : 0),
+        q: dcmChargeAt(s, r, tc)
+      };
+    }
+    if (tc <= Ton + Tdecay) {
+      var x = tc - Ton;
+      return {
+        vsw: 0,
+        il: r.iPk - (Tdecay > 0 ? r.dIL * x / Tdecay : 0),
+        q: dcmChargeAt(s, r, tc)
+      };
+    }
+    if (r.idle) {
+      var idle = interpolateIdle(r.idle, tc - Ton - Tdecay);
+      return {
+        vsw: idle.v,
+        il: idle.i,
+        q: dcmChargeBeforeIdle(s, r) + idle.q
+      };
+    }
+    return {
+      vsw: s.vout,
+      il: r.iZc,
+      q: dcmChargeAt(s, r, tc)
+    };
+  }
+
+  function rawAt(s, r, t) {
+    return r.dcmValid ? dcmRawAt(s, r, t) : ccmRawAt(s, r, t);
+  }
+
+  function finalizeTerminalStats(s, r, keepCurrent) {
+    var n = r.idle ? Math.max(720, r.idle.steps) : 720;
+    var samples = [];
+    var sumCap = 0, sumIc = 0;
+    var iMin = Infinity, iMax = -Infinity;
+    for (var idx = 0; idx < n; idx++) {
+      var raw = rawAt(s, r, idx / n * r.T);
+      var cap = raw.q / s.c;
+      var ic = raw.il - s.iload;
+      sumCap += cap;
+      sumIc += ic;
+      iMin = Math.min(iMin, raw.il);
+      iMax = Math.max(iMax, raw.il);
+      samples.push({ cap: cap, ic: ic });
+    }
+    r.vcMean = sumCap / n;
+    r.icMean = sumIc / n;
+
+    var vMin = Infinity, vMax = -Infinity;
+    samples.forEach(function (sample) {
+      var terminal = sample.cap - r.vcMean + s.esr * (sample.ic - r.icMean);
+      vMin = Math.min(vMin, terminal);
+      vMax = Math.max(vMax, terminal);
+    });
+    r.dV = vMax - vMin;
+    if (!keepCurrent) {
+      r.iMin = iMin;
+      r.iMax = iMax;
+      r.iRipple = iMax - iMin;
+      r.ratio = r.iRipple / s.iload;
+    }
+    return r;
+  }
+
+  function computeDcm(s) {
+    var fallback = computeCcm(s);
+    fallback.requestedDcm = true;
+    fallback.dcmFallback = true;
+
+    var Ieff = s.iload - s.izc;
+    if (Ieff <= 0) {
+      fallback.dcmReason = "Zero-cross current is at or above load current, so no positive DCM energy packet can support the load.";
+      return fallback;
+    }
+
+    var denom = s.vin * (s.vin - s.vout);
+    var dutyArg = 2 * s.l * s.fsw * s.vout * Ieff / denom;
+    var D = Math.sqrt(Math.max(0, dutyArg));
+    var D2 = D * (s.vin - s.vout) / s.vout;
+    var D3 = 1 - D - D2;
+
+    if (!isFinite(D) || !isFinite(D2) || D <= 0 || D2 <= 0 || D3 <= 0) {
+      fallback.dcmReason = "This operating point reaches the next cycle before inductor current returns to the zero-cross threshold, so fixed-frequency DCM has no idle interval.";
+      return fallback;
+    }
+
+    var T = 1 / s.fsw;
+    var dIL = (s.vin - s.vout) * D * T / s.l;
+    var r = {
+      conduction: "dcm",
+      requestedDcm: true,
+      dcmValid: true,
+      dcmFallback: false,
+      D: D, D2: D2, D3: D3, T: T,
+      tDecay: D2 * T,
+      tIdle: D3 * T,
+      dIL: dIL,
+      dV: 0,
+      iPk: s.izc + dIL,
+      iVal: s.izc,
+      iZc: s.izc,
+      iMin: s.izc,
+      iMax: s.izc + dIL,
+      iRipple: dIL,
+      ratio: dIL / s.iload,
+      vcMean: 0,
+      icMean: 0,
+      idle: null
+    };
+    r.idle = buildDcmIdle(s, r);
+    if (r.idle || s.esr > 0) {
+      finalizeTerminalStats(s, r, !r.idle);
+    } else {
+      var stats = dcmChargeStats(s, r);
+      r.vcMean = stats.mean / s.c;
+      r.dV = stats.p2p / s.c;
+    }
+    return r;
+  }
+
+  function compute(s) {
+    return conduction === "dcm" ? computeDcm(s) : computeCcm(s);
+  }
+
+  function rippleForDesignCap(s, l, c) {
+    var trial = Object.assign({}, s, { l: l, c: c });
+    var r = conduction === "dcm" ? computeDcm(trial) : computeCcm(trial);
+    return r.dV;
+  }
+
+  function solveDesignCap(s, l, idealC) {
+    if (s.esr <= 0) { return idealC; }
+
+    var target = s.vripple;
+    var lo = 1e-12;
+    var hi = Math.max(idealC, PARAMS.c.max);
+    var hiRipple = rippleForDesignCap(s, l, hi);
+    var guard = 0;
+
+    while (hiRipple > target && hi < 10 && guard < 20) {
+      hi *= 2;
+      hiRipple = rippleForDesignCap(s, l, hi);
+      guard += 1;
+    }
+
+    if (hiRipple > target) { return hi; }
+
+    for (var i = 0; i < 48; i++) {
+      var mid = Math.sqrt(lo * hi);
+      if (rippleForDesignCap(s, l, mid) > target) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return hi;
   }
 
   function designValues(s) {
     var D = s.vout / s.vin;
     var dIL = Math.max(1e-12, s.iripple * s.iload);
     var l = (s.vin - s.vout) * D / (s.fsw * dIL);
-    var c = dIL / (8 * s.fsw * s.vripple);
+    var idealC = dIL / (8 * s.fsw * s.vripple);
+    var c = solveDesignCap(s, l, idealC);
     return { l: l, c: c, dIL: dIL, dV: s.vripple };
   }
 
@@ -871,16 +1361,13 @@ math: true
 
   // instantaneous values at time t (for the probe cursor)
   function probe(s, r, t) {
-    var tc = t % r.T;
-    var Ton = r.D * r.T, Toff = r.T - Ton;
-    var on = tc <= Ton;
-    var il = on
-      ? r.iVal + (Ton > 0 ? r.dIL * tc / Ton : 0)
-      : r.iPk - (Toff > 0 ? r.dIL * (tc - Ton) / Toff : 0);
-    var q = on
-      ? -r.dIL / 2 * tc + (Ton > 0 ? r.dIL * tc * tc / (2 * Ton) : 0)
-      : r.dIL / 2 * (tc - Ton) - (Toff > 0 ? r.dIL * (tc - Ton) * (tc - Ton) / (2 * Toff) : 0);
-    return { vsw: on ? s.vin : 0, il: il, vc: s.vout + q / s.c - r.vcMean };
+    var raw = rawAt(s, r, t);
+    var ic = raw.il - s.iload;
+    return {
+      vsw: raw.vsw,
+      il: raw.il,
+      vc: s.vout + raw.q / s.c - r.vcMean + s.esr * (ic - (r.icMean || 0))
+    };
   }
 
   /* ---------- waveform sampling (3 cycles) ---------- */
@@ -888,7 +1375,7 @@ math: true
 
   function sampleWaves(s, r) {
     var ts = [], il = [], vsw = [], vc = [];
-    var n = NPC * CYCLES;
+    var n = r.idle ? Math.min(3600, Math.max(NPC * CYCLES, r.idle.steps * CYCLES)) : NPC * CYCLES;
     for (var i = 0; i <= n; i++) {
       var t = (i / n) * CYCLES * r.T;
       var p = probe(s, r, i === n ? t - 1e-9 * r.T : t);
@@ -1043,19 +1530,34 @@ math: true
 
   /* ---------- element registry ---------- */
   var el = {};
-  ["vin", "vout", "iload", "fsw", "l", "c", "iripple", "vripple"].forEach(function (k) {
-    el["sl-" + k] = document.getElementById("sl-" + k);
-    el["num-" + k] = document.getElementById("num-" + k);
+  var paramControls = {};
+  Object.keys(PARAMS).forEach(function (k) {
+    var nums = [];
+    var ranges = [];
+    var primaryNum = document.getElementById("num-" + k);
+    var primaryRange = document.getElementById("sl-" + k);
+    if (primaryNum) { nums.push(primaryNum); }
+    if (primaryRange) { ranges.push(primaryRange); }
+    Array.prototype.slice.call(document.querySelectorAll('input[data-param="' + k + '"]')).forEach(function (node) {
+      if (node.type === "range" && ranges.indexOf(node) < 0) { ranges.push(node); }
+      if (node.type !== "range" && nums.indexOf(node) < 0) { nums.push(node); }
+    });
+    paramControls[k] = { nums: nums, ranges: ranges };
+    el["sl-" + k] = ranges[0] || null;
+    el["num-" + k] = nums[0] || null;
   });
-  ["out-d", "out-tsw", "out-dil", "out-dil-pct", "out-dv", "out-dv-pct",
-   "out-ton", "out-toff", "out-ipk", "out-design-l", "out-design-c",
-   "bc-design-result",
+  ["out-d", "out-tsw", "out-dil-label", "out-dil", "out-dil-pct", "out-dv", "out-dv-pct",
+   "out-ton", "out-toff-label", "out-toff", "out-toff-note", "out-ipk-label", "out-ipk", "out-ipk-note",
+   "out-design-l", "out-design-c", "bc-design-result", "bc-dcm-options",
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
   var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
   var modeSegmented = document.querySelector(".bc-segmented");
+  var conductionButtons = Array.prototype.slice.call(document.querySelectorAll("[data-conduction]"));
+  var conductionSegmented = document.querySelector("[data-active-conduction]");
+  var dcmExtraControls = Array.prototype.slice.call(document.querySelectorAll("[data-dcm-extra]"));
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
   var cancelRaf = window.cancelAnimationFrame
@@ -1068,9 +1570,14 @@ math: true
   function syncInputs() {
     Object.keys(PARAMS).forEach(function (k) {
       var p = PARAMS[k];
-      if (!el["sl-" + k] || !el["num-" + k]) { return; }
-      el["sl-" + k].value = toSlider(k, state[k]);
-      el["num-" + k].value = (state[k] * p.scale).toFixed(p.digits).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+      var controls = paramControls[k];
+      var displayValue = (state[k] * p.scale).toFixed(p.digits).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+      controls.ranges.forEach(function (range) {
+        range.value = toSlider(k, state[k]);
+      });
+      controls.nums.forEach(function (num) {
+        num.value = displayValue;
+      });
     });
   }
 
@@ -1080,6 +1587,7 @@ math: true
     });
     if (modeSegmented) {
       modeSegmented.setAttribute("data-active-mode", mode);
+      modeSegmented.setAttribute("data-active-index", mode === "design" ? "1" : "0");
     }
     modeFields.forEach(function (field) {
       var active = field.getAttribute("data-mode-field") === mode;
@@ -1098,6 +1606,26 @@ math: true
     el["bc-design-result"].setAttribute("aria-hidden", mode === "design" ? "false" : "true");
   }
 
+  function syncConductionUI() {
+    conductionButtons.forEach(function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-conduction") === conduction ? "true" : "false");
+    });
+    if (conductionSegmented) {
+      conductionSegmented.setAttribute("data-active-conduction", conduction);
+      conductionSegmented.setAttribute("data-active-index", conduction === "dcm" ? "1" : "0");
+    }
+    el["bc-dcm-options"].className = "bc-dcm-options" + (conduction === "dcm" ? " bc-show" : "");
+    el["bc-dcm-options"].setAttribute("aria-hidden", conduction === "dcm" ? "false" : "true");
+    dcmExtraControls.forEach(function (node) {
+      var active = conduction === "dcm";
+      node.classList.toggle("bc-show", active);
+      node.setAttribute("aria-hidden", active ? "false" : "true");
+      Array.prototype.slice.call(node.querySelectorAll("input")).forEach(function (input) {
+        input.disabled = !active;
+      });
+    });
+  }
+
   /* ---------- render ---------- */
   function render() {
     var s = workingState();
@@ -1105,50 +1633,95 @@ math: true
     var r = compute(s);
     var w = sampleWaves(s, r);
     var tEnd = CYCLES * r.T;
+    var vmin = Math.min.apply(null, w.vc), vmax = Math.max.apply(null, w.vc);
+    var displayedDV = vmax - vmin;
 
     syncModeUI();
+    syncConductionUI();
     el["out-design-l"].textContent = eng(d.l, "H");
     el["out-design-c"].textContent = eng(d.c, "F");
     el["out-d"].textContent = (100 * r.D).toFixed(1) + " %";
     el["out-tsw"].textContent = eng(r.T, "s");
-    el["out-dil"].textContent = eng(r.dIL, "A");
+    el["out-dil-label"].innerHTML = "Current ripple Δi<sub>L</sub>";
+    el["out-dil"].textContent = eng(r.iRipple || r.dIL, "A");
     el["out-dil-pct"].textContent = (100 * r.ratio).toFixed(0);
-    el["out-dv"].textContent = eng(r.dV, "V");
-    el["out-dv-pct"].textContent = (100 * r.dV / s.vout).toPrecision(2);
+    el["out-dv"].textContent = eng(displayedDV, "V");
+    el["out-dv-pct"].textContent = (100 * displayedDV / s.vout).toPrecision(2);
     el["out-ton"].textContent = eng(r.D * r.T, "s");
+    el["out-toff-label"].innerHTML = "Off-time t<sub>OFF</sub>";
     el["out-toff"].textContent = eng((1 - r.D) * r.T, "s");
+    el["out-toff-note"].innerHTML = "= (1 − D) · t<sub>SW</sub>";
+    el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / valley";
     el["out-ipk"].textContent = eng(r.iPk, "A") + " / " + eng(r.iVal, "A");
-    el["dcm-note"].className = "bc-note" + (r.iVal < 0 ? " bc-show" : "");
+    el["out-ipk-note"].innerHTML = "average = i<sub>O</sub>";
 
+    if (r.dcmValid) {
+      el["out-toff"].textContent = eng((r.D2 + r.D3) * r.T, "s");
+      el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + " · t<sub>IDLE</sub> = " + eng(r.tIdle, "s");
+      if (r.idle) {
+        el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / minimum";
+        el["out-ipk"].textContent = eng(r.iMax, "A") + " / " + eng(r.iMin, "A");
+        el["out-ipk-note"].innerHTML = "i<sub>ZC</sub> = " + eng(r.iZc, "A");
+      } else {
+        el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / zero-cross";
+        el["out-ipk"].textContent = eng(r.iPk, "A") + " / " + eng(r.iZc, "A");
+        el["out-ipk-note"].innerHTML = "i<sub>ZC</sub> threshold";
+      }
+    }
+
+    if (r.requestedDcm && !r.dcmValid) {
+      el["dcm-note"].innerHTML = "<strong>DCM boundary:</strong> " + r.dcmReason + " The plots below use the forced-CCM boundary behavior instead of drawing a fake idle interval.";
+      el["dcm-note"].className = "bc-note bc-show";
+    } else if (conduction === "ccm" && r.iVal < 0) {
+      el["dcm-note"].innerHTML = "<strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.";
+      el["dcm-note"].className = "bc-note bc-show";
+    } else {
+      el["dcm-note"].className = "bc-note";
+    }
+
+    var vswRails = [
+      { y: s.vin, segs: [["v"], ["IN", true]] },
+      { y: 0, segs: [["0"]] }
+    ];
+    if (r.dcmValid) {
+      vswRails.push({ y: s.vout, segs: [["v"], ["OUT", true]] });
+    }
     panel(el["p-vsw"], 96, w.t, w.vsw, {
       D: r.D, T: r.T, tEnd: tEnd, drive: true,
       ymin: -0.1 * s.vin, ymax: 1.16 * s.vin,
       chan: [["switch node v"], ["SW", true], ["  "]],
-      rail: [
-        { y: s.vin, segs: [["v"], ["IN", true]] },
-        { y: 0, segs: [["0"]] }
-      ]
+      rail: vswRails
     });
 
-    var ipad = Math.max(0.2 * r.dIL, 0.07 * Math.max(r.iPk, 1e-12));
-    var iMin = Math.min(r.iVal, 0) - ipad;
+    var iRipple = r.iRipple || r.dIL;
+    var iTop = r.iMax !== undefined ? r.iMax : r.iPk;
+    var iBottom = r.iMin !== undefined ? r.iMin : r.iVal;
+    var ipad = Math.max(0.2 * iRipple, 0.07 * Math.max(Math.abs(iTop), Math.abs(iBottom), 1e-12));
+    var iMin = Math.min(iBottom, s.iload, r.dcmValid ? r.iZc : 0) - ipad;
+    var iRefs = [{ y: s.iload, segs: [["i"], ["O", true]] }];
+    if (r.dcmValid) {
+      iRefs.push({ y: r.iZc, segs: [["i"], ["ZC", true]] });
+      if (iBottom < 0 && Math.abs(r.iZc) > 1e-12) {
+        iRefs.push({ y: 0, segs: [["0"]] });
+      }
+    } else if (r.iVal < 0) {
+      iRefs.push({ y: 0, segs: [["0"]] });
+    }
     panel(el["p-il"], 152, w.t, w.il, {
       D: r.D, T: r.T, tEnd: tEnd,
-      ymin: iMin, ymax: r.iPk + ipad,
+      ymin: iMin, ymax: iTop + ipad,
       chan: [["inductor current i"], ["L", true], ["  "]],
-      refs: [{ y: s.iload, segs: [["i"], ["O", true]] }]
-        .concat(r.iVal < 0 ? [{ y: 0, segs: [["0"]] }] : []),
-      bracket: { y1: r.iPk, y2: r.iVal, name: "Δi", sub: "L", value: eng(r.dIL, "A") }
+      refs: iRefs,
+      bracket: { y1: iTop, y2: iBottom, name: "Δi", sub: "L", value: eng(iRipple, "A") }
     });
 
-    var vmin = Math.min.apply(null, w.vc), vmax = Math.max.apply(null, w.vc);
-    var vpad = 0.32 * (vmax - vmin) || 1e-9;
+    var vpad = 0.32 * displayedDV || 1e-9;
     panel(el["p-vout"], 178, w.t, w.vc, {
       D: r.D, T: r.T, tEnd: tEnd, xAxis: true,
       ymin: vmin - vpad, ymax: vmax + vpad,
       chan: [["output voltage v"], ["OUT", true], [", zoomed to the ripple  "]],
       refs: [{ y: s.vout, segs: [["v"], ["OUT", true]] }],
-      bracket: { y1: vmax, y2: vmin, name: "Δv", sub: "OUT", value: eng(r.dV, "V") }
+      bracket: { y1: vmax, y2: vmin, name: "Δv", sub: "OUT", value: eng(displayedDV, "V") }
     });
   }
 
@@ -1240,16 +1813,30 @@ math: true
 
   /* ---------- wiring ---------- */
   Object.keys(PARAMS).forEach(function (k) {
-    el["sl-" + k].addEventListener("input", function () {
-      state[k] = clampParam(k, fromSlider(k, +this.value));
-      enforceBuck(k);
-      scheduleRender();
+    var controls = paramControls[k];
+    controls.ranges.forEach(function (range) {
+      range.addEventListener("input", function () {
+        state[k] = clampParam(k, snapSliderValue(k, fromSlider(k, +this.value)));
+        enforceBuck(k);
+        scheduleRender();
+      });
     });
-    el["num-" + k].addEventListener("change", function () {
-      var p = PARAMS[k];
-      state[k] = clampParam(k, parseFloat(this.value) / p.scale);
-      enforceBuck(k);
-      renderNow();
+    controls.nums.forEach(function (num) {
+      num.addEventListener("input", function () {
+        var p = PARAMS[k];
+        var next = parseFloat(this.value);
+        if (!isFinite(next)) { return; }
+        state[k] = clampParam(k, next / p.scale);
+        enforceBuck(k);
+        hideProbe();
+        render();
+      });
+      num.addEventListener("change", function () {
+        var p = PARAMS[k];
+        state[k] = clampParam(k, parseFloat(this.value) / p.scale);
+        enforceBuck(k);
+        renderNow();
+      });
     });
   });
 
@@ -1277,6 +1864,14 @@ math: true
   modeButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       mode = this.getAttribute("data-mode");
+      hideProbe();
+      renderNow();
+    });
+  });
+
+  conductionButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      conduction = this.getAttribute("data-conduction");
       hideProbe();
       renderNow();
     });
