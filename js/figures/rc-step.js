@@ -1,12 +1,6 @@
 const figure = document.getElementById("fig-rc-step");
 
 if (figure) {
-  const styles = getComputedStyle(document.documentElement);
-  const color = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
-  const ink = color("--ink", "#20201f");
-  const muted = color("--muted", "#69645e");
-  const line = color("--line", "#e6e0d7");
-  const accent = color("--accent", "#2f6f64");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   figure.innerHTML = `
@@ -33,6 +27,17 @@ if (figure) {
 
   const svgNS = "http://www.w3.org/2000/svg";
 
+  function currentColors() {
+    const styles = getComputedStyle(document.documentElement);
+    const color = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+    return {
+      ink: color("--ink", "#20201f"),
+      muted: color("--muted", "#69645e"),
+      line: color("--line", "#e6e0d7"),
+      accent: color("--accent", "#2f6f64")
+    };
+  }
+
   function el(name, attrs = {}, text = "") {
     const node = document.createElementNS(svgNS, name);
     Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
@@ -58,6 +63,7 @@ if (figure) {
   function render(animate = true) {
     cancelAnimationFrame(animationFrame);
 
+    const colors = currentColors();
     const r = Number(rInput.value);
     const c = Number(cInput.value);
     const tau = r * c;
@@ -78,27 +84,27 @@ if (figure) {
     });
 
     svg.append(
-      el("line", { x1: left, y1: top + plotHeight, x2: left + plotWidth, y2: top + plotHeight, stroke: line, "stroke-width": 2 }),
-      el("line", { x1: left, y1: top, x2: left, y2: top + plotHeight, stroke: line, "stroke-width": 2 }),
-      el("line", { x1: left, y1: top, x2: left + plotWidth, y2: top, stroke: line, "stroke-dasharray": "6 8" }),
-      el("text", { x: left, y: top - 10, fill: muted, "font-size": 16 }, "Vfinal"),
-      el("text", { x: left + plotWidth - 92, y: top + plotHeight + 34, fill: muted, "font-size": 16 }, "time"),
-      el("text", { x: left + 8, y: top + plotHeight - 10, fill: muted, "font-size": 16 }, "0"),
-      el("text", { x: left + 16, y: top + 30, fill: accent, "font-size": 16 }, `tau = ${tau} ms`)
+      el("line", { x1: left, y1: top + plotHeight, x2: left + plotWidth, y2: top + plotHeight, stroke: colors.line, "stroke-width": 2 }),
+      el("line", { x1: left, y1: top, x2: left, y2: top + plotHeight, stroke: colors.line, "stroke-width": 2 }),
+      el("line", { x1: left, y1: top, x2: left + plotWidth, y2: top, stroke: colors.line, "stroke-dasharray": "6 8" }),
+      el("text", { x: left, y: top - 10, fill: colors.muted, "font-size": 16 }, "Vfinal"),
+      el("text", { x: left + plotWidth - 92, y: top + plotHeight + 34, fill: colors.muted, "font-size": 16 }, "time"),
+      el("text", { x: left + 8, y: top + plotHeight - 10, fill: colors.muted, "font-size": 16 }, "0"),
+      el("text", { x: left + 16, y: top + 30, fill: colors.accent, "font-size": 16 }, `tau = ${tau} ms`)
     );
 
     for (let i = 1; i <= 5; i += 1) {
       const x = left + (i / 5) * plotWidth;
       svg.append(
-        el("line", { x1: x, y1: top, x2: x, y2: top + plotHeight, stroke: line, "stroke-width": 1 }),
-        el("text", { x: x - 10, y: top + plotHeight + 24, fill: muted, "font-size": 13 }, `${i}t`)
+        el("line", { x1: x, y1: top, x2: x, y2: top + plotHeight, stroke: colors.line, "stroke-width": 1 }),
+        el("text", { x: x - 10, y: top + plotHeight + 24, fill: colors.muted, "font-size": 13 }, `${i}t`)
       );
     }
 
     const curve = el("path", {
       d: pathData(tau, left, top, plotWidth, plotHeight),
       fill: "none",
-      stroke: accent,
+      stroke: colors.accent,
       "stroke-width": 4,
       "stroke-linecap": "round"
     });
@@ -124,5 +130,6 @@ if (figure) {
 
   rInput.addEventListener("input", () => render());
   cInput.addEventListener("input", () => render());
+  document.addEventListener("vgmos:themechange", () => render(false));
   render(true);
 }

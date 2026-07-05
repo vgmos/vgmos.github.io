@@ -11,6 +11,22 @@
   <script>
     (function () {
       try {
+        var savedTheme = localStorage.getItem("vgmos-theme");
+        var prefersDark = window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = savedTheme === "dark" || savedTheme === "light"
+          ? savedTheme
+          : prefersDark ? "dark" : "light";
+
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (error) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    }());
+  </script>
+  <script>
+    (function () {
+      try {
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
             sessionStorage.getItem("vgmos-page-transition") === "1") {
           document.documentElement.classList.add("is-transitioning-in");
