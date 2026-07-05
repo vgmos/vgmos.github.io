@@ -665,25 +665,20 @@ pre,
 /* The first screen should be readable immediately; page-to-page motion
    carries the living quality without animating the hero copy on load. */
 
-/* --- sliding nav underline (desktop only) --- */
-@media (min-width: 601px) {
-  .site-nav .trigger { position: relative; }
-  .site-nav .page-link--active { box-shadow: none; } /* the slider replaces the static underline */
-  .nav-underline {
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    height: 2px;
-    width: 0;
-    background: var(--accent);
-    border-radius: 2px;
-    transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), width 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
-    pointer-events: none;
-  }
-}
-@media (max-width: 600px) {
-  .nav-underline { display: none; }
+/* --- sliding nav underline --- */
+.site-nav .trigger { position: relative; }
+.site-nav .page-link--active { box-shadow: none; } /* the slider replaces the static underline */
+.nav-underline {
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 2px;
+  width: 0;
+  background: var(--accent);
+  border-radius: 2px;
+  transform: translateX(0);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), width 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+  pointer-events: none;
 }
 
 /* --- footer --- */
@@ -1442,7 +1437,11 @@ h3,
 
   .site-nav .page-link--active {
     color: var(--ink);
-    box-shadow: inset 0 -2px 0 var(--accent);
+    box-shadow: none;
+  }
+
+  .nav-underline {
+    bottom: 0;
   }
 }
 

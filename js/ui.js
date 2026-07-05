@@ -1,6 +1,6 @@
 /* =====================================================================
    ui.js — single-page hub behaviour for vgmos.github.io
-     1. sliding nav underline (desktop) driven by scroll position + hover
+     1. sliding nav underline driven by scroll position + hover
      2. smooth in-page scrolling for nav + hero anchors (with header offset)
      3. scroll-spy: the underline follows the section you're reading
      4. lightweight same-origin content swaps with a normal-load fallback
@@ -13,7 +13,6 @@
 
   var root = document.documentElement;
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var desktop = window.matchMedia("(min-width: 601px)");
   var pageTransitionKey = "vgmos-page-transition";
   var pageTransitionOutMs = 70;
   var pageTransitionInMs = 110;
@@ -150,7 +149,7 @@
 
   function place(link, animate) {
     if (!underline) return;
-    if (!link || !desktop.matches) { underline.style.width = "0"; return; }
+    if (!link) { underline.style.width = "0"; return; }
     if (!animate) underline.style.transition = "none";
     underline.style.width = link.offsetWidth + "px";
     underline.style.transform = "translateX(" + link.offsetLeft + "px)";
