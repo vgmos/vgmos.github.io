@@ -1,4 +1,3 @@
 ---
 layout: home
-math: true
 ---

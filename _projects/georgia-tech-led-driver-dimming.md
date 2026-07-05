@@ -27,7 +27,7 @@ High-power LEDs are current-controlled devices whose flux rises with current but
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/led-driver-dimming/power-stage.png' | relative_url }}" alt="Original IECON schematic of the switched-inductor buck-boost LED driver power stage feeding four LEDs.">
+    <img src="{{ '/assets/projects/led-driver-dimming/power-stage.png' | relative_url }}" alt="Original IECON schematic of the switched-inductor buck-boost LED driver power stage feeding four LEDs." width="1846" height="336" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Fig. 2 — Power stage.</strong> The synchronous buck-boost switched-inductor LED driver used for the dimming comparison.</figcaption>
 </figure>
@@ -42,7 +42,7 @@ PWM holds the LED at a high peak current and chops time, so it keeps producing l
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/led-driver-dimming/power-loss-breakdown.png' | relative_url }}" alt="Original IECON power-loss breakdown plot comparing analog and PWM dimming losses across luminous flux.">
+    <img src="{{ '/assets/projects/led-driver-dimming/power-loss-breakdown.png' | relative_url }}" alt="Original IECON power-loss breakdown plot comparing analog and PWM dimming losses across luminous flux." width="1726" height="546" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Fig. 13 — Power-loss breakdown.</strong> The PWM-specific loss term dominates much of the dimming range, while shared switched-inductor losses remain common to both methods.</figcaption>
 </figure>
@@ -53,7 +53,7 @@ PWM still earns its place; you want it when color consistency, control simplicit
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/led-driver-dimming/luminous-efficiency.png' | relative_url }}" alt="Original IECON luminous-efficiency plot showing analog dimming peaking near 93 lumens per watt and PWM near 59 lumens per watt.">
+    <img src="{{ '/assets/projects/led-driver-dimming/luminous-efficiency.png' | relative_url }}" alt="Original IECON luminous-efficiency plot showing analog dimming peaking near 93 lumens per watt and PWM near 59 lumens per watt." width="1656" height="670" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Fig. 9 — Luminous efficiency.</strong> Analog peaks near 93 L/W, while PWM remains near 59 L/W in the modeled setup.</figcaption>
 </figure>
@@ -62,7 +62,7 @@ That gap is where the thesis's "up to 57%" number comes from. PWM's efficiency c
 
 <figure class="source-figure source-figure--table">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/led-driver-dimming/comparison-table.png' | relative_url }}" alt="Original IECON comparison table for analog, shutdown PWM, shunt-switched PWM, and series-switched PWM dimming.">
+    <img src="{{ '/assets/projects/led-driver-dimming/comparison-table.png' | relative_url }}" alt="Original IECON comparison table for analog, shutdown PWM, shunt-switched PWM, and series-switched PWM dimming." width="1766" height="786" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Table I — Method comparison.</strong> Luminous efficiency, dimming range, transient behavior, and added loss mechanisms.</figcaption>
 </figure>

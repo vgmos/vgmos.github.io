@@ -43,7 +43,7 @@ I started from a second-order error-feedback baseline and worked upward: single-
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/noise-shaping-sar-adc/mod3-ef-architecture.png' | relative_url }}" alt="Behavioral third-order error-feedback noise-shaping SAR ADC loop model with delayed feedback paths and coefficients k1, k2, k3, and Kef.">
+    <img src="{{ '/assets/projects/noise-shaping-sar-adc/mod3-ef-architecture.png' | relative_url }}" alt="Behavioral third-order error-feedback noise-shaping SAR ADC loop model with delayed feedback paths and coefficients k1, k2, k3, and Kef." width="911" height="501" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Third-order EF loop model in Simulink.</strong> The SAR/CDAC and residue path stay at loop level; what matters here is how <code>K_EF</code> and the numerator coefficients place the NTF zeros.</figcaption>
 </figure>
@@ -54,7 +54,7 @@ You can tune coefficients until any NTF looks spectacular on paper. In silicon t
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/noise-shaping-sar-adc/mod3-ciff-ef-osr8-sensitivity.png' | relative_url }}" alt="Sensitivity sweep showing simulated SQNR versus K_EF for a third-order CIFF-EF noise-shaping SAR candidate at OSR 8, with a narrow peak near 100 dB and a 96 dB reference line.">
+    <img src="{{ '/assets/projects/noise-shaping-sar-adc/mod3-ciff-ef-osr8-sensitivity.png' | relative_url }}" alt="Sensitivity sweep showing simulated SQNR versus K_EF for a third-order CIFF-EF noise-shaping SAR candidate at OSR 8, with a narrow peak near 100 dB and a 96 dB reference line." width="751" height="669" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>SQNR vs. <code>K_EF</code> for a third-order CIFF-EF candidate at OSR 8.</strong> The width of the high-SQNR region matters more than the height of the peak. Coefficient error moves the NTF zeros, and the sweep shows how much margin the loop really has.</figcaption>
 </figure>

@@ -34,7 +34,7 @@ The catch is the modeling burden. Program and erase dynamics, read behavior, var
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/y-flash/y-flash-iv-hysteresis.png' | relative_url }}" alt="Y-Flash memristive I-V simulation showing asymmetric hysteresis across drain-source voltage.">
+    <img src="{{ '/assets/projects/y-flash/y-flash-iv-hysteresis.png' | relative_url }}" alt="Y-Flash memristive I-V simulation showing asymmetric hysteresis across drain-source voltage." width="1920" height="656" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Y-Flash memristive I-V behavior.</strong> The model treats the floating-gate threshold voltage as the internal state and uses subthreshold read current as the circuit-facing conductance.</figcaption>
 </figure>
@@ -58,7 +58,7 @@ The data-converter thread came from DIDACTIC, an idea that treats DAC calibratio
 
 <figure class="source-figure">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/y-flash/y-flash-dac.png' | relative_url }}" alt="Y-Flash based 4-bit DAC architecture with four Y-Flash cells feeding a transimpedance amplifier and an external software training loop.">
+    <img src="{{ '/assets/projects/y-flash/y-flash-dac.png' | relative_url }}" alt="Y-Flash based 4-bit DAC architecture with four Y-Flash cells feeding a transimpedance amplifier and an external software training loop." width="1299" height="1119" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Y-Flash 4-bit DAC concept.</strong> Four Y-Flash devices provide trainable conductance weights; an op-amp senses the summed current while an external training loop updates the device states.</figcaption>
 </figure>
@@ -69,14 +69,14 @@ The machine-learning framing only survives if it respects the device. Y-Flash ne
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/y-flash/y-flash-threshold-training.png' | relative_url }}" alt="Training plot showing four Y-Flash threshold voltages converging over roughly 300 samples.">
+    <img src="{{ '/assets/projects/y-flash/y-flash-threshold-training.png' | relative_url }}" alt="Training plot showing four Y-Flash threshold voltages converging over roughly 300 samples." width="1295" height="906" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Training as threshold-voltage movement.</strong> The learned DAC weights are Y-Flash threshold-voltage states, moved by program and erase pulses.</figcaption>
 </figure>
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
-    <img src="{{ '/assets/projects/y-flash/y-flash-dac-output.png' | relative_url }}" alt="DAC output plot comparing the initial irregular DAC response against the final trained staircase response.">
+    <img src="{{ '/assets/projects/y-flash/y-flash-dac-output.png' | relative_url }}" alt="DAC output plot comparing the initial irregular DAC response against the final trained staircase response." width="1956" height="1030" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>Initial and trained DAC response.</strong> The training loop moved an irregular initial response toward the desired staircase output.</figcaption>
 </figure>

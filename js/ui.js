@@ -24,6 +24,7 @@
   var navInFlight = false;
   var prefetched = {};
   var scrollSaveTimer = 0;
+  var scrollSaveDelayMs = 250;
   root.classList.add("js-on");
 
   if ("scrollRestoration" in history) {
@@ -87,7 +88,7 @@
     scrollSaveTimer = window.setTimeout(function () {
       scrollSaveTimer = 0;
       saveCurrentScroll();
-    }, 120);
+    }, scrollSaveDelayMs);
   }
 
   function flushScrollSave() {
@@ -102,7 +103,16 @@
   if (initialScroll) scrollToPosition(initialScroll);
   saveCurrentScroll();
 
-  window.addEventListener("scroll", scheduleScrollSave, { passive: true });
+  if ("onscrollend" in window) {
+    window.addEventListener("scrollend", flushScrollSave, { passive: true });
+  } else {
+    window.addEventListener("scroll", scheduleScrollSave, { passive: true });
+  }
+  window.addEventListener("load", function () {
+    if (!initialScroll || Math.abs((window.pageYOffset || document.documentElement.scrollTop || 0) - initialScroll.y) <= 4) return;
+    scrollToPosition(initialScroll);
+    saveCurrentScroll();
+  });
   window.addEventListener("pagehide", flushScrollSave);
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") flushScrollSave();
