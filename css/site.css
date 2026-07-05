@@ -6,10 +6,11 @@
   --soft: #f4f1ea;
   --line: #e4dfd3;
   --accent: #276f86;
+  --sticky-offset: 82px;
 }
 
 html {
-  scroll-padding-top: 76px;
+  scroll-padding-top: var(--sticky-offset);
 }
 
 body {
@@ -17,6 +18,7 @@ body {
   background: var(--paper);
   font-size: 17px;
   line-height: 1.72;
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
@@ -167,7 +169,7 @@ h3,
 .anchor-compat {
   display: block;
   height: 0;
-  scroll-margin-top: 92px;
+  scroll-margin-top: var(--sticky-offset);
 }
 
 .section-heading {
@@ -272,10 +274,6 @@ h3,
 .post-content .katex-display > .katex {
   display: inline-block;
   min-width: max-content;
-}
-
-.list-item p .katex {
-  white-space: nowrap;
 }
 
 pre,
@@ -415,10 +413,9 @@ pre,
 }
 
 .project-table {
-  width: min(100vw - 32px, 920px);
-  margin: 1.6rem 0 2rem 50%;
+  width: 100%;
+  margin: 1.6rem 0 2rem;
   overflow-x: auto;
-  transform: translateX(-50%);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -464,7 +461,7 @@ pre,
 }
 
 .project-summary {
-  scroll-margin-top: 92px;
+  scroll-margin-top: var(--sticky-offset);
 }
 
 .resume-block {
@@ -897,7 +894,7 @@ html.is-transitioning-in.is-transition-ready .page-transition {
 }
 
 html {
-  scroll-padding-top: 82px;
+  scroll-padding-top: var(--sticky-offset);
 }
 
 body {
@@ -1184,6 +1181,7 @@ h3,
 }
 
 .home-shell .list-item:hover,
+.home-shell .list-item:active,
 .home-shell .list-item:focus-within {
   background-color: var(--claude-hover);
 }
@@ -1377,7 +1375,18 @@ h3,
   }
 }
 
+@media (max-width: 800px) {
+  .wrapper {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+}
+
 @media (max-width: 600px) {
+  :root {
+    --sticky-offset: 112px;
+  }
+
   .site-header .wrapper {
     display: flex;
     flex-direction: column;
@@ -1429,7 +1438,7 @@ h3,
   .site-nav .trigger .page-link {
     display: inline-flex;
     align-items: center;
-    min-height: 34px;
+    min-height: 44px;
     margin: 0;
     padding: 0;
     white-space: nowrap;
@@ -1450,6 +1459,7 @@ h3,
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;

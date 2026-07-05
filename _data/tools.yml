@@ -2,4 +2,4 @@
 - title: Buck Converter Tool
   url: /tools/buck-converter/
   meta: Interactive tool · Ideal-component model
-  summary: Set \(v_{IN}\), \(v_{OUT}\), load, \(f_{SW}\), \(L_X\), and \(C_O\); read \(D\), \(\Delta i_L\), and \(\Delta v_{OUT}\) live.
+  summary: Set v<sub>IN</sub>, v<sub>OUT</sub>, load, f<sub>SW</sub>, L<sub>X</sub>, and C<sub>O</sub>; read D, Δi<sub>L</sub>, and Δv<sub>OUT</sub> live.
