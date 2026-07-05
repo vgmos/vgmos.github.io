@@ -1264,7 +1264,7 @@ h3,
 }
 
 .home-hero {
-  padding: 18px 0 34px;
+  padding: 0 0 34px;
   margin-bottom: 2px;
 }
 
@@ -1272,9 +1272,9 @@ h3,
   max-width: 42rem;
   color: var(--ink);
   font-family: var(--claude-serif);
-  font-size: 1.42rem;
+  font-size: calc(1.42rem - 2pt);
   font-weight: 400;
-  line-height: 1.46;
+  line-height: 1.5;
   text-wrap: pretty;
 }
 
@@ -1365,7 +1365,7 @@ h3,
 .list-item p:not(.item-meta) {
   max-width: 700px;
   color: var(--ink-soft);
-  font-size: 1.03rem;
+  font-size: 1.06rem;
   line-height: 1.62;
 }
 
@@ -1466,9 +1466,15 @@ html[data-theme="dark"] .theme-toggle:hover {
     0 8px 22px rgba(0, 0, 0, 0.16);
 }
 
+@media (min-width: 701px) {
+  .page-content:has(.home-hero) {
+    padding-top: 40px;
+  }
+}
+
 @media (min-width: 1000px) {
   .home-hero .hero-lede {
-    font-size: 1.48rem;
+    font-size: calc(1.48rem - 2pt);
   }
 }
 
@@ -1501,6 +1507,7 @@ html[data-theme="dark"] .theme-toggle:hover {
   }
 
   .home-hero {
+    padding-top: 4px;
     padding-bottom: 26px;
   }
 
