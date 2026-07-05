@@ -254,8 +254,9 @@ permalink: /tools/buck-converter/
   /* --- mode switch --- */
   .bc-switchers {
     display: grid;
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
     margin: 1rem 0 0;
   }
   .bc-mode {
@@ -325,6 +326,8 @@ permalink: /tools/buck-converter/
 
   .bc-dcm-toggle {
     min-height: 35px;
+    min-width: 62px;
+    align-self: end;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--paper);
@@ -332,8 +335,9 @@ permalink: /tools/buck-converter/
     cursor: pointer;
     font: inherit;
     font-size: 0.88rem;
-    padding: 6px 16px;
+    padding: 6px 12px;
     text-align: center;
+    white-space: nowrap;
     transition:
       background-color var(--bc-motion) var(--claude-ease, var(--ease)),
       border-color var(--bc-motion) var(--claude-ease, var(--ease)),
@@ -758,7 +762,11 @@ permalink: /tools/buck-converter/
       padding-inline: 12px;
       white-space: nowrap;
     }
-    .bc-switchers { grid-template-columns: 1fr; gap: 8px; }
+    .bc-switchers {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 8px;
+    }
     .bc-mode {
       display: grid;
       grid-template-columns: 76px minmax(0, 1fr);
@@ -846,13 +854,16 @@ permalink: /tools/buck-converter/
       margin-top: 0.7rem;
     }
     .bc-mode {
-      grid-template-columns: 58px minmax(0, 1fr);
-      gap: 8px;
+      grid-template-columns: 50px minmax(0, 1fr);
+      gap: 6px;
     }
     .bc-switchers .bc-segmented button,
     .bc-dcm-toggle {
       font-size: 0.8rem;
-      padding-inline: 8px;
+      padding-inline: 7px;
+    }
+    .bc-dcm-toggle {
+      min-width: 50px;
     }
     .bc-controls { padding: 14px; }
     .bc-field-head {
@@ -1112,7 +1123,8 @@ permalink: /tools/buck-converter/
       padding: 18px;
     }
     .bc-workbench-main .bc-switchers {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
       gap: 10px;
     }
     .bc-workbench-main .bc-mode {
@@ -1285,15 +1297,12 @@ permalink: /tools/buck-converter/
         <div class="bc-mode">
           <span class="bc-mode-label">Mode</span>
           <div class="bc-segmented" role="group" aria-label="Calculator mode" data-active-mode="analyze" data-active-index="0">
-            <button type="button" data-mode="analyze" aria-pressed="true">Analyze design</button>
-            <button type="button" data-mode="design" aria-pressed="false">Set ripple targets</button>
+            <button type="button" data-mode="analyze" aria-pressed="true" aria-label="Analyze design">Analyze</button>
+            <button type="button" data-mode="design" aria-pressed="false" aria-label="Set ripple targets">Ripple targets</button>
           </div>
         </div>
 
-        <div class="bc-mode">
-          <span class="bc-mode-label">DCM</span>
-          <button type="button" class="bc-dcm-toggle" id="bc-dcm-toggle" aria-pressed="false" aria-controls="bc-dcm-options">Enable DCM</button>
-        </div>
+        <button type="button" class="bc-dcm-toggle" id="bc-dcm-toggle" aria-pressed="false" aria-controls="bc-dcm-options" aria-label="Enable DCM" title="Enable DCM">DCM</button>
       </div>
 
       <div class="bc-dcm-options" id="bc-dcm-options" aria-hidden="true">
@@ -1566,7 +1575,7 @@ permalink: /tools/buck-converter/
     <p>Across the on-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the off-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
-    <p>When Enable DCM is pressed, the tool first checks the CCM valley current against the selected zero-cross threshold. Only light-load points past that boundary use the fixed-frequency DCM solve and show a tri-state idle interval.</p>
+    <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. Only light-load points past that boundary use the fixed-frequency DCM solve and show a tri-state idle interval.</p>
     <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
   </section>
 </article>
@@ -2335,7 +2344,9 @@ permalink: /tools/buck-converter/
   function syncDcmUI() {
     if (el["bc-dcm-toggle"]) {
       el["bc-dcm-toggle"].setAttribute("aria-pressed", dcmEnabled ? "true" : "false");
-      el["bc-dcm-toggle"].textContent = dcmEnabled ? "DCM enabled" : "Enable DCM";
+      el["bc-dcm-toggle"].setAttribute("aria-label", dcmEnabled ? "Disable DCM" : "Enable DCM");
+      el["bc-dcm-toggle"].setAttribute("title", dcmEnabled ? "Disable DCM" : "Enable DCM");
+      el["bc-dcm-toggle"].textContent = "DCM";
     }
     el["bc-dcm-options"].className = "bc-dcm-options" + (dcmEnabled ? " bc-show" : "");
     el["bc-dcm-options"].setAttribute("aria-hidden", dcmEnabled ? "false" : "true");
