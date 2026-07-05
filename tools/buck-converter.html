@@ -168,7 +168,9 @@ permalink: /tools/buck-converter/
     font-variant-numeric: tabular-nums;
     line-height: 1;
     cursor: pointer;
-    transition: color var(--bc-motion) var(--claude-ease);
+    transition:
+      color var(--bc-motion) var(--claude-ease),
+      text-shadow var(--bc-motion) var(--claude-ease);
   }
   .bc-duty-tick::before {
     content: "";
@@ -185,6 +187,7 @@ permalink: /tools/buck-converter/
   .bc-duty-tick:focus-visible {
     color: var(--claude-accent-deep);
     outline: none;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
   }
   .bc-duty-tick:hover::before,
   .bc-duty-tick:focus-visible::before {
@@ -316,11 +319,24 @@ permalink: /tools/buck-converter/
     font: inherit;
     font-size: 0.88rem;
     padding: 6px 14px;
-    transition: color 220ms var(--claude-ease, var(--ease));
+    transition:
+      color 220ms var(--claude-ease, var(--ease)),
+      text-shadow 220ms var(--claude-ease, var(--ease));
   }
   .bc-segmented button[aria-pressed="true"] {
     background: transparent;
     color: var(--bc-segment-selected-fg);
+  }
+  .bc-segmented button:hover,
+  .bc-segmented button:focus-visible {
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
+  }
+  .bc-segmented button:not([aria-pressed="true"]):hover,
+  .bc-segmented button:not([aria-pressed="true"]):focus-visible {
+    color: var(--claude-accent-deep);
+  }
+  .bc-segmented button:active {
+    text-shadow: var(--text-glow-strong, 0 0 8px rgba(138, 74, 56, 0.16));
   }
   .bc-segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -341,12 +357,26 @@ permalink: /tools/buck-converter/
     transition:
       background-color var(--bc-motion) var(--claude-ease, var(--ease)),
       border-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      color var(--bc-motion) var(--claude-ease, var(--ease));
+      color var(--bc-motion) var(--claude-ease, var(--ease)),
+      text-shadow var(--bc-motion) var(--claude-ease, var(--ease));
   }
   .bc-dcm-toggle[aria-pressed="true"] {
     border-color: var(--ink);
     background: var(--ink);
     color: var(--paper);
+  }
+  .bc-dcm-toggle:hover,
+  .bc-dcm-toggle:focus-visible {
+    border-color: var(--accent);
+    color: var(--claude-accent-deep);
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
+  }
+  .bc-dcm-toggle[aria-pressed="true"]:hover,
+  .bc-dcm-toggle[aria-pressed="true"]:focus-visible {
+    color: var(--paper);
+  }
+  .bc-dcm-toggle:active {
+    text-shadow: var(--text-glow-strong, 0 0 8px rgba(138, 74, 56, 0.16));
   }
   .bc-dcm-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -509,18 +539,29 @@ permalink: /tools/buck-converter/
     opacity: 0.6;
     transition: background var(--dur-fast) var(--ease);
   }
-  .bc-tick:hover, .bc-tick:focus-visible { color: var(--accent); }
+  .bc-tick:hover, .bc-tick:focus-visible {
+    color: var(--accent);
+    outline: none;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
+  }
   .bc-tick:hover::before { background: var(--accent); opacity: 1; }
 
   /* --- results strip --- */
   .bc-results {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px 0;
+    gap: 10px;
     margin: 1.5rem 0 0.4rem;
   }
-  .bc-card { border-left: 1px solid var(--line); padding: 2px 12px 2px 16px; }
-  .bc-card:nth-child(3n + 1) { border-left: 0; padding-left: 0; }
+  .bc-card,
+  .bc-card:nth-child(3n + 1),
+  .bc-card:nth-child(odd),
+  .bc-card:nth-child(even) {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 11px 9px;
+    background: var(--paper);
+  }
   .bc-card .bc-k { margin: 0 0 3px; color: var(--muted); font-size: 0.82rem; }
   .bc-card .bc-v { margin: 0; color: var(--ink); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .bc-card .bc-s { margin: 2px 0 0; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
@@ -708,7 +749,7 @@ permalink: /tools/buck-converter/
   }
   .bc-panel { margin: 0; }
   .bc-panel + .bc-panel { margin-top: 10px; }
-  .bc-panel svg { display: block; width: 100%; height: auto; }
+  .bc-panel svg { display: block; width: 100%; height: auto; cursor: crosshair; }
 
   .bc-panel .shade { fill: var(--accent); opacity: 0.055; }
   .bc-panel .base { stroke: var(--line); stroke-width: 1; }
@@ -734,6 +775,42 @@ permalink: /tools/buck-converter/
   .bc-panel .tick--on { stroke: var(--accent); }
   .bc-panel .tag--on { fill: var(--accent); }
   .bc-panel .cursor { stroke: var(--ink); stroke-width: 1; opacity: 0.3; }
+  .bc-panel .probe-dot,
+  .bc-panel .delta-dot {
+    pointer-events: none;
+    fill: var(--paper);
+    stroke-width: 1.8;
+  }
+  .bc-panel .probe-dot {
+    stroke: var(--accent);
+    filter: drop-shadow(0 0 3px rgba(138, 74, 56, 0.14));
+  }
+  .bc-panel .delta-line {
+    pointer-events: none;
+    stroke-width: 1;
+    stroke-dasharray: 3 5;
+    opacity: 0.48;
+  }
+  .bc-panel .delta-line--a,
+  .bc-panel .delta-dot--a {
+    stroke: var(--muted);
+  }
+  .bc-delta-readout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 8px 2px 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .bc-delta-readout[hidden] { display: none; }
+  .bc-delta-readout span { white-space: nowrap; }
+  .bc-delta-readout strong {
+    color: var(--accent);
+    font-weight: 600;
+  }
 
   .bc-scope .bc-scope-foot {
     margin: 10px 2px 2px;
@@ -788,10 +865,10 @@ permalink: /tools/buck-converter/
       max-width: 560px;
       margin-left: auto;
     }
-    .bc-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .bc-card:nth-child(3n + 1) { border-left: 1px solid var(--line); padding-left: 16px; }
-    .bc-card:nth-child(odd) { border-left: 0; padding-left: 0; }
-    .bc-card:nth-child(even) { padding-right: 0; }
+    .bc-results {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
     .bc-design-result { grid-template-columns: 1fr; }
     .bc-design-result.bc-show { max-height: 260px; }
     .bc-dcm-options.bc-show { max-height: 150px; }
@@ -952,13 +1029,15 @@ permalink: /tools/buck-converter/
     transition:
       color var(--bc-motion) var(--claude-ease),
       border-color var(--bc-motion) var(--claude-ease),
-      background-color var(--bc-motion) var(--claude-ease);
+      text-shadow var(--bc-motion) var(--claude-ease);
   }
   .bc-presets button:hover,
   .bc-presets button:focus-visible {
     color: var(--claude-accent-deep);
     border-color: var(--accent);
-    background-color: var(--claude-hover);
+    background-color: transparent;
+    outline: none;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
   }
   .bc-field-head label {
     color: var(--ink);
@@ -999,27 +1078,18 @@ permalink: /tools/buck-converter/
     font-weight: 500;
     transition:
       color var(--bc-motion) var(--claude-ease),
-      background-color var(--bc-motion) var(--claude-ease);
+      text-shadow var(--bc-motion) var(--claude-ease);
   }
   .bc-tick:hover,
   .bc-tick:focus-visible {
     color: var(--claude-accent-deep);
-    background-color: var(--claude-hover);
+    background-color: transparent;
+    outline: none;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
   }
   .bc-card {
     border-radius: 8px;
     background-color: var(--paper);
-    transition:
-      border-color var(--bc-motion) var(--claude-ease),
-      background-color var(--bc-motion) var(--claude-ease);
-  }
-  .bc-card:hover {
-    border-color: var(--claude-ring);
-    background-color: var(--claude-hover);
-  }
-  .bc-card:active {
-    border-color: var(--claude-ring);
-    background-color: var(--claude-hover);
   }
   .bc-card .bc-v {
     color: var(--ink);
@@ -1444,12 +1514,12 @@ permalink: /tools/buck-converter/
           <p class="bc-s"><span id="out-dv-pct">—</span> % of v<sub>OUT</sub>, pk-pk</p>
         </div>
         <div class="bc-card">
-          <p class="bc-k">On-time t<sub>ON</sub></p>
+          <p class="bc-k">ON-time t<sub>ON</sub></p>
           <p class="bc-v" id="out-ton">—</p>
           <p class="bc-s">= D · t<sub>SW</sub></p>
         </div>
         <div class="bc-card">
-          <p class="bc-k" id="out-toff-label">Off-time t<sub>OFF</sub></p>
+          <p class="bc-k" id="out-toff-label">OFF-time t<sub>OFF</sub></p>
           <p class="bc-v" id="out-toff">—</p>
           <p class="bc-s" id="out-toff-note">= (1 − D) · t<sub>SW</sub></p>
         </div>
@@ -1547,7 +1617,7 @@ permalink: /tools/buck-converter/
 
         <figcaption class="bc-anim-status" aria-live="polite">
           <span class="bc-anim-pip" id="bc-anim-pip"></span>
-          <span class="bc-anim-phase" id="bc-anim-phase">on-time</span>
+          <span class="bc-anim-phase" id="bc-anim-phase">ON time</span>
           <span class="bc-anim-sep">·</span>
           <span id="bc-anim-desc">high-side FET conducts, i<sub>L</sub> rising</span>
           <span class="bc-anim-sep">·</span>
@@ -1565,14 +1635,15 @@ permalink: /tools/buck-converter/
         <figure class="bc-panel">
           <svg id="p-vout" viewBox="0 0 680 178" xmlns="http://www.w3.org/2000/svg" aria-label="Output voltage ripple waveform"></svg>
         </figure>
-        <p class="bc-scope-foot">Three switching cycles; shaded bands are the on-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output trace is terminal v<sub>OUT</sub>, centered on the selected DC value and including optional ESR ripple.</p>
+        <div class="bc-delta-readout" id="bc-delta-readout" aria-live="polite" hidden></div>
+        <p class="bc-scope-foot">Three switching cycles; shaded bands are the ON-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output trace is terminal v<sub>OUT</sub>, centered on the selected DC value and including optional ESR ripple.</p>
       </div>
     </div>
   </div>
 
   <section class="post-content project-body">
     <h2>Steady-state Operation</h2>
-    <p>Across the on-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the off-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
+    <p>Across the ON-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the OFF-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
     <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. Only light-load points past that boundary use the fixed-frequency DCM solve and show a tri-state idle interval.</p>
@@ -1847,11 +1918,11 @@ permalink: /tools/buck-converter/
     var hi = boundaryD * (1 - 1e-7);
     var prev = buildDcmResult(s, lo);
     if (!prev) {
-      return { reason: "The selected operating point leaves no positive DCM on-time." };
+      return { reason: "The selected operating point leaves no positive DCM ON-time." };
     }
     var prevF = dcmCycleChargeEnd(s, prev);
     if (prevF > 0) {
-      return { reason: "The switch-node tank current already averages above the load before a positive on-time can be applied." };
+      return { reason: "The switch-node tank current already averages above the load before a positive ON-time can be applied." };
     }
 
     var loD = lo, hiD = hi, found = false;
@@ -2118,10 +2189,17 @@ permalink: /tools/buck-converter/
   var M = { l: 12, r: 128, t: 24, b: 8 };
   var AXIS_H = 24;
 
-  var registryCursor = {};   // per-panel cursor + label elements
+  var PANEL_IDS = ["p-vsw", "p-il", "p-vout"];
+  var registryCursor = {};   // per-panel cursor, marker, scale, and label elements
 
   function plotMargin() {
     return window.innerWidth <= 700 ? { l: 12, r: 164, t: 24, b: 8 } : M;
+  }
+
+  function panelY(meta, value) {
+    var span = meta.ymax - meta.ymin || 1;
+    var y = meta.m.t + (1 - (value - meta.ymin) / span) * (meta.bh - meta.m.t - meta.m.b);
+    return clamp(y, meta.m.t, meta.bh - meta.m.b);
   }
 
   function mk(tag, attrs, textContent) {
@@ -2160,8 +2238,9 @@ permalink: /tools/buck-converter/
     };
 
     while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+    registryCursor[svg.id] = {};
 
-    // on-time shading
+    // ON-time shading
     for (var c = 0; c < CYCLES; c++) {
       svg.appendChild(mk("rect", {
         "class": "shade",
@@ -2249,16 +2328,32 @@ permalink: /tools/buck-converter/
         "class": "tag tag--accent", x: -100, y: bh - m.b + 18, "text-anchor": "middle"
       }, "");
       svg.appendChild(tTag);
-      registryCursor[svg.id] = registryCursor[svg.id] || {};
       registryCursor[svg.id].tTag = tTag;
     }
 
+    // pinned reference marker (hidden until the user clicks a plot point)
+    var deltaLineA = mk("line", { "class": "delta-line delta-line--a", x1: -100, x2: -100, y1: m.t, y2: bh - m.b, visibility: "hidden", "aria-hidden": "true" });
+    var deltaDotA = mk("circle", { "class": "delta-dot delta-dot--a", r: 3, cx: -100, cy: m.t, visibility: "hidden", "aria-hidden": "true" });
+    svg.appendChild(deltaLineA);
+    svg.appendChild(deltaDotA);
+
     // probe cursor line (hidden until pointermove)
     var cur = mk("line", { "class": "cursor", x1: -100, x2: -100, y1: m.t, y2: bh - m.b, visibility: "hidden" });
+    var dot = mk("circle", { "class": "probe-dot", r: 3.4, cx: -100, cy: m.t, visibility: "hidden", "aria-hidden": "true" });
     svg.appendChild(cur);
-    registryCursor[svg.id] = registryCursor[svg.id] || {};
+    svg.appendChild(dot);
     registryCursor[svg.id].line = cur;
+    registryCursor[svg.id].dot = dot;
+    registryCursor[svg.id].deltaLineA = deltaLineA;
+    registryCursor[svg.id].deltaDotA = deltaDotA;
     registryCursor[svg.id].val = val;
+    registryCursor[svg.id].key = opts.probeKey;
+    registryCursor[svg.id].unit = opts.probeUnit;
+    registryCursor[svg.id].digits = opts.probeDigits;
+    registryCursor[svg.id].m = m;
+    registryCursor[svg.id].bh = bh;
+    registryCursor[svg.id].ymin = opts.ymin;
+    registryCursor[svg.id].ymax = opts.ymax;
   }
 
   /* ---------- element registry ---------- */
@@ -2285,7 +2380,7 @@ permalink: /tools/buck-converter/
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope",
    "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-pip", "bc-anim-phase", "bc-anim-desc",
    "bc-anim-duty", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow", "bc-lbl-ton",
-   "bc-lbl-toff", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
+   "bc-lbl-toff", "bc-dcm-toggle", "bc-il-arrow", "bc-delta-readout"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
@@ -2301,6 +2396,10 @@ permalink: /tools/buck-converter/
   var renderFrameNeedsSync = false;
   var probeFrame = 0;
   var probeClientX = 0;
+  var deltaProbe = {
+    anchor: null,
+    target: null
+  };
 
   function syncInputs() {
     Object.keys(PARAMS).forEach(function (k) {
@@ -2444,12 +2543,12 @@ permalink: /tools/buck-converter/
     if (!hasAnimatedSchematic()) { return; }
     var phase = phaseName || animSchematic.lastPhase || "on";
     var compact = window.matchMedia && window.matchMedia("(max-width: 430px)").matches;
-    var label = "on-time";
+    var label = "ON time";
     var desc = "high-side FET conducts, i<sub>L</sub> rising";
     var compactDesc = "i<sub>L</sub> rising";
     var muted = false;
     if (phase === "off") {
-      label = "off-time";
+      label = "OFF time";
       desc = "low-side FET freewheels, i<sub>L</sub> falling";
       compactDesc = "i<sub>L</sub> falling";
     } else if (phase === "decay") {
@@ -2639,6 +2738,7 @@ permalink: /tools/buck-converter/
 
   /* ---------- render ---------- */
   function render() {
+    clearDeltaProbe();
     var s = workingState();
     var d = designValues(state);
     var r = compute(s);
@@ -2664,7 +2764,7 @@ permalink: /tools/buck-converter/
     el["out-dv"].textContent = eng(displayedDV, "V");
     el["out-dv-pct"].textContent = (100 * displayedDV / s.vout).toPrecision(2);
     el["out-ton"].textContent = eng(r.D * r.T, "s");
-    el["out-toff-label"].innerHTML = "Off-time t<sub>OFF</sub>";
+    el["out-toff-label"].innerHTML = "OFF-time t<sub>OFF</sub>";
     el["out-toff"].textContent = eng((1 - r.D) * r.T, "s");
     el["out-toff-note"].innerHTML = "= (1 − D) · t<sub>SW</sub>";
     el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / valley";
@@ -2672,7 +2772,7 @@ permalink: /tools/buck-converter/
     el["out-ipk-note"].innerHTML = "average = i<sub>O</sub>";
 
     if (r.dcmValid) {
-      el["out-toff-label"].innerHTML = "HS off-time";
+      el["out-toff-label"].innerHTML = "HS OFF-time";
       el["out-toff"].textContent = eng((r.D2 + r.D3) * r.T, "s");
       el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + "; t<sub>IDLE</sub> = " + eng(r.tIdle, "s") + "<br>D<sub>DECAY</sub> = " + (100 * r.D2).toFixed(1) + "%; D<sub>IDLE</sub> = " + (100 * r.D3).toFixed(1) + "%";
       if (r.idle) {
@@ -2716,7 +2816,8 @@ permalink: /tools/buck-converter/
       D: r.D, T: r.T, tEnd: tEnd, drive: true,
       ymin: -0.1 * s.vin, ymax: 1.16 * s.vin,
       chan: [["switch node v"], ["SW", true], ["  "]],
-      rail: vswRails
+      rail: vswRails,
+      probeKey: "vsw", probeUnit: "V"
     });
 
     var iRipple = r.iRipple || r.dIL;
@@ -2738,7 +2839,8 @@ permalink: /tools/buck-converter/
       ymin: iMin, ymax: iTop + ipad,
       chan: [["inductor current i"], ["L", true], ["  "]],
       refs: iRefs,
-      bracket: { y1: iTop, y2: iBottom, name: "Δi", sub: "L", value: eng(iRipple, "A") }
+      bracket: { y1: iTop, y2: iBottom, name: "Δi", sub: "L", value: eng(iRipple, "A") },
+      probeKey: "il", probeUnit: "A"
     });
 
     var vpad = 0.32 * displayedDV || 1e-9;
@@ -2747,7 +2849,8 @@ permalink: /tools/buck-converter/
       ymin: vmin - vpad, ymax: vmax + vpad,
       chan: [["output voltage v"], ["OUT", true], ["  "]],
       refs: [{ y: s.vout, segs: [["v"], ["OUT", true]] }],
-      bracket: { y1: vmax, y2: vmin, name: "Δv", sub: "OUT", value: eng(displayedDV, "V") }
+      bracket: { y1: vmax, y2: vmin, name: "Δv", sub: "OUT", value: eng(displayedDV, "V") },
+      probeKey: "vc", probeUnit: "V", probeDigits: 4
     });
   }
 
@@ -2776,41 +2879,134 @@ permalink: /tools/buck-converter/
   }
 
   /* ---------- probe cursor ---------- */
-  function hideProbe() {
-    ["p-vsw", "p-il", "p-vout"].forEach(function (id) {
-      var c = registryCursor[id];
-      if (!c) { return; }
-      c.line.setAttribute("visibility", "hidden");
-      c.val.textContent = "";
-      if (c.tTag) { c.tTag.textContent = ""; }
+  function pointerOverWaveformPanel(clientY) {
+    if (!isFinite(clientY)) { return false; }
+    return PANEL_IDS.some(function (id) {
+      var svg = el[id];
+      if (!svg) { return false; }
+      var rect = svg.getBoundingClientRect();
+      return rect.height && clientY >= rect.top && clientY <= rect.bottom;
     });
   }
 
-  function updateProbe(clientX) {
+  function probePointFromCoords(clientX, clientY, requirePanelY) {
+    if (requirePanelY && !pointerOverWaveformPanel(clientY)) { return null; }
     var rect = el["p-il"].getBoundingClientRect();
-    if (!rect.width) { return; }
+    if (!rect.width) { return null; }
     var m = plotMargin();
     var xu = (clientX - rect.left) / rect.width * W;
-    if (xu < m.l || xu > W - m.r) { hideProbe(); return; }
+    if (xu < m.l || xu > W - m.r) { return null; }
 
     var s = workingState();
     var r = compute(s);
     var tEnd = CYCLES * r.T;
     var t = (xu - m.l) / (W - m.l - m.r) * tEnd;
-    var p = probe(s, r, t);
-    var vals = { "p-vsw": eng(p.vsw, "V"), "p-il": eng(p.il, "A"), "p-vout": eng(p.vc, "V", 4) };
+    return { xu: xu, t: t, values: probe(s, r, t) };
+  }
 
-    ["p-vsw", "p-il", "p-vout"].forEach(function (id) {
+  function hideDeltaMarkers() {
+    PANEL_IDS.forEach(function (id) {
       var c = registryCursor[id];
       if (!c) { return; }
-      c.line.setAttribute("x1", xu); c.line.setAttribute("x2", xu);
+      ["deltaLineA", "deltaDotA"].forEach(function (key) {
+        if (c[key]) { c[key].setAttribute("visibility", "hidden"); }
+      });
+    });
+  }
+
+  function placeDeltaMarker(point) {
+    PANEL_IDS.forEach(function (id) {
+      var c = registryCursor[id];
+      if (!c || !c.deltaLineA || !c.deltaDotA || !c.key) { return; }
+      var y = panelY(c, point.values[c.key]);
+      c.deltaLineA.setAttribute("x1", point.xu);
+      c.deltaLineA.setAttribute("x2", point.xu);
+      c.deltaLineA.setAttribute("visibility", "visible");
+      c.deltaDotA.setAttribute("cx", point.xu);
+      c.deltaDotA.setAttribute("cy", y);
+      c.deltaDotA.setAttribute("visibility", "visible");
+    });
+  }
+
+  function updateDeltaReadout() {
+    if (!el["bc-delta-readout"]) { return; }
+    if (!deltaProbe.target && !deltaProbe.anchor) {
+      el["bc-delta-readout"].hidden = true;
+      el["bc-delta-readout"].innerHTML = "";
+      return;
+    }
+    var a = deltaProbe.anchor;
+    var b = deltaProbe.target || deltaProbe.anchor;
+    var spans = [
+      "<span>t <strong>" + eng(b.t, "s", 2) + "</strong></span>",
+      "<span>v<sub>SW</sub> <strong>" + eng(b.values.vsw, "V") + "</strong></span>",
+      "<span>i<sub>L</sub> <strong>" + eng(b.values.il, "A") + "</strong></span>",
+      "<span>v<sub>OUT</sub> <strong>" + eng(b.values.vc, "V", 4) + "</strong></span>"
+    ];
+    if (a) {
+      spans.push("<span>Ref <strong>" + eng(a.t, "s", 2) + "</strong></span>");
+      if (Math.abs(b.xu - a.xu) > 1) {
+        spans.push("<span>Δt <strong>" + eng(Math.abs(b.t - a.t), "s", 2) + "</strong></span>");
+        spans.push("<span>Δi<sub>L</sub> <strong>" + eng(Math.abs(b.values.il - a.values.il), "A") + "</strong></span>");
+        spans.push("<span>Δv<sub>OUT</sub> <strong>" + eng(Math.abs(b.values.vc - a.values.vc), "V", 4) + "</strong></span>");
+      }
+    }
+    el["bc-delta-readout"].hidden = false;
+    el["bc-delta-readout"].innerHTML = spans.join("");
+  }
+
+  function renderDeltaProbe() {
+    hideDeltaMarkers();
+    if (deltaProbe.anchor) { placeDeltaMarker(deltaProbe.anchor); }
+    updateDeltaReadout();
+  }
+
+  function clearDeltaProbe() {
+    deltaProbe.anchor = null;
+    deltaProbe.target = null;
+    renderDeltaProbe();
+  }
+
+  function hideProbe() {
+    PANEL_IDS.forEach(function (id) {
+      var c = registryCursor[id];
+      if (!c) { return; }
+      c.line.setAttribute("visibility", "hidden");
+      if (c.dot) { c.dot.setAttribute("visibility", "hidden"); }
+      c.val.textContent = "";
+      if (c.tTag) { c.tTag.textContent = ""; }
+    });
+    if (!deltaProbe.anchor) {
+      deltaProbe.target = null;
+      updateDeltaReadout();
+    }
+  }
+
+  function updateProbe(clientX) {
+    var point = probePointFromCoords(clientX, null, false);
+    if (!point) { hideProbe(); return; }
+    deltaProbe.target = point;
+
+    PANEL_IDS.forEach(function (id) {
+      var c = registryCursor[id];
+      if (!c || !c.key) { return; }
+      var value = point.values[c.key];
+      var y = panelY(c, value);
+      c.line.setAttribute("x1", point.xu);
+      c.line.setAttribute("x2", point.xu);
       c.line.setAttribute("visibility", "visible");
-      c.val.textContent = "· " + vals[id];
+      if (c.dot) {
+        c.dot.setAttribute("cx", point.xu);
+        c.dot.setAttribute("cy", y);
+        c.dot.setAttribute("visibility", "visible");
+      }
+      c.val.textContent = "· " + eng(value, c.unit, c.digits);
       if (c.tTag) {
-        c.tTag.setAttribute("x", Math.max(m.l + 24, Math.min(W - m.r - 24, xu)));
-        c.tTag.textContent = "t = " + eng(t, "s", 2);
+        c.tTag.setAttribute("x", Math.max(c.m.l + 24, Math.min(W - c.m.r - 24, point.xu)));
+        c.tTag.textContent = "t = " + eng(point.t, "s", 2);
       }
     });
+    updateDeltaReadout();
   }
 
   el["bc-scope"].addEventListener("pointermove", function (ev) {
@@ -2829,8 +3025,29 @@ permalink: /tools/buck-converter/
     hideProbe();
   }
 
-  ["pointerleave", "pointerup", "pointercancel"].forEach(function (type) {
-    el["bc-scope"].addEventListener(type, clearProbe);
+  el["bc-scope"].addEventListener("click", function (ev) {
+    var point = probePointFromCoords(ev.clientX, ev.clientY, true);
+    if (!point) { return; }
+    if (!deltaProbe.anchor) {
+      deltaProbe.anchor = point;
+    } else {
+      deltaProbe.target = point;
+    }
+    renderDeltaProbe();
+    updateProbe(ev.clientX);
+  });
+
+  ["pointerleave", "pointercancel"].forEach(function (type) {
+    el["bc-scope"].addEventListener(type, function () {
+      clearProbe();
+    });
+  });
+
+  document.addEventListener("pointerdown", function (ev) {
+    if (el["bc-scope"] && !el["bc-scope"].contains(ev.target)) {
+      clearDeltaProbe();
+      clearProbe();
+    }
   });
 
   window.addEventListener("resize", function () {
