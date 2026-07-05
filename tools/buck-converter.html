@@ -2602,13 +2602,16 @@ permalink: /tools/buck-converter/
       tick.textContent = pct + "%";
       tick.addEventListener("click", function () {
         if (this.getAttribute("aria-disabled") === "true") { return; }
+        var beforePct = parseFloat(el["bc-duty-slider"].value);
         applyAnimatedDutyPct(pct);
+        glideRangeThumb(el["bc-duty-slider"], beforePct, parseFloat(el["bc-duty-slider"].value), updateDutySliderAria);
       });
       el["bc-duty-ticks"].appendChild(tick);
     });
     positionAnimatedDutyTicks();
 
     el["bc-duty-slider"].addEventListener("input", function () {
+      cancelRangeThumbGlide(this);
       applyAnimatedDutyPct(parseFloat(this.value));
     });
 
@@ -2845,6 +2848,7 @@ permalink: /tools/buck-converter/
     var controls = paramControls[k];
     controls.ranges.forEach(function (range) {
       range.addEventListener("input", function () {
+        cancelRangeThumbGlide(this);
         state[k] = clampParam(k, snapSliderValue(k, fromSlider(k, +this.value)));
         enforceBuck(k);
         scheduleRender();
@@ -2875,6 +2879,70 @@ permalink: /tools/buck-converter/
     return isFinite(parsed) ? parsed : 15;
   }
 
+  function canGlideRangeThumb() {
+    return !(reduceMotion && reduceMotion.matches);
+  }
+
+  function glideNow() {
+    return window.performance && window.performance.now ? window.performance.now() : Date.now();
+  }
+
+  function easeThumbGlide(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function cancelRangeThumbGlide(range, finalValue) {
+    if (!range) { return; }
+    if (range.bcThumbGlideFrame) {
+      cancelRaf(range.bcThumbGlideFrame);
+      range.bcThumbGlideFrame = 0;
+    }
+    if (isFinite(finalValue)) {
+      range.value = finalValue;
+    }
+  }
+
+  function updateDutySliderAria(pct) {
+    if (!el["bc-duty-slider"] || !isFinite(pct)) { return; }
+    el["bc-duty-slider"].setAttribute("aria-valuetext", "D = " + parseFloat(pct).toFixed(1) + "%");
+  }
+
+  function glideRangeThumb(range, fromValue, toValue, onUpdate) {
+    if (!range) { return; }
+    var from = parseFloat(fromValue);
+    var to = parseFloat(toValue);
+    cancelRangeThumbGlide(range);
+    if (!isFinite(from) || !isFinite(to) || Math.abs(to - from) < 0.5 || !canGlideRangeThumb()) {
+      if (isFinite(to)) {
+        range.value = to;
+        if (onUpdate) { onUpdate(to); }
+      }
+      return;
+    }
+
+    var duration = 180;
+    var startedAt = 0;
+    range.value = from;
+    if (onUpdate) { onUpdate(from); }
+
+    function step(now) {
+      if (!startedAt) { startedAt = now || glideNow(); }
+      var t = clamp(((now || glideNow()) - startedAt) / duration, 0, 1);
+      var value = from + (to - from) * easeThumbGlide(t);
+      range.value = value;
+      if (onUpdate) { onUpdate(value); }
+      if (t < 1) {
+        range.bcThumbGlideFrame = raf(step);
+      } else {
+        range.bcThumbGlideFrame = 0;
+        range.value = to;
+        if (onUpdate) { onUpdate(to); }
+      }
+    }
+
+    range.bcThumbGlideFrame = raf(step);
+  }
+
   document.querySelectorAll(".bc-ticks").forEach(function (row) {
     var key = row.getAttribute("data-for");
     (TICKS[key] || []).forEach(function (tk) {
@@ -2889,9 +2957,12 @@ permalink: /tools/buck-converter/
       b.style.left = "calc(" + (100 * f).toFixed(2) + "% + " + (thumb / 2 - thumb * f).toFixed(1) + "px)";
       b.textContent = tk[1];
       b.addEventListener("click", function () {
+        var range = el["sl-" + key];
+        var beforeSlider = range ? parseFloat(range.value) : toSlider(key, state[key]);
         state[key] = clampParam(key, tk[0]);
         enforceBuck(key);
         renderNow();
+        glideRangeThumb(range, beforeSlider, range ? parseFloat(range.value) : toSlider(key, state[key]));
       });
       row.appendChild(b);
     });
