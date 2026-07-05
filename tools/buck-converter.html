@@ -535,6 +535,12 @@ math: true
     .bc-segmented button { min-width: 0; }
     .bc-segmented.bc-segmented--wide button { min-width: 0; }
     .bc-controls { grid-template-columns: 1fr; padding: 16px; }
+    .bc-schematic { overflow-x: hidden; }
+    .bc-schematic svg {
+      width: 100%;
+      min-width: 0;
+      max-width: 560px;
+    }
     .bc-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .bc-card:nth-child(3n + 1) { border-left: 1px solid var(--line); padding-left: 16px; }
     .bc-card:nth-child(odd) { border-left: 0; padding-left: 0; }
@@ -557,10 +563,33 @@ math: true
   @media (max-width: 430px) {
     .bc-schematic { padding: 16px 10px 12px; }
     .bc-switchers .bc-segmented button { font-size: 0.8rem; padding-inline: 8px; }
-    .bc-field-head { align-items: flex-start; flex-direction: column; gap: 6px; }
-    .bc-entry--compound { justify-content: flex-start; }
-    .bc-entry input[type="number"] { width: 7em; }
-    .bc-inline-param input[type="number"] { width: 6em; }
+    .bc-controls { padding: 14px; }
+    .bc-field-head {
+      align-items: center;
+      flex-direction: row;
+      gap: 8px;
+    }
+    .bc-field-head > label {
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: normal;
+    }
+    .bc-field-head .bc-entry {
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
+    .bc-field-head--compound {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 150px);
+      align-items: start;
+    }
+    .bc-field-head--compound .bc-entry--compound {
+      width: 100%;
+      margin-left: 0;
+    }
+    .bc-entry--compound { justify-content: flex-end; }
+    .bc-entry input[type="number"] { width: 5em; }
+    .bc-inline-param input[type="number"] { width: 4.8em; }
   }
 
   .bc-page { max-width: 740px; }
@@ -831,13 +860,15 @@ math: true
   }
 
   @media (max-width: 700px) {
-    .bc-schematic svg { min-width: 500px; }
-    .bc-panel .chan { font-size: 19px; }
-    .bc-panel .tag { font-size: 17px; }
-    .bc-panel .dim-name { font-size: 18px; }
-    .bc-panel .dim-val { font-size: 19px; }
+    .bc-scope {
+      padding: 14px 10px 10px;
+    }
+    .bc-panel .chan { font-size: 17px; }
+    .bc-panel .tag { font-size: 15.5px; }
+    .bc-panel .dim-name { font-size: 15.5px; }
+    .bc-panel .dim-val { font-size: 16px; }
     .bc-panel .chan tspan[dy],
-    .bc-panel .tag tspan[dy] { font-size: 13.5px; }
+    .bc-panel .tag tspan[dy] { font-size: 12px; }
     .bc-results { row-gap: 20px; }
     .bc-card .bc-v { font-size: 1.12rem; }
   }
@@ -977,7 +1008,7 @@ math: true
           <div class="bc-ticks" data-for="fsw"></div>
         </div>
         <div class="bc-field" data-mode-field="analyze">
-          <div class="bc-field-head">
+          <div class="bc-field-head bc-field-head--compound">
             <label for="num-l">Inductance L<sub>X</sub></label>
             <span class="bc-entry bc-entry--compound">
               <span class="bc-inline-param"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
@@ -992,7 +1023,7 @@ math: true
           <div class="bc-ticks" data-for="l"></div>
         </div>
         <div class="bc-field" data-mode-field="analyze">
-          <div class="bc-field-head">
+          <div class="bc-field-head bc-field-head--compound">
             <label for="num-c">Output cap C<sub>O</sub></label>
             <span class="bc-entry bc-entry--compound">
               <span class="bc-inline-param"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
@@ -1704,6 +1735,10 @@ math: true
 
   var registryCursor = {};   // per-panel cursor + label elements
 
+  function plotMargin() {
+    return window.innerWidth <= 700 ? { l: 12, r: 164, t: 24, b: 8 } : M;
+  }
+
   function mk(tag, attrs, textContent) {
     var e = document.createElementNS(NS, tag);
     for (var k in attrs) { e.setAttribute(k, attrs[k]); }
@@ -1732,10 +1767,11 @@ math: true
   // opts: { D, T, tEnd, ymin, ymax, chan (segs), drive, refs:[{y,segs}],
   //         bracket:{y1,y2,name,sub,value}, rail:[{y,segs}], xAxis }
   function panel(svg, h, xs, ys, opts) {
+    var m = plotMargin();
     var bh = opts.xAxis ? h - AXIS_H : h;
-    var X = function (t) { return M.l + (t / opts.tEnd) * (W - M.l - M.r); };
+    var X = function (t) { return m.l + (t / opts.tEnd) * (W - m.l - m.r); };
     var Y = function (v) {
-      return M.t + (1 - (v - opts.ymin) / (opts.ymax - opts.ymin)) * (bh - M.t - M.b);
+      return m.t + (1 - (v - opts.ymin) / (opts.ymax - opts.ymin)) * (bh - m.t - m.b);
     };
 
     while (svg.firstChild) { svg.removeChild(svg.firstChild); }
@@ -1744,24 +1780,24 @@ math: true
     for (var c = 0; c < CYCLES; c++) {
       svg.appendChild(mk("rect", {
         "class": "shade",
-        x: X(c * opts.T).toFixed(1), y: M.t,
+        x: X(c * opts.T).toFixed(1), y: m.t,
         width: (X(opts.D * opts.T) - X(0)).toFixed(1),
-        height: bh - M.t - M.b
+        height: bh - m.t - m.b
       }));
     }
 
     // baseline
     svg.appendChild(mk("line", {
       "class": "base",
-      x1: M.l, x2: W - M.r, y1: bh - M.b, y2: bh - M.b
+      x1: m.l, x2: W - m.r, y1: bh - m.b, y2: bh - m.b
     }));
 
     // dashed reference lines with quiet in-plot names
     (opts.refs || []).forEach(function (ref) {
       var y = Y(ref.y);
-      svg.appendChild(mk("line", { "class": "ref", x1: M.l, x2: W - M.r, y1: y, y2: y }));
+      svg.appendChild(mk("line", { "class": "ref", x1: m.l, x2: W - m.r, y1: y, y2: y }));
       if (ref.segs) {
-        svg.appendChild(segText("tag", M.l + 6, y - 5, ref.segs));
+        svg.appendChild(segText("tag", m.l + 6, y - 5, ref.segs));
       }
     });
 
@@ -1774,13 +1810,13 @@ math: true
 
     // right rail: plain labels
     (opts.rail || []).forEach(function (rl) {
-      svg.appendChild(segText("tag", W - M.r + 12,
-        Math.max(M.t + 9, Math.min(bh - M.b - 2, Y(rl.y) + 4)), rl.segs));
+      svg.appendChild(segText("tag", W - m.r + 12,
+        Math.max(m.t + 9, Math.min(bh - m.b - 2, Y(rl.y) + 4)), rl.segs));
     });
 
     // right rail: dimension bracket for the headline measurement
     if (opts.bracket) {
-      var bx = W - M.r + 16;
+      var bx = W - m.r + 16;
       var y1 = Y(opts.bracket.y1), y2 = Y(opts.bracket.y2);
       svg.appendChild(mk("line", { "class": "dim", x1: bx, x2: bx, y1: y1, y2: y2 }));
       [y1, y2].forEach(function (yy) {
@@ -1796,7 +1832,7 @@ math: true
     }
 
     // channel label (top-left, doubles as probe readout)
-    var chan = segText("chan", M.l + 2, 14, opts.chan);
+    var chan = segText("chan", m.l + 2, 14, opts.chan);
     var val = mk("tspan", { "class": "val" }, "");
     if (chan.bcPrevSub) { val.setAttribute("dy", -2.5); }
     chan.appendChild(val);
@@ -1816,16 +1852,16 @@ math: true
         var x = X(mrk[0]);
         svg.appendChild(mk("line", {
           "class": "tick" + (isOn ? " tick--on" : ""),
-          x1: x, x2: x, y1: bh - M.b, y2: bh - M.b + 5
+          x1: x, x2: x, y1: bh - m.b, y2: bh - m.b + 5
         }));
         // skip the t_ON label when it would collide with 0 or t_SW
         if (isOn && (opts.D < 0.09 || opts.D > 0.85)) { return; }
         svg.appendChild(segText("tag" + (isOn ? " tag--on" : ""),
-          x, bh - M.b + 18, mrk[1], idx === 0 ? "start" : "middle"));
+          x, bh - m.b + 18, mrk[1], idx === 0 ? "start" : "middle"));
       });
       // cursor time tag (hidden until probe)
       var tTag = mk("text", {
-        "class": "tag tag--accent", x: -100, y: bh - M.b + 18, "text-anchor": "middle"
+        "class": "tag tag--accent", x: -100, y: bh - m.b + 18, "text-anchor": "middle"
       }, "");
       svg.appendChild(tTag);
       registryCursor[svg.id] = registryCursor[svg.id] || {};
@@ -1833,7 +1869,7 @@ math: true
     }
 
     // probe cursor line (hidden until pointermove)
-    var cur = mk("line", { "class": "cursor", x1: -100, x2: -100, y1: M.t, y2: bh - M.b, visibility: "hidden" });
+    var cur = mk("line", { "class": "cursor", x1: -100, x2: -100, y1: m.t, y2: bh - m.b, visibility: "hidden" });
     svg.appendChild(cur);
     registryCursor[svg.id] = registryCursor[svg.id] || {};
     registryCursor[svg.id].line = cur;
@@ -2046,7 +2082,7 @@ math: true
     panel(el["p-vout"], 178, w.t, w.vc, {
       D: r.D, T: r.T, tEnd: tEnd, xAxis: true,
       ymin: vmin - vpad, ymax: vmax + vpad,
-      chan: [["output voltage v"], ["OUT", true], [", zoomed to the ripple  "]],
+      chan: [["output voltage v"], ["OUT", true], ["  "]],
       refs: [{ y: s.vout, segs: [["v"], ["OUT", true]] }],
       bracket: { y1: vmax, y2: vmin, name: "Δv", sub: "OUT", value: eng(displayedDV, "V") }
     });
@@ -2090,13 +2126,14 @@ math: true
   function updateProbe(clientX) {
     var rect = el["p-il"].getBoundingClientRect();
     if (!rect.width) { return; }
+    var m = plotMargin();
     var xu = (clientX - rect.left) / rect.width * W;
-    if (xu < M.l || xu > W - M.r) { hideProbe(); return; }
+    if (xu < m.l || xu > W - m.r) { hideProbe(); return; }
 
     var s = workingState();
     var r = compute(s);
     var tEnd = CYCLES * r.T;
-    var t = (xu - M.l) / (W - M.l - M.r) * tEnd;
+    var t = (xu - m.l) / (W - m.l - m.r) * tEnd;
     var p = probe(s, r, t);
     var vals = { "p-vsw": eng(p.vsw, "V"), "p-il": eng(p.il, "A"), "p-vout": eng(p.vc, "V", 4) };
 
@@ -2107,7 +2144,7 @@ math: true
       c.line.setAttribute("visibility", "visible");
       c.val.textContent = "· " + vals[id];
       if (c.tTag) {
-        c.tTag.setAttribute("x", Math.max(M.l + 24, Math.min(W - M.r - 24, xu)));
+        c.tTag.setAttribute("x", Math.max(m.l + 24, Math.min(W - m.r - 24, xu)));
         c.tTag.textContent = "t = " + eng(t, "s", 2);
       }
     });
@@ -2131,6 +2168,11 @@ math: true
 
   ["pointerleave", "pointerup", "pointercancel"].forEach(function (type) {
     el["bc-scope"].addEventListener(type, clearProbe);
+  });
+
+  window.addEventListener("resize", function () {
+    hideProbe();
+    scheduleRender(false);
   });
 
   /* ---------- constraints ---------- */
