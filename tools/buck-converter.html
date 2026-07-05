@@ -247,6 +247,7 @@ permalink: /tools/buck-converter/
     cursor: pointer;
     transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   }
+  .bc-preset-short { display: none; }
   .bc-presets button:hover { color: var(--accent); border-color: var(--accent); }
   .bc-presets button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -738,7 +739,32 @@ permalink: /tools/buck-converter/
   }
 
   @media (max-width: 700px) {
-    .bc-switchers { grid-template-columns: 1fr; gap: 12px; }
+    .bc-presets {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 7px;
+      margin-top: 1rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .bc-presets::-webkit-scrollbar { display: none; }
+    .bc-presets span {
+      flex: 0 0 auto;
+      margin-right: 0;
+    }
+    .bc-presets button {
+      flex: 0 0 auto;
+      padding-inline: 12px;
+      white-space: nowrap;
+    }
+    .bc-switchers { grid-template-columns: 1fr; gap: 8px; }
+    .bc-mode {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+    }
     .bc-segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .bc-segmented button { min-width: 0; }
     .bc-segmented.bc-segmented--wide button { min-width: 0; }
@@ -799,7 +825,35 @@ permalink: /tools/buck-converter/
       font-size: 0.72rem;
       gap: 4px;
     }
-    .bc-switchers .bc-segmented button { font-size: 0.8rem; padding-inline: 8px; }
+    .bc-presets {
+      gap: 5px;
+      margin-bottom: 0.45rem;
+    }
+    .bc-mode-label {
+      font-size: 0.8rem;
+    }
+    .bc-presets span {
+      font-size: 0.76rem;
+    }
+    .bc-presets button {
+      font-size: 0.78rem;
+      padding: 5px 9px;
+    }
+    .bc-preset-full { display: none; }
+    .bc-preset-short { display: inline; }
+    .bc-switchers {
+      gap: 7px;
+      margin-top: 0.7rem;
+    }
+    .bc-mode {
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 8px;
+    }
+    .bc-switchers .bc-segmented button,
+    .bc-dcm-toggle {
+      font-size: 0.8rem;
+      padding-inline: 8px;
+    }
     .bc-controls { padding: 14px; }
     .bc-field-head {
       align-items: center;
@@ -1222,9 +1276,9 @@ permalink: /tools/buck-converter/
     <div class="bc-workbench-main">
       <div class="bc-presets" role="group" aria-label="Example operating points">
         <span>Presets:</span>
-        <button type="button" data-preset="pol" aria-label="12 V to 3.3 V point-of-load preset" title="12 V to 3.3 V point-of-load preset">12 to 3.3 V POL</button>
-        <button type="button" data-preset="bus" aria-label="48 V to 12 V bus converter preset" title="48 V to 12 V bus converter preset">48 to 12 V bus</button>
-        <button type="button" data-preset="core" aria-label="5 V to 1.8 V core rail preset" title="5 V to 1.8 V core rail preset">5 to 1.8 V core</button>
+        <button type="button" data-preset="pol" aria-label="12 V to 3.3 V point-of-load preset" title="12 V to 3.3 V point-of-load preset"><span class="bc-preset-full">12 to 3.3 V POL</span><span class="bc-preset-short">12/3.3 POL</span></button>
+        <button type="button" data-preset="bus" aria-label="48 V to 12 V bus converter preset" title="48 V to 12 V bus converter preset"><span class="bc-preset-full">48 to 12 V bus</span><span class="bc-preset-short">48/12 bus</span></button>
+        <button type="button" data-preset="core" aria-label="5 V to 1.8 V core rail preset" title="5 V to 1.8 V core rail preset"><span class="bc-preset-full">5 to 1.8 V core</span><span class="bc-preset-short">5/1.8 core</span></button>
       </div>
 
       <div class="bc-switchers">
