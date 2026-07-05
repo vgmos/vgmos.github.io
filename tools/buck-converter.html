@@ -515,6 +515,7 @@ math: true
   .bc-header { margin-bottom: 32px; }
   .bc-header h1 { max-width: 12.5em; }
   .bc-dek {
+    max-width: 32rem;
     font-family: var(--claude-serif);
     font-size: 1.18rem;
     line-height: 1.56;
@@ -692,7 +693,7 @@ math: true
   <header class="bc-header">
     <p class="eyebrow">Interactive tool · Ideal-component model</p>
     <h1>Buck Converter Tool</h1>
-    <p class="bc-dek">Set an operating point and read off the duty cycle, inductor current ripple, and output voltage ripple — with the switching waveforms drawn live. Ideal components, steady state, CCM or fixed-frequency DCM.</p>
+    <p class="bc-dek">Use it to visualize steady-state switching waveforms, calculate operating points, and understand how converter behavior changes between conduction modes.</p>
   </header>
 
   <figure class="bc-schematic" aria-label="Ideal synchronous buck converter schematic">
@@ -941,20 +942,15 @@ math: true
   </div>
 
   <section class="post-content project-body">
-    <h2>The model</h2>
-    <p>Across the on-time \(t_{ON}\) the inductor sees \(v_{IN} - v_{OUT}\) and its current ramps up; across the off-time \(t_{OFF}\) it sees \(-v_{OUT}\) and ramps down into the output. Volt-second balance sets the duty cycle, and the on-time ramp sets the current ripple:</p>
+    <h2>Steady-state Operation</h2>
+    <p>Across the on-time \(t_{ON}\) the inductor sees \(v_{IN} - v_{OUT}\) and its current ramps up; across the off-time \(t_{OFF}\) it sees \(-v_{OUT}\), de-energizing into the output. Volt-second balance sets the duty cycle \(D\):</p>
     <p>$$D \equiv \frac{t_{ON}}{t_{SW}} = \frac{v_{OUT}}{v_{IN}}$$</p>
     <p>$$\begin{aligned}
        \Delta i_L &= t_{ON}\!\left(\frac{v_{IN} - v_{OUT}}{L_X}\right) \\
        &= \frac{(v_{IN} - v_{OUT})\, D}{f_{SW}\, L_X}
        \end{aligned}$$</p>
-    <p>The capacitor absorbs the triangular ripple current \(i_L - i_O\). It charges for exactly half a period — from one zero-crossing of that triangle to the next — collecting \(\Delta Q = \tfrac{1}{2}\cdot\tfrac{t_{SW}}{2}\cdot\tfrac{\Delta i_L}{2} = \Delta i_L / (8 f_{SW})\). Dividing by \(C_O\), and then substituting \(\Delta i_L\), gives the ripple in two useful forms:</p>
-    <p>$$\Delta v_{OUT} = \frac{\Delta i_L}{8\, f_{SW}\, C_O}
-       = \frac{v_{OUT}\,(1-D)}{8\, L_X\, C_O\, f_{SW}^{2}}$$</p>
-    <p>The expanded form is the one worth internalizing. Output ripple is independent of load current, is set by the \(L_X C_O\) product, and falls with the <em>square</em> of switching frequency — doubling \(f_{SW}\) cuts \(\Delta v_{OUT}\) by 4×, which is why frequency is the strongest lever in the whole design and why it trades directly against switching loss in a real converter.</p>
-    <p>As a design habit, a ripple ratio \(\Delta i_L / i_O\) of roughly 20–40&nbsp;% is the usual starting point — small enough for reasonable RMS losses, large enough to keep the inductor physically small.</p>
-    <h2>What it ignores</h2>
-    <p>Ideal components means: no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional \(C_O\) ESR box is a first-order terminal-ripple term only: it reshapes \(v_{OUT}\) by adding \(i_C R_{ESR}\), but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so \(D\) is also the ideal conversion ratio — a real converter runs slightly higher duty to cover its losses.</p>
+    <p>\(\Delta i_L / i_O\) of roughly 25–50&nbsp;% is reasonable starting point.</p>
+    <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional \(C_O\) ESR box is a first-order terminal-ripple term only: it reshapes \(v_{OUT}\) by adding \(i_C R_{ESR}\), but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so \(D\) is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
   </section>
 </article>
 
