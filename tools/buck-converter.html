@@ -8,7 +8,11 @@ math: true
 
 {% raw %}
 <style>
-  .bc-page { max-width: 720px; }
+  .bc-page {
+    max-width: 720px;
+    --bc-motion-fast: 180ms;
+    --bc-motion: 220ms;
+  }
 
   .bc-header { margin-bottom: 26px; }
   .bc-header h1 { margin-bottom: 10px; }
@@ -104,7 +108,7 @@ math: true
     width: calc((100% - 6px) / 2);
     border-radius: 999px;
     background: var(--ink);
-    transition: transform 320ms var(--claude-ease, var(--ease));
+    transition: transform var(--bc-motion) var(--claude-ease, var(--ease));
   }
   .bc-segmented[data-active-index="1"]::before,
   .bc-segmented[data-active-mode="design"]::before,
@@ -147,7 +151,7 @@ math: true
   .bc-field[hidden] { display: none; }
   .bc-field { display: grid; gap: 6px; }
   .bc-field.bc-field-enter {
-    animation: bcFieldIn 280ms var(--claude-ease, var(--ease)) both;
+    animation: bcFieldIn var(--bc-motion-fast) var(--claude-ease, var(--ease)) both;
   }
   @keyframes bcFieldIn {
     from { opacity: 0; transform: translateY(5px); }
@@ -215,10 +219,10 @@ math: true
     transform: translateY(-4px);
     visibility: hidden;
     transition:
-      max-width 320ms var(--claude-ease, var(--ease)),
-      opacity 220ms var(--claude-ease, var(--ease)),
-      transform 320ms var(--claude-ease, var(--ease)),
-      visibility 0s linear 320ms;
+      max-width var(--bc-motion) var(--claude-ease, var(--ease)),
+      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
+      transform var(--bc-motion) var(--claude-ease, var(--ease)),
+      visibility 0s linear var(--bc-motion);
   }
   .bc-inline-param--optional.bc-show {
     max-width: 190px;
@@ -227,9 +231,9 @@ math: true
     transform: translateY(0);
     visibility: visible;
     transition:
-      max-width 320ms var(--claude-ease, var(--ease)),
-      opacity 240ms var(--claude-ease, var(--ease)),
-      transform 320ms var(--claude-ease, var(--ease)),
+      max-width var(--bc-motion) var(--claude-ease, var(--ease)),
+      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
+      transform var(--bc-motion) var(--claude-ease, var(--ease)),
       visibility 0s;
   }
 
@@ -334,12 +338,12 @@ math: true
     transform: translateY(-6px);
     visibility: hidden;
     transition:
-      max-height 340ms var(--claude-ease, var(--ease)),
-      margin 340ms var(--claude-ease, var(--ease)),
-      opacity 240ms var(--claude-ease, var(--ease)),
-      transform 340ms var(--claude-ease, var(--ease)),
-      border-color 340ms var(--claude-ease, var(--ease)),
-      visibility 0s linear 340ms;
+      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
+      margin var(--bc-motion) var(--claude-ease, var(--ease)),
+      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
+      transform var(--bc-motion) var(--claude-ease, var(--ease)),
+      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
+      visibility 0s linear var(--bc-motion);
   }
   .bc-design-result.bc-show {
     max-height: 180px;
@@ -350,11 +354,11 @@ math: true
     transform: translateY(0);
     visibility: visible;
     transition:
-      max-height 340ms var(--claude-ease, var(--ease)),
-      margin 340ms var(--claude-ease, var(--ease)),
-      opacity 260ms var(--claude-ease, var(--ease)),
-      transform 340ms var(--claude-ease, var(--ease)),
-      border-color 340ms var(--claude-ease, var(--ease)),
+      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
+      margin var(--bc-motion) var(--claude-ease, var(--ease)),
+      opacity var(--bc-motion) var(--claude-ease, var(--ease)),
+      transform var(--bc-motion) var(--claude-ease, var(--ease)),
+      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
       visibility 0s;
   }
   .bc-design-item {
@@ -404,12 +408,12 @@ math: true
     transform: translateY(-6px);
     visibility: hidden;
     transition:
-      max-height 340ms var(--claude-ease, var(--ease)),
-      margin 340ms var(--claude-ease, var(--ease)),
-      opacity 240ms var(--claude-ease, var(--ease)),
-      transform 340ms var(--claude-ease, var(--ease)),
-      border-color 340ms var(--claude-ease, var(--ease)),
-      visibility 0s linear 340ms;
+      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
+      margin var(--bc-motion) var(--claude-ease, var(--ease)),
+      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
+      transform var(--bc-motion) var(--claude-ease, var(--ease)),
+      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
+      visibility 0s linear var(--bc-motion);
   }
   .bc-dcm-options.bc-show {
     max-height: 132px;
@@ -420,15 +424,29 @@ math: true
     transform: translateY(0);
     visibility: visible;
     transition:
-      max-height 340ms var(--claude-ease, var(--ease)),
-      margin 340ms var(--claude-ease, var(--ease)),
-      opacity 260ms var(--claude-ease, var(--ease)),
-      transform 340ms var(--claude-ease, var(--ease)),
-      border-color 340ms var(--claude-ease, var(--ease)),
+      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
+      margin var(--bc-motion) var(--claude-ease, var(--ease)),
+      opacity var(--bc-motion) var(--claude-ease, var(--ease)),
+      transform var(--bc-motion) var(--claude-ease, var(--ease)),
+      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
       visibility 0s;
   }
   .bc-dcm-options .bc-field {
     padding: 14px 16px;
+  }
+
+  .bc-workbench {
+    margin: 1.6rem 0 0;
+  }
+  .bc-workbench-main,
+  .bc-workbench-scope {
+    min-width: 0;
+  }
+  .bc-workbench .bc-presets {
+    margin-top: 0;
+  }
+  .bc-workbench-scope {
+    align-self: start;
   }
 
   /* --- waveform scope --- */
@@ -558,9 +576,9 @@ math: true
     line-height: 1.08;
     border-radius: 999px;
     transition:
-      color 300ms var(--claude-ease),
-      border-color 300ms var(--claude-ease),
-      background-color 300ms var(--claude-ease);
+      color var(--bc-motion) var(--claude-ease),
+      border-color var(--bc-motion) var(--claude-ease),
+      background-color var(--bc-motion) var(--claude-ease);
   }
   .bc-presets button:hover,
   .bc-presets button:focus-visible {
@@ -578,8 +596,8 @@ math: true
     font-size: 0.88rem;
     font-variant-numeric: tabular-nums;
     transition:
-      border-color 300ms var(--claude-ease),
-      box-shadow 300ms var(--claude-ease);
+      border-color var(--bc-motion) var(--claude-ease),
+      box-shadow var(--bc-motion) var(--claude-ease);
   }
   .bc-entry input[type="number"]:focus-visible {
     border-color: var(--accent);
@@ -587,16 +605,16 @@ math: true
   }
   .bc-field input[type="range"]::-webkit-slider-thumb {
     transition:
-      transform 300ms var(--claude-ease),
-      background-color 300ms var(--claude-ease);
+      transform var(--bc-motion-fast) var(--claude-ease),
+      background-color var(--bc-motion-fast) var(--claude-ease);
   }
   .bc-field input[type="range"]::-webkit-slider-thumb:hover {
     transform: scale(1.08);
   }
   .bc-field input[type="range"]::-moz-range-thumb {
     transition:
-      transform 300ms var(--claude-ease),
-      background-color 300ms var(--claude-ease);
+      transform var(--bc-motion-fast) var(--claude-ease),
+      background-color var(--bc-motion-fast) var(--claude-ease);
   }
   .bc-field input[type="range"]::-moz-range-thumb:hover {
     transform: scale(1.08);
@@ -606,8 +624,8 @@ math: true
     font-size: 0.66rem;
     font-weight: 500;
     transition:
-      color 300ms var(--claude-ease),
-      background-color 300ms var(--claude-ease);
+      color var(--bc-motion) var(--claude-ease),
+      background-color var(--bc-motion) var(--claude-ease);
   }
   .bc-tick:hover,
   .bc-tick:focus-visible {
@@ -618,8 +636,8 @@ math: true
     border-radius: 8px;
     background-color: var(--paper);
     transition:
-      border-color 300ms var(--claude-ease),
-      background-color 300ms var(--claude-ease);
+      border-color var(--bc-motion) var(--claude-ease),
+      background-color var(--bc-motion) var(--claude-ease);
   }
   .bc-card:hover {
     border-color: var(--claude-ring);
@@ -641,6 +659,107 @@ math: true
   .bc-schematic .ph,
   .bc-schematic .node {
     font-family: var(--claude-sans);
+  }
+
+  @media (min-width: 1100px) {
+    .bc-page {
+      width: min(1240px, calc(100vw - 48px));
+      max-width: none;
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
+    .bc-header,
+    .bc-schematic,
+    .bc-page > .project-body {
+      max-width: 740px;
+      margin-right: auto;
+      margin-left: auto;
+    }
+    .bc-workbench {
+      display: grid;
+      grid-template-columns: minmax(460px, 520px) minmax(0, 1fr);
+      align-items: start;
+      gap: 24px;
+    }
+    .bc-workbench .bc-scope {
+      margin-top: 0;
+      margin-bottom: 1.4rem;
+      min-height: 550px;
+    }
+    .bc-workbench-main,
+    .bc-workbench-scope {
+      min-width: 0;
+    }
+    .bc-workbench-scope {
+      margin-top: 19rem;
+      min-height: 590px;
+    }
+    .bc-workbench-main .bc-controls {
+      gap: 16px 20px;
+      padding: 18px;
+    }
+    .bc-workbench-main .bc-switchers {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .bc-workbench-main .bc-mode {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+    }
+    .bc-workbench-main .bc-segmented button {
+      padding-inline: 8px;
+    }
+    .bc-workbench-main .bc-field-head {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .bc-workbench-main .bc-entry--compound {
+      justify-content: flex-start;
+      width: 100%;
+    }
+    .bc-workbench-main .bc-design-result {
+      grid-template-columns: 1fr;
+    }
+    .bc-workbench-main .bc-design-result.bc-show {
+      max-height: 280px;
+    }
+    .bc-workbench-main .bc-design-item + .bc-design-item {
+      border-top: 1px solid var(--line);
+      border-left: 0;
+    }
+    .bc-workbench-main .bc-design-row {
+      align-items: center;
+    }
+    .bc-workbench-main .bc-results {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 1rem;
+    }
+    .bc-workbench-main .bc-card,
+    .bc-workbench-main .bc-card:nth-child(3n + 1),
+    .bc-workbench-main .bc-card:nth-child(odd),
+    .bc-workbench-main .bc-card:nth-child(even) {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px 9px;
+      background: var(--paper);
+    }
+    .bc-workbench-main .bc-card .bc-v {
+      font-size: 1.08rem;
+      white-space: normal;
+    }
+    .bc-workbench-main .bc-card .bc-s {
+      font-size: 0.74rem;
+    }
+  }
+
+  @media (min-width: 1180px) {
+    .bc-workbench {
+      grid-template-columns: minmax(0, 520px) minmax(560px, 1fr);
+    }
   }
 
   @media (max-width: 700px) {
@@ -746,199 +865,205 @@ math: true
     </svg>
   </figure>
 
-  <div class="bc-presets" role="group" aria-label="Example operating points">
-    <span>Presets:</span>
-    <button type="button" data-preset="pol">12 V → 3.3 V point-of-load</button>
-    <button type="button" data-preset="bus">48 V → 12 V bus converter</button>
-    <button type="button" data-preset="core">5 V → 1.8 V core rail</button>
-  </div>
+  <div class="bc-workbench">
+    <div class="bc-workbench-main">
+      <div class="bc-presets" role="group" aria-label="Example operating points">
+        <span>Presets:</span>
+        <button type="button" data-preset="pol">12 V → 3.3 V point-of-load</button>
+        <button type="button" data-preset="bus">48 V → 12 V bus converter</button>
+        <button type="button" data-preset="core">5 V → 1.8 V core rail</button>
+      </div>
 
-  <div class="bc-switchers">
-    <div class="bc-mode">
-      <span class="bc-mode-label">Mode</span>
-      <div class="bc-segmented" role="group" aria-label="Calculator mode" data-active-mode="analyze" data-active-index="0">
-        <button type="button" data-mode="analyze" aria-pressed="true">Analyze design</button>
-        <button type="button" data-mode="design" aria-pressed="false">Set ripple targets</button>
-      </div>
-    </div>
-
-    <div class="bc-mode">
-      <span class="bc-mode-label">Conduction</span>
-      <div class="bc-segmented bc-segmented--wide" role="group" aria-label="Conduction mode" data-active-conduction="ccm" data-active-index="0">
-        <button type="button" data-conduction="ccm" aria-pressed="true">CCM</button>
-        <button type="button" data-conduction="dcm" aria-pressed="false">Fixed-frequency DCM</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="bc-dcm-options" id="bc-dcm-options" aria-hidden="true">
-    <div class="bc-field">
-      <div class="bc-field-head">
-        <label for="num-izc">Zero-cross current i<sub>ZC</sub></label>
-        <span class="bc-entry"><input id="num-izc" type="number" inputmode="decimal" step="1"><span class="bc-unit">mA</span></span>
-      </div>
-      <input id="sl-izc" type="range" min="0" max="1000" step="1" aria-label="Zero-cross current slider">
-      <div class="bc-ticks" data-for="izc"></div>
-    </div>
-  </div>
-
-  <div class="bc-controls">
-    <div class="bc-field">
-      <div class="bc-field-head">
-        <label for="num-vin">Input voltage v<sub>IN</sub></label>
-        <span class="bc-entry"><input id="num-vin" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">V</span></span>
-      </div>
-      <input id="sl-vin" type="range" min="0" max="1000" step="1" aria-label="Input voltage slider">
-      <div class="bc-ticks" data-for="vin"></div>
-    </div>
-    <div class="bc-field">
-      <div class="bc-field-head">
-        <label for="num-vout">Output voltage v<sub>OUT</sub></label>
-        <span class="bc-entry"><input id="num-vout" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">V</span></span>
-      </div>
-      <input id="sl-vout" type="range" min="0" max="1000" step="1" aria-label="Output voltage slider">
-      <div class="bc-ticks" data-for="vout"></div>
-    </div>
-    <div class="bc-field">
-      <div class="bc-field-head">
-        <label for="num-iload">Load current i<sub>O</sub></label>
-        <span class="bc-entry"><input id="num-iload" type="number" inputmode="decimal" step="0.01"><span class="bc-unit">A</span></span>
-      </div>
-      <input id="sl-iload" type="range" min="0" max="1000" step="1" aria-label="Load current slider">
-    </div>
-    <div class="bc-field">
-      <div class="bc-field-head">
-        <label for="num-fsw">Switching frequency f<sub>SW</sub></label>
-        <span class="bc-entry"><input id="num-fsw" type="number" inputmode="decimal" step="10"><span class="bc-unit">kHz</span></span>
-      </div>
-      <input id="sl-fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider">
-      <div class="bc-ticks" data-for="fsw"></div>
-    </div>
-    <div class="bc-field" data-mode-field="analyze">
-      <div class="bc-field-head">
-        <label for="num-l">Inductance L<sub>X</sub></label>
-        <span class="bc-entry bc-entry--compound">
-          <span class="bc-inline-param"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
-          <span class="bc-inline-param bc-inline-param--optional" data-dcm-extra aria-hidden="true">
-            <label for="num-csw">C<sub>SW</sub></label>
-            <input id="num-csw" data-param="csw" type="number" inputmode="decimal" step="1">
-            <span class="bc-unit">pF</span>
-          </span>
-        </span>
-      </div>
-      <input id="sl-l" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
-      <div class="bc-ticks" data-for="l"></div>
-    </div>
-    <div class="bc-field" data-mode-field="analyze">
-      <div class="bc-field-head">
-        <label for="num-c">Output cap C<sub>O</sub></label>
-        <span class="bc-entry bc-entry--compound">
-          <span class="bc-inline-param"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
-          <span class="bc-inline-param">
-            <label for="num-esr">ESR</label>
-            <input id="num-esr" data-param="esr" type="number" inputmode="decimal" step="1">
-            <span class="bc-unit">mΩ</span>
-          </span>
-        </span>
-      </div>
-      <input id="sl-c" type="range" min="0" max="1000" step="1" aria-label="Output capacitance slider">
-      <div class="bc-ticks" data-for="c"></div>
-    </div>
-    <div class="bc-field" data-mode-field="design" hidden>
-      <div class="bc-field-head">
-        <label for="num-iripple">Current ripple target Δi<sub>L</sub>/i<sub>O</sub></label>
-        <span class="bc-entry"><input id="num-iripple" type="number" inputmode="decimal" step="5"><span class="bc-unit">%</span></span>
-      </div>
-      <input id="sl-iripple" type="range" min="0" max="1000" step="1" aria-label="Current ripple target slider">
-      <div class="bc-ticks" data-for="iripple"></div>
-    </div>
-    <div class="bc-field" data-mode-field="design" hidden>
-      <div class="bc-field-head">
-        <label for="num-vripple">Voltage ripple target Δv<sub>OUT</sub></label>
-        <span class="bc-entry"><input id="num-vripple" type="number" inputmode="decimal" step="0.1" max="20"><span class="bc-unit">mV</span></span>
-      </div>
-      <input id="sl-vripple" type="range" min="0" max="1000" step="1" aria-label="Voltage ripple target slider">
-      <div class="bc-ticks" data-for="vripple"></div>
-    </div>
-  </div>
-
-  <div class="bc-design-result" id="bc-design-result" aria-live="polite">
-    <div class="bc-design-item">
-      <div class="bc-design-row">
-        <div class="bc-design-copy">
-          <p class="bc-design-k">Suggested inductance L<sub>X</sub></p>
-          <p class="bc-design-v" id="out-design-l">—</p>
-          <p class="bc-design-s">from current ripple target</p>
+      <div class="bc-switchers">
+        <div class="bc-mode">
+          <span class="bc-mode-label">Mode</span>
+          <div class="bc-segmented" role="group" aria-label="Calculator mode" data-active-mode="analyze" data-active-index="0">
+            <button type="button" data-mode="analyze" aria-pressed="true">Analyze design</button>
+            <button type="button" data-mode="design" aria-pressed="false">Set ripple targets</button>
+          </div>
         </div>
-        <span class="bc-inline-param bc-inline-param--optional bc-design-param" data-dcm-extra aria-hidden="true">
-          <label for="num-csw-design">C<sub>SW</sub></label>
-          <input id="num-csw-design" data-param="csw" type="number" inputmode="decimal" step="1">
-          <span class="bc-unit">pF</span>
-        </span>
-      </div>
-    </div>
-    <div class="bc-design-item">
-      <div class="bc-design-row">
-        <div class="bc-design-copy">
-          <p class="bc-design-k">Suggested capacitance C<sub>O</sub></p>
-          <p class="bc-design-v" id="out-design-c">—</p>
-          <p class="bc-design-s">from voltage ripple target</p>
+
+        <div class="bc-mode">
+          <span class="bc-mode-label">Conduction</span>
+          <div class="bc-segmented bc-segmented--wide" role="group" aria-label="Conduction mode" data-active-conduction="ccm" data-active-index="0">
+            <button type="button" data-conduction="ccm" aria-pressed="true">CCM</button>
+            <button type="button" data-conduction="dcm" aria-pressed="false">Fixed-frequency DCM</button>
+          </div>
         </div>
-        <span class="bc-inline-param bc-design-param">
-          <label for="num-esr-design">ESR</label>
-          <input id="num-esr-design" data-param="esr" type="number" inputmode="decimal" step="1">
-          <span class="bc-unit">mΩ</span>
-        </span>
+      </div>
+
+      <div class="bc-dcm-options" id="bc-dcm-options" aria-hidden="true">
+        <div class="bc-field">
+          <div class="bc-field-head">
+            <label for="num-izc">Zero-cross current i<sub>ZC</sub></label>
+            <span class="bc-entry"><input id="num-izc" type="number" inputmode="decimal" step="1"><span class="bc-unit">mA</span></span>
+          </div>
+          <input id="sl-izc" type="range" min="0" max="1000" step="1" aria-label="Zero-cross current slider">
+          <div class="bc-ticks" data-for="izc"></div>
+        </div>
+      </div>
+
+      <div class="bc-controls">
+        <div class="bc-field">
+          <div class="bc-field-head">
+            <label for="num-vin">Input voltage v<sub>IN</sub></label>
+            <span class="bc-entry"><input id="num-vin" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">V</span></span>
+          </div>
+          <input id="sl-vin" type="range" min="0" max="1000" step="1" aria-label="Input voltage slider">
+          <div class="bc-ticks" data-for="vin"></div>
+        </div>
+        <div class="bc-field">
+          <div class="bc-field-head">
+            <label for="num-vout">Output voltage v<sub>OUT</sub></label>
+            <span class="bc-entry"><input id="num-vout" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">V</span></span>
+          </div>
+          <input id="sl-vout" type="range" min="0" max="1000" step="1" aria-label="Output voltage slider">
+          <div class="bc-ticks" data-for="vout"></div>
+        </div>
+        <div class="bc-field">
+          <div class="bc-field-head">
+            <label for="num-iload">Load current i<sub>O</sub></label>
+            <span class="bc-entry"><input id="num-iload" type="number" inputmode="decimal" step="0.01"><span class="bc-unit">A</span></span>
+          </div>
+          <input id="sl-iload" type="range" min="0" max="1000" step="1" aria-label="Load current slider">
+        </div>
+        <div class="bc-field">
+          <div class="bc-field-head">
+            <label for="num-fsw">Switching frequency f<sub>SW</sub></label>
+            <span class="bc-entry"><input id="num-fsw" type="number" inputmode="decimal" step="10"><span class="bc-unit">kHz</span></span>
+          </div>
+          <input id="sl-fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider">
+          <div class="bc-ticks" data-for="fsw"></div>
+        </div>
+        <div class="bc-field" data-mode-field="analyze">
+          <div class="bc-field-head">
+            <label for="num-l">Inductance L<sub>X</sub></label>
+            <span class="bc-entry bc-entry--compound">
+              <span class="bc-inline-param"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
+              <span class="bc-inline-param bc-inline-param--optional" data-dcm-extra aria-hidden="true">
+                <label for="num-csw">C<sub>SW</sub></label>
+                <input id="num-csw" data-param="csw" type="number" inputmode="decimal" step="1">
+                <span class="bc-unit">pF</span>
+              </span>
+            </span>
+          </div>
+          <input id="sl-l" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
+          <div class="bc-ticks" data-for="l"></div>
+        </div>
+        <div class="bc-field" data-mode-field="analyze">
+          <div class="bc-field-head">
+            <label for="num-c">Output cap C<sub>O</sub></label>
+            <span class="bc-entry bc-entry--compound">
+              <span class="bc-inline-param"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
+              <span class="bc-inline-param">
+                <label for="num-esr">ESR</label>
+                <input id="num-esr" data-param="esr" type="number" inputmode="decimal" step="1">
+                <span class="bc-unit">mΩ</span>
+              </span>
+            </span>
+          </div>
+          <input id="sl-c" type="range" min="0" max="1000" step="1" aria-label="Output capacitance slider">
+          <div class="bc-ticks" data-for="c"></div>
+        </div>
+        <div class="bc-field" data-mode-field="design" hidden>
+          <div class="bc-field-head">
+            <label for="num-iripple">Current ripple target Δi<sub>L</sub>/i<sub>O</sub></label>
+            <span class="bc-entry"><input id="num-iripple" type="number" inputmode="decimal" step="5"><span class="bc-unit">%</span></span>
+          </div>
+          <input id="sl-iripple" type="range" min="0" max="1000" step="1" aria-label="Current ripple target slider">
+          <div class="bc-ticks" data-for="iripple"></div>
+        </div>
+        <div class="bc-field" data-mode-field="design" hidden>
+          <div class="bc-field-head">
+            <label for="num-vripple">Voltage ripple target Δv<sub>OUT</sub></label>
+            <span class="bc-entry"><input id="num-vripple" type="number" inputmode="decimal" step="0.1" max="20"><span class="bc-unit">mV</span></span>
+          </div>
+          <input id="sl-vripple" type="range" min="0" max="1000" step="1" aria-label="Voltage ripple target slider">
+          <div class="bc-ticks" data-for="vripple"></div>
+        </div>
+      </div>
+
+      <div class="bc-design-result" id="bc-design-result" aria-live="polite">
+        <div class="bc-design-item">
+          <div class="bc-design-row">
+            <div class="bc-design-copy">
+              <p class="bc-design-k">Suggested inductance L<sub>X</sub></p>
+              <p class="bc-design-v" id="out-design-l">—</p>
+              <p class="bc-design-s">from current ripple target</p>
+            </div>
+            <span class="bc-inline-param bc-inline-param--optional bc-design-param" data-dcm-extra aria-hidden="true">
+              <label for="num-csw-design">C<sub>SW</sub></label>
+              <input id="num-csw-design" data-param="csw" type="number" inputmode="decimal" step="1">
+              <span class="bc-unit">pF</span>
+            </span>
+          </div>
+        </div>
+        <div class="bc-design-item">
+          <div class="bc-design-row">
+            <div class="bc-design-copy">
+              <p class="bc-design-k">Suggested capacitance C<sub>O</sub></p>
+              <p class="bc-design-v" id="out-design-c">—</p>
+              <p class="bc-design-s">from voltage ripple target</p>
+            </div>
+            <span class="bc-inline-param bc-design-param">
+              <label for="num-esr-design">ESR</label>
+              <input id="num-esr-design" data-param="esr" type="number" inputmode="decimal" step="1">
+              <span class="bc-unit">mΩ</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bc-results">
+        <div class="bc-card">
+          <p class="bc-k">Duty cycle D</p>
+          <p class="bc-v" id="out-d">—</p>
+          <p class="bc-s">t<sub>SW</sub> = <span id="out-tsw">—</span></p>
+        </div>
+        <div class="bc-card">
+          <p class="bc-k" id="out-dil-label">Current ripple Δi<sub>L</sub></p>
+          <p class="bc-v" id="out-dil">—</p>
+          <p class="bc-s"><span id="out-dil-pct">—</span> % of i<sub>O</sub>, pk-pk</p>
+        </div>
+        <div class="bc-card">
+          <p class="bc-k">Voltage ripple Δv<sub>OUT</sub></p>
+          <p class="bc-v" id="out-dv">—</p>
+          <p class="bc-s"><span id="out-dv-pct">—</span> % of v<sub>OUT</sub>, pk-pk</p>
+        </div>
+        <div class="bc-card">
+          <p class="bc-k">On-time t<sub>ON</sub></p>
+          <p class="bc-v" id="out-ton">—</p>
+          <p class="bc-s">= D · t<sub>SW</sub></p>
+        </div>
+        <div class="bc-card">
+          <p class="bc-k" id="out-toff-label">Off-time t<sub>OFF</sub></p>
+          <p class="bc-v" id="out-toff">—</p>
+          <p class="bc-s" id="out-toff-note">= (1 − D) · t<sub>SW</sub></p>
+        </div>
+        <div class="bc-card">
+          <p class="bc-k" id="out-ipk-label">i<sub>L</sub> peak / valley</p>
+          <p class="bc-v" id="out-ipk">—</p>
+          <p class="bc-s" id="out-ipk-note">average = i<sub>O</sub></p>
+        </div>
+      </div>
+
+      <p class="bc-note" id="dcm-note"><strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.</p>
+    </div>
+
+    <div class="bc-workbench-scope">
+      <div class="bc-scope" id="bc-scope">
+        <figure class="bc-panel">
+          <svg id="p-vsw" viewBox="0 0 680 96" xmlns="http://www.w3.org/2000/svg" aria-label="Switch node voltage waveform"></svg>
+        </figure>
+        <figure class="bc-panel">
+          <svg id="p-il" viewBox="0 0 680 152" xmlns="http://www.w3.org/2000/svg" aria-label="Inductor current waveform"></svg>
+        </figure>
+        <figure class="bc-panel">
+          <svg id="p-vout" viewBox="0 0 680 178" xmlns="http://www.w3.org/2000/svg" aria-label="Output voltage ripple waveform"></svg>
+        </figure>
+        <p class="bc-scope-foot">Three switching cycles; shaded bands are the on-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output ripple peaks a quarter period after the current does — where i<sub>L</sub> crosses its average — and splits asymmetrically about v<sub>OUT</sub> unless D&nbsp;=&nbsp;0.5.</p>
       </div>
     </div>
-  </div>
-
-  <div class="bc-results">
-    <div class="bc-card">
-      <p class="bc-k">Duty cycle D</p>
-      <p class="bc-v" id="out-d">—</p>
-      <p class="bc-s">t<sub>SW</sub> = <span id="out-tsw">—</span></p>
-    </div>
-    <div class="bc-card">
-      <p class="bc-k" id="out-dil-label">Current ripple Δi<sub>L</sub></p>
-      <p class="bc-v" id="out-dil">—</p>
-      <p class="bc-s"><span id="out-dil-pct">—</span> % of i<sub>O</sub>, pk-pk</p>
-    </div>
-    <div class="bc-card">
-      <p class="bc-k">Voltage ripple Δv<sub>OUT</sub></p>
-      <p class="bc-v" id="out-dv">—</p>
-      <p class="bc-s"><span id="out-dv-pct">—</span> % of v<sub>OUT</sub>, pk-pk</p>
-    </div>
-    <div class="bc-card">
-      <p class="bc-k">On-time t<sub>ON</sub></p>
-      <p class="bc-v" id="out-ton">—</p>
-      <p class="bc-s">= D · t<sub>SW</sub></p>
-    </div>
-    <div class="bc-card">
-      <p class="bc-k" id="out-toff-label">Off-time t<sub>OFF</sub></p>
-      <p class="bc-v" id="out-toff">—</p>
-      <p class="bc-s" id="out-toff-note">= (1 − D) · t<sub>SW</sub></p>
-    </div>
-    <div class="bc-card">
-      <p class="bc-k" id="out-ipk-label">i<sub>L</sub> peak / valley</p>
-      <p class="bc-v" id="out-ipk">—</p>
-      <p class="bc-s" id="out-ipk-note">average = i<sub>O</sub></p>
-    </div>
-  </div>
-
-  <p class="bc-note" id="dcm-note"><strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.</p>
-
-  <div class="bc-scope" id="bc-scope">
-    <figure class="bc-panel">
-      <svg id="p-vsw" viewBox="0 0 680 96" xmlns="http://www.w3.org/2000/svg" aria-label="Switch node voltage waveform"></svg>
-    </figure>
-    <figure class="bc-panel">
-      <svg id="p-il" viewBox="0 0 680 152" xmlns="http://www.w3.org/2000/svg" aria-label="Inductor current waveform"></svg>
-    </figure>
-    <figure class="bc-panel">
-      <svg id="p-vout" viewBox="0 0 680 178" xmlns="http://www.w3.org/2000/svg" aria-label="Output voltage ripple waveform"></svg>
-    </figure>
-    <p class="bc-scope-foot">Three switching cycles; shaded bands are the on-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output ripple peaks a quarter period after the current does — where i<sub>L</sub> crosses its average — and splits asymmetrically about v<sub>OUT</sub> unless D&nbsp;=&nbsp;0.5.</p>
   </div>
 
   <section class="post-content project-body">
@@ -1578,6 +1703,7 @@ math: true
     ? function (id) { window.cancelAnimationFrame(id); }
     : function (id) { window.clearTimeout(id); };
   var renderFrame = 0;
+  var renderFrameNeedsSync = false;
   var probeFrame = 0;
   var probeClientX = 0;
 
@@ -1613,7 +1739,7 @@ math: true
         field.classList.add("bc-field-enter");
         window.setTimeout(function () {
           field.classList.remove("bc-field-enter");
-        }, 320);
+        }, 240);
       }
     });
     el["bc-design-result"].className = "bc-design-result" + (mode === "design" ? " bc-show" : "");
@@ -1744,15 +1870,21 @@ math: true
       cancelRaf(renderFrame);
       renderFrame = 0;
     }
+    renderFrameNeedsSync = false;
     syncInputs();
     render();
   }
 
-  function scheduleRender() {
+  function scheduleRender(shouldSync) {
+    renderFrameNeedsSync = renderFrameNeedsSync || shouldSync !== false;
     if (renderFrame) { return; }
     renderFrame = raf(function () {
+      var needsSync = renderFrameNeedsSync;
       renderFrame = 0;
-      syncInputs();
+      renderFrameNeedsSync = false;
+      if (needsSync) {
+        syncInputs();
+      }
       render();
     });
   }
@@ -1843,7 +1975,7 @@ math: true
         state[k] = clampParam(k, next / p.scale);
         enforceBuck(k);
         hideProbe();
-        render();
+        scheduleRender(false);
       });
       num.addEventListener("change", function () {
         var p = PARAMS[k];
