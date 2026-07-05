@@ -13,7 +13,7 @@ topics:
   - CAD modeling
 status: DATE 2020 paper; device published in Nature Electronics 2019
 date: 2020-03-01
-summary: Verilog-A modeling for a floating-gate memristive device, plus a trainable DAC study. Published at DATE 2020.
+summary: Y-Flash Verilog-A model and trainable DAC, published at DATE 2020.
 description: Y-Flash floating-gate memristive device modeling with the Technion ASIC2 group, including Verilog-A CAD infrastructure, small-signal analysis, and a trainable DAC architecture.
 links:
   - label: DATE 2020 paper DOI
