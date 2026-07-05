@@ -573,16 +573,25 @@ permalink: /tools/buck-converter/
     }
     .bc-field-head--compound {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 150px);
+      grid-template-columns: minmax(0, 1fr) minmax(0, min(220px, 58vw));
       align-items: start;
+      column-gap: 6px;
     }
     .bc-field-head--compound .bc-entry--compound {
       width: 100%;
       margin-left: 0;
+      flex-wrap: nowrap;
+      gap: 5px;
     }
+    .bc-field-head--compound .bc-inline-param { gap: 3px; }
+    .bc-field-head--compound .bc-inline-param .bc-unit { min-width: 0; }
     .bc-entry--compound { justify-content: flex-end; }
     .bc-entry input[type="number"] { width: 5em; }
     .bc-inline-param input[type="number"] { width: 4.8em; }
+    .bc-field-head--compound .bc-inline-param input[type="number"] {
+      width: 4.05em;
+      padding-inline: 5px;
+    }
   }
 
   .bc-page { max-width: 740px; }
@@ -776,7 +785,23 @@ permalink: /tools/buck-converter/
       width: 78%;
       max-width: none;
     }
+    .bc-workbench-main .bc-presets {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 7px;
+    }
+    .bc-workbench-main .bc-presets span {
+      flex: 0 0 auto;
+      margin-right: 0;
+    }
+    .bc-workbench-main .bc-presets button {
+      flex: 1 1 0;
+      min-width: 0;
+      padding-inline: 8px;
+      white-space: nowrap;
+    }
     .bc-workbench-main .bc-controls {
+      grid-template-columns: 1fr;
       gap: 16px 20px;
       padding: 18px;
     }
@@ -794,13 +819,24 @@ permalink: /tools/buck-converter/
       padding-inline: 8px;
     }
     .bc-workbench-main .bc-field-head {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 6px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px 12px;
+    }
+    .bc-workbench-main .bc-field-head > label {
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .bc-workbench-main .bc-field-head .bc-entry {
+      justify-content: flex-end;
+      min-width: 0;
+      margin-left: 0;
     }
     .bc-workbench-main .bc-entry--compound {
-      justify-content: flex-start;
-      width: 100%;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      width: auto;
     }
     .bc-workbench-main .bc-design-result {
       grid-template-columns: 1fr;
@@ -934,9 +970,9 @@ permalink: /tools/buck-converter/
     <div class="bc-workbench-main">
       <div class="bc-presets" role="group" aria-label="Example operating points">
         <span>Presets:</span>
-        <button type="button" data-preset="pol">12 V → 3.3 V point-of-load</button>
-        <button type="button" data-preset="bus">48 V → 12 V bus converter</button>
-        <button type="button" data-preset="core">5 V → 1.8 V core rail</button>
+        <button type="button" data-preset="pol" aria-label="12 V to 3.3 V point-of-load preset" title="12 V to 3.3 V point-of-load preset">12 to 3.3 V POL</button>
+        <button type="button" data-preset="bus" aria-label="48 V to 12 V bus converter preset" title="48 V to 12 V bus converter preset">48 to 12 V bus</button>
+        <button type="button" data-preset="core" aria-label="5 V to 1.8 V core rail preset" title="5 V to 1.8 V core rail preset">5 to 1.8 V core</button>
       </div>
 
       <div class="bc-switchers">
