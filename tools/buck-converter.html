@@ -1030,7 +1030,7 @@ math: true
             <div class="bc-design-copy">
               <p class="bc-design-k">Suggested inductance L<sub>X</sub></p>
               <p class="bc-design-v" id="out-design-l">—</p>
-              <p class="bc-design-s">from current ripple target</p>
+              <p class="bc-design-s" id="out-design-l-note">from current ripple target</p>
             </div>
             <span class="bc-inline-param bc-inline-param--optional bc-design-param" data-dcm-extra aria-hidden="true">
               <label for="num-csw-design">C<sub>SW</sub></label>
@@ -1044,7 +1044,7 @@ math: true
             <div class="bc-design-copy">
               <p class="bc-design-k">Suggested capacitance C<sub>O</sub></p>
               <p class="bc-design-v" id="out-design-c">—</p>
-              <p class="bc-design-s">from voltage ripple target</p>
+              <p class="bc-design-s" id="out-design-c-note">from voltage ripple target</p>
             </div>
             <span class="bc-inline-param bc-design-param">
               <label for="num-esr-design">ESR</label>
@@ -1152,7 +1152,7 @@ math: true
         <figure class="bc-panel">
           <svg id="p-vout" viewBox="0 0 680 178" xmlns="http://www.w3.org/2000/svg" aria-label="Output voltage ripple waveform"></svg>
         </figure>
-        <p class="bc-scope-foot">Three switching cycles; shaded bands are the on-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output ripple peaks a quarter period after the current does — where i<sub>L</sub> crosses its average — and splits asymmetrically about v<sub>OUT</sub> unless D&nbsp;=&nbsp;0.5.</p>
+        <p class="bc-scope-foot">Three switching cycles; shaded bands are the on-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output trace is terminal v<sub>OUT</sub>, centered on the selected DC value and including optional ESR ripple.</p>
       </div>
     </div>
   </div>
@@ -1390,6 +1390,96 @@ math: true
     return { t: t, v: v, i: i, q: q, steps: steps };
   }
 
+  function buildDcmResult(s, D) {
+    var T = 1 / s.fsw;
+    var D2 = D * (s.vin - s.vout) / s.vout;
+    var D3 = 1 - D - D2;
+    if (!isFinite(D) || !isFinite(D2) || D <= 0 || D2 <= 0 || D3 <= 0) { return null; }
+
+    var dIL = (s.vin - s.vout) * D * T / s.l;
+    var r = {
+      conduction: "dcm",
+      requestedDcm: true,
+      dcmValid: true,
+      dcmFallback: false,
+      D: D, D2: D2, D3: D3, T: T,
+      tDecay: D2 * T,
+      tIdle: D3 * T,
+      dIL: dIL,
+      dV: 0,
+      iPk: s.izc + dIL,
+      iVal: s.izc,
+      iZc: s.izc,
+      iMin: s.izc,
+      iMax: s.izc + dIL,
+      iRipple: dIL,
+      ratio: dIL / s.iload,
+      vcMean: 0,
+      icMean: 0,
+      idle: null
+    };
+    r.idle = buildDcmIdle(s, r);
+    return r;
+  }
+
+  function dcmCycleChargeEnd(s, r) {
+    var q = dcmChargeBeforeIdle(s, r);
+    if (r.idle) {
+      return q + r.idle.q[r.idle.q.length - 1];
+    }
+    return q + (r.iZc - s.iload) * r.tIdle;
+  }
+
+  function solveDcmDutyWithCsw(s) {
+    var boundaryD = s.vout / s.vin;
+    var lo = Math.max(1e-9, boundaryD * 1e-7);
+    var hi = boundaryD * (1 - 1e-7);
+    var prev = buildDcmResult(s, lo);
+    if (!prev) {
+      return { reason: "The selected operating point leaves no positive DCM on-time." };
+    }
+    var prevF = dcmCycleChargeEnd(s, prev);
+    if (prevF > 0) {
+      return { reason: "The switch-node tank current already averages above the load before a positive on-time can be applied." };
+    }
+
+    var loD = lo, hiD = hi, found = false;
+    for (var j = 1; j <= 96; j++) {
+      var D = lo + (hi - lo) * j / 96;
+      var candidate = buildDcmResult(s, D);
+      if (!candidate) { continue; }
+      var f = dcmCycleChargeEnd(s, candidate);
+      if (f >= 0) {
+        hiD = D;
+        found = true;
+        break;
+      }
+      loD = D;
+    }
+
+    if (!found) {
+      return { reason: "This operating point reaches the next cycle before the inductor current and switch-node capacitance can support the load in DCM." };
+    }
+
+    for (var i = 0; i < 56; i++) {
+      var midD = (loD + hiD) / 2;
+      var mid = buildDcmResult(s, midD);
+      if (!mid) {
+        hiD = midD;
+        continue;
+      }
+      if (dcmCycleChargeEnd(s, mid) >= 0) {
+        hiD = midD;
+      } else {
+        loD = midD;
+      }
+    }
+
+    var solved = buildDcmResult(s, hiD);
+    if (solved) { solved.dcmSolvedCsw = true; }
+    return solved ? { r: solved } : { reason: "The DCM duty solve did not converge for this C_SW value." };
+  }
+
   function interpolateIdle(idle, t) {
     if (!idle || t <= 0) {
       return { v: 0, i: idle ? idle.i[0] : 0, q: 0 };
@@ -1494,38 +1584,22 @@ math: true
     var denom = s.vin * (s.vin - s.vout);
     var dutyArg = 2 * s.l * s.fsw * s.vout * Ieff / denom;
     var D = Math.sqrt(Math.max(0, dutyArg));
-    var D2 = D * (s.vin - s.vout) / s.vout;
-    var D3 = 1 - D - D2;
+    var r = s.csw > 0 ? null : buildDcmResult(s, D);
 
-    if (!isFinite(D) || !isFinite(D2) || D <= 0 || D2 <= 0 || D3 <= 0) {
+    if (s.csw > 0) {
+      var solved = solveDcmDutyWithCsw(s);
+      if (!solved.r) {
+        fallback.dcmReason = solved.reason;
+        return fallback;
+      }
+      r = solved.r;
+    }
+
+    if (!r) {
       fallback.dcmReason = "This operating point reaches the next cycle before inductor current returns to the zero-cross threshold, so fixed-frequency DCM has no idle interval.";
       return fallback;
     }
 
-    var T = 1 / s.fsw;
-    var dIL = (s.vin - s.vout) * D * T / s.l;
-    var r = {
-      conduction: "dcm",
-      requestedDcm: true,
-      dcmValid: true,
-      dcmFallback: false,
-      D: D, D2: D2, D3: D3, T: T,
-      tDecay: D2 * T,
-      tIdle: D3 * T,
-      dIL: dIL,
-      dV: 0,
-      iPk: s.izc + dIL,
-      iVal: s.izc,
-      iZc: s.izc,
-      iMin: s.izc,
-      iMax: s.izc + dIL,
-      iRipple: dIL,
-      ratio: dIL / s.iload,
-      vcMean: 0,
-      icMean: 0,
-      idle: null
-    };
-    r.idle = buildDcmIdle(s, r);
     if (r.idle || s.esr > 0) {
       finalizeTerminalStats(s, r, !r.idle);
     } else {
@@ -1542,12 +1616,18 @@ math: true
 
   function rippleForDesignCap(s, l, c) {
     var trial = Object.assign({}, s, { l: l, c: c });
-    var r = conduction === "dcm" ? computeDcm(trial) : computeCcm(trial);
+    var r = computeCcm(trial);
     return r.dV;
   }
 
-  function solveDesignCap(s, l, idealC) {
-    if (s.esr <= 0) { return idealC; }
+  function solveDesignCap(s, l, idealC, dIL) {
+    var minEsrRipple = dIL * s.esr;
+    if (s.esr <= 0) {
+      return { c: idealC, noSolution: false, minEsrRipple: minEsrRipple };
+    }
+    if (s.vripple <= minEsrRipple * (1 + 1e-9)) {
+      return { c: idealC, noSolution: true, minEsrRipple: minEsrRipple };
+    }
 
     var target = s.vripple;
     var lo = 1e-12;
@@ -1561,7 +1641,9 @@ math: true
       guard += 1;
     }
 
-    if (hiRipple > target) { return hi; }
+    if (hiRipple > target) {
+      return { c: idealC, noSolution: true, minEsrRipple: Math.max(minEsrRipple, hiRipple) };
+    }
 
     for (var i = 0; i < 48; i++) {
       var mid = Math.sqrt(lo * hi);
@@ -1571,7 +1653,7 @@ math: true
         hi = mid;
       }
     }
-    return hi;
+    return { c: hi, noSolution: false, minEsrRipple: minEsrRipple };
   }
 
   function designValues(s) {
@@ -1579,8 +1661,8 @@ math: true
     var dIL = Math.max(1e-12, s.iripple * s.iload);
     var l = (s.vin - s.vout) * D / (s.fsw * dIL);
     var idealC = dIL / (8 * s.fsw * s.vripple);
-    var c = solveDesignCap(s, l, idealC);
-    return { l: l, c: c, dIL: dIL, dV: s.vripple };
+    var cap = solveDesignCap(s, l, idealC, dIL);
+    return { l: l, c: cap.c, dIL: dIL, dV: s.vripple, capNoSolution: cap.noSolution, minEsrRipple: cap.minEsrRipple };
   }
 
   function workingState() {
@@ -1778,7 +1860,7 @@ math: true
   });
   ["out-d", "out-tsw", "out-dil-label", "out-dil", "out-dil-pct", "out-dv", "out-dv-pct",
    "out-ton", "out-toff-label", "out-toff", "out-toff-note", "out-ipk-label", "out-ipk", "out-ipk-note",
-   "out-design-l", "out-design-c", "bc-design-result", "bc-dcm-options",
+   "out-design-l", "out-design-c", "out-design-l-note", "out-design-c-note", "bc-design-result", "bc-dcm-options",
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
@@ -1870,7 +1952,11 @@ math: true
     syncModeUI();
     syncConductionUI();
     el["out-design-l"].textContent = eng(d.l, "H");
-    el["out-design-c"].textContent = eng(d.c, "F");
+    el["out-design-c"].textContent = d.capNoSolution ? "No solution" : eng(d.c, "F");
+    el["out-design-l-note"].textContent = conduction === "dcm" ? "CCM ripple sizing reference" : "from current ripple target";
+    el["out-design-c-note"].textContent = d.capNoSolution
+      ? "ESR ripple exceeds target"
+      : (conduction === "dcm" ? "CCM ripple sizing reference" : "from voltage ripple target");
     el["out-d"].textContent = (100 * r.D).toFixed(1) + " %";
     el["out-tsw"].textContent = eng(r.T, "s");
     el["out-dil-label"].innerHTML = "Current ripple Δi<sub>L</sub>";
@@ -1887,8 +1973,9 @@ math: true
     el["out-ipk-note"].innerHTML = "average = i<sub>O</sub>";
 
     if (r.dcmValid) {
+      el["out-toff-label"].innerHTML = "HS off-time";
       el["out-toff"].textContent = eng((r.D2 + r.D3) * r.T, "s");
-      el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + " · t<sub>IDLE</sub> = " + eng(r.tIdle, "s");
+      el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + "; t<sub>IDLE</sub> = " + eng(r.tIdle, "s");
       if (r.idle) {
         el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / minimum";
         el["out-ipk"].textContent = eng(r.iMax, "A") + " / " + eng(r.iMin, "A");
@@ -1900,11 +1987,20 @@ math: true
       }
     }
 
+    var notes = [];
+    if (mode === "design" && conduction === "dcm") {
+      notes.push("<strong>DCM target note:</strong> L<sub>X</sub> and C<sub>O</sub> are sized from the CCM ripple targets, then the plots and cards use fixed-frequency DCM with those parts.");
+    }
+    if (mode === "design" && d.capNoSolution) {
+      notes.push("<strong>Ripple target:</strong> ESR alone gives at least " + eng(d.minEsrRipple, "V") + " pk-pk, so no finite C<sub>O</sub> can meet the selected terminal ripple target.");
+    }
     if (r.requestedDcm && !r.dcmValid) {
-      el["dcm-note"].innerHTML = "<strong>DCM boundary:</strong> " + r.dcmReason + " The plots below use the forced-CCM boundary behavior instead of drawing a fake idle interval.";
-      el["dcm-note"].className = "bc-note bc-show";
+      notes.push("<strong>DCM boundary:</strong> " + r.dcmReason + " The plots below use the forced-CCM boundary behavior instead of drawing a fake idle interval.");
     } else if (conduction === "ccm" && r.iVal < 0) {
-      el["dcm-note"].innerHTML = "<strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.";
+      notes.push("<strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.");
+    }
+    if (notes.length) {
+      el["dcm-note"].innerHTML = notes.join("<br> ");
       el["dcm-note"].className = "bc-note bc-show";
     } else {
       el["dcm-note"].className = "bc-note";
