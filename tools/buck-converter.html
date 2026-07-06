@@ -2227,14 +2227,14 @@ permalink: /tools/buck-converter/
   /* ---------- SVG plotting ---------- */
   var NS = "http://www.w3.org/2000/svg";
   var W = 680;
-  var M = { l: 12, r: 104, t: 24, b: 8 };
+  var M = { l: 8, r: 76, t: 24, b: 8 };
   var AXIS_H = 24;
 
   var PANEL_IDS = ["p-vsw", "p-il", "p-vout"];
   var registryCursor = {};   // per-panel cursor, marker, scale, and label elements
 
   function plotMargin() {
-    return window.innerWidth <= 700 ? { l: 12, r: 148, t: 24, b: 8 } : M;
+    return M;
   }
 
   function panelY(meta, value) {
@@ -2327,25 +2327,25 @@ permalink: /tools/buck-converter/
 
     // right rail: plain labels
     (opts.rail || []).forEach(function (rl) {
-      svg.appendChild(segText("tag", W - m.r + 12,
-        Math.max(m.t + 9, Math.min(bh - m.b - 2, Y(rl.y) + 4)), rl.segs));
+      svg.appendChild(segText("tag", W - 4,
+        Math.max(m.t + 9, Math.min(bh - m.b - 2, Y(rl.y) + 4)), rl.segs, "end"));
     });
 
     // right rail: dimension bracket for the headline measurement
     if (opts.bracket) {
-      var bx = W - m.r + 16;
+      var bx = W - m.r + 8;
       var y1 = Y(opts.bracket.y1), y2 = Y(opts.bracket.y2);
       svg.appendChild(mk("line", { "class": "dim", x1: bx, x2: bx, y1: y1, y2: y2 }));
       [y1, y2].forEach(function (yy) {
         svg.appendChild(mk("line", { "class": "dim", x1: bx - 4, x2: bx + 4, y1: yy, y2: yy }));
       });
       var mid = (y1 + y2) / 2;
-      var name = mk("text", { "class": "dim-name", x: bx + 10, y: mid - 3 }, opts.bracket.name);
+      var name = mk("text", { "class": "dim-name", x: W - 4, y: mid - 3, "text-anchor": "end" }, opts.bracket.name);
       if (opts.bracket.sub) {
         name.appendChild(mk("tspan", { dy: 3 }, opts.bracket.sub));
       }
       svg.appendChild(name);
-      svg.appendChild(mk("text", { "class": "dim-val", x: bx + 10, y: mid + 12 }, opts.bracket.value));
+      svg.appendChild(mk("text", { "class": "dim-val", x: W - 4, y: mid + 12, "text-anchor": "end" }, opts.bracket.value));
     }
 
     // channel label (top-left, doubles as probe readout)
