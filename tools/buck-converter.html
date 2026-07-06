@@ -877,34 +877,72 @@ permalink: /tools/buck-converter/
   @media (max-width: 430px) {
     .bc-schematic { padding: 16px 10px 12px; }
     .bc-schematic--animated {
-      padding: 14px 10px 11px;
+      padding: 12px 10px 10px;
     }
     .bc-anim-main {
-      grid-template-columns: minmax(0, 1fr) 54px;
-      gap: 6px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 5px;
+    }
+    .bc-schematic--animated #bc-anim-schematic {
+      order: 2;
     }
     .bc-duty-control {
-      align-self: center;
+      order: 1;
+      align-self: stretch;
       min-height: 0;
-      gap: 3px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-rows: auto 13px;
+      align-items: center;
+      column-gap: 8px;
+      row-gap: 1px;
     }
     .bc-duty-label {
-      font-size: 0.56rem;
+      grid-column: 1;
+      grid-row: 1;
+      align-self: center;
+      white-space: nowrap;
+      font-size: 0.58rem;
     }
     .bc-duty-rail {
-      grid-template-columns: 16px 24px;
-      gap: 3px;
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 18px 13px;
+      align-items: center;
+      gap: 0;
+      min-width: 0;
     }
-    .bc-duty-control input[type="range"],
+    .bc-duty-control input[type="range"] {
+      writing-mode: horizontal-tb;
+      direction: ltr;
+      width: 100%;
+      height: 18px;
+      background: linear-gradient(var(--line), var(--line)) center / 100% 3px no-repeat;
+    }
     .bc-duty-ticks {
-      height: 100px;
+      width: 100%;
+      height: 13px;
     }
     .bc-duty-tick {
-      font-size: 0.56rem;
+      right: auto;
+      bottom: auto;
+      top: 1px;
+      transform: translateX(-50%);
+      font-size: 0.54rem;
+    }
+    .bc-duty-tick::before {
+      top: -3px;
+      right: auto;
+      left: 50%;
+      width: 1px;
+      height: 4px;
+      transform: translateX(-50%);
     }
     .bc-anim-status {
       flex-wrap: nowrap;
-      margin-top: 7px;
+      margin-top: 6px;
       font-size: 0.72rem;
       gap: 4px;
     }
@@ -2706,10 +2744,17 @@ permalink: /tools/buck-converter/
   function positionAnimatedDutyTicks() {
     if (!el["bc-duty-ticks"]) { return; }
     var thumb = sliderThumbSize();
+    var horizontal = window.matchMedia && window.matchMedia("(max-width: 430px)").matches;
     Array.prototype.slice.call(el["bc-duty-ticks"].querySelectorAll(".bc-duty-tick")).forEach(function (tick) {
       var pct = parseFloat(tick.getAttribute("data-duty"));
       var f = clamp(pct / 96, 0, 1);
-      tick.style.bottom = "calc(" + (100 * f).toFixed(2) + "% + " + (thumb / 2 - thumb * f).toFixed(1) + "px)";
+      if (horizontal) {
+        tick.style.left = "calc(" + (100 * f).toFixed(2) + "% + " + (thumb / 2 - thumb * f).toFixed(1) + "px)";
+        tick.style.bottom = "";
+      } else {
+        tick.style.left = "";
+        tick.style.bottom = "calc(" + (100 * f).toFixed(2) + "% + " + (thumb / 2 - thumb * f).toFixed(1) + "px)";
+      }
     });
   }
 
