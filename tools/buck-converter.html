@@ -751,10 +751,22 @@ permalink: /tools/buck-converter/
     border-radius: 8px;
     background: var(--paper);
     touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
   .bc-panel { margin: 0; }
   .bc-panel + .bc-panel { margin-top: 10px; }
-  .bc-panel svg { display: block; width: 100%; height: auto; cursor: crosshair; }
+  .bc-panel svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: crosshair;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
 
   .bc-panel .shade { fill: var(--accent); opacity: 0.055; }
   .bc-panel .base { stroke: var(--line); stroke-width: 1; }
