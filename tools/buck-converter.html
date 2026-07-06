@@ -341,17 +341,22 @@ permalink: /tools/buck-converter/
   .bc-segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .bc-dcm-toggle {
-    min-height: 35px;
-    min-width: 62px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 76px;
     align-self: end;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--paper);
     color: var(--ink-soft);
     cursor: pointer;
-    font: inherit;
+    font-family: var(--claude-sans);
     font-size: 0.88rem;
-    padding: 6px 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0 14px;
     text-align: center;
     white-space: nowrap;
     transition:
@@ -775,6 +780,7 @@ permalink: /tools/buck-converter/
   .bc-panel .tick--on { stroke: var(--accent); }
   .bc-panel .tag--on { fill: var(--accent); }
   .bc-panel .cursor { stroke: var(--ink); stroke-width: 1; opacity: 0.3; }
+  .bc-panel .range-band { fill: var(--accent); opacity: 0.09; pointer-events: none; }
   .bc-panel .probe-dot,
   .bc-panel .delta-dot {
     pointer-events: none;
@@ -795,23 +801,15 @@ permalink: /tools/buck-converter/
   .bc-panel .delta-dot--a {
     stroke: var(--muted);
   }
-  .bc-delta-readout {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 12px;
-    margin: 8px 2px 0;
-    color: var(--muted);
-    font-size: 0.78rem;
-    line-height: 1.35;
+  .bc-panel .probe-flag { pointer-events: none; }
+  .bc-panel .probe-flag rect { fill: var(--ink); }
+  .bc-panel .probe-flag--rise rect { fill: var(--accent); }
+  .bc-panel .probe-flag--fall rect { fill: var(--ink); }
+  .bc-panel .probe-flag text {
+    fill: var(--paper);
+    font: 600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     font-variant-numeric: tabular-nums;
   }
-  .bc-delta-readout[hidden] { display: none; }
-  .bc-delta-readout span { white-space: nowrap; }
-  .bc-delta-readout strong {
-    color: var(--accent);
-    font-weight: 600;
-  }
-
   .bc-scope .bc-scope-foot {
     margin: 10px 2px 2px;
     color: var(--muted);
@@ -936,11 +934,12 @@ permalink: /tools/buck-converter/
     }
     .bc-switchers .bc-segmented button,
     .bc-dcm-toggle {
-      font-size: 0.8rem;
-      padding-inline: 7px;
+      font-size: 0.82rem;
+      padding-inline: 8px;
     }
     .bc-dcm-toggle {
-      min-width: 50px;
+      min-height: 40px;
+      min-width: 64px;
     }
     .bc-controls { padding: 14px; }
     .bc-field-head {
@@ -1284,6 +1283,7 @@ permalink: /tools/buck-converter/
     .bc-panel .tag { font-size: 15.5px; }
     .bc-panel .dim-name { font-size: 15.5px; }
     .bc-panel .dim-val { font-size: 16px; }
+    .bc-panel .probe-flag text { font-size: 15px; }
     .bc-panel .chan tspan[dy],
     .bc-panel .tag tspan[dy] { font-size: 12px; }
     .bc-results { row-gap: 20px; }
@@ -1635,7 +1635,6 @@ permalink: /tools/buck-converter/
         <figure class="bc-panel">
           <svg id="p-vout" viewBox="0 0 680 178" xmlns="http://www.w3.org/2000/svg" aria-label="Output voltage ripple waveform"></svg>
         </figure>
-        <div class="bc-delta-readout" id="bc-delta-readout" aria-live="polite" hidden></div>
         <p class="bc-scope-foot">Three switching cycles; shaded bands are the ON-time t<sub>ON</sub>. Move the pointer across the plots to probe instantaneous values. The output trace is terminal v<sub>OUT</sub>, centered on the selected DC value and including optional ESR ripple.</p>
       </div>
     </div>
@@ -1646,7 +1645,7 @@ permalink: /tools/buck-converter/
     <p>Across the ON-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the OFF-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
-    <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. Only light-load points past that boundary use the fixed-frequency DCM solve and show a tri-state idle interval.</p>
+    <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold.</p>
     <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
   </section>
 </article>
@@ -2186,14 +2185,14 @@ permalink: /tools/buck-converter/
   /* ---------- SVG plotting ---------- */
   var NS = "http://www.w3.org/2000/svg";
   var W = 680;
-  var M = { l: 12, r: 128, t: 24, b: 8 };
+  var M = { l: 12, r: 104, t: 24, b: 8 };
   var AXIS_H = 24;
 
   var PANEL_IDS = ["p-vsw", "p-il", "p-vout"];
   var registryCursor = {};   // per-panel cursor, marker, scale, and label elements
 
   function plotMargin() {
-    return window.innerWidth <= 700 ? { l: 12, r: 164, t: 24, b: 8 } : M;
+    return window.innerWidth <= 700 ? { l: 12, r: 148, t: 24, b: 8 } : M;
   }
 
   function panelY(meta, value) {
@@ -2231,6 +2230,9 @@ permalink: /tools/buck-converter/
   //         bracket:{y1,y2,name,sub,value}, rail:[{y,segs}], xAxis }
   function panel(svg, h, xs, ys, opts) {
     var m = plotMargin();
+    var mob = window.innerWidth <= 700;
+    var flagH = mob ? 22 : 17;
+    var flagCw = mob ? 8.7 : 6.6;
     var bh = opts.xAxis ? h - AXIS_H : h;
     var X = function (t) { return m.l + (t / opts.tEnd) * (W - m.l - m.r); };
     var Y = function (v) {
@@ -2249,6 +2251,15 @@ permalink: /tools/buck-converter/
         height: bh - m.t - m.b
       }));
     }
+
+    var band = mk("rect", {
+      "class": "range-band",
+      x: -100, y: m.t, width: 0,
+      height: bh - m.t - m.b,
+      visibility: "hidden",
+      "aria-hidden": "true"
+    });
+    svg.appendChild(band);
 
     // baseline
     svg.appendChild(mk("line", {
@@ -2342,8 +2353,26 @@ permalink: /tools/buck-converter/
     var dot = mk("circle", { "class": "probe-dot", r: 3.4, cx: -100, cy: m.t, visibility: "hidden", "aria-hidden": "true" });
     svg.appendChild(cur);
     svg.appendChild(dot);
+
+    var flagG = mk("g", { "class": "probe-flag", visibility: "hidden", "aria-hidden": "true" });
+    var flagRect = mk("rect", { rx: 3, ry: 3, x: -100, y: -100, width: 0, height: flagH });
+    var flagTxt = mk("text", {
+      x: -100, y: -100,
+      "text-anchor": "middle",
+      "dominant-baseline": "middle"
+    }, "");
+    flagG.appendChild(flagRect);
+    flagG.appendChild(flagTxt);
+    svg.appendChild(flagG);
+
     registryCursor[svg.id].line = cur;
     registryCursor[svg.id].dot = dot;
+    registryCursor[svg.id].flagG = flagG;
+    registryCursor[svg.id].flagRect = flagRect;
+    registryCursor[svg.id].flagTxt = flagTxt;
+    registryCursor[svg.id].flagH = flagH;
+    registryCursor[svg.id].cw = flagCw;
+    registryCursor[svg.id].band = band;
     registryCursor[svg.id].deltaLineA = deltaLineA;
     registryCursor[svg.id].deltaDotA = deltaDotA;
     registryCursor[svg.id].val = val;
@@ -2380,7 +2409,7 @@ permalink: /tools/buck-converter/
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope",
    "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-pip", "bc-anim-phase", "bc-anim-desc",
    "bc-anim-duty", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow", "bc-lbl-ton",
-   "bc-lbl-toff", "bc-dcm-toggle", "bc-il-arrow", "bc-delta-readout"].forEach(function (id) {
+   "bc-lbl-toff", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
@@ -2400,6 +2429,8 @@ permalink: /tools/buck-converter/
     anchor: null,
     target: null
   };
+  var dragState = { active: false, downX: 0, moved: false, hadAnchor: false };
+  var frozenX = null;
 
   function syncInputs() {
     Object.keys(PARAMS).forEach(function (k) {
@@ -2901,6 +2932,20 @@ permalink: /tools/buck-converter/
     var r = compute(s);
     var tEnd = CYCLES * r.T;
     var t = (xu - m.l) / (W - m.l - m.r) * tEnd;
+
+    var pxToU = W / rect.width;
+    var snapU = 8 * pxToU;
+    var edges = [];
+    for (var ci = 0; ci <= CYCLES; ci++) { edges.push(ci * r.T); }
+    for (var cj = 0; cj < CYCLES; cj++) { edges.push(cj * r.T + r.D * r.T); }
+    var bestD = snapU, snapT = null;
+    var xOf = function (tt) { return m.l + (tt / tEnd) * (W - m.l - m.r); };
+    edges.forEach(function (et) {
+      var dpx = Math.abs(xOf(et) - xu);
+      if (dpx < bestD) { bestD = dpx; snapT = et; }
+    });
+    if (snapT !== null) { t = snapT; xu = xOf(snapT); }
+
     return { xu: xu, t: t, values: probe(s, r, t) };
   }
 
@@ -2911,6 +2956,7 @@ permalink: /tools/buck-converter/
       ["deltaLineA", "deltaDotA"].forEach(function (key) {
         if (c[key]) { c[key].setAttribute("visibility", "hidden"); }
       });
+      if (!deltaProbe.anchor && c.band) { c.band.setAttribute("visibility", "hidden"); }
     });
   }
 
@@ -2928,43 +2974,33 @@ permalink: /tools/buck-converter/
     });
   }
 
-  function updateDeltaReadout() {
-    if (!el["bc-delta-readout"]) { return; }
-    if (!deltaProbe.target && !deltaProbe.anchor) {
-      el["bc-delta-readout"].hidden = true;
-      el["bc-delta-readout"].innerHTML = "";
-      return;
-    }
-    var a = deltaProbe.anchor;
-    var b = deltaProbe.target || deltaProbe.anchor;
-    var spans = [
-      "<span>t <strong>" + eng(b.t, "s", 2) + "</strong></span>",
-      "<span>v<sub>SW</sub> <strong>" + eng(b.values.vsw, "V") + "</strong></span>",
-      "<span>i<sub>L</sub> <strong>" + eng(b.values.il, "A") + "</strong></span>",
-      "<span>v<sub>OUT</sub> <strong>" + eng(b.values.vc, "V", 4) + "</strong></span>"
-    ];
-    if (a) {
-      spans.push("<span>Ref <strong>" + eng(a.t, "s", 2) + "</strong></span>");
-      if (Math.abs(b.xu - a.xu) > 1) {
-        spans.push("<span>Δt <strong>" + eng(Math.abs(b.t - a.t), "s", 2) + "</strong></span>");
-        spans.push("<span>Δi<sub>L</sub> <strong>" + eng(Math.abs(b.values.il - a.values.il), "A") + "</strong></span>");
-        spans.push("<span>Δv<sub>OUT</sub> <strong>" + eng(Math.abs(b.values.vc - a.values.vc), "V", 4) + "</strong></span>");
-      }
-    }
-    el["bc-delta-readout"].hidden = false;
-    el["bc-delta-readout"].innerHTML = spans.join("");
-  }
-
   function renderDeltaProbe() {
     hideDeltaMarkers();
     if (deltaProbe.anchor) { placeDeltaMarker(deltaProbe.anchor); }
-    updateDeltaReadout();
   }
 
   function clearDeltaProbe() {
     deltaProbe.anchor = null;
     deltaProbe.target = null;
+    frozenX = null;
     renderDeltaProbe();
+  }
+
+  function placeFlag(c, xu, y, label, cls) {
+    if (!c.flagG) { return; }
+    c.flagTxt.textContent = label;
+    c.flagG.setAttribute("class", "probe-flag" + (cls ? " " + cls : ""));
+    var wpx = Math.max(30, label.length * c.cw + 13);
+    var fx = xu + 9;
+    if (fx + wpx > W - c.m.r + 2) { fx = xu - 9 - wpx; }
+    var fy = clamp(y - c.flagH / 2, c.m.t, c.bh - c.m.b - c.flagH);
+    c.flagRect.setAttribute("x", fx);
+    c.flagRect.setAttribute("y", fy);
+    c.flagRect.setAttribute("width", wpx);
+    c.flagRect.setAttribute("height", c.flagH);
+    c.flagTxt.setAttribute("x", fx + wpx / 2);
+    c.flagTxt.setAttribute("y", fy + c.flagH / 2 + 0.5);
+    c.flagG.setAttribute("visibility", "visible");
   }
 
   function hideProbe() {
@@ -2973,12 +3009,13 @@ permalink: /tools/buck-converter/
       if (!c) { return; }
       c.line.setAttribute("visibility", "hidden");
       if (c.dot) { c.dot.setAttribute("visibility", "hidden"); }
+      if (c.flagG) { c.flagG.setAttribute("visibility", "hidden"); }
+      if (!deltaProbe.anchor && c.band) { c.band.setAttribute("visibility", "hidden"); }
       c.val.textContent = "";
       if (c.tTag) { c.tTag.textContent = ""; }
     });
     if (!deltaProbe.anchor) {
       deltaProbe.target = null;
-      updateDeltaReadout();
     }
   }
 
@@ -2986,6 +3023,7 @@ permalink: /tools/buck-converter/
     var point = probePointFromCoords(clientX, null, false);
     if (!point) { hideProbe(); return; }
     deltaProbe.target = point;
+    var a = deltaProbe.anchor;
 
     PANEL_IDS.forEach(function (id) {
       var c = registryCursor[id];
@@ -3001,22 +3039,29 @@ permalink: /tools/buck-converter/
         c.dot.setAttribute("visibility", "visible");
       }
       c.val.textContent = "· " + eng(value, c.unit, c.digits);
+      if (a) {
+        var dv = value - a.values[c.key];
+        var lbl = (dv >= 0 ? "+" : "\u2212") + eng(Math.abs(dv), c.unit, c.digits);
+        placeFlag(c, point.xu, y, lbl, dv >= 0 ? "probe-flag--rise" : "probe-flag--fall");
+        if (c.band) {
+          var ax = a.xu, bx = point.xu;
+          c.band.setAttribute("x", Math.min(ax, bx));
+          c.band.setAttribute("width", Math.abs(bx - ax));
+          c.band.setAttribute("visibility", "visible");
+        }
+      } else {
+        placeFlag(c, point.xu, y, eng(value, c.unit, c.digits), null);
+        if (c.band) { c.band.setAttribute("visibility", "hidden"); }
+      }
       if (c.tTag) {
         c.tTag.setAttribute("x", Math.max(c.m.l + 24, Math.min(W - c.m.r - 24, point.xu)));
-        c.tTag.textContent = "t = " + eng(point.t, "s", 2);
+        c.tTag.textContent = a
+          ? ("\u0394t = " + eng(Math.abs(point.t - a.t), "s", 2))
+          : ("t = " + eng(point.t, "s", 2));
       }
     });
-    updateDeltaReadout();
   }
 
-  el["bc-scope"].addEventListener("pointermove", function (ev) {
-    probeClientX = ev.clientX;
-    if (probeFrame) { return; }
-    probeFrame = raf(function () {
-      probeFrame = 0;
-      updateProbe(probeClientX);
-    });
-  });
   function clearProbe() {
     if (probeFrame) {
       cancelRaf(probeFrame);
@@ -3025,22 +3070,58 @@ permalink: /tools/buck-converter/
     hideProbe();
   }
 
-  el["bc-scope"].addEventListener("click", function (ev) {
-    var point = probePointFromCoords(ev.clientX, ev.clientY, true);
-    if (!point) { return; }
-    if (!deltaProbe.anchor) {
-      deltaProbe.anchor = point;
-    } else {
-      deltaProbe.target = point;
+  el["bc-scope"].addEventListener("pointerdown", function (ev) {
+    dragState.active = true;
+    dragState.downX = ev.clientX;
+    dragState.moved = false;
+    dragState.hadAnchor = !!deltaProbe.anchor;
+    if (el["bc-scope"].setPointerCapture) {
+      try { el["bc-scope"].setPointerCapture(ev.pointerId); } catch (e) {}
     }
-    renderDeltaProbe();
+    frozenX = ev.clientX;
     updateProbe(ev.clientX);
   });
 
-  ["pointerleave", "pointercancel"].forEach(function (type) {
-    el["bc-scope"].addEventListener(type, function () {
-      clearProbe();
+  el["bc-scope"].addEventListener("pointermove", function (ev) {
+    probeClientX = ev.clientX;
+    if (dragState.active && !dragState.moved && Math.abs(ev.clientX - dragState.downX) > 5) {
+      dragState.moved = true;
+      var ap = probePointFromCoords(dragState.downX, null, false);
+      if (ap) {
+        deltaProbe.anchor = ap;
+        renderDeltaProbe();
+      }
+    }
+    if (dragState.active) { frozenX = ev.clientX; }
+    if (probeFrame) { return; }
+    probeFrame = raf(function () {
+      probeFrame = 0;
+      updateProbe(probeClientX);
     });
+  });
+
+  function finishDrag(ev) {
+    if (!dragState.active) { return; }
+    dragState.active = false;
+    if (dragState.moved) {
+      frozenX = ev.clientX;
+      updateProbe(ev.clientX);
+    } else if (dragState.hadAnchor) {
+      clearDeltaProbe();
+      frozenX = null;
+      clearProbe();
+    } else {
+      frozenX = null;
+      clearProbe();
+    }
+  }
+  el["bc-scope"].addEventListener("pointerup", finishDrag);
+  el["bc-scope"].addEventListener("pointercancel", finishDrag);
+
+  el["bc-scope"].addEventListener("pointerleave", function () {
+    if (dragState.active) { return; }
+    if (deltaProbe.anchor && frozenX !== null) { updateProbe(frozenX); }
+    else { clearProbe(); }
   });
 
   document.addEventListener("pointerdown", function (ev) {
@@ -3051,6 +3132,7 @@ permalink: /tools/buck-converter/
   });
 
   window.addEventListener("resize", function () {
+    clearDeltaProbe();
     hideProbe();
     positionAnimatedDutyTicks();
     scheduleRender(false);
