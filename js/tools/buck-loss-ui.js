@@ -114,6 +114,12 @@ function eng(value, unit = "") {
   return `${value.toPrecision(3)} ${unit}`.trim();
 }
 
+function formatCurrent(value) {
+  if (!Number.isFinite(value)) return "—";
+  if (value < 1) return `${(value * 1000).toPrecision(3)} mA`;
+  return `${value.toPrecision(3)} A`;
+}
+
 function percent(value) {
   return Number.isFinite(value) ? `${(100 * value).toFixed(1)} %` : "—";
 }
@@ -235,6 +241,169 @@ function logTicks(min, max) {
   return ticks;
 }
 
+function scaleFromPlot(plot) {
+  const logMin = Math.log(plot.xMin);
+  const logMax = Math.log(plot.xMax);
+  return {
+    xScale(iout) {
+      return plot.left + ((Math.log(iout) - logMin) / (logMax - logMin)) * plot.plotWidth;
+    },
+    lossY(loss) {
+      return plot.bottom - (loss / plot.maxLoss) * plot.plotHeight;
+    },
+    effY(efficiency) {
+      return plot.bottom - efficiency * plot.plotHeight;
+    },
+    currentFromX(x) {
+      const f = clamp((x - plot.left) / plot.plotWidth, 0, 1);
+      return Math.exp(logMin + (logMax - logMin) * f);
+    },
+    logStep(multiplier = 1) {
+      return ((logMax - logMin) / 60) * multiplier;
+    }
+  };
+}
+
+function clientXToSvgX(svg, clientX) {
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = 0;
+  return point.matrixTransform(svg.getScreenCTM().inverse()).x;
+}
+
+function ariaCursorText(result, current) {
+  if (!result.valid) return `${formatCurrent(current)} — invalid inputs`;
+  return `${Number(current).toFixed(2)} A — efficiency ${(100 * result.efficiency).toFixed(1)}%, total loss ${eng(result.pLoss, "W")}`;
+}
+
+function announce(root, result, state) {
+  const live = root.querySelector("[data-blx-live]");
+  if (!live || !result.valid) return;
+  live.textContent = ariaCursorText(result, state.cursor);
+}
+
+function updateCursorSvg(root, state, result) {
+  const svg = root.querySelector("[data-blx-plot] svg");
+  if (!svg || !state.plot || !result.valid) return;
+  const scales = scaleFromPlot(state.plot);
+  const x = scales.xScale(state.cursor);
+  const y = scales.effY(result.efficiency);
+  const line = svg.querySelector("[data-blx-cursor-line]");
+  const dot = svg.querySelector("[data-blx-eff-dot]");
+  const rail = svg.querySelector("[data-blx-cursor-rail]");
+
+  if (line) {
+    line.setAttribute("x1", x);
+    line.setAttribute("x2", x);
+    line.setAttribute("y1", state.plot.top);
+    line.setAttribute("y2", state.plot.bottom);
+  }
+  if (dot) {
+    dot.setAttribute("cx", x);
+    dot.setAttribute("cy", y);
+  }
+  if (rail) {
+    rail.setAttribute("x", x - 22);
+    rail.setAttribute("y", state.plot.top);
+    rail.setAttribute("height", state.plot.plotHeight);
+    rail.setAttribute("aria-valuemin", state.plot.xMin);
+    rail.setAttribute("aria-valuemax", state.plot.xMax);
+    rail.setAttribute("aria-valuenow", state.cursor);
+    rail.setAttribute("aria-valuetext", ariaCursorText(result, state.cursor));
+  }
+}
+
+function updateCursorReadouts(root, state, options = {}) {
+  const validation = state.validation ?? validateInputs(state.inputs);
+  const result = validation.valid ? computeLossPoint(state.inputs, state.cursor) : computeLossPoint(state.inputs, state.cursor);
+  const classification = classifyRegime(result, state.inputs);
+
+  root.classList.toggle("blx-invalid", !validation.valid || !result.valid);
+  if (!validation.valid || !result.valid) {
+    ["current", "efficiency", "loss", "pout"].forEach((key) => setText(root, key, "—"));
+    setText(root, "regime", "Invalid");
+    setText(root, "sentence", "Adjust VIN, VOUT, fSW, L, and the current limit to return to a valid buck operating point.");
+    renderBreakdown(root, result);
+    renderWarnings(root, result, validation);
+    return result;
+  }
+
+  setText(root, "current", formatCurrent(state.cursor));
+  setText(root, "efficiency", percent(result.efficiency));
+  setText(root, "loss", eng(result.pLoss, "W"));
+  setText(root, "pout", eng(result.pOut, "W"));
+  setText(root, "regime", regimeLabel(classification.regime));
+  setText(root, "sentence", classification.sentence);
+  renderBreakdown(root, result);
+  renderWarnings(root, result, validation);
+  updateCursorSvg(root, state, result);
+  if (options.announce) announce(root, result, state);
+  return result;
+}
+
+function attachCursorEvents(root, state, rail) {
+  let dragging = false;
+  let pointerId = null;
+  let pendingCurrent = null;
+  let frame = 0;
+
+  function applyPending() {
+    frame = 0;
+    if (pendingCurrent === null) return;
+    state.cursor = clamp(pendingCurrent, state.plot.xMin, state.plot.xMax);
+    pendingCurrent = null;
+    updateCursorReadouts(root, state);
+  }
+
+  function queueCurrent(current) {
+    pendingCurrent = current;
+    if (!frame) frame = requestAnimationFrame(applyPending);
+  }
+
+  function currentFromEvent(event) {
+    const svg = rail.ownerSVGElement;
+    const x = clientXToSvgX(svg, event.clientX);
+    return scaleFromPlot(state.plot).currentFromX(x);
+  }
+
+  rail.addEventListener("pointerdown", (event) => {
+    if (!state.plot) return;
+    event.preventDefault();
+    dragging = true;
+    pointerId = event.pointerId;
+    rail.setPointerCapture(pointerId);
+    queueCurrent(currentFromEvent(event));
+  });
+
+  rail.addEventListener("pointermove", (event) => {
+    if (!dragging || event.pointerId !== pointerId) return;
+    queueCurrent(currentFromEvent(event));
+  });
+
+  function finishDrag(event) {
+    if (!dragging || event.pointerId !== pointerId) return;
+    dragging = false;
+    pointerId = null;
+    if (frame) {
+      cancelAnimationFrame(frame);
+      applyPending();
+    }
+    updateCursorReadouts(root, state, { announce: true });
+  }
+
+  rail.addEventListener("pointerup", finishDrag);
+  rail.addEventListener("pointercancel", finishDrag);
+
+  rail.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const step = scaleFromPlot(state.plot).logStep(event.shiftKey ? 10 : 1);
+    state.cursor = clamp(Math.exp(Math.log(state.cursor) + direction * step), state.plot.xMin, state.plot.xMax);
+    updateCursorReadouts(root, state, { announce: true });
+  });
+}
+
 function renderPlot(root, inputs, result, state) {
   const holder = root.querySelector("[data-blx-plot]");
   if (!holder) return;
@@ -256,13 +425,10 @@ function renderPlot(root, inputs, result, state) {
   const groupColors = Object.fromEntries(GROUPS.map(([key, , token]) => [key, colorFor(root, token)]));
   const xMin = Math.max(inputs.ioutMax / 1000, 1e-3);
   const xMax = inputs.ioutMax;
-  const sweep = computeLossSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
-  const maxLoss = niceCeil(1.1 * Math.max(...sweep.map((point) => point.pLoss), result.pLoss, 0.001));
-  const logMin = Math.log(xMin);
-  const logMax = Math.log(xMax);
-  const xScale = (iout) => left + ((Math.log(iout) - logMin) / (logMax - logMin)) * plotWidth;
-  const lossY = (loss) => bottom - (loss / maxLoss) * plotHeight;
-  const effY = (efficiency) => bottom - efficiency * plotHeight;
+  const sweep = state.sweep && state.sweep.length ? state.sweep : computeLossSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
+  const maxLoss = state.plot?.maxLoss ?? niceCeil(1.1 * Math.max(...sweep.map((point) => point.pLoss), result.pLoss, 0.001));
+  state.plot = { left, top, plotWidth, plotHeight, bottom, xMin, xMax, maxLoss };
+  const { xScale, lossY, effY } = scaleFromPlot(state.plot);
   const svg = svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
@@ -354,6 +520,44 @@ function renderPlot(root, inputs, result, state) {
   });
   svg.append(effLine);
 
+  const cursorLine = svgEl("line", {
+    "data-blx-cursor-line": "true",
+    x1: left,
+    y1: top,
+    x2: left,
+    y2: bottom,
+    stroke: colors.ink,
+    "stroke-width": 1.2,
+    opacity: "0.56",
+    "pointer-events": "none"
+  });
+  const effDot = svgEl("circle", {
+    "data-blx-eff-dot": "true",
+    cx: left,
+    cy: bottom,
+    r: 4.6,
+    fill: "#fff",
+    stroke: colorFor(root, "--blx-eff"),
+    "stroke-width": 2,
+    "pointer-events": "none"
+  });
+  const rail = svgEl("rect", {
+    "data-blx-cursor-rail": "true",
+    class: "blx-cursor-rail",
+    x: left - 22,
+    y: top,
+    width: 44,
+    height: plotHeight,
+    fill: "transparent",
+    "pointer-events": "all",
+    role: "slider",
+    tabindex: "0",
+    "aria-label": "Selected load current"
+  });
+  rail.style.touchAction = "none";
+  rail.style.cursor = "ew-resize";
+  svg.append(cursorLine, effDot, rail);
+
   svg.append(
     svgEl("text", { x: left, y: top - 8, fill: colors.muted, "font-size": 11 }, "loss"),
     svgEl("text", { x: left + plotWidth + 14, y: top - 8, fill: colors.muted, "font-size": 11 }, "efficiency"),
@@ -380,6 +584,8 @@ function renderPlot(root, inputs, result, state) {
   );
 
   holder.replaceChildren(svg);
+  attachCursorEvents(root, state, rail);
+  updateCursorSvg(root, state, result);
 }
 
 function updatePresetButtons(root, activePresetId) {
@@ -451,35 +657,32 @@ function renderPrompt(root, state) {
   prompt.textContent = preset ? preset.prompt : "Custom values. Use the knobs to see which loss family moves first.";
 }
 
-function render(root, state) {
+function render(root, state, options = {}) {
   activeRawInputsForRanges = state.rawInputs;
-  const inputs = normalizeInputs(state.rawInputs);
-  const validation = validateInputs(inputs);
-  const result = validation.valid ? computeLossPoint(inputs, state.cursor) : computeLossPoint(inputs, state.cursor);
-  const classification = classifyRegime(result, inputs);
+  state.inputs = normalizeInputs(state.rawInputs);
+  state.validation = validateInputs(state.inputs);
+  state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
 
-  root.classList.toggle("blx-invalid", !validation.valid || !result.valid);
+  const result = state.validation.valid ? computeLossPoint(state.inputs, state.cursor) : computeLossPoint(state.inputs, state.cursor);
+  const xMin = Math.max(state.inputs.ioutMax / 1000, 1e-3);
+  const xMax = state.inputs.ioutMax;
+  state.sweep = state.validation.valid ? computeLossSweep(state.inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid) : [];
+  state.plot = state.validation.valid
+    ? { ...(state.plot || {}), xMin, xMax, maxLoss: niceCeil(1.1 * Math.max(...state.sweep.map((point) => point.pLoss), result.pLoss, 0.001)) }
+    : null;
+
   updatePresetButtons(root, state.activePresetId);
   renderPrompt(root, state);
-  renderPlot(root, inputs, result, state);
+  renderPlot(root, state.inputs, result, state);
+  updateCursorReadouts(root, state, { announce: options.announce });
+}
 
-  if (!validation.valid || !result.valid) {
-    ["current", "efficiency", "loss", "pout"].forEach((key) => setText(root, key, "—"));
-    setText(root, "regime", "Invalid");
-    setText(root, "sentence", "Adjust VIN, VOUT, fSW, L, and the current limit to return to a valid buck operating point.");
-    renderBreakdown(root, result);
-    renderWarnings(root, result, validation);
-    return;
-  }
-
-  setText(root, "current", eng(state.cursor, "A"));
-  setText(root, "efficiency", percent(result.efficiency));
-  setText(root, "loss", eng(result.pLoss, "W"));
-  setText(root, "pout", eng(result.pOut, "W"));
-  setText(root, "regime", regimeLabel(classification.regime));
-  setText(root, "sentence", classification.sentence);
-  renderBreakdown(root, result);
-  renderWarnings(root, result, validation);
+function scheduleRender(root, state, options = {}) {
+  if (state.renderTimer) clearTimeout(state.renderTimer);
+  state.renderTimer = setTimeout(() => {
+    state.renderTimer = 0;
+    render(root, state, options);
+  }, options.immediate ? 0 : 150);
 }
 
 function buildTicks(root, state) {
@@ -504,7 +707,7 @@ function buildTicks(root, state) {
         state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
         syncControls(state, root.blxNumberControls, root.blxRangeControls);
         buildTicks(root, state);
-        render(root, state);
+        scheduleRender(root, state);
       });
       row.appendChild(button);
     });
@@ -519,7 +722,12 @@ export function initBuckLossExplorer(root) {
   const state = {
     rawInputs: cloneRaw(defaultPreset.rawInputs),
     cursor: defaultPreset.cursor,
-    activePresetId: defaultPreset.id
+    activePresetId: defaultPreset.id,
+    renderTimer: 0,
+    inputs: normalizeInputs(defaultPreset.rawInputs),
+    validation: { valid: true, errors: [] },
+    sweep: [],
+    plot: null
   };
 
   const numberControls = makeControlMap(root, "data-blx-number");
@@ -541,7 +749,7 @@ export function initBuckLossExplorer(root) {
         state.activePresetId = preset.id;
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
-        render(root, state);
+        render(root, state, { announce: true });
       });
       holder.appendChild(button);
     });
@@ -557,7 +765,7 @@ export function initBuckLossExplorer(root) {
         state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
-        render(root, state);
+        scheduleRender(root, state, { announce: true });
       });
     });
 
@@ -574,7 +782,7 @@ export function initBuckLossExplorer(root) {
         state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
-        render(root, state);
+        scheduleRender(root, state, { announce: true });
       });
     });
   });
