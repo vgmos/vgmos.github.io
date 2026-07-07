@@ -1700,7 +1700,7 @@ permalink: /tools/buck-converter/
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
     <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold.</p>
-    <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses.</p>
+    <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses. To see where those losses actually go — conduction, switching, gate drive, dead time, DCR, ESR, and bias — open the <a href="/tools/buck-losses/">Buck Converter Loss Explorer</a>.</p>
   </section>
 </article>
 

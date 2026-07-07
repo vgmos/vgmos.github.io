@@ -3,3 +3,7 @@
   url: /tools/buck-converter/
   meta: Interactive tool · Ideal-component model
   summary: Set v<sub>IN</sub>, v<sub>OUT</sub>, load, f<sub>SW</sub>, L<sub>X</sub>, and C<sub>O</sub>; read D, Δi<sub>L</sub>, and Δv<sub>OUT</sub> live.
+- title: Buck Converter Loss Explorer
+  url: /tools/buck-losses/
+  meta: Interactive tool · First-order loss model
+  summary: Drag the load current of a synchronous buck and watch conduction, switching, gate-drive, dead-time, DCR, ESR, and bias losses trade places — with the equations in the open.
