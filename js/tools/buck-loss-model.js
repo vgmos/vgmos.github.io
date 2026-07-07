@@ -255,9 +255,9 @@ const SENTENCES = {
   fetConduction: "Most loss here scales with current squared. Lower RDS(on) or inductor DCR helps more than lowering fSW.",
   dcr: "The inductor's resistance owns this region. A larger or better wire gauge helps more than FET changes.",
   inductorDcr: "The inductor's resistance owns this region. A larger or better wire gauge helps more than FET changes.",
-  frequency: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help -- but ripple and EMI move too.",
-  switching: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help -- but ripple and EMI move too.",
-  switchingOverlap: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help -- but ripple and EMI move too.",
+  frequency: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
+  switching: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
+  switchingOverlap: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
   deadTime: "Dead-time loss is noticeable here. Each edge spends time in a diode-like path instead of a low-RDS(on) channel.",
   floor: "Delivered power is small enough that gate drive and bias power dominate",
   gateDrive: "Delivered power is small enough that gate drive and bias power dominate",
@@ -270,12 +270,12 @@ const SENTENCES = {
 function sentenceFor(regime, forcedCCM, lightLoad) {
   let sentence = SENTENCES[regime] ?? SENTENCES.balanced;
   if (regime === "floor" && lightLoad) {
-    sentence += " -- this is why real converters change modes at light load.";
+    sentence += "— this is why real converters change modes at light load.";
   } else if (regime === "floor") {
     sentence += ".";
   }
   if (forcedCCM) {
-    sentence = "The inductor current reverses here -- real converters may enter DCM, diode emulation, or PFM. " + sentence;
+    sentence = "The inductor current reverses here — real converters may enter DCM, diode emulation, or PFM. " + sentence;
   }
   return sentence;
 }

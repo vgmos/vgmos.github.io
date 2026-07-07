@@ -1,0 +1,661 @@
+---
+layout: default
+title: Buck Converter Loss Explorer
+description: Interactive first-order synchronous buck loss and efficiency model — conduction, switching, gate-drive, dead-time, DCR, ESR, and bias losses across load current.
+permalink: /tools/buck-losses/
+math: true
+---
+
+{% raw %}
+<style>
+  article.blx-page {
+    max-width: 720px;
+    --blx-cond: #276f86;
+    --blx-dcr: #4f7d5d;
+    --blx-sw: #a2653c;
+    --blx-dead: #9b7c3a;
+    --blx-gate: #7a6a9e;
+    --blx-bias: #66707a;
+    --blx-other: #b0b7bd;
+    --blx-eff: #1f2328;
+    --blx-thumb-size: 15px;
+  }
+
+  .blx-header { margin-bottom: 26px; }
+  .blx-header h1 { margin-bottom: 10px; }
+  .blx-hero-line {
+    margin: 0 0 0.25rem;
+    color: var(--ink);
+    font-size: 1.32rem;
+    font-weight: 650;
+    line-height: 1.32;
+  }
+  .blx-dek {
+    max-width: 40rem;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    line-height: 1.58;
+  }
+  .blx-top-caveat {
+    margin: 1.1rem 0 0;
+    padding: 10px 14px;
+    border-left: 2px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    background: var(--soft);
+    color: var(--ink-soft);
+    font-size: 0.94rem;
+    line-height: 1.55;
+  }
+
+  .blx-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 1.6rem 0 0.45rem;
+  }
+  .blx-presets span {
+    align-self: center;
+    margin-right: 4px;
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+  .blx-presets button,
+  .blx-copy button {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.86rem;
+    padding: 5px 13px;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+  .blx-presets button[aria-pressed="true"] {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+  .blx-presets button:hover,
+  .blx-presets button:focus-visible,
+  .blx-copy button:hover,
+  .blx-copy button:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+    outline: none;
+  }
+  .blx-prompt {
+    margin: 0 0 1.2rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .blx-shell {
+    margin: 1.2rem 0 1.8rem;
+  }
+  .blx-plot {
+    min-height: 320px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    touch-action: pan-y;
+  }
+  .blx-readouts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 1rem 0 0.4rem;
+  }
+  .blx-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 11px 9px;
+    background: #fff;
+  }
+  .blx-card .blx-k {
+    margin: 0 0 3px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  .blx-card .blx-v {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.14rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    transition: color var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+  }
+  .blx-sentence {
+    margin: 0.9rem 0 0;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .blx-warnings {
+    display: grid;
+    gap: 8px;
+    margin-top: 0.8rem;
+  }
+  .blx-note {
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 2px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    background: var(--soft);
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .blx-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 32px;
+    box-sizing: border-box;
+    margin: 1rem 0 1.2rem;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft);
+  }
+  .blx-field { display: grid; gap: 6px; }
+  .blx-field-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .blx-field-head label {
+    color: var(--ink);
+    font-size: 0.88rem;
+    font-weight: 650;
+  }
+  .blx-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .blx-entry input[type="number"] {
+    -moz-appearance: textfield;
+    width: 5.3em;
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.88rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .blx-entry input[type="number"]::-webkit-outer-spin-button,
+  .blx-entry input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .blx-entry input[type="number"]:focus-visible,
+  .blx-field input[type="range"]:focus-visible,
+  .blx-tick:focus-visible,
+  .blx-copy input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .blx-unit {
+    min-width: 2.2em;
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+  .blx-field input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: var(--blx-thumb-size);
+    margin: 7px 0;
+    border-radius: 2px;
+    background: linear-gradient(var(--line), var(--line)) center / 100% 3px no-repeat;
+    outline: none;
+  }
+  .blx-field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: var(--blx-thumb-size);
+    height: var(--blx-thumb-size);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    box-sizing: border-box;
+    background: #fff;
+    cursor: pointer;
+  }
+  .blx-field input[type="range"]::-moz-range-thumb {
+    width: var(--blx-thumb-size);
+    height: var(--blx-thumb-size);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    box-sizing: border-box;
+    background: #fff;
+    cursor: pointer;
+  }
+  .blx-ticks {
+    position: relative;
+    height: 16px;
+    margin: -4px 0 0;
+  }
+  .blx-tick {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    padding: 6px 3px 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.66rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .blx-tick::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 4px;
+    background: var(--muted);
+    opacity: 0.6;
+  }
+  .blx-tick:hover { color: var(--accent); }
+
+  .blx-advanced {
+    display: grid;
+    gap: 10px;
+    margin: 1rem 0 1.8rem;
+  }
+  .blx-advanced details {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+  }
+  .blx-advanced summary {
+    cursor: pointer;
+    padding: 11px 14px;
+    color: var(--ink);
+    font-weight: 650;
+  }
+  .blx-detail-body {
+    display: grid;
+    gap: 14px;
+    padding: 0 14px 16px;
+  }
+  .blx-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+  .blx-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+  }
+
+  .blx-breakdown {
+    margin: 2rem 0;
+  }
+  .blx-stack {
+    display: flex;
+    overflow: hidden;
+    height: 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--soft);
+  }
+  .blx-stack span {
+    min-width: 1px;
+    border-right: 1px solid #fff;
+  }
+  .blx-breakdown-list {
+    display: grid;
+    gap: 7px;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .blx-breakdown-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 14px;
+    align-items: baseline;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .blx-breakdown-list li span:first-child {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .blx-equations,
+  .blx-caveats,
+  .blx-related {
+    margin-top: 2rem;
+  }
+  .blx-equations p,
+  .blx-caveats li,
+  .blx-related p {
+    color: var(--ink-soft);
+    line-height: 1.62;
+  }
+  .blx-caveats ol {
+    padding-left: 1.25rem;
+  }
+  .blx-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    margin: 1rem 0 0;
+  }
+  .blx-copy input {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 9px;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: 0.88rem;
+  }
+  .blx-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 700px) {
+    .blx-presets {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .blx-presets::-webkit-scrollbar { display: none; }
+    .blx-presets span,
+    .blx-presets button {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .blx-readouts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .blx-controls,
+    .blx-detail-grid,
+    .blx-copy {
+      grid-template-columns: 1fr;
+    }
+    .blx-controls {
+      padding: 16px;
+    }
+    .blx-field-head {
+      align-items: center;
+    }
+    .blx-field-head label {
+      min-width: 0;
+      white-space: normal;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blx-presets button,
+    .blx-copy button,
+    .blx-card .blx-v,
+    .blx-tick {
+      transition: none;
+    }
+  }
+</style>
+
+<article class="blx-page" id="buck-loss-explorer">
+  <header class="blx-header">
+    <p class="eyebrow">Interactive tool · First-order loss model</p>
+    <h1>Buck Converter Loss Explorer</h1>
+    <p class="blx-hero-line">Where do the watts go?</p>
+    <p class="blx-dek">Drag the load current and watch conduction, switching, gate-drive, dead-time, DCR, ESR, and bias losses trade places.</p>
+    <p class="blx-top-caveat">First-order loss model with generic parameters. Built for design intuition — seeing which mechanism owns the watts and which knob moves them — not for part-level signoff.</p>
+  </header>
+
+  <div class="blx-presets" data-blx-presets role="group" aria-label="Buck loss presets"></div>
+  <p class="blx-prompt" data-blx-prompt></p>
+
+  <section class="blx-shell" aria-label="Loss explorer">
+    <div class="blx-plot" data-blx-plot aria-label="Loss versus load plot"></div>
+
+    <div class="blx-readouts" aria-live="polite">
+      <div class="blx-card">
+        <p class="blx-k">Selected current</p>
+        <p class="blx-v" data-blx-out="current">—</p>
+      </div>
+      <div class="blx-card">
+        <p class="blx-k">Efficiency</p>
+        <p class="blx-v" data-blx-out="efficiency">—</p>
+      </div>
+      <div class="blx-card">
+        <p class="blx-k">Total loss</p>
+        <p class="blx-v" data-blx-out="loss">—</p>
+      </div>
+      <div class="blx-card">
+        <p class="blx-k">Output power</p>
+        <p class="blx-v" data-blx-out="pout">—</p>
+      </div>
+      <div class="blx-card">
+        <p class="blx-k">Regime</p>
+        <p class="blx-v" data-blx-out="regime">—</p>
+      </div>
+    </div>
+
+    <p class="blx-sentence" data-blx-out="sentence"></p>
+    <div class="blx-warnings" data-blx-warnings></div>
+  </section>
+
+  <section class="blx-controls" aria-label="Primary buck inputs">
+    <div class="blx-field">
+      <div class="blx-field-head">
+        <label for="blx-num-vin">Input voltage V<sub>IN</sub></label>
+        <span class="blx-entry"><input id="blx-num-vin" data-blx-number="vin" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span>
+      </div>
+      <input data-blx-range="vin" type="range" min="0" max="1000" step="1" aria-label="Input voltage slider">
+      <div class="blx-ticks" data-blx-ticks="vin"></div>
+    </div>
+
+    <div class="blx-field">
+      <div class="blx-field-head">
+        <label for="blx-num-vout">Output voltage V<sub>OUT</sub></label>
+        <span class="blx-entry"><input id="blx-num-vout" data-blx-number="vout" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span>
+      </div>
+      <input data-blx-range="vout" type="range" min="0" max="1000" step="1" aria-label="Output voltage slider">
+      <div class="blx-ticks" data-blx-ticks="vout"></div>
+    </div>
+
+    <div class="blx-field">
+      <div class="blx-field-head">
+        <label for="blx-num-imax">Maximum load I<sub>OUT</sub></label>
+        <span class="blx-entry"><input id="blx-num-imax" data-blx-number="ioutMax" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">A</span></span>
+      </div>
+      <input data-blx-range="ioutMax" type="range" min="0" max="1000" step="1" aria-label="Maximum load current slider">
+      <div class="blx-ticks" data-blx-ticks="ioutMax"></div>
+    </div>
+
+    <div class="blx-field">
+      <div class="blx-field-head">
+        <label for="blx-num-fsw">Switching frequency f<sub>SW</sub></label>
+        <span class="blx-entry"><input id="blx-num-fsw" data-blx-number="fsw" type="number" inputmode="decimal" step="10"><span class="blx-unit">kHz</span></span>
+      </div>
+      <input data-blx-range="fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider">
+      <div class="blx-ticks" data-blx-ticks="fsw"></div>
+    </div>
+
+    <div class="blx-field">
+      <div class="blx-field-head">
+        <label for="blx-num-l">Inductance L</label>
+        <span class="blx-entry"><input id="blx-num-l" data-blx-number="inductance" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">µH</span></span>
+      </div>
+      <input data-blx-range="inductance" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
+      <div class="blx-ticks" data-blx-ticks="inductance"></div>
+    </div>
+  </section>
+
+  <section class="blx-advanced" aria-label="Advanced loss inputs">
+    <details>
+      <summary>Switches/FETs</summary>
+      <div class="blx-detail-body">
+        <p class="blx-hint">RDS(on) raises I²R conduction loss; the low-side FET conducts about (1−D) of the period.</p>
+        <p class="blx-hint">Qg raises gate-drive loss every cycle. Bigger FETs lower RDS(on) but raise Qg.</p>
+        <p class="blx-hint">Overlap is a lumped tr+tf estimate — bracket fast/slow edges, don't claim exact part behavior.</p>
+        <div class="blx-detail-grid">
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-rhs">High-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rhs" data-blx-number="rdsHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+            <input data-blx-range="rdsHigh" type="range" min="0" max="1000" step="1" aria-label="High-side RDS on slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-rls">Low-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rls" data-blx-number="rdsLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+            <input data-blx-range="rdsLow" type="range" min="0" max="1000" step="1" aria-label="Low-side RDS on slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-qhs">High-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qhs" data-blx-number="qgHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
+            <input data-blx-range="qgHigh" type="range" min="0" max="1000" step="1" aria-label="High-side gate charge slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-qls">Low-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qls" data-blx-number="qgLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
+            <input data-blx-range="qgLow" type="range" min="0" max="1000" step="1" aria-label="Low-side gate charge slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-tov">Overlap time t<sub>r</sub>+t<sub>f</sub></label><span class="blx-entry"><input id="blx-num-tov" data-blx-number="tOverlap" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
+            <input data-blx-range="tOverlap" type="range" min="0" max="1000" step="1" aria-label="Switching overlap time slider">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Timing/diode</summary>
+      <div class="blx-detail-body">
+        <p class="blx-hint">Dead time: current detours through a body-diode path each edge.</p>
+        <div class="blx-detail-grid">
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-td">Dead time per edge</label><span class="blx-entry"><input id="blx-num-td" data-blx-number="deadTime" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
+            <input data-blx-range="deadTime" type="range" min="0" max="1000" step="1" aria-label="Dead time slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-vf">Diode path V<sub>F</sub></label><span class="blx-entry"><input id="blx-num-vf" data-blx-number="diodeVf" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">V</span></span></div>
+            <input data-blx-range="diodeVf" type="range" min="0" max="1000" step="1" aria-label="Diode forward voltage slider">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Passives</summary>
+      <div class="blx-detail-body">
+        <p class="blx-hint">DCR: the inductor is also a resistor.</p>
+        <div class="blx-detail-grid">
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-dcr">Inductor DCR</label><span class="blx-entry"><input id="blx-num-dcr" data-blx-number="dcr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+            <input data-blx-range="dcr" type="range" min="0" max="1000" step="1" aria-label="Inductor DCR slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-esr">Output capacitor ESR</label><span class="blx-entry"><input id="blx-num-esr" data-blx-number="esr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+            <input data-blx-range="esr" type="range" min="0" max="1000" step="1" aria-label="Output capacitor ESR slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-isat">Inductor I<sub>SAT</sub></label><span class="blx-entry"><input id="blx-num-isat" data-blx-number="inductorIsat" type="number" inputmode="decimal" step="0.1" placeholder="blank"><span class="blx-unit">A</span></span></div>
+            <input data-blx-range="inductorIsat" type="range" min="0" max="1000" step="1" aria-label="Inductor saturation current slider">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Controller</summary>
+      <div class="blx-detail-body">
+        <p class="blx-hint">IQ is a bias floor — at light load even small IQ dominates.</p>
+        <div class="blx-detail-grid">
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-vdrv">Gate drive voltage</label><span class="blx-entry"><input id="blx-num-vdrv" data-blx-number="vDrive" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div>
+            <input data-blx-range="vDrive" type="range" min="0" max="1000" step="1" aria-label="Gate drive voltage slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-iq">Quiescent current I<sub>Q</sub></label><span class="blx-entry"><input id="blx-num-iq" data-blx-number="iq" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">mA</span></span></div>
+            <input data-blx-range="iq" type="range" min="0" max="1000" step="1" aria-label="Quiescent current slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-vbias">Bias voltage</label><span class="blx-entry"><input id="blx-num-vbias" data-blx-number="vBias" type="number" inputmode="decimal" step="0.1" placeholder="VIN"><span class="blx-unit">V</span></span></div>
+            <input data-blx-range="vBias" type="range" min="0" max="1000" step="1" aria-label="Bias voltage slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-eoss">Total E<sub>OSS</sub></label><span class="blx-entry"><input id="blx-num-eoss" data-blx-number="eossTotal" type="number" inputmode="decimal" step="1"><span class="blx-unit">nJ</span></span></div>
+            <input data-blx-range="eossTotal" type="range" min="0" max="1000" step="1" aria-label="Total output capacitance energy slider">
+          </div>
+          <div class="blx-field">
+            <div class="blx-field-head"><label for="blx-num-qrr">Reverse recovery Q<sub>rr</sub></label><span class="blx-entry"><input id="blx-num-qrr" data-blx-number="qrr" type="number" inputmode="decimal" step="1"><span class="blx-unit">nC</span></span></div>
+            <input data-blx-range="qrr" type="range" min="0" max="1000" step="1" aria-label="Reverse recovery charge slider">
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="blx-breakdown" aria-label="Loss breakdown">
+    <h2>Loss Breakdown</h2>
+    <div class="blx-stack" data-blx-breakdown-bar aria-hidden="true"></div>
+    <ul class="blx-breakdown-list" data-blx-breakdown-list></ul>
+  </section>
+
+  <section class="blx-equations post-content">
+    <h2>Equations In The Open</h2>
+    <p>The model stays in CCM and uses ideal duty \(D = V_{OUT}/V_{IN}\) without duty correction.</p>
+    <p>Inductor ripple and RMS terms:</p>
+    $$\Delta i_L = \frac{(V_{IN}-V_{OUT})D}{f_{SW}L},\quad i_{PK}=I_{OUT}+\frac{\Delta i_L}{2},\quad i_{VAL}=I_{OUT}-\frac{\Delta i_L}{2}$$
+    $$I_{L,RMS}^2 = I_{OUT}^2+\frac{\Delta i_L^2}{12},\quad I_{C,RMS}^2=\frac{\Delta i_L^2}{12}$$
+    $$I_{HS,RMS}^2=D I_{L,RMS}^2,\quad I_{LS,RMS}^2=(1-D)I_{L,RMS}^2$$
+    <p>Loss terms:</p>
+    $$P_{HS}=I_{HS,RMS}^2R_{DS,H},\quad P_{LS}=I_{LS,RMS}^2R_{DS,L},\quad P_{DCR}=I_{L,RMS}^2R_{DCR}$$
+    $$P_{ESR}=I_{C,RMS}^2R_{ESR},\quad P_G=(Q_{G,H}+Q_{G,L})V_{DRV}f_{SW},\quad P_{BIAS}=V_{BIAS}I_Q$$
+    $$P_{SW}=\frac{1}{2}V_{IN}f_{SW}(t_r\max(i_{VAL},0)+t_f\max(i_{PK},0))$$
+    $$P_{DT}=V_F f_{SW}t_{DT}(\max(i_{VAL},0)+\max(i_{PK},0))$$
+    $$P_{EOSS}=E_{OSS}f_{SW},\quad P_{Qrr}=V_{IN}Q_{rr}f_{SW}$$
+    <p>Total loss is the sum of the terms above. Efficiency is \(\eta=P_{OUT}/(P_{OUT}+P_{LOSS})\) for positive output power.</p>
+  </section>
+
+  <section class="blx-caveats">
+    <h2>Caveats</h2>
+    <ol>
+      <li>Left of the shaded boundary the inductor current reverses each cycle. The model shows synchronous forced-CCM behavior there; many real converters switch to diode emulation, pulse-skipping, or PFM instead, and their light-load efficiency differs — usually for the better.</li>
+      <li>RDS(on) is whatever you type. The model doesn't iterate junction temperature, and hot FETs are 30–50% more resistive than their 25 °C number — bracket that by hand if it matters.</li>
+      <li>Inductor DCR is counted; core loss is not. At high ripple or high frequency, core loss can rival DCR loss — treat the inductor bar as a floor.</li>
+      <li>Overlap loss uses one lumped edge time. Real switching loss lives in gate drive, layout, capacitances, and ringing — use the overlap knob to bracket fast and slow edges, not to claim a part's exact behavior.</li>
+      <li>EOSS and Qrr default to zero. At high input voltage and high frequency they stop being optional — the 48 V preset is a good place to try them.</li>
+      <li>Input-capacitor ESR loss isn't modeled yet; in a buck it usually exceeds the output-capacitor term shown here.</li>
+      <li>Numbers are rounded on purpose. The model ranks mechanisms and shows tradeoffs; it does not predict a datasheet curve to decimal places.</li>
+      <li>Not a part selector, thermal simulator, EMI model, or SPICE replacement — it's the sketch you do before you open those.</li>
+    </ol>
+  </section>
+
+  <section class="blx-related">
+    <h2>Related Links</h2>
+    <p>See the ideal waveforms behind this converter in the <a href="/tools/buck-converter/">Buck Converter Ripple Tool</a>.</p>
+    <div class="blx-copy">
+      <input data-blx-copy-url type="text" readonly value="" aria-label="Shareable URL">
+      <button type="button" data-blx-copy>Copy link</button>
+    </div>
+  </section>
+
+  <div class="blx-visually-hidden" aria-live="polite" data-blx-live></div>
+</article>
+{% endraw %}
+
+<script type="module">
+  import { initBuckLossExplorer } from "{{ '/js/tools/buck-loss-ui.js' | relative_url }}";
+  initBuckLossExplorer(document.getElementById("buck-loss-explorer"));
+</script>

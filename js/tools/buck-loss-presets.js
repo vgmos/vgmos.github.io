@@ -3,7 +3,7 @@ export const DEFAULT_PRESET_ID = "12v-to-3v3-pol";
 export const BUCK_LOSS_PRESETS = [
   {
     id: "12v-to-3v3-pol",
-    name: "12 -> 3.3 V POL",
+    name: "12 → 3.3 V POL",
     rawInputs: {
       vin: 12,
       vout: 3.3,
@@ -27,12 +27,12 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 2,
-    prompt: "Nudge fSW and RDS -- watch the seesaw.",
+    prompt: "Nudge fSW and RDS — watch the seesaw.",
     expectedDominantLosses: ["switchingOverlap", "fetConduction", "inductorDcr"]
   },
   {
     id: "5v-to-1v8-core",
-    name: "5 -> 1.8 V core",
+    name: "5 → 1.8 V core",
     rawInputs: {
       vin: 5,
       vout: 1.8,
@@ -61,7 +61,7 @@ export const BUCK_LOSS_PRESETS = [
   },
   {
     id: "48v-to-12v-bus",
-    name: "48 -> 12 V bus",
+    name: "48 → 12 V bus",
     rawInputs: {
       vin: 48,
       vout: 12,
@@ -85,7 +85,7 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 3,
-    prompt: "Same D as the POL -- why is switching 5x worse? Try adding EOSS.",
+    prompt: "Same D as the POL — why is switching 5× worse? Try adding EOSS.",
     expectedDominantLosses: ["switchingOverlap"]
   },
   {
@@ -114,7 +114,7 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 2,
-    prompt: "Same converter as the POL at 3x the frequency. Where did the watts go?",
+    prompt: "Same converter as the POL at 3× the frequency. Where did the watts go?",
     expectedDominantLosses: ["switchingOverlap", "gateDrive", "deadTime"]
   },
   {
@@ -143,7 +143,7 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 2,
-    prompt: "Cheap efficiency -- paid for in inductor size and DCR.",
+    prompt: "Cheap efficiency — paid for in inductor size and DCR.",
     expectedDominantLosses: ["inductorDcr", "fetConduction"]
   },
   {
