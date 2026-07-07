@@ -235,6 +235,62 @@ function currentTickLabel(value) {
   return engineeringTick(value, " A");
 }
 
+function sliderThumbSize(root) {
+  const raw = window.getComputedStyle(root).getPropertyValue("--blx-thumb-size");
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : 15;
+}
+
+function glideNow() {
+  return window.performance?.now ? window.performance.now() : Date.now();
+}
+
+function easeThumbGlide(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function cancelRangeThumbGlide(range, finalValue) {
+  if (!range) return;
+  if (range.blxThumbGlideFrame) {
+    cancelAnimationFrame(range.blxThumbGlideFrame);
+    range.blxThumbGlideFrame = 0;
+  }
+  if (Number.isFinite(finalValue)) range.value = finalValue;
+}
+
+function canGlideRangeThumb() {
+  return !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
+function glideRangeThumb(range, fromValue, toValue) {
+  if (!range) return;
+  const from = Number.parseFloat(fromValue);
+  const to = Number.parseFloat(toValue);
+  cancelRangeThumbGlide(range);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || Math.abs(to - from) < 0.5 || !canGlideRangeThumb()) {
+    if (Number.isFinite(to)) range.value = to;
+    return;
+  }
+
+  const duration = 180;
+  let startedAt = 0;
+  range.value = from;
+
+  function step(now) {
+    if (!startedAt) startedAt = now || glideNow();
+    const t = clamp(((now || glideNow()) - startedAt) / duration, 0, 1);
+    range.value = from + (to - from) * easeThumbGlide(t);
+    if (t < 1) {
+      range.blxThumbGlideFrame = requestAnimationFrame(step);
+    } else {
+      range.blxThumbGlideFrame = 0;
+      range.value = to;
+    }
+  }
+
+  range.blxThumbGlideFrame = requestAnimationFrame(step);
+}
+
 function lossTickLabel(value) {
   if (value === 0) return "0";
   if (value < 1) return `${Number((value * 1000).toPrecision(2))} mW`;
@@ -412,8 +468,18 @@ function updateCursorSvg(root, state, result) {
   }
   if (label && labelBg) {
     const labelWidth = Math.max(82, labelText.length * 6.4 + 14);
-    const labelX = clamp(x + 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth);
-    const labelY = clamp(y - 28, state.plot.top + 4, state.plot.bottom - 24);
+    const preferLeft = state.plot.labels?.some((box) => (
+      x + 8 < box.x + box.width &&
+      x + 8 + labelWidth > box.x &&
+      y - 28 < box.y + box.height &&
+      y - 28 + 20 > box.y
+    ));
+    const labelX = preferLeft
+      ? clamp(x - labelWidth - 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth)
+      : clamp(x + 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth);
+    const labelY = y < state.plot.top + 34
+      ? clamp(y + 12, state.plot.top + 4, state.plot.bottom - 24)
+      : clamp(y - 28, state.plot.top + 4, state.plot.bottom - 24);
     label.textContent = labelText;
     label.setAttribute("x", labelX + 7);
     label.setAttribute("y", labelY + 15);
@@ -592,7 +658,7 @@ function renderPlot(root, inputs, result, state) {
   const xMax = inputs.ioutMax;
   const sweep = state.sweep && state.sweep.length ? state.sweep : computeLossSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
   const maxLoss = state.plot?.maxLoss ?? niceCeil(1.1 * Math.max(...sweep.map((point) => point.pLoss), result.pLoss, 0.001));
-  state.plot = { left, top, plotWidth, plotHeight, bottom, xMin, xMax, maxLoss, width, height };
+  state.plot = { left, top, plotWidth, plotHeight, bottom, xMin, xMax, maxLoss, width, height, labels: [] };
   const { xScale, lossY, effY } = scaleFromPlot(state.plot);
   const titleId = `${state.instanceId}-plot-title`;
   const descId = `${state.instanceId}-plot-desc`;
@@ -620,8 +686,9 @@ function renderPlot(root, inputs, result, state) {
     const shadeWidth = clamp(boundaryX - left, 0, plotWidth);
     const forcedLabel = "forced CCM / reverse current";
     const forcedWidth = compact ? 145 : 162;
-    const forcedX = clamp(boundaryX + 6, left + 4, left + plotWidth - forcedWidth - 4);
+    const forcedX = clamp(left + 10, left + 4, left + plotWidth - forcedWidth - 4);
     const forcedY = top + 8;
+    state.plot.labels.push({ x: forcedX, y: forcedY, width: forcedWidth, height: 18 });
     svg.append(
       svgEl("rect", { class: "blx-forced-shade", x: left, y: top, width: shadeWidth, height: plotHeight }),
       svgEl("line", { class: "blx-forced-line", x1: boundaryX, y1: top, x2: boundaryX, y2: bottom, "stroke-width": 1, "stroke-dasharray": "4 5" }),
@@ -701,13 +768,22 @@ function renderPlot(root, inputs, result, state) {
     const labelWidth = text.length * 5.8 + 14;
     const cursorX = xScale(state.cursor);
     const cursorY = effY(result.efficiency);
-    const nearCursor = Math.abs(peakX - cursorX) < 115 && Math.abs(peakY - cursorY) < 38;
-    const labelX = nearCursor
-      ? clamp(peakX - labelWidth - 9, left + 3, left + plotWidth - labelWidth - 3)
+    const candidateTop = clamp(peakY - 25, top + 4, bottom - 20);
+    const candidateRight = clamp(peakX + 7, left + 3, left + plotWidth - labelWidth - 3);
+    const nearCursor = Math.abs(peakX - cursorX) < 128 && Math.abs(peakY - cursorY) < 48;
+    const nearForced = state.plot.labels.some((box) => (
+      candidateRight < box.x + box.width + 6 &&
+      candidateRight + labelWidth + 6 > box.x &&
+      candidateTop < box.y + box.height + 6 &&
+      candidateTop + 17 + 6 > box.y
+    ));
+    const labelX = nearCursor || nearForced
+      ? clamp(peakX - labelWidth - 10, left + 3, left + plotWidth - labelWidth - 3)
       : clamp(peakX + 7, left + 3, left + plotWidth - labelWidth - 3);
-    const labelY = nearCursor
-      ? clamp(peakY + 9, top + 4, bottom - 20)
-      : clamp(peakY - 25, top + 4, bottom - 20);
+    const labelY = nearCursor || nearForced
+      ? clamp(peakY + 11, top + 4, bottom - 20)
+      : candidateTop;
+    state.plot.labels.push({ x: labelX, y: labelY, width: labelWidth, height: 17 });
     svg.append(
       svgEl("circle", { class: "blx-eff-dot blx-eff-peak", cx: peakX, cy: peakY, r: compact ? 3.2 : 3.8, "stroke-width": 1.5, "pointer-events": "none" }),
       svgEl("rect", { class: "blx-label-pill", x: labelX, y: labelY, width: labelWidth, height: 17, rx: 8.5, "pointer-events": "none" }),
@@ -964,20 +1040,29 @@ function buildTicks(root, state) {
     (TICKS[key] || []).forEach(([value, label]) => {
       const max = key === "vout" ? 0.95 * state.rawInputs.vin : PARAMS[key].max;
       if (value < PARAMS[key].min || value > max) return;
+      const f = toSlider(key, value) / 1000;
+      const thumb = sliderThumbSize(root);
       const button = document.createElement("button");
       button.type = "button";
       button.className = "blx-tick";
       button.tabIndex = -1;
       button.textContent = label;
-      button.style.left = `${toSlider(key, value) / 10}%`;
+      button.style.left = `calc(${(100 * f).toFixed(2)}% + ${(thumb / 2 - thumb * f).toFixed(1)}px)`;
       button.setAttribute("aria-label", `Set ${key} to ${label}`);
       button.addEventListener("click", () => {
+        const glideTargets = (root.blxRangeControls?.get(key) || []).map((range) => ({
+          range,
+          from: Number.parseFloat(range.value)
+        }));
         state.rawInputs[key] = clampParam(key, value);
-        state.activePresetId = null;
-        state.urlNotes = [];
+        markCustom(state);
+        state.undoTry = null;
         enforceBuck(state.rawInputs, key);
-        state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
+        clampCursorToRange(state);
         syncControls(state, root.blxNumberControls, root.blxRangeControls);
+        glideTargets.forEach(({ range, from }) => {
+          glideRangeThumb(range, from, Number.parseFloat(range.value));
+        });
         buildTicks(root, state);
         scheduleRender(root, state, { updateUrl: true, announce: true });
       });
@@ -1127,6 +1212,7 @@ export function initBuckLossExplorer(root) {
   Object.keys(PARAMS).forEach((key) => {
     (rangeControls.get(key) || []).forEach((range) => {
       range.addEventListener("input", () => {
+        cancelRangeThumbGlide(range);
         activeRawInputsForRanges = state.rawInputs;
         state.rawInputs[key] = clampParam(key, fromSlider(key, range.value));
         if (PARAMS[key].optional) state.explicitOptional[key] = true;

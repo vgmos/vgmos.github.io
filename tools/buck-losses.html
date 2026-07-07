@@ -10,6 +10,8 @@ math: true
 <style>
   article.blx-page {
     max-width: 720px;
+    --blx-motion-fast: 180ms;
+    --blx-motion: 220ms;
     --blx-cond: #2f7c8d;
     --blx-dcr: #5c8050;
     --blx-sw: #ad6b3f;
@@ -19,9 +21,9 @@ math: true
     --blx-other: #aeb6be;
     --blx-eff: var(--ink);
     --blx-surface: var(--soft);
-    --blx-card-bg: Canvas;
-    --blx-plot-bg: Canvas;
-    --blx-separator: Canvas;
+    --blx-card-bg: var(--paper);
+    --blx-plot-bg: var(--paper);
+    --blx-separator: var(--paper);
     --blx-thumb-size: 15px;
   }
 
@@ -35,10 +37,11 @@ math: true
     line-height: 1.32;
   }
   .blx-dek {
-    max-width: 40rem;
+    max-width: 700px;
     color: var(--ink-soft);
-    font-size: 1.1rem;
-    line-height: 1.58;
+    font-family: var(--claude-serif);
+    font-size: 1.18rem;
+    line-height: 1.56;
   }
   .blx-top-caveat {
     margin: 1.1rem 0 0;
@@ -72,14 +75,20 @@ math: true
     background: transparent;
     color: var(--ink-soft);
     cursor: pointer;
-    font: inherit;
-    font-size: 0.86rem;
+    font-family: var(--claude-sans);
+    font-size: 0.84rem;
+    font-weight: 500;
+    line-height: 1.08;
+    min-height: 34px;
     padding: 5px 13px;
-    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+    transition:
+      color var(--blx-motion) var(--claude-ease, var(--ease)),
+      border-color var(--blx-motion) var(--claude-ease, var(--ease)),
+      text-shadow var(--blx-motion) var(--claude-ease, var(--ease));
   }
   .blx-presets button[aria-pressed="true"] {
     border-color: var(--accent);
-    background: var(--soft);
+    background: transparent;
     color: var(--ink);
   }
   .blx-presets button:hover,
@@ -91,8 +100,10 @@ math: true
   .blx-copy button:hover,
   .blx-copy button:focus-visible {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--claude-accent-deep, var(--accent));
+    background-color: transparent;
     outline: none;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
   }
   .blx-prompt {
     margin: 0 0 1.2rem;
@@ -109,6 +120,7 @@ math: true
   }
   .blx-try span {
     color: var(--muted);
+    font-family: var(--claude-sans);
     font-size: 0.84rem;
   }
   .blx-try button {
@@ -145,6 +157,7 @@ math: true
     align-items: center;
     margin: 0.65rem 0 0;
     color: var(--ink-soft);
+    font-family: var(--claude-sans);
     font-size: 0.82rem;
     line-height: 1.4;
   }
@@ -176,11 +189,13 @@ math: true
   }
   .blx-actions button {
     color: var(--ink);
+    font-family: var(--claude-sans);
     font-weight: 650;
     padding: 6px 14px;
   }
   .blx-actions span {
     color: var(--muted);
+    font-family: var(--claude-sans);
     font-size: 0.86rem;
   }
   .blx-readouts {
@@ -198,17 +213,21 @@ math: true
   .blx-card .blx-k {
     margin: 0 0 3px;
     color: var(--muted);
-    font-size: 0.8rem;
+    font-family: var(--claude-sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.48;
   }
   .blx-card .blx-v {
     margin: 0;
     color: var(--ink);
-    font-size: 1.14rem;
-    font-weight: 650;
+    font-family: var(--claude-sans);
+    font-size: 1.18rem;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
     min-height: 1.4em;
-    transition: color var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+    transition: color var(--blx-motion-fast) var(--claude-ease, var(--ease)), opacity var(--blx-motion-fast) var(--claude-ease, var(--ease));
   }
   .blx-sentence {
     margin: 0.9rem 0 0;
@@ -221,6 +240,7 @@ math: true
     align-items: center;
     margin-right: 6px;
     color: var(--ink);
+    font-family: var(--claude-sans);
     font-size: 0.84rem;
     font-weight: 650;
     white-space: nowrap;
@@ -243,6 +263,7 @@ math: true
     border-radius: 0 6px 6px 0;
     background: var(--blx-surface);
     color: var(--ink-soft);
+    font-family: var(--claude-sans);
     font-size: 0.92rem;
     line-height: 1.55;
   }
@@ -267,13 +288,15 @@ math: true
   }
   .blx-field-head label {
     color: var(--ink);
+    font-family: var(--claude-sans);
     font-size: 0.88rem;
-    font-weight: 650;
+    font-weight: 600;
   }
   .blx-entry {
     display: flex;
     align-items: baseline;
     gap: 5px;
+    font-family: var(--claude-sans);
   }
   .blx-entry input[type="number"] {
     -moz-appearance: textfield;
@@ -283,17 +306,23 @@ math: true
     border-radius: 5px;
     background: var(--blx-card-bg);
     color: var(--ink);
-    font: inherit;
+    font-family: var(--claude-sans);
     font-size: 0.88rem;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    transition:
+      border-color var(--blx-motion) var(--claude-ease, var(--ease)),
+      box-shadow var(--blx-motion) var(--claude-ease, var(--ease));
   }
   .blx-entry input[type="number"]::-webkit-outer-spin-button,
   .blx-entry input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-  .blx-entry input[type="number"]:focus-visible,
+  .blx-entry input[type="number"]:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--claude-ring);
+  }
   .blx-field input[type="range"]:focus-visible,
   .blx-tick:focus-visible,
   .blx-copy input:focus-visible {
@@ -303,6 +332,7 @@ math: true
   .blx-unit {
     min-width: 2.2em;
     color: var(--muted);
+    font-family: var(--claude-sans);
     font-size: 0.86rem;
   }
   .blx-field input[type="range"] {
@@ -324,6 +354,12 @@ math: true
     box-sizing: border-box;
     background: var(--blx-card-bg);
     cursor: pointer;
+    transition:
+      transform var(--blx-motion-fast) var(--claude-ease, var(--ease)),
+      background-color var(--blx-motion-fast) var(--claude-ease, var(--ease));
+  }
+  .blx-field input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
   }
   .blx-field input[type="range"]::-moz-range-thumb {
     width: var(--blx-thumb-size);
@@ -333,6 +369,12 @@ math: true
     box-sizing: border-box;
     background: var(--blx-card-bg);
     cursor: pointer;
+    transition:
+      transform var(--blx-motion-fast) var(--claude-ease, var(--ease)),
+      background-color var(--blx-motion-fast) var(--claude-ease, var(--ease));
+  }
+  .blx-field input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.08);
   }
   .blx-ticks {
     position: relative;
@@ -348,11 +390,14 @@ math: true
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    font: inherit;
+    font-family: var(--claude-sans);
     font-size: 0.66rem;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    transition: color var(--dur-fast) var(--ease);
+    transition:
+      color var(--blx-motion) var(--claude-ease, var(--ease)),
+      text-shadow var(--blx-motion) var(--claude-ease, var(--ease));
   }
   .blx-tick::before {
     content: "";
@@ -363,8 +408,19 @@ math: true
     height: 4px;
     background: var(--muted);
     opacity: 0.6;
+    transition: background var(--blx-motion) var(--claude-ease, var(--ease));
   }
-  .blx-tick:hover { color: var(--accent); }
+  .blx-tick:hover,
+  .blx-tick:focus-visible {
+    color: var(--claude-accent-deep, var(--accent));
+    outline: none;
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
+  }
+  .blx-tick:hover::before,
+  .blx-tick:focus-visible::before {
+    background: var(--accent);
+    opacity: 1;
+  }
 
   .blx-advanced {
     display: grid;
@@ -380,6 +436,7 @@ math: true
     cursor: pointer;
     padding: 11px 14px;
     color: var(--ink);
+    font-family: var(--claude-sans);
     font-weight: 650;
   }
   .blx-detail-body {
@@ -390,12 +447,14 @@ math: true
   .blx-hint {
     margin: 0;
     color: var(--muted);
+    font-family: var(--claude-sans);
     font-size: 0.86rem;
     line-height: 1.5;
   }
   .blx-field-help {
     margin: -1px 0 0;
     color: var(--muted);
+    font-family: var(--claude-sans);
     font-size: 0.78rem;
     line-height: 1.35;
   }
@@ -433,11 +492,13 @@ math: true
     gap: 14px;
     align-items: baseline;
     color: var(--ink-soft);
+    font-family: var(--claude-sans);
     font-size: 0.92rem;
     font-variant-numeric: tabular-nums;
   }
   .blx-breakdown-list li span:first-child {
     color: var(--ink);
+    font-family: var(--claude-sans);
     font-weight: 600;
   }
 
@@ -469,7 +530,7 @@ math: true
     padding: 7px 9px;
     color: var(--ink-soft);
     background: var(--blx-card-bg);
-    font: inherit;
+    font-family: var(--claude-sans);
     font-size: 0.88rem;
   }
   .blx-visually-hidden {
@@ -517,28 +578,6 @@ math: true
   .blx-forced-text {
     fill: var(--accent);
     font-weight: 650;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    article.blx-page {
-      color-scheme: dark;
-      --ink: #f2f5f7;
-      --ink-soft: #cbd4dd;
-      --muted: #98a5b2;
-      --soft: #151b22;
-      --line: #344250;
-      --accent: #7ed3e3;
-      --blx-cond: #5ab8ca;
-      --blx-dcr: #8ab576;
-      --blx-sw: #d49461;
-      --blx-dead: #d2b45d;
-      --blx-gate: #b4a3da;
-      --blx-bias: #9faab5;
-      --blx-other: #747f8a;
-      --blx-card-bg: #10161d;
-      --blx-plot-bg: #0d1218;
-      --blx-separator: #1c252e;
-    }
   }
 
   @media (max-width: 700px) {
@@ -590,6 +629,8 @@ math: true
     .blx-actions button,
     .blx-copy button,
     .blx-card .blx-v,
+    .blx-field input[type="range"]::-webkit-slider-thumb,
+    .blx-field input[type="range"]::-moz-range-thumb,
     .blx-tick {
       transition: none;
     }
