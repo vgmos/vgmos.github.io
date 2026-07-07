@@ -1,5 +1,6 @@
 import { classifyRegime, computeLossPoint, computeLossSweep, normalizeInputs, validateInputs } from "./buck-loss-model.js";
-import { BUCK_LOSS_PRESETS, DEFAULT_PRESET_ID, getBuckLossPreset } from "./buck-loss-presets.js";
+import { BUCK_LOSS_PRESETS, getBuckLossPreset } from "./buck-loss-presets.js";
+import { parseBuckLossUrl, serializeBuckLossUrl } from "./buck-loss-url.js";
 
 const PARAMS = {
   vin: { min: 1, max: 100, log: true, digits: 2 },
@@ -50,6 +51,11 @@ const WARNING_COPY = {
   isat: "The estimated peak inductor current is above the entered saturation current.",
   "high-loss": "Estimated loss exceeds delivered output power at this point.",
   "extreme-duty": "The ideal duty cycle is near an edge of the useful buck range."
+};
+
+const URL_NOTE_COPY = {
+  "unknown-preset": "Unknown preset in the URL; loaded the default example instead.",
+  clamped: "Some URL values were outside the allowed range and were clamped."
 };
 
 function clamp(value, min, max) {
@@ -282,6 +288,70 @@ function announce(root, result, state) {
   live.textContent = ariaCursorText(result, state.cursor);
 }
 
+function canonicalQuery(state) {
+  return serializeBuckLossUrl({
+    rawInputs: state.rawInputs,
+    cursor: state.cursor,
+    activePresetId: state.activePresetId,
+    explicitOptional: state.explicitOptional
+  });
+}
+
+function canonicalHref(state) {
+  const query = canonicalQuery(state);
+  if (typeof window === "undefined") return query ? `?${query}` : "";
+  return `${window.location.origin}${window.location.pathname}${query ? `?${query}` : ""}`;
+}
+
+function updateCopyUrl(root, state) {
+  const input = root.querySelector("[data-blx-copy-url]");
+  if (input) input.value = canonicalHref(state);
+}
+
+function scheduleUrlReplace(root, state) {
+  if (typeof window === "undefined" || !window.history?.replaceState) return;
+  updateCopyUrl(root, state);
+  if (state.urlTimer) clearTimeout(state.urlTimer);
+  state.urlTimer = setTimeout(() => {
+    state.urlTimer = 0;
+    const query = canonicalQuery(state);
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, 400);
+}
+
+async function copyCanonicalUrl(root, state) {
+  const input = root.querySelector("[data-blx-copy-url]");
+  const button = root.querySelector("[data-blx-copy]");
+  const href = canonicalHref(state);
+  if (input) input.value = href;
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(href);
+    } else if (input) {
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+    }
+  } catch {
+    if (input) {
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+    }
+  }
+
+  if (button) {
+    const original = button.textContent;
+    button.textContent = "Copied";
+    clearTimeout(button.blxCopyTimer);
+    button.blxCopyTimer = setTimeout(() => {
+      button.textContent = original;
+    }, 1500);
+  }
+}
+
 function updateCursorSvg(root, state, result) {
   const svg = root.querySelector("[data-blx-plot] svg");
   if (!svg || !state.plot || !result.valid) return;
@@ -324,7 +394,8 @@ function updateCursorReadouts(root, state, options = {}) {
     setText(root, "regime", "Invalid");
     setText(root, "sentence", "Adjust VIN, VOUT, fSW, L, and the current limit to return to a valid buck operating point.");
     renderBreakdown(root, result);
-    renderWarnings(root, result, validation);
+    renderWarnings(root, result, validation, state);
+    updateCopyUrl(root, state);
     return result;
   }
 
@@ -335,8 +406,9 @@ function updateCursorReadouts(root, state, options = {}) {
   setText(root, "regime", regimeLabel(classification.regime));
   setText(root, "sentence", classification.sentence);
   renderBreakdown(root, result);
-  renderWarnings(root, result, validation);
+  renderWarnings(root, result, validation, state);
   updateCursorSvg(root, state, result);
+  updateCopyUrl(root, state);
   if (options.announce) announce(root, result, state);
   return result;
 }
@@ -389,6 +461,7 @@ function attachCursorEvents(root, state, rail) {
       applyPending();
     }
     updateCursorReadouts(root, state, { announce: true });
+    scheduleUrlReplace(root, state);
   }
 
   rail.addEventListener("pointerup", finishDrag);
@@ -401,6 +474,7 @@ function attachCursorEvents(root, state, rail) {
     const step = scaleFromPlot(state.plot).logStep(event.shiftKey ? 10 : 1);
     state.cursor = clamp(Math.exp(Math.log(state.cursor) + direction * step), state.plot.xMin, state.plot.xMax);
     updateCursorReadouts(root, state, { announce: true });
+    scheduleUrlReplace(root, state);
   });
 }
 
@@ -638,10 +712,10 @@ function renderBreakdown(root, result) {
   }).join("");
 }
 
-function renderWarnings(root, result, validation) {
+function renderWarnings(root, result, validation, state = {}) {
   const box = root.querySelector("[data-blx-warnings]");
   if (!box) return;
-  const notes = [];
+  const notes = (state.urlNotes || []).map((entry) => URL_NOTE_COPY[entry.code] || entry.message || entry.code);
   if (!validation.valid) {
     notes.push("Check the input values: VIN must be above VOUT, and positive frequency, inductance, and current limits are required.");
   } else {
@@ -682,6 +756,7 @@ function scheduleRender(root, state, options = {}) {
   state.renderTimer = setTimeout(() => {
     state.renderTimer = 0;
     render(root, state, options);
+    if (options.updateUrl) scheduleUrlReplace(root, state);
   }, options.immediate ? 0 : 150);
 }
 
@@ -703,11 +778,12 @@ function buildTicks(root, state) {
       button.addEventListener("click", () => {
         state.rawInputs[key] = clampParam(key, value);
         state.activePresetId = null;
+        state.urlNotes = [];
         enforceBuck(state.rawInputs, key);
         state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
         syncControls(state, root.blxNumberControls, root.blxRangeControls);
         buildTicks(root, state);
-        scheduleRender(root, state);
+        scheduleRender(root, state, { updateUrl: true, announce: true });
       });
       row.appendChild(button);
     });
@@ -718,13 +794,16 @@ export function initBuckLossExplorer(root) {
   if (!root || root.dataset.blxInit === "true") return;
   root.dataset.blxInit = "true";
 
-  const defaultPreset = getBuckLossPreset(DEFAULT_PRESET_ID);
+  const parsedState = parseBuckLossUrl(typeof window === "undefined" ? "" : window.location.search);
   const state = {
-    rawInputs: cloneRaw(defaultPreset.rawInputs),
-    cursor: defaultPreset.cursor,
-    activePresetId: defaultPreset.id,
+    rawInputs: cloneRaw(parsedState.rawInputs),
+    cursor: parsedState.cursor,
+    activePresetId: parsedState.activePresetId,
+    explicitOptional: { ...parsedState.explicitOptional },
+    urlNotes: parsedState.notes,
     renderTimer: 0,
-    inputs: normalizeInputs(defaultPreset.rawInputs),
+    urlTimer: 0,
+    inputs: normalizeInputs(parsedState.rawInputs),
     validation: { valid: true, errors: [] },
     sweep: [],
     plot: null
@@ -747,9 +826,12 @@ export function initBuckLossExplorer(root) {
         state.rawInputs = cloneRaw(preset.rawInputs);
         state.cursor = preset.cursor;
         state.activePresetId = preset.id;
+        state.explicitOptional = { vBias: false, inductorIsat: false };
+        state.urlNotes = [];
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
         render(root, state, { announce: true });
+        scheduleUrlReplace(root, state);
       });
       holder.appendChild(button);
     });
@@ -760,12 +842,14 @@ export function initBuckLossExplorer(root) {
       range.addEventListener("input", () => {
         activeRawInputsForRanges = state.rawInputs;
         state.rawInputs[key] = clampParam(key, fromSlider(key, range.value));
+        if (PARAMS[key].optional) state.explicitOptional[key] = true;
         state.activePresetId = null;
+        state.urlNotes = [];
         enforceBuck(state.rawInputs, key);
         state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
-        scheduleRender(root, state, { announce: true });
+        scheduleRender(root, state, { updateUrl: true, announce: true });
       });
     });
 
@@ -774,18 +858,28 @@ export function initBuckLossExplorer(root) {
         activeRawInputsForRanges = state.rawInputs;
         if (PARAMS[key].optional && input.value.trim() === "") {
           state.rawInputs[key] = null;
+          state.explicitOptional[key] = false;
         } else {
           state.rawInputs[key] = clampParam(key, input.value);
+          if (PARAMS[key].optional) state.explicitOptional[key] = true;
         }
         state.activePresetId = null;
+        state.urlNotes = [];
         enforceBuck(state.rawInputs, key);
         state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
-        scheduleRender(root, state, { announce: true });
+        scheduleRender(root, state, { updateUrl: true, announce: true });
       });
     });
   });
+
+  const copyButton = root.querySelector("[data-blx-copy]");
+  if (copyButton) {
+    copyButton.addEventListener("click", () => {
+      copyCanonicalUrl(root, state);
+    });
+  }
 
   buildTicks(root, state);
   syncControls(state, numberControls, rangeControls);
