@@ -3,26 +3,26 @@ import { BUCK_LOSS_PRESETS, getBuckLossPreset } from "./buck-loss-presets.js";
 import { parseBuckLossUrl, serializeBuckLossUrl } from "./buck-loss-url.js";
 
 const PARAMS = {
-  vin: { min: 1, max: 100, log: true, digits: 2 },
-  vout: { min: 0.3, max: 95, log: true, digits: 2 },
-  ioutMax: { min: 0.05, max: 60, log: true, digits: 2 },
-  fsw: { min: 50, max: 6000, log: true, digits: 0 },
-  inductance: { min: 0.1, max: 470, log: true, digits: 2 },
-  rdsHigh: { min: 0.1, max: 500, log: true, digits: 2 },
-  rdsLow: { min: 0.1, max: 500, log: true, digits: 2 },
-  qgHigh: { min: 0, max: 100, log: false, digits: 1 },
-  qgLow: { min: 0, max: 100, log: false, digits: 1 },
-  tOverlap: { min: 0, max: 200, log: false, digits: 1 },
-  deadTime: { min: 0, max: 200, log: false, digits: 1 },
-  diodeVf: { min: 0.2, max: 1.2, log: false, digits: 2 },
-  dcr: { min: 0, max: 500, log: false, digits: 2 },
-  esr: { min: 0, max: 500, log: false, digits: 2 },
-  inductorIsat: { min: 0.1, max: 200, log: true, digits: 2, optional: true },
-  vDrive: { min: 2.5, max: 12, log: false, digits: 2 },
-  iq: { min: 0, max: 20, log: false, digits: 2 },
-  vBias: { min: 1, max: 100, log: true, digits: 2, optional: true },
-  eossTotal: { min: 0, max: 1000, log: false, digits: 1 },
-  qrr: { min: 0, max: 500, log: false, digits: 1 }
+  vin: { min: 1, max: 100, log: true, digits: 2, label: "Input voltage", unit: "V" },
+  vout: { min: 0.3, max: 95, log: true, digits: 2, label: "Output voltage", unit: "V" },
+  ioutMax: { min: 0.05, max: 60, log: true, digits: 2, label: "Maximum load current", unit: "A" },
+  fsw: { min: 50, max: 6000, log: true, digits: 0, label: "Switching frequency", unit: "kHz" },
+  inductance: { min: 0.1, max: 470, log: true, digits: 2, label: "Inductance", unit: "uH" },
+  rdsHigh: { min: 0.1, max: 500, log: true, digits: 2, label: "High-side RDS(on)", unit: "mohm" },
+  rdsLow: { min: 0.1, max: 500, log: true, digits: 2, label: "Low-side RDS(on)", unit: "mohm" },
+  qgHigh: { min: 0, max: 100, log: false, digits: 1, label: "High-side gate charge", unit: "nC" },
+  qgLow: { min: 0, max: 100, log: false, digits: 1, label: "Low-side gate charge", unit: "nC" },
+  tOverlap: { min: 0, max: 200, log: false, digits: 1, label: "Switching overlap time", unit: "ns" },
+  deadTime: { min: 0, max: 200, log: false, digits: 1, label: "Dead time per edge", unit: "ns" },
+  diodeVf: { min: 0.2, max: 1.2, log: false, digits: 2, label: "Diode path forward voltage", unit: "V" },
+  dcr: { min: 0, max: 500, log: false, digits: 2, label: "Inductor DCR", unit: "mohm" },
+  esr: { min: 0, max: 500, log: false, digits: 2, label: "Output capacitor ESR", unit: "mohm" },
+  inductorIsat: { min: 0.1, max: 200, log: true, digits: 2, optional: true, label: "Inductor saturation current", unit: "A" },
+  vDrive: { min: 2.5, max: 12, log: false, digits: 2, label: "Gate drive voltage", unit: "V" },
+  iq: { min: 0, max: 20, log: false, digits: 2, label: "Quiescent current", unit: "mA" },
+  vBias: { min: 1, max: 100, log: true, digits: 2, optional: true, label: "Bias voltage", unit: "V" },
+  eossTotal: { min: 0, max: 1000, log: false, digits: 1, label: "Total EOSS", unit: "nJ" },
+  qrr: { min: 0, max: 500, log: false, digits: 1, label: "Reverse recovery charge", unit: "nC" }
 };
 
 const TICKS = {
@@ -42,6 +42,22 @@ const GROUPS = [
   ["bias", "Bias", "--blx-bias"],
   ["rippleOther", "ESR, EOSS, Qrr", "--blx-other"]
 ];
+
+const REGIME_COLOR_CLASS = {
+  floor: "gateDrive",
+  gateDrive: "gateDrive",
+  bias: "bias",
+  fetConduction: "fetConduction",
+  conduction: "fetConduction",
+  inductorDcr: "inductorDcr",
+  dcr: "inductorDcr",
+  switchingOverlap: "switchingOverlap",
+  switching: "switchingOverlap",
+  frequency: "switchingOverlap",
+  deadTime: "deadTime",
+  rippleOther: "rippleOther",
+  balanced: "fetConduction"
+};
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -97,6 +113,14 @@ function clampParam(key, value) {
   return clamp(number, param.min, dynamicMax(key));
 }
 
+function clampStaticParam(key, value) {
+  const param = PARAMS[key];
+  if (param.optional && (value === "" || value === null || value === undefined)) return null;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return param.optional ? null : param.min;
+  return clamp(number, param.min, param.max);
+}
+
 function enforceBuck(rawInputs, editedKey) {
   const cap = 0.95 * rawInputs.vin;
   if (rawInputs.vout <= cap) return;
@@ -114,9 +138,15 @@ function displayNumber(value, digits) {
   return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
 }
 
+function readFinite(text) {
+  const parsed = Number.parseFloat(String(text).trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function eng(value, unit = "") {
   if (!Number.isFinite(value)) return "—";
   const abs = Math.abs(value);
+  if (abs > 0 && abs < 0.001) return `${(value * 1000000).toPrecision(3)} u${unit}`;
   if (abs > 0 && abs < 1) return `${(value * 1000).toPrecision(3)} m${unit}`;
   return `${value.toPrecision(3)} ${unit}`.trim();
 }
@@ -129,6 +159,14 @@ function formatCurrent(value) {
 
 function percent(value) {
   return Number.isFinite(value) ? `${(100 * value).toFixed(1)} %` : "—";
+}
+
+function ariaPower(value) {
+  if (!Number.isFinite(value)) return "unknown loss";
+  const abs = Math.abs(value);
+  if (abs > 0 && abs < 0.001) return `${Number((value * 1000000).toPrecision(3))} microwatts`;
+  if (abs > 0 && abs < 1) return `${Number((value * 1000).toPrecision(3))} milliwatts`;
+  return `${Number(value.toPrecision(3))} watts`;
 }
 
 function regimeLabel(regime) {
@@ -149,34 +187,8 @@ function regimeLabel(regime) {
   return labels[regime] ?? "Balanced";
 }
 
-function getColor(root, token, fallback) {
-  const styles = getComputedStyle(root);
-  return styles.getPropertyValue(token).trim() || fallback;
-}
-
-function siteColors(root) {
-  return {
-    ink: getColor(root, "--ink", "#1f2328"),
-    inkSoft: getColor(root, "--ink-soft", "#3f4448"),
-    muted: getColor(root, "--muted", "#6b7078"),
-    soft: getColor(root, "--soft", "#f6f7f8"),
-    line: getColor(root, "--line", "#d9dee3"),
-    accent: getColor(root, "--accent", "#276f86")
-  };
-}
-
-function colorFor(root, token) {
-  const fallback = {
-    "--blx-cond": "#276f86",
-    "--blx-dcr": "#4f7d5d",
-    "--blx-sw": "#a2653c",
-    "--blx-dead": "#9b7c3a",
-    "--blx-gate": "#7a6a9e",
-    "--blx-bias": "#66707a",
-    "--blx-other": "#b0b7bd",
-    "--blx-eff": "#1f2328"
-  }[token];
-  return getColor(root, token, fallback);
+function groupCssClass(key) {
+  return `blx-band-${key}`;
 }
 
 function makeControlMap(root, attr) {
@@ -196,7 +208,7 @@ function setText(root, key, value) {
 
 function svgEl(name, attrs = {}, text = "") {
   const node = document.createElementNS(SVG_NS, name);
-  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
   if (text) node.textContent = text;
   return node;
 }
@@ -216,6 +228,11 @@ function engineeringTick(value, unit = "") {
   if (value >= 1000) return `${Number((value / 1000).toPrecision(3))}k${unit}`;
   if (value < 1) return `${Number(value.toPrecision(2))}${unit}`;
   return `${Number(value.toPrecision(3))}${unit}`;
+}
+
+function currentTickLabel(value) {
+  if (value < 1) return `${Number((value * 1000).toPrecision(3))} mA`;
+  return engineeringTick(value, " A");
 }
 
 function lossTickLabel(value) {
@@ -279,14 +296,32 @@ function clientXToSvgX(svg, clientX) {
 }
 
 function ariaCursorText(result, current) {
-  if (!result.valid) return `${formatCurrent(current)} — invalid inputs`;
-  return `${Number(current).toFixed(2)} A — efficiency ${(100 * result.efficiency).toFixed(1)}%, total loss ${eng(result.pLoss, "W")}`;
+  if (!result.valid) return `${formatCurrent(current)}, invalid inputs`;
+  return `${formatCurrent(current)}, ${(100 * result.efficiency).toFixed(1)} percent efficiency, ${ariaPower(result.pLoss)} loss`;
 }
 
 function announce(root, result, state) {
   const live = root.querySelector("[data-blx-live]");
   if (!live || !result.valid) return;
   live.textContent = ariaCursorText(result, state.cursor);
+}
+
+function renderSentence(root, classification) {
+  const node = root.querySelector('[data-blx-out="sentence"]');
+  if (!node) return;
+  if (!classification || classification.regime === "invalid") {
+    node.textContent = "Adjust VIN, VOUT, fSW, L, and the current limit to return to a valid buck operating point.";
+    return;
+  }
+  const chipKey = REGIME_COLOR_CLASS[classification.regime] || "fetConduction";
+  node.replaceChildren();
+  const chip = document.createElement("span");
+  chip.className = "blx-regime-chip";
+  const dot = document.createElement("i");
+  dot.style.setProperty("--chip-color", `var(--blx-${chipKey === "fetConduction" ? "cond" : chipKey === "inductorDcr" ? "dcr" : chipKey === "switchingOverlap" ? "sw" : chipKey === "deadTime" ? "dead" : chipKey === "gateDrive" ? "gate" : chipKey === "bias" ? "bias" : "other"})`);
+  dot.setAttribute("aria-hidden", "true");
+  chip.append(dot, document.createTextNode(regimeLabel(classification.regime)));
+  node.append(chip, document.createTextNode(classification.sentence));
 }
 
 function canonicalQuery(state) {
@@ -321,9 +356,8 @@ function scheduleUrlReplace(root, state) {
   }, 400);
 }
 
-async function copyCanonicalUrl(root, state) {
+async function copyCanonicalUrl(root, state, triggerButton = null) {
   const input = root.querySelector("[data-blx-copy-url]");
-  const button = root.querySelector("[data-blx-copy]");
   const href = canonicalHref(state);
   if (input) input.value = href;
 
@@ -343,12 +377,12 @@ async function copyCanonicalUrl(root, state) {
     }
   }
 
-  if (button) {
-    const original = button.textContent;
-    button.textContent = "Copied";
-    clearTimeout(button.blxCopyTimer);
-    button.blxCopyTimer = setTimeout(() => {
-      button.textContent = original;
+  if (triggerButton) {
+    const original = triggerButton.textContent;
+    triggerButton.textContent = "Copied";
+    clearTimeout(triggerButton.blxCopyTimer);
+    triggerButton.blxCopyTimer = setTimeout(() => {
+      triggerButton.textContent = original;
     }, 1500);
   }
 }
@@ -362,6 +396,9 @@ function updateCursorSvg(root, state, result) {
   const line = svg.querySelector("[data-blx-cursor-line]");
   const dot = svg.querySelector("[data-blx-eff-dot]");
   const rail = svg.querySelector("[data-blx-cursor-rail]");
+  const label = svg.querySelector("[data-blx-cursor-label]");
+  const labelBg = svg.querySelector("[data-blx-cursor-label-bg]");
+  const labelText = `${formatCurrent(state.cursor)} · ${(100 * result.efficiency).toFixed(1)}%`;
 
   if (line) {
     line.setAttribute("x1", x);
@@ -372,6 +409,17 @@ function updateCursorSvg(root, state, result) {
   if (dot) {
     dot.setAttribute("cx", x);
     dot.setAttribute("cy", y);
+  }
+  if (label && labelBg) {
+    const labelWidth = Math.max(82, labelText.length * 6.4 + 14);
+    const labelX = clamp(x + 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth);
+    const labelY = clamp(y - 28, state.plot.top + 4, state.plot.bottom - 24);
+    label.textContent = labelText;
+    label.setAttribute("x", labelX + 7);
+    label.setAttribute("y", labelY + 15);
+    labelBg.setAttribute("x", labelX);
+    labelBg.setAttribute("y", labelY);
+    labelBg.setAttribute("width", labelWidth);
   }
   if (rail) {
     rail.setAttribute("x", x - 22);
@@ -386,14 +434,14 @@ function updateCursorSvg(root, state, result) {
 
 function updateCursorReadouts(root, state, options = {}) {
   const validation = state.validation ?? validateInputs(state.inputs);
-  const result = validation.valid ? computeLossPoint(state.inputs, state.cursor) : computeLossPoint(state.inputs, state.cursor);
+  const result = computeLossPoint(state.inputs, state.cursor);
   const classification = classifyRegime(result, state.inputs);
 
   root.classList.toggle("blx-invalid", !validation.valid || !result.valid);
   if (!validation.valid || !result.valid) {
     ["current", "efficiency", "loss", "pout"].forEach((key) => setText(root, key, "—"));
     setText(root, "regime", "Invalid");
-    setText(root, "sentence", "Adjust VIN, VOUT, fSW, L, and the current limit to return to a valid buck operating point.");
+    renderSentence(root, null);
     renderBreakdown(root, result);
     renderWarnings(root, result, validation, state);
     updateCopyUrl(root, state);
@@ -405,7 +453,7 @@ function updateCursorReadouts(root, state, options = {}) {
   setText(root, "loss", eng(result.pLoss, "W"));
   setText(root, "pout", eng(result.pOut, "W"));
   setText(root, "regime", regimeLabel(classification.regime));
-  setText(root, "sentence", classification.sentence);
+  renderSentence(root, classification);
   renderBreakdown(root, result);
   renderWarnings(root, result, validation, state);
   updateCursorSvg(root, state, result);
@@ -441,7 +489,6 @@ function attachCursorEvents(root, state, rail, surface) {
 
   function startDrag(event, target) {
     if (!state.plot) return;
-    if (target === surface && event.pointerType === "touch") return;
     event.preventDefault();
     dragging = true;
     pointerId = event.pointerId;
@@ -474,14 +521,53 @@ function attachCursorEvents(root, state, rail, surface) {
   });
 
   rail.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const keyMap = {
+      ArrowLeft: -1,
+      ArrowDown: -1,
+      ArrowRight: 1,
+      ArrowUp: 1,
+      PageDown: -10,
+      PageUp: 10
+    };
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      state.cursor = event.key === "Home" ? state.plot.xMin : state.plot.xMax;
+      updateCursorReadouts(root, state, { announce: true });
+      scheduleUrlReplace(root, state);
+      return;
+    }
+    if (!(event.key in keyMap)) return;
     event.preventDefault();
-    const direction = event.key === "ArrowRight" ? 1 : -1;
-    const step = scaleFromPlot(state.plot).logStep(event.shiftKey ? 10 : 1);
+    const direction = Math.sign(keyMap[event.key]);
+    const step = scaleFromPlot(state.plot).logStep(Math.abs(keyMap[event.key]) * (event.shiftKey ? 10 : 1));
     state.cursor = clamp(Math.exp(Math.log(state.cursor) + direction * step), state.plot.xMin, state.plot.xMax);
     updateCursorReadouts(root, state, { announce: true });
     scheduleUrlReplace(root, state);
   });
+}
+
+function isCompactPlot() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 700px)").matches;
+}
+
+function renderLegend(root) {
+  const legend = root.querySelector("[data-blx-legend]");
+  if (!legend) return;
+  legend.replaceChildren();
+  GROUPS.forEach(([key, label, token]) => {
+    const item = document.createElement("span");
+    const swatch = document.createElement("i");
+    swatch.style.setProperty("--legend-color", `var(${token})`);
+    swatch.setAttribute("aria-hidden", "true");
+    item.append(swatch, document.createTextNode(label));
+    legend.appendChild(item);
+  });
+  const eff = document.createElement("span");
+  eff.className = "blx-eff-key";
+  const line = document.createElement("i");
+  line.setAttribute("aria-hidden", "true");
+  eff.append(line, document.createTextNode("Efficiency"));
+  legend.appendChild(eff);
 }
 
 function renderPlot(root, inputs, result, state) {
@@ -489,47 +575,58 @@ function renderPlot(root, inputs, result, state) {
   if (!holder) return;
   if (!result.valid) {
     holder.replaceChildren();
+    renderLegend(root);
     return;
   }
 
-  const width = 680;
-  const height = 360;
-  const left = 58;
-  const right = 80;
-  const top = 28;
+  const compact = isCompactPlot();
+  const width = compact ? 360 : 680;
+  const height = compact ? 260 : 360;
+  const left = compact ? 44 : 58;
+  const right = compact ? 44 : 80;
+  const top = compact ? 32 : 30;
   const plotWidth = width - left - right;
-  const plotHeight = 216;
+  const plotHeight = compact ? 150 : 222;
   const bottom = top + plotHeight;
-  const legendTop = 306;
-  const colors = siteColors(root);
-  const groupColors = Object.fromEntries(GROUPS.map(([key, , token]) => [key, colorFor(root, token)]));
   const xMin = Math.max(inputs.ioutMax / 1000, 1e-3);
   const xMax = inputs.ioutMax;
   const sweep = state.sweep && state.sweep.length ? state.sweep : computeLossSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
   const maxLoss = state.plot?.maxLoss ?? niceCeil(1.1 * Math.max(...sweep.map((point) => point.pLoss), result.pLoss, 0.001));
-  state.plot = { left, top, plotWidth, plotHeight, bottom, xMin, xMax, maxLoss };
+  state.plot = { left, top, plotWidth, plotHeight, bottom, xMin, xMax, maxLoss, width, height };
   const { xScale, lossY, effY } = scaleFromPlot(state.plot);
+  const titleId = `${state.instanceId}-plot-title`;
+  const descId = `${state.instanceId}-plot-desc`;
   const svg = svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
-    "aria-label": "Stacked buck converter loss versus load current with efficiency overlay"
+    "aria-labelledby": `${titleId} ${descId}`
   });
 
   svg.append(
-    svgEl("rect", { x: left, y: top, width: plotWidth, height: plotHeight, fill: "#fff" }),
-    svgEl("line", { x1: left, y1: bottom, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2, opacity: "0.9" }),
-    svgEl("line", { x1: left, y1: top, x2: left, y2: bottom, stroke: colors.line, "stroke-width": 1.2, opacity: "0.9" }),
-    svgEl("line", { x1: left + plotWidth, y1: top, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2, opacity: "0.9" })
+    svgEl("title", { id: titleId }, "Buck loss and efficiency versus load current"),
+    svgEl("desc", { id: descId }, "Stacked loss bands show FET conduction, inductor DCR, switching overlap, dead time, gate drive, bias, and ripple-related loss. A line overlays efficiency and a draggable vertical cursor selects the load current.")
+  );
+
+  svg.append(
+    svgEl("rect", { class: "blx-svg-bg", x: left, y: top, width: plotWidth, height: plotHeight }),
+    svgEl("line", { class: "blx-svg-axis", x1: left, y1: bottom, x2: left + plotWidth, y2: bottom, "stroke-width": 1.2, opacity: "0.9" }),
+    svgEl("line", { class: "blx-svg-axis", x1: left, y1: top, x2: left, y2: bottom, "stroke-width": 1.2, opacity: "0.9" }),
+    svgEl("line", { class: "blx-svg-axis", x1: left + plotWidth, y1: top, x2: left + plotWidth, y2: bottom, "stroke-width": 1.2, opacity: "0.9" })
   );
 
   const forcedBoundary = inputs.coreBoundary ?? computeLossPoint(inputs, xMax).core.deltaIL / 2;
   if (forcedBoundary > xMin) {
     const boundaryX = xScale(Math.min(forcedBoundary, xMax));
     const shadeWidth = clamp(boundaryX - left, 0, plotWidth);
+    const forcedLabel = "forced CCM / reverse current";
+    const forcedWidth = compact ? 145 : 162;
+    const forcedX = clamp(boundaryX + 6, left + 4, left + plotWidth - forcedWidth - 4);
+    const forcedY = top + 8;
     svg.append(
-      svgEl("rect", { x: left, y: top, width: shadeWidth, height: plotHeight, fill: colors.accent, opacity: "0.075" }),
-      svgEl("line", { x1: boundaryX, y1: top, x2: boundaryX, y2: bottom, stroke: colors.accent, "stroke-width": 1, "stroke-dasharray": "4 5", opacity: "0.72" }),
-      svgEl("text", { x: Math.min(boundaryX + 6, left + plotWidth - 74), y: top + 15, fill: colors.accent, "font-size": 11, "font-weight": 600 }, "forced CCM")
+      svgEl("rect", { class: "blx-forced-shade", x: left, y: top, width: shadeWidth, height: plotHeight }),
+      svgEl("line", { class: "blx-forced-line", x1: boundaryX, y1: top, x2: boundaryX, y2: bottom, "stroke-width": 1, "stroke-dasharray": "4 5" }),
+      svgEl("rect", { class: "blx-forced-pill", x: forcedX, y: forcedY, width: forcedWidth, height: 18, rx: 9 }),
+      svgEl("text", { class: "blx-forced-text", x: forcedX + 8, y: forcedY + 12.5, "font-size": compact ? 9.2 : 10.5 }, forcedLabel)
     );
   }
 
@@ -537,32 +634,32 @@ function renderPlot(root, inputs, result, state) {
     const value = (maxLoss / 4) * i;
     const y = lossY(value);
     svg.append(
-      svgEl("line", { x1: left, y1: y, x2: left + plotWidth, y2: y, stroke: colors.line, "stroke-width": 1, opacity: i === 0 ? "0.85" : "0.34" }),
-      svgEl("text", { x: left - 8, y: y + 4, fill: colors.muted, "font-size": 11, "text-anchor": "end" }, lossTickLabel(value))
+      svgEl("line", { class: "blx-svg-grid", x1: left, y1: y, x2: left + plotWidth, y2: y, "stroke-width": 1, opacity: i === 0 ? "0.85" : "0.34" }),
+      svgEl("text", { class: "blx-svg-label", x: left - 8, y: y + 4, "font-size": compact ? 9.6 : 11, "text-anchor": "end" }, lossTickLabel(value))
     );
   }
 
   [0, 0.25, 0.5, 0.75, 1].forEach((efficiency) => {
     const y = effY(efficiency);
     svg.append(
-      svgEl("line", { x1: left + plotWidth, y1: y, x2: left + plotWidth + 5, y2: y, stroke: colors.line, "stroke-width": 1 }),
-      svgEl("text", { x: left + plotWidth + 10, y: y + 4, fill: colors.muted, "font-size": 11 }, `${Math.round(100 * efficiency)}%`)
+      svgEl("line", { class: "blx-svg-eff-tick", x1: left + plotWidth, y1: y, x2: left + plotWidth + 5, y2: y, "stroke-width": 1 }),
+      svgEl("text", { class: "blx-svg-label", x: left + plotWidth + 8, y: y + 4, "font-size": compact ? 9.4 : 11 }, `${Math.round(100 * efficiency)}%`)
     );
   });
 
   logTicks(xMin, xMax).forEach((tick) => {
     const x = xScale(tick.value);
     svg.append(svgEl("line", {
+      class: "blx-svg-grid",
       x1: x,
       y1: bottom,
       x2: x,
       y2: tick.major ? top : bottom - 5,
-      stroke: colors.line,
       "stroke-width": tick.major ? 1 : 0.8,
       opacity: tick.major ? "0.28" : "0.22"
     }));
     if (tick.major) {
-      svg.append(svgEl("text", { x, y: bottom + 18, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, engineeringTick(tick.value, "A")));
+      svg.append(svgEl("text", { class: "blx-svg-label", x, y: bottom + (compact ? 15 : 18), "font-size": compact ? 9.4 : 11, "text-anchor": "middle" }, currentTickLabel(tick.value)));
     }
   });
 
@@ -581,44 +678,80 @@ function renderPlot(root, inputs, result, state) {
   GROUPS.forEach(([key]) => {
     const path = svgEl("path", {
       d: areaPath(stacked, key, key, xScale, lossY),
-      fill: groupColors[key],
-      "fill-opacity": "0.8",
-      stroke: "#fff",
-      "stroke-width": "1",
-      "stroke-linejoin": "round"
+      class: `blx-band ${groupCssClass(key)}`
     });
     svg.append(path);
   });
 
   const effLine = svgEl("path", {
     d: svgPath(sweep.map((point) => [xScale(point.iout), effY(point.efficiency)])),
+    class: "blx-eff-line",
     fill: "none",
-    stroke: colorFor(root, "--blx-eff"),
     "stroke-width": 2.2,
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
   });
   svg.append(effLine);
 
+  const peak = sweep.reduce((best, point) => (point.efficiency > best.efficiency ? point : best), sweep[0]);
+  if (peak) {
+    const peakX = xScale(peak.iout);
+    const peakY = effY(peak.efficiency);
+    const text = `peak ${(100 * peak.efficiency).toFixed(1)}%`;
+    const labelWidth = text.length * 5.8 + 14;
+    const cursorX = xScale(state.cursor);
+    const cursorY = effY(result.efficiency);
+    const nearCursor = Math.abs(peakX - cursorX) < 115 && Math.abs(peakY - cursorY) < 38;
+    const labelX = nearCursor
+      ? clamp(peakX - labelWidth - 9, left + 3, left + plotWidth - labelWidth - 3)
+      : clamp(peakX + 7, left + 3, left + plotWidth - labelWidth - 3);
+    const labelY = nearCursor
+      ? clamp(peakY + 9, top + 4, bottom - 20)
+      : clamp(peakY - 25, top + 4, bottom - 20);
+    svg.append(
+      svgEl("circle", { class: "blx-eff-dot blx-eff-peak", cx: peakX, cy: peakY, r: compact ? 3.2 : 3.8, "stroke-width": 1.5, "pointer-events": "none" }),
+      svgEl("rect", { class: "blx-label-pill", x: labelX, y: labelY, width: labelWidth, height: 17, rx: 8.5, "pointer-events": "none" }),
+      svgEl("text", { class: "blx-svg-soft-label", x: labelX + 7, y: labelY + 12, "font-size": compact ? 8.8 : 10, "pointer-events": "none" }, text)
+    );
+  }
+
   const cursorLine = svgEl("line", {
     "data-blx-cursor-line": "true",
+    class: "blx-cursor-line",
     x1: left,
     y1: top,
     x2: left,
     y2: bottom,
-    stroke: colors.ink,
     "stroke-width": 1.2,
     opacity: "0.56",
     "pointer-events": "none"
   });
   const effDot = svgEl("circle", {
     "data-blx-eff-dot": "true",
+    class: "blx-eff-dot",
     cx: left,
     cy: bottom,
     r: 4.6,
-    fill: "#fff",
-    stroke: colorFor(root, "--blx-eff"),
     "stroke-width": 2,
+    "pointer-events": "none"
+  });
+  const cursorLabelBg = svgEl("rect", {
+    "data-blx-cursor-label-bg": "true",
+    class: "blx-label-pill",
+    x: left,
+    y: top,
+    width: 90,
+    height: 20,
+    rx: 10,
+    "pointer-events": "none"
+  });
+  const cursorLabel = svgEl("text", {
+    "data-blx-cursor-label": "true",
+    class: "blx-label-text",
+    x: left + 7,
+    y: top + 15,
+    "font-size": compact ? 10 : 11,
+    "font-weight": 650,
     "pointer-events": "none"
   });
   const surface = svgEl("rect", {
@@ -647,34 +780,16 @@ function renderPlot(root, inputs, result, state) {
   });
   rail.style.touchAction = "none";
   rail.style.cursor = "ew-resize";
-  svg.append(surface, cursorLine, effDot, rail);
+  svg.append(surface, cursorLine, effDot, cursorLabelBg, cursorLabel, rail);
 
   svg.append(
-    svgEl("text", { x: left, y: top - 8, fill: colors.muted, "font-size": 11 }, "loss"),
-    svgEl("text", { x: left + plotWidth + 14, y: top - 8, fill: colors.muted, "font-size": 11 }, "efficiency"),
-    svgEl("text", { x: left + plotWidth / 2, y: bottom + 42, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, "load current")
-  );
-
-  let legendX = left;
-  let legendY = legendTop;
-  GROUPS.forEach(([key, label]) => {
-    const itemWidth = label.length * 6 + 24;
-    if (legendX + itemWidth > left + plotWidth) {
-      legendX = left;
-      legendY += 18;
-    }
-    svg.append(
-      svgEl("rect", { x: legendX, y: legendY - 9, width: 10, height: 10, rx: 2, fill: groupColors[key], opacity: "0.8" }),
-      svgEl("text", { x: legendX + 15, y: legendY, fill: colors.inkSoft, "font-size": 10.5 }, label)
-    );
-    legendX += itemWidth;
-  });
-  svg.append(
-    svgEl("line", { x1: left + plotWidth - 84, y1: legendTop + 25, x2: left + plotWidth - 58, y2: legendTop + 25, stroke: colorFor(root, "--blx-eff"), "stroke-width": 2 }),
-    svgEl("text", { x: left + plotWidth - 52, y: legendTop + 29, fill: colors.inkSoft, "font-size": 10.5 }, "Efficiency")
+    svgEl("text", { class: "blx-svg-label", x: left, y: top - 10, "font-size": compact ? 9.6 : 11 }, "loss"),
+    svgEl("text", { class: "blx-svg-label", x: left + plotWidth + (compact ? 6 : 14), y: top - 10, "font-size": compact ? 9.6 : 11 }, "eff."),
+    svgEl("text", { class: "blx-svg-label", x: left + plotWidth / 2, y: height - 18, "font-size": compact ? 9.8 : 11, "text-anchor": "middle" }, "load current")
   );
 
   holder.replaceChildren(svg);
+  renderLegend(root);
   attachCursorEvents(root, state, rail, surface);
   updateCursorSvg(root, state, result);
 }
@@ -686,16 +801,25 @@ function updatePresetButtons(root, activePresetId) {
   });
 }
 
-function syncControls(state, numberControls, rangeControls) {
+function controlValueText(key, value) {
+  const param = PARAMS[key];
+  if (param.optional && value === null) return `${param.label}: none`;
+  return `${param.label}: ${displayNumber(value, param.digits)} ${param.unit}`;
+}
+
+function syncControls(state, numberControls, rangeControls, options = {}) {
   activeRawInputsForRanges = state.rawInputs;
   Object.keys(PARAMS).forEach((key) => {
     const param = PARAMS[key];
     const value = state.rawInputs[key];
     (numberControls.get(key) || []).forEach((input) => {
+      if (!options.force && document.activeElement === input) return;
       input.value = param.optional && value === null ? "" : displayNumber(value, param.digits);
     });
     (rangeControls.get(key) || []).forEach((input) => {
+      if (!options.force && document.activeElement === input) return;
       input.value = toSlider(key, value);
+      input.setAttribute("aria-valuetext", controlValueText(key, value));
     });
   });
 }
@@ -706,27 +830,44 @@ function renderBreakdown(root, result) {
   if (!list || !bar) return;
 
   if (!result.valid || !(result.pLoss > 0)) {
-    list.innerHTML = GROUPS.map(([, label]) => `<li><span>${label}</span><span>—</span><span>—</span></li>`).join("");
-    bar.innerHTML = "";
+    bar.replaceChildren();
+    list.replaceChildren();
+    GROUPS.forEach(([, label]) => {
+      const item = document.createElement("li");
+      item.append(document.createElement("span"), document.createElement("span"), document.createElement("span"));
+      item.children[0].textContent = label;
+      item.children[1].textContent = "—";
+      item.children[2].textContent = "—";
+      list.appendChild(item);
+    });
     return;
   }
 
-  bar.innerHTML = "";
+  bar.replaceChildren();
   GROUPS.forEach(([key, label, token]) => {
     const value = result.groupedLosses[key];
     const share = result.pLoss > 0 ? value / result.pLoss : 0;
     const part = document.createElement("span");
     part.style.width = `${Math.max(0, 100 * share)}%`;
-    part.style.background = colorFor(root, token);
+    part.style.background = `var(${token})`;
     part.title = `${label}: ${eng(value, "W")}`;
     bar.appendChild(part);
   });
 
-  list.innerHTML = GROUPS.map(([key, label]) => {
+  list.replaceChildren();
+  GROUPS.forEach(([key, label]) => {
     const value = result.groupedLosses[key];
     const share = result.pLoss > 0 ? value / result.pLoss : 0;
-    return `<li><span>${label}</span><span>${eng(value, "W")}</span><span>${(100 * share).toFixed(1)}%</span></li>`;
-  }).join("");
+    const item = document.createElement("li");
+    const labelEl = document.createElement("span");
+    const valueEl = document.createElement("span");
+    const shareEl = document.createElement("span");
+    labelEl.textContent = label;
+    valueEl.textContent = eng(value, "W");
+    shareEl.textContent = `${(100 * share).toFixed(1)}%`;
+    item.append(labelEl, valueEl, shareEl);
+    list.appendChild(item);
+  });
 }
 
 function renderWarnings(root, result, validation, state = {}) {
@@ -738,7 +879,17 @@ function renderWarnings(root, result, validation, state = {}) {
   } else {
     result.warnings.forEach((code) => notes.push(WARNING_COPY[code] || code));
   }
-  box.innerHTML = notes.map((text) => `<p class="blx-note blx-note-show">${text}</p>`).join("");
+  const shown = notes.slice(0, 2);
+  const cacheKey = shown.join("\n");
+  if (box.dataset.blxWarningsCache === cacheKey) return;
+  box.dataset.blxWarningsCache = cacheKey;
+  box.replaceChildren();
+  shown.forEach((text) => {
+    const noteEl = document.createElement("p");
+    noteEl.className = "blx-note blx-note-show";
+    noteEl.textContent = text;
+    box.appendChild(noteEl);
+  });
 }
 
 function renderPrompt(root, state) {
@@ -748,13 +899,40 @@ function renderPrompt(root, state) {
   prompt.textContent = preset ? preset.prompt : "Custom values. Use the knobs to see which loss family moves first.";
 }
 
+function renderTryChips(root, state) {
+  const holder = root.querySelector("[data-blx-try]");
+  if (!holder) return;
+  holder.replaceChildren();
+  const label = document.createElement("span");
+  label.textContent = "Try:";
+  holder.appendChild(label);
+  [
+    ["half-fsw", "Halve fSW"],
+    ["lower-rds", "Halve RDS(on)"],
+    ["add-eoss", "Add EOSS"]
+  ].forEach(([id, text]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.blxTry = id;
+    button.textContent = text;
+    holder.appendChild(button);
+  });
+  if (state.undoTry) {
+    const undo = document.createElement("button");
+    undo.type = "button";
+    undo.dataset.blxTryUndo = "true";
+    undo.textContent = "Undo";
+    holder.appendChild(undo);
+  }
+}
+
 function render(root, state, options = {}) {
   activeRawInputsForRanges = state.rawInputs;
   state.inputs = normalizeInputs(state.rawInputs);
   state.validation = validateInputs(state.inputs);
   state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
 
-  const result = state.validation.valid ? computeLossPoint(state.inputs, state.cursor) : computeLossPoint(state.inputs, state.cursor);
+  const result = computeLossPoint(state.inputs, state.cursor);
   const xMin = Math.max(state.inputs.ioutMax / 1000, 1e-3);
   const xMax = state.inputs.ioutMax;
   state.sweep = state.validation.valid ? computeLossSweep(state.inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid) : [];
@@ -764,6 +942,7 @@ function render(root, state, options = {}) {
 
   updatePresetButtons(root, state.activePresetId);
   renderPrompt(root, state);
+  renderTryChips(root, state);
   renderPlot(root, state.inputs, result, state);
   updateCursorReadouts(root, state, { announce: options.announce });
 }
@@ -807,6 +986,94 @@ function buildTicks(root, state) {
   });
 }
 
+function clampCursorToRange(state) {
+  state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
+}
+
+function markCustom(state) {
+  state.activePresetId = null;
+  state.urlNotes = [];
+}
+
+function commitNumberInput(root, state, key, input) {
+  activeRawInputsForRanges = state.rawInputs;
+  const text = input.value.trim();
+  if (PARAMS[key].optional && text === "") {
+    state.rawInputs[key] = null;
+    state.explicitOptional[key] = false;
+  } else {
+    const parsed = readFinite(text);
+    if (parsed === null) {
+      syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+      return;
+    }
+    state.rawInputs[key] = clampStaticParam(key, parsed);
+    if (PARAMS[key].optional) state.explicitOptional[key] = true;
+  }
+  markCustom(state);
+  enforceBuck(state.rawInputs, key);
+  clampCursorToRange(state);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  buildTicks(root, state);
+  scheduleRender(root, state, { updateUrl: true, announce: true });
+}
+
+function liveNumberInput(root, state, key, input) {
+  activeRawInputsForRanges = state.rawInputs;
+  const text = input.value.trim();
+  if (PARAMS[key].optional && text === "") {
+    state.rawInputs[key] = null;
+    state.explicitOptional[key] = false;
+  } else {
+    const parsed = readFinite(text);
+    if (parsed === null) return;
+    state.rawInputs[key] = clampStaticParam(key, parsed);
+    if (PARAMS[key].optional) state.explicitOptional[key] = true;
+  }
+  markCustom(state);
+  clampCursorToRange(state);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls);
+  buildTicks(root, state);
+  scheduleRender(root, state, { updateUrl: true, announce: true });
+}
+
+function applyTryChip(root, state, actionId) {
+  state.undoTry = {
+    rawInputs: cloneRaw(state.rawInputs),
+    cursor: state.cursor,
+    activePresetId: state.activePresetId,
+    explicitOptional: { ...state.explicitOptional }
+  };
+  markCustom(state);
+  if (actionId === "half-fsw") {
+    state.rawInputs.fsw = clampStaticParam("fsw", state.rawInputs.fsw / 2);
+  } else if (actionId === "lower-rds") {
+    state.rawInputs.rdsHigh = clampStaticParam("rdsHigh", state.rawInputs.rdsHigh / 2);
+    state.rawInputs.rdsLow = clampStaticParam("rdsLow", state.rawInputs.rdsLow / 2);
+  } else if (actionId === "add-eoss") {
+    state.rawInputs.eossTotal = state.rawInputs.eossTotal > 0 ? clampStaticParam("eossTotal", state.rawInputs.eossTotal * 2) : 50;
+  }
+  clampCursorToRange(state);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  buildTicks(root, state);
+  render(root, state, { announce: true });
+  scheduleUrlReplace(root, state);
+}
+
+function undoTryChip(root, state) {
+  if (!state.undoTry) return;
+  state.rawInputs = cloneRaw(state.undoTry.rawInputs);
+  state.cursor = state.undoTry.cursor;
+  state.activePresetId = state.undoTry.activePresetId;
+  state.explicitOptional = { ...state.undoTry.explicitOptional };
+  state.urlNotes = [];
+  state.undoTry = null;
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  buildTicks(root, state);
+  render(root, state, { announce: true });
+  scheduleUrlReplace(root, state);
+}
+
 export function initBuckLossExplorer(root) {
   if (!root || root.dataset.blxInit === "true") return;
   root.dataset.blxInit = "true";
@@ -818,6 +1085,8 @@ export function initBuckLossExplorer(root) {
     activePresetId: parsedState.activePresetId,
     explicitOptional: { ...parsedState.explicitOptional },
     urlNotes: parsedState.notes,
+    undoTry: null,
+    instanceId: `blx-${Math.random().toString(36).slice(2)}`,
     renderTimer: 0,
     urlTimer: 0,
     inputs: normalizeInputs(parsedState.rawInputs),
@@ -845,6 +1114,7 @@ export function initBuckLossExplorer(root) {
         state.activePresetId = preset.id;
         state.explicitOptional = { vBias: false, inductorIsat: false };
         state.urlNotes = [];
+        state.undoTry = null;
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
         render(root, state, { announce: true });
@@ -860,10 +1130,11 @@ export function initBuckLossExplorer(root) {
         activeRawInputsForRanges = state.rawInputs;
         state.rawInputs[key] = clampParam(key, fromSlider(key, range.value));
         if (PARAMS[key].optional) state.explicitOptional[key] = true;
-        state.activePresetId = null;
-        state.urlNotes = [];
+        markCustom(state);
+        state.undoTry = null;
         enforceBuck(state.rawInputs, key);
-        state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
+        clampCursorToRange(state);
+        range.setAttribute("aria-valuetext", controlValueText(key, state.rawInputs[key]));
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
         scheduleRender(root, state, { updateUrl: true, announce: true });
@@ -872,29 +1143,64 @@ export function initBuckLossExplorer(root) {
 
     (numberControls.get(key) || []).forEach((input) => {
       input.addEventListener("input", () => {
-        activeRawInputsForRanges = state.rawInputs;
-        if (PARAMS[key].optional && input.value.trim() === "") {
-          state.rawInputs[key] = null;
-          state.explicitOptional[key] = false;
-        } else {
-          state.rawInputs[key] = clampParam(key, input.value);
-          if (PARAMS[key].optional) state.explicitOptional[key] = true;
-        }
-        state.activePresetId = null;
-        state.urlNotes = [];
-        enforceBuck(state.rawInputs, key);
-        state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
-        syncControls(state, numberControls, rangeControls);
-        buildTicks(root, state);
-        scheduleRender(root, state, { updateUrl: true, announce: true });
+        state.undoTry = null;
+        liveNumberInput(root, state, key, input);
+      });
+      input.addEventListener("change", () => {
+        commitNumberInput(root, state, key, input);
+      });
+      input.addEventListener("blur", () => {
+        commitNumberInput(root, state, key, input);
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        commitNumberInput(root, state, key, input);
       });
     });
   });
 
-  const copyButton = root.querySelector("[data-blx-copy]");
-  if (copyButton) {
+  const tryHolder = root.querySelector("[data-blx-try]");
+  if (tryHolder) {
+    tryHolder.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      if (button.dataset.blxTryUndo) {
+        undoTryChip(root, state);
+      } else if (button.dataset.blxTry) {
+        applyTryChip(root, state, button.dataset.blxTry);
+      }
+    });
+  }
+
+  root.querySelectorAll("[data-blx-copy]").forEach((copyButton) => {
     copyButton.addEventListener("click", () => {
-      copyCanonicalUrl(root, state);
+      copyCanonicalUrl(root, state, copyButton);
+    });
+  });
+
+  if (typeof window !== "undefined") {
+    const compactQuery = window.matchMedia("(max-width: 700px)");
+    const schedulePlotRefresh = () => scheduleRender(root, state, { immediate: true });
+    if (compactQuery.addEventListener) {
+      compactQuery.addEventListener("change", schedulePlotRefresh);
+    }
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(schedulePlotRefresh, 120);
+    });
+    window.addEventListener("popstate", () => {
+      const next = parseBuckLossUrl(window.location.search);
+      state.rawInputs = cloneRaw(next.rawInputs);
+      state.cursor = next.cursor;
+      state.activePresetId = next.activePresetId;
+      state.explicitOptional = { ...next.explicitOptional };
+      state.urlNotes = next.notes;
+      state.undoTry = null;
+      syncControls(state, numberControls, rangeControls, { force: true });
+      buildTicks(root, state);
+      render(root, state, { announce: true });
     });
   }
 

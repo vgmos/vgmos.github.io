@@ -33,6 +33,7 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - package.json
+  - tests/
 
 defaults:
   - scope:
