@@ -1,4 +1,4 @@
-import { classifyRegime, computeLossPoint, normalizeInputs, validateInputs } from "./buck-loss-model.js";
+import { classifyRegime, computeLossPoint, computeLossSweep, normalizeInputs, validateInputs } from "./buck-loss-model.js";
 import { BUCK_LOSS_PRESETS, DEFAULT_PRESET_ID, getBuckLossPreset } from "./buck-loss-presets.js";
 
 const PARAMS = {
@@ -41,6 +41,8 @@ const GROUPS = [
   ["bias", "Bias", "--blx-bias"],
   ["rippleOther", "ESR, EOSS, Qrr", "--blx-other"]
 ];
+
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 const WARNING_COPY = {
   "forced-ccm": "The cursor is in forced CCM: the inductor current reverses before the next cycle.",
@@ -139,6 +141,17 @@ function getColor(root, token, fallback) {
   return styles.getPropertyValue(token).trim() || fallback;
 }
 
+function siteColors(root) {
+  return {
+    ink: getColor(root, "--ink", "#1f2328"),
+    inkSoft: getColor(root, "--ink-soft", "#3f4448"),
+    muted: getColor(root, "--muted", "#6b7078"),
+    soft: getColor(root, "--soft", "#f6f7f8"),
+    line: getColor(root, "--line", "#d9dee3"),
+    accent: getColor(root, "--accent", "#276f86")
+  };
+}
+
 function colorFor(root, token) {
   const fallback = {
     "--blx-cond": "#276f86",
@@ -166,6 +179,207 @@ function makeControlMap(root, attr) {
 function setText(root, key, value) {
   const node = root.querySelector(`[data-blx-out="${key}"]`);
   if (node) node.textContent = value;
+}
+
+function svgEl(name, attrs = {}, text = "") {
+  const node = document.createElementNS(SVG_NS, name);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+  if (text) node.textContent = text;
+  return node;
+}
+
+function svgPath(points) {
+  return points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
+}
+
+function areaPath(points, key, y0Key, xScale, yScale) {
+  const top = points.map((point) => [xScale(point.iout), yScale(point.stackTop[key])]);
+  const bottom = [...points].reverse().map((point) => [xScale(point.iout), yScale(point.stackBottom[y0Key])]);
+  return `${svgPath(top)} L${bottom.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join(" L")} Z`;
+}
+
+function engineeringTick(value, unit = "") {
+  if (value >= 1000000) return `${Number((value / 1000000).toPrecision(3))}M${unit}`;
+  if (value >= 1000) return `${Number((value / 1000).toPrecision(3))}k${unit}`;
+  if (value < 1) return `${Number(value.toPrecision(2))}${unit}`;
+  return `${Number(value.toPrecision(3))}${unit}`;
+}
+
+function lossTickLabel(value) {
+  if (value === 0) return "0";
+  if (value < 1) return `${Number((value * 1000).toPrecision(2))} mW`;
+  return `${Number(value.toPrecision(2))} W`;
+}
+
+function niceCeil(value) {
+  if (!(value > 0)) return 1;
+  const exp = Math.floor(Math.log10(value));
+  const base = 10 ** exp;
+  const ratio = value / base;
+  const nice = ratio <= 1 ? 1 : ratio <= 2 ? 2 : ratio <= 5 ? 5 : 10;
+  return nice * base;
+}
+
+function logTicks(min, max) {
+  const ticks = [];
+  const start = Math.floor(Math.log10(min));
+  const end = Math.ceil(Math.log10(max));
+  for (let decade = start; decade <= end; decade += 1) {
+    const base = 10 ** decade;
+    [1, 2, 5].forEach((multiplier) => {
+      const value = base * multiplier;
+      if (value < min || value > max) return;
+      ticks.push({ value, major: multiplier === 1 });
+    });
+  }
+  return ticks;
+}
+
+function renderPlot(root, inputs, result, state) {
+  const holder = root.querySelector("[data-blx-plot]");
+  if (!holder) return;
+  if (!result.valid) {
+    holder.replaceChildren();
+    return;
+  }
+
+  const width = 680;
+  const height = 360;
+  const left = 58;
+  const right = 80;
+  const top = 26;
+  const plotWidth = width - left - right;
+  const plotHeight = 242;
+  const bottom = top + plotHeight;
+  const legendTop = 300;
+  const colors = siteColors(root);
+  const groupColors = Object.fromEntries(GROUPS.map(([key, , token]) => [key, colorFor(root, token)]));
+  const xMin = Math.max(inputs.ioutMax / 1000, 1e-3);
+  const xMax = inputs.ioutMax;
+  const sweep = computeLossSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
+  const maxLoss = niceCeil(1.1 * Math.max(...sweep.map((point) => point.pLoss), result.pLoss, 0.001));
+  const logMin = Math.log(xMin);
+  const logMax = Math.log(xMax);
+  const xScale = (iout) => left + ((Math.log(iout) - logMin) / (logMax - logMin)) * plotWidth;
+  const lossY = (loss) => bottom - (loss / maxLoss) * plotHeight;
+  const effY = (efficiency) => bottom - efficiency * plotHeight;
+  const svg = svgEl("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+    "aria-label": "Stacked buck converter loss versus load current with efficiency overlay"
+  });
+
+  svg.append(
+    svgEl("rect", { x: left, y: top, width: plotWidth, height: plotHeight, fill: "#fff" }),
+    svgEl("line", { x1: left, y1: bottom, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2 }),
+    svgEl("line", { x1: left, y1: top, x2: left, y2: bottom, stroke: colors.line, "stroke-width": 1.2 }),
+    svgEl("line", { x1: left + plotWidth, y1: top, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2 })
+  );
+
+  const forcedBoundary = inputs.coreBoundary ?? computeLossPoint(inputs, xMax).core.deltaIL / 2;
+  if (forcedBoundary > xMin) {
+    const boundaryX = xScale(Math.min(forcedBoundary, xMax));
+    const shadeWidth = clamp(boundaryX - left, 0, plotWidth);
+    svg.append(
+      svgEl("rect", { x: left, y: top, width: shadeWidth, height: plotHeight, fill: colors.accent, opacity: "0.075" }),
+      svgEl("line", { x1: boundaryX, y1: top, x2: boundaryX, y2: bottom, stroke: colors.accent, "stroke-width": 1, "stroke-dasharray": "4 5", opacity: "0.72" }),
+      svgEl("text", { x: Math.min(boundaryX + 6, left + plotWidth - 74), y: top + 15, fill: colors.accent, "font-size": 11, "font-weight": 600 }, "forced CCM")
+    );
+  }
+
+  for (let i = 0; i <= 4; i += 1) {
+    const value = (maxLoss / 4) * i;
+    const y = lossY(value);
+    svg.append(
+      svgEl("line", { x1: left, y1: y, x2: left + plotWidth, y2: y, stroke: colors.line, "stroke-width": 1, opacity: i === 0 ? "1" : "0.7" }),
+      svgEl("text", { x: left - 8, y: y + 4, fill: colors.muted, "font-size": 11, "text-anchor": "end" }, lossTickLabel(value))
+    );
+  }
+
+  [0, 0.25, 0.5, 0.75, 1].forEach((efficiency) => {
+    const y = effY(efficiency);
+    svg.append(
+      svgEl("line", { x1: left + plotWidth, y1: y, x2: left + plotWidth + 5, y2: y, stroke: colors.line, "stroke-width": 1 }),
+      svgEl("text", { x: left + plotWidth + 10, y: y + 4, fill: colors.muted, "font-size": 11 }, `${Math.round(100 * efficiency)}%`)
+    );
+  });
+
+  logTicks(xMin, xMax).forEach((tick) => {
+    const x = xScale(tick.value);
+    svg.append(svgEl("line", {
+      x1: x,
+      y1: bottom,
+      x2: x,
+      y2: tick.major ? top : bottom - 5,
+      stroke: colors.line,
+      "stroke-width": tick.major ? 1 : 0.8,
+      opacity: tick.major ? "0.8" : "0.65"
+    }));
+    if (tick.major) {
+      svg.append(svgEl("text", { x, y: bottom + 18, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, engineeringTick(tick.value, "A")));
+    }
+  });
+
+  const stacked = sweep.map((point) => {
+    let acc = 0;
+    const stackBottom = { zero: 0 };
+    const stackTop = {};
+    GROUPS.forEach(([key]) => {
+      stackBottom[key] = acc;
+      acc += point.groupedLosses[key];
+      stackTop[key] = acc;
+    });
+    return { ...point, stackBottom, stackTop };
+  });
+
+  GROUPS.forEach(([key]) => {
+    const path = svgEl("path", {
+      d: areaPath(stacked, key, key, xScale, lossY),
+      fill: groupColors[key],
+      "fill-opacity": "0.8",
+      stroke: "#fff",
+      "stroke-width": "1",
+      "stroke-linejoin": "round"
+    });
+    svg.append(path);
+  });
+
+  const effLine = svgEl("path", {
+    d: svgPath(sweep.map((point) => [xScale(point.iout), effY(point.efficiency)])),
+    fill: "none",
+    stroke: colorFor(root, "--blx-eff"),
+    "stroke-width": 2.2,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  });
+  svg.append(effLine);
+
+  svg.append(
+    svgEl("text", { x: left, y: top - 8, fill: colors.muted, "font-size": 11 }, "loss"),
+    svgEl("text", { x: left + plotWidth + 14, y: top - 8, fill: colors.muted, "font-size": 11 }, "efficiency"),
+    svgEl("text", { x: left + plotWidth / 2, y: bottom + 38, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, "load current")
+  );
+
+  let legendX = left;
+  let legendY = legendTop;
+  GROUPS.forEach(([key, label]) => {
+    const itemWidth = label.length * 6 + 24;
+    if (legendX + itemWidth > left + plotWidth) {
+      legendX = left;
+      legendY += 18;
+    }
+    svg.append(
+      svgEl("rect", { x: legendX, y: legendY - 9, width: 10, height: 10, rx: 2, fill: groupColors[key], opacity: "0.8" }),
+      svgEl("text", { x: legendX + 15, y: legendY, fill: colors.inkSoft, "font-size": 10.5 }, label)
+    );
+    legendX += itemWidth;
+  });
+  svg.append(
+    svgEl("line", { x1: left + plotWidth - 84, y1: legendTop + 25, x2: left + plotWidth - 58, y2: legendTop + 25, stroke: colorFor(root, "--blx-eff"), "stroke-width": 2 }),
+    svgEl("text", { x: left + plotWidth - 52, y: legendTop + 29, fill: colors.inkSoft, "font-size": 10.5 }, "Efficiency")
+  );
+
+  holder.replaceChildren(svg);
 }
 
 function updatePresetButtons(root, activePresetId) {
@@ -247,6 +461,7 @@ function render(root, state) {
   root.classList.toggle("blx-invalid", !validation.valid || !result.valid);
   updatePresetButtons(root, state.activePresetId);
   renderPrompt(root, state);
+  renderPlot(root, inputs, result, state);
 
   if (!validation.valid || !result.valid) {
     ["current", "efficiency", "loss", "pout"].forEach((key) => setText(root, key, "—"));
