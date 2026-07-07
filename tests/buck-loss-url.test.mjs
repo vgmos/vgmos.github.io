@@ -1,0 +1,96 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { DEFAULT_PRESET_ID, getBuckLossPreset } from "../js/tools/buck-loss-presets.js";
+import {
+  makeBuckLossState,
+  parseBuckLossUrl,
+  serializeBuckLossUrl
+} from "../js/tools/buck-loss-url.js";
+
+describe("buck loss URL state", () => {
+  it("round-trips parse and serialize through canonical state", () => {
+    const first = parseBuckLossUrl("?p=48v-to-12v-bus&fsw=800&eoss=20&qrr=4&isat=4&i=2.5");
+    assert.equal(first.activePresetId, null);
+    assert.equal(first.requestedPresetId, "48v-to-12v-bus");
+    assert.equal(first.rawInputs.fsw, 800);
+    assert.equal(first.rawInputs.eossTotal, 20);
+    assert.equal(first.rawInputs.qrr, 4);
+    assert.equal(first.rawInputs.inductorIsat, 4);
+    assert.equal(first.cursor, 2.5);
+    const canonical = serializeBuckLossUrl(first);
+    const second = parseBuckLossUrl(canonical);
+    assert.deepEqual(second.rawInputs, first.rawInputs);
+    assert.equal(second.cursor, first.cursor);
+    assert.equal(serializeBuckLossUrl(second), canonical);
+  });
+
+  it("clamps out-of-range values and records one quiet note", () => {
+    const parsed = parseBuckLossUrl("?vin=0&vout=500&imax=1000&fsw=-1&l=0&rhs=-4&vf=9&iq=99&i=1000");
+    assert.equal(parsed.rawInputs.vin, 100);
+    assert.equal(parsed.rawInputs.vout, 95);
+    assert.equal(parsed.rawInputs.ioutMax, 60);
+    assert.equal(parsed.rawInputs.fsw, 50);
+    assert.equal(parsed.rawInputs.inductance, 0.1);
+    assert.equal(parsed.rawInputs.rdsHigh, 0.1);
+    assert.equal(parsed.rawInputs.diodeVf, 1.2);
+    assert.equal(parsed.rawInputs.iq, 20);
+    assert.equal(parsed.cursor, 60);
+    assert.equal(parsed.notes.filter((entry) => entry.code === "clamped").length, 1);
+  });
+
+  it("ignores unknown keys", () => {
+    const parsed = parseBuckLossUrl("?banana=1&vin=24&nope=2&i=1");
+    assert.equal(parsed.rawInputs.vin, 24);
+    assert.equal(parsed.cursor, 1);
+    assert.equal(parsed.notes.length, 0);
+    assert.ok(!serializeBuckLossUrl(parsed).includes("banana"));
+  });
+
+  it("applies preset precedence before explicit parameters", () => {
+    const parsed = parseBuckLossUrl("?p=5v-to-1v8-core&vin=12&vout=3.3&i=4");
+    assert.equal(parsed.rawInputs.ioutMax, 5);
+    assert.equal(parsed.rawInputs.fsw, 1500);
+    assert.equal(parsed.rawInputs.vin, 12);
+    assert.equal(parsed.rawInputs.vout, 3.3);
+    assert.equal(parsed.cursor, 4);
+    assert.equal(parsed.activePresetId, null);
+  });
+
+  it("uses default preset and note for unknown preset ids", () => {
+    const parsed = parseBuckLossUrl("?p=not-real&i=2");
+    const defaultPreset = getBuckLossPreset(DEFAULT_PRESET_ID);
+    assert.deepEqual(parsed.rawInputs, defaultPreset.rawInputs);
+    assert.equal(parsed.cursor, 2);
+    assert.equal(parsed.activePresetId, DEFAULT_PRESET_ID);
+    assert.equal(parsed.notes[0].code, "unknown-preset");
+  });
+
+  it("omits pristine preset defaults while always including current", () => {
+    const preset = getBuckLossPreset(DEFAULT_PRESET_ID);
+    const state = makeBuckLossState(preset.rawInputs, {
+      activePresetId: DEFAULT_PRESET_ID,
+      requestedPresetId: DEFAULT_PRESET_ID,
+      cursor: preset.cursor
+    });
+    assert.equal(serializeBuckLossUrl(state), "p=12v-to-3v3-pol&i=2");
+
+    const parsed = parseBuckLossUrl("");
+    assert.equal(parsed.activePresetId, DEFAULT_PRESET_ID);
+    assert.equal(serializeBuckLossUrl(parsed), "p=12v-to-3v3-pol&i=2");
+  });
+
+  it("serializes optional blank values only when explicitly set", () => {
+    const preset = getBuckLossPreset(DEFAULT_PRESET_ID);
+    const blankState = makeBuckLossState(preset.rawInputs, {
+      activePresetId: DEFAULT_PRESET_ID,
+      cursor: preset.cursor
+    });
+    assert.equal(serializeBuckLossUrl(blankState), "p=12v-to-3v3-pol&i=2");
+
+    const explicit = makeBuckLossState({ ...preset.rawInputs, vBias: 5, inductorIsat: 2 }, {
+      cursor: preset.cursor,
+      explicitOptional: { vBias: true, inductorIsat: true }
+    });
+    assert.equal(serializeBuckLossUrl(explicit), "vbias=5&isat=2&i=2");
+  });
+});
