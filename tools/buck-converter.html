@@ -52,8 +52,19 @@ permalink: /tools/buck-converter/
   .bc-schematic .halo { stroke: var(--accent); stroke-width: 6; fill: none; stroke-linecap: round; opacity: 0; }
   .bc-schematic .pivot { fill: var(--ink); }
   .bc-schematic .fet-node { fill: var(--accent); opacity: 0; }
-  .bc-schematic .flow-dot { fill: var(--accent); }
-  .bc-schematic .flow-geo { stroke: none; fill: none; }
+  .bc-schematic .flow-dash {
+    stroke: var(--accent);
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 5 21;
+    opacity: 0;
+  }
+  .bc-schematic .flow-dash--cap {
+    stroke-dasharray: 4 15;
+    stroke-width: 3.2;
+  }
 
   .bc-schematic--animated {
     overflow: hidden;
@@ -65,12 +76,65 @@ permalink: /tools/buck-converter/
     align-items: center;
     gap: 8px;
   }
+  .bc-anim-schematic-col {
+    min-width: 0;
+  }
   .bc-schematic--animated #bc-anim-schematic {
     width: 100%;
     max-width: 560px;
     min-width: 0;
     height: auto;
     margin: 0 0 0 auto;
+  }
+  .bc-schematic .cycle {
+    margin: 12px 0 0;
+    max-width: 560px;
+    margin-left: auto;
+  }
+  .bc-schematic .cycle-track {
+    position: relative;
+    height: 6px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--soft);
+  }
+  .bc-schematic .cycle-on {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 25%;
+    border-radius: 3px 0 0 3px;
+    background: var(--claude-ring);
+  }
+  .bc-schematic .cycle-head {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: translate(-50%, -50%);
+  }
+  .bc-schematic .cycle-labs {
+    position: relative;
+    height: 15px;
+    margin-top: 4px;
+  }
+  .bc-schematic .cycle-labs span {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font: 500 0.7rem var(--claude-sans);
+    line-height: 1;
+    transition: color var(--bc-motion) var(--claude-ease);
+  }
+  .bc-schematic .cycle-labs span.is-live {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .bc-schematic .cycle-labs sub {
+    font-size: 0.78em;
   }
   .bc-duty-control {
     align-self: stretch;
@@ -234,6 +298,13 @@ permalink: /tools/buck-converter/
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+  .bc-anim-cap {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .bc-anim-cap sub {
+    font-size: 0.78em;
   }
 
   /* --- presets --- */
@@ -895,8 +966,17 @@ permalink: /tools/buck-converter/
       grid-template-columns: minmax(0, 1fr);
       gap: 5px;
     }
-    .bc-schematic--animated #bc-anim-schematic {
+    .bc-anim-schematic-col {
       order: 2;
+    }
+    .bc-schematic--animated #bc-anim-schematic {
+      order: initial;
+    }
+    .bc-schematic .cycle {
+      width: 100%;
+    }
+    .bc-schematic .cycle-labs span {
+      font-size: 0.62rem;
     }
     .bc-duty-control {
       order: 1;
@@ -957,6 +1037,10 @@ permalink: /tools/buck-converter/
       margin-top: 6px;
       font-size: 0.72rem;
       gap: 4px;
+    }
+    .bc-anim-sep--cap,
+    .bc-anim-cap {
+      display: none;
     }
     .bc-presets {
       gap: 5px;
@@ -1590,75 +1674,72 @@ permalink: /tools/buck-converter/
     <div class="bc-workbench-scope">
       <figure class="bc-schematic bc-schematic--animated" aria-label="Animated synchronous buck converter schematic">
         <div class="bc-anim-main">
-          <svg id="bc-anim-schematic" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated synchronous buck converter">
-            <!-- flow geometry (invisible paths dots ride along) -->
-            <path class="flow-geo" id="bc-geo-hs" d="M52 56 L240 56"/>
-            <path class="flow-geo" id="bc-geo-ls" d="M240 160 L240 56"/>
-            <path class="flow-geo" id="bc-geo-main" d="M240 56 L420 56"/>
+          <div class="bc-anim-schematic-col">
+            <svg id="bc-anim-schematic" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated synchronous buck converter">
+              <!-- rails, branches, and component leads -->
+              <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
+              <path class="w" d="M52 56 L106 56"/>
+              <path class="w" d="M169 56 L240 56"/>
+              <path class="w" d="M240 56 L240 82"/>
+              <path class="w" d="M240 139 L240 160"/>
+              <path class="w" d="M240 56 L274 56"/>
+              <path class="w" d="M274 56 C274 45 291 45 291 56 C291 45 308 45 308 56 C308 45 325 45 325 56 C325 45 342 45 342 56"/>
+              <path class="w" d="M342 56 L492 56"/>
+              <path class="w" d="M420 56 L420 89 M400 89 L440 89 M400 100 L440 100 M420 100 L420 160"/>
+              <path class="w" d="M492 56 L492 93 M492 123 L492 160"/>
+              <path class="w" d="M52 160 L492 160"/>
+              <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
 
-            <!-- input source v_IN -->
-            <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
-            <circle class="contact" cx="52" cy="108" r="15"/>
-            <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
-            <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
+              <!-- switch arms -->
+              <line class="halo" id="bc-halo-hs" x1="110" y1="56" x2="164" y2="56"/>
+              <circle class="contact" cx="166" cy="56" r="3.4"/>
+              <line class="arm" id="bc-arm-hs" x1="110" y1="56" x2="164" y2="56"/>
+              <circle class="pivot" cx="110" cy="56" r="2.8"/>
+              <line class="halo" id="bc-halo-ls" x1="240" y1="86" x2="240" y2="134"/>
+              <circle class="contact" cx="240" cy="136" r="3.4"/>
+              <line class="arm" id="bc-arm-ls" x1="240" y1="86" x2="240" y2="134"/>
+              <circle class="pivot" cx="240" cy="86" r="2.8"/>
 
-            <!-- top rail -->
-            <path class="w" d="M52 56 L106 56"/>
+              <!-- comet-trail conduction paths -->
+              <path class="flow-dash dash-on" id="bc-dash-on" d="M52 56 L492 56 L492 160 L52 160 Z"/>
+              <path class="flow-dash dash-off" id="bc-dash-off" d="M240 160 L240 56 L492 56 L492 160 Z"/>
+              <path class="flow-dash flow-dash--cap dash-cap" id="bc-dash-cap" d="M420 56 L420 89 M420 100 L420 160"/>
 
-            <!-- high-side switch -->
-            <text class="ph" id="bc-lbl-ton" x="138" y="80" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
-            <line class="halo" id="bc-halo-hs" x1="110" y1="56" x2="164" y2="56"/>
-            <circle class="contact" cx="166" cy="56" r="3.4"/>
-            <line class="arm" id="bc-arm-hs" x1="110" y1="56" x2="164" y2="56"/>
-            <circle class="pivot" cx="110" cy="56" r="2.8"/>
-            <path class="w" d="M169 56 L240 56"/>
+              <!-- component bodies and labels -->
+              <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
+              <circle class="contact" cx="52" cy="108" r="15"/>
+              <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
+              <circle class="contact" cx="492" cy="108" r="15"/>
+              <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
+              <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
 
-            <!-- switch node v_SW -->
-            <circle class="fet-node" id="bc-node-glow" cx="240" cy="56" r="7"/>
-            <circle class="dot" cx="240" cy="56" r="3.2"/>
-            <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
+              <circle class="fet-node" id="bc-node-glow" cx="240" cy="56" r="7"/>
+              <circle class="dot" cx="240" cy="56" r="3.2"/>
+              <circle class="dot" cx="420" cy="56" r="3.2"/>
+              <circle class="dot" cx="240" cy="160" r="3.2"/>
+              <circle class="dot" cx="420" cy="160" r="3.2"/>
 
-            <!-- low-side switch -->
-            <path class="w" d="M240 56 L240 82"/>
-            <text class="ph" id="bc-lbl-toff" x="254" y="114">t<tspan dy="2.5">OFF</tspan></text>
-            <line class="halo" id="bc-halo-ls" x1="240" y1="86" x2="240" y2="134"/>
-            <circle class="contact" cx="240" cy="136" r="3.4"/>
-            <line class="arm" id="bc-arm-ls" x1="240" y1="86" x2="240" y2="134"/>
-            <circle class="pivot" cx="240" cy="86" r="2.8"/>
-            <path class="w" d="M240 139 L240 160"/>
+              <text class="ph" id="bc-lbl-ton" x="138" y="80" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
+              <text class="ph" id="bc-lbl-toff" x="254" y="114">t<tspan dy="2.5">OFF</tspan></text>
+              <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
+              <text class="lbl" x="307" y="31" text-anchor="middle">L<tspan dy="3">X</tspan></text>
+              <path class="arr" id="bc-il-arrow" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
+              <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
+              <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
+              <text class="lbl" x="448" y="99">C<tspan dy="3">O</tspan></text>
+            </svg>
 
-            <!-- switched inductor L_X -->
-            <path class="w" d="M240 56 L274 56"/>
-            <path class="w" d="M274 56 C274 45 291 45 291 56 C291 45 308 45 308 56 C308 45 325 45 325 56 C325 45 342 45 342 56"/>
-            <text class="lbl" x="307" y="31" text-anchor="middle">L<tspan dy="3">X</tspan></text>
-            <path class="w" d="M342 56 L492 56"/>
-
-            <!-- inductor current i_L -->
-            <path class="arr" id="bc-il-arrow" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
-            <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
-
-            <!-- output node v_OUT + C_O -->
-            <circle class="dot" cx="420" cy="56" r="3.2"/>
-            <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
-            <path class="w" d="M420 56 L420 89 M400 89 L440 89 M400 100 L440 100 M420 100 L420 160"/>
-            <text class="lbl" x="448" y="99">C<tspan dy="3">O</tspan></text>
-
-            <!-- load current sink i_O -->
-            <path class="w" d="M492 56 L492 93"/>
-            <circle class="contact" cx="492" cy="108" r="15"/>
-            <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
-            <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
-            <path class="w" d="M492 123 L492 160"/>
-
-            <!-- bottom rail + ground -->
-            <path class="w" d="M52 160 L492 160"/>
-            <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
-
-            <!-- dot layers (populated by JS) -->
-            <g id="bc-dots-main"></g>
-            <g id="bc-dots-hs"></g>
-            <g id="bc-dots-ls"></g>
-          </svg>
+            <div class="cycle" aria-hidden="true">
+              <div class="cycle-track">
+                <div class="cycle-on" id="bc-cycle-on"></div>
+                <div class="cycle-head" id="bc-cycle-head"></div>
+              </div>
+              <div class="cycle-labs">
+                <span class="cycle-lab-on" id="bc-cycle-lab-on">t<sub>ON</sub></span>
+                <span class="cycle-lab-off" id="bc-cycle-lab-off">t<sub>OFF</sub></span>
+              </div>
+            </div>
+          </div>
 
           <div class="bc-duty-control" id="bc-duty-control">
             <label class="bc-duty-label" for="bc-duty-slider">Duty D</label>
@@ -1676,6 +1757,8 @@ permalink: /tools/buck-converter/
           <span id="bc-anim-desc">high-side FET conducts, i<sub>L</sub> rising</span>
           <span class="bc-anim-sep">·</span>
           <span class="bc-anim-duty" id="bc-anim-duty">D = 25.0%</span>
+          <span class="bc-anim-sep bc-anim-sep--cap">·</span>
+          <span class="bc-anim-cap" id="bc-anim-cap">C<sub>O</sub> discharging</span>
         </figcaption>
       </figure>
 
@@ -2462,8 +2545,9 @@ permalink: /tools/buck-converter/
    "out-design-l", "out-design-c", "out-design-l-note", "out-design-c-note", "bc-design-result", "bc-dcm-options",
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope",
    "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-pip", "bc-anim-phase", "bc-anim-desc",
-   "bc-anim-duty", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow", "bc-lbl-ton",
-   "bc-lbl-toff", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
+   "bc-anim-duty", "bc-anim-cap", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow",
+   "bc-lbl-ton", "bc-lbl-toff", "bc-dash-on", "bc-dash-off", "bc-dash-cap", "bc-cycle-on", "bc-cycle-head",
+   "bc-cycle-lab-on", "bc-cycle-lab-off", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
@@ -2547,12 +2631,15 @@ permalink: /tools/buck-converter/
   /* ---------- animated schematic ---------- */
   var animDutyTickValues = [25, 90];
   var animFrame = 0;
+  var ANIM_SPEED_MULT = 0.6;
+  var ANIM_I_MIN = 0.40;
+  var ANIM_I_MAX = 1.0;
+  var ANIM_I_AVG = 0.70;
+  var ANIM_KCAP = 300;
   var animSchematic = {
     ready: false,
-    flowMain: null,
-    flowHs: null,
-    flowLs: null,
     dist: 0,
+    capOffset: 0,
     clock: 0,
     lastT: 0,
     lastPhase: "",
@@ -2561,42 +2648,7 @@ permalink: /tools/buck-converter/
   };
 
   function hasAnimatedSchematic() {
-    return !!(el["bc-duty-slider"] && el["bc-arm-hs"] && el["bc-arm-ls"]);
-  }
-
-  function buildAnimFlow(pathId, layerId, spacing) {
-    var path = document.getElementById(pathId);
-    var layer = document.getElementById(layerId);
-    if (!path || !layer || !path.getTotalLength) { return null; }
-    var length = path.getTotalLength();
-    var count = Math.max(2, Math.floor(length / spacing));
-    var dots = [];
-    while (layer.firstChild) { layer.removeChild(layer.firstChild); }
-    for (var i = 0; i < count; i++) {
-      var dot = mk("circle", {
-        "class": "flow-dot",
-        r: i % 3 === 0 ? 2.5 : 2.05,
-        cx: -20,
-        cy: -20
-      });
-      layer.appendChild(dot);
-      dots.push(dot);
-    }
-    return { path: path, layer: layer, length: length, spacing: spacing, dots: dots };
-  }
-
-  function placeAnimDots(flow, offset, opacity) {
-    if (!flow) { return; }
-    flow.layer.style.opacity = Math.max(0, Math.min(1, opacity));
-    if (opacity <= 0.01) { return; }
-    flow.dots.forEach(function (dot, i) {
-      var d = (offset + i * flow.spacing) % flow.length;
-      if (d < 0) { d += flow.length; }
-      var p = flow.path.getPointAtLength(d);
-      dot.setAttribute("cx", p.x.toFixed(2));
-      dot.setAttribute("cy", p.y.toFixed(2));
-      dot.setAttribute("opacity", (0.42 + 0.58 * (1 - i / Math.max(1, flow.dots.length))).toFixed(2));
-    });
+    return !!(el["bc-duty-slider"] && el["bc-arm-hs"] && el["bc-arm-ls"] && el["bc-dash-on"] && el["bc-dash-off"] && el["bc-dash-cap"]);
   }
 
   function easeAnim(current, target, dt, snap) {
@@ -2659,6 +2711,14 @@ permalink: /tools/buck-converter/
     var isOn = phase.name === "on";
     var isLowSide = phase.name === "off" || phase.name === "decay";
     var isIdle = phase.name === "idle";
+    var iL = 0;
+    if (isOn) {
+      iL = ANIM_I_MIN + (ANIM_I_MAX - ANIM_I_MIN) * phase.local;
+    } else if (phase.name === "off") {
+      iL = ANIM_I_MAX - (ANIM_I_MAX - ANIM_I_MIN) * phase.local;
+    } else if (phase.name === "decay") {
+      iL = ANIM_I_MAX * (1 - phase.local);
+    }
     animSchematic.state.hsAngle = easeAnim(animSchematic.state.hsAngle, isOn ? 0 : -23, dt, snap);
     animSchematic.state.lsAngle = easeAnim(animSchematic.state.lsAngle, isLowSide ? 0 : 26, dt, snap);
     animSchematic.state.hsGlow = easeAnim(animSchematic.state.hsGlow, isOn ? 1 : 0, dt, snap);
@@ -2676,18 +2736,44 @@ permalink: /tools/buck-converter/
     }
 
     if (!snap) {
-      var phaseEnergy = isIdle ? 0 : (0.45 + 0.55 * (isOn ? phase.local : 1 - phase.local));
-      animSchematic.dist = (animSchematic.dist + dt * (42 + 58 * phaseEnergy)) % 10000;
+      animSchematic.dist = (animSchematic.dist + dt * (34 + 118 * iL) * ANIM_SPEED_MULT) % 10000;
     }
-    placeAnimDots(animSchematic.flowHs, animSchematic.dist, isOn ? 1 : 0);
-    placeAnimDots(animSchematic.flowLs, animSchematic.dist, isLowSide ? 1 : 0);
-    placeAnimDots(animSchematic.flowMain, animSchematic.dist, isIdle ? 0 : 0.95);
+    el["bc-dash-on"].style.strokeDashoffset = (-animSchematic.dist).toFixed(2);
+    el["bc-dash-off"].style.strokeDashoffset = (-animSchematic.dist).toFixed(2);
+    el["bc-dash-on"].style.opacity = (0.9 * animSchematic.state.hsGlow).toFixed(3);
+    el["bc-dash-off"].style.opacity = (0.9 * animSchematic.state.lsGlow).toFixed(3);
+
+    var iC = iL - ANIM_I_AVG;
+    if (!snap) {
+      animSchematic.capOffset -= (ANIM_KCAP * iC) * ANIM_SPEED_MULT * dt;
+    }
+    el["bc-dash-cap"].style.strokeDashoffset = animSchematic.capOffset.toFixed(2);
+    el["bc-dash-cap"].style.opacity = (0.28 + 0.62 * Math.min(1, Math.abs(iC) / ((ANIM_I_MAX - ANIM_I_MIN) / 2))).toFixed(3);
+    if (el["bc-anim-cap"]) {
+      el["bc-anim-cap"].innerHTML = "C<sub>O</sub> " + (iC >= 0 ? "charging" : "discharging");
+    }
+    if (el["bc-cycle-head"]) {
+      el["bc-cycle-head"].style.left = (100 * (animSchematic.clock % 1)).toFixed(2) + "%";
+    }
+    if (el["bc-cycle-lab-on"]) {
+      el["bc-cycle-lab-on"].classList.toggle("is-live", isOn);
+    }
+    if (el["bc-cycle-lab-off"]) {
+      el["bc-cycle-lab-off"].classList.toggle("is-live", !isOn);
+    }
   }
 
   function drawReducedMotionSchematic() {
     var phase = animSchematic.model.dcmValid && animSchematic.model.D3 > 0.18
       ? { name: "idle", local: 0.5 }
       : { name: "on", local: 0.5 };
+    if (phase.name === "idle") {
+      animSchematic.clock = clamp(animSchematic.model.D + animSchematic.model.D2 + animSchematic.model.D3 / 2, 0, 0.999);
+    } else {
+      animSchematic.clock = clamp(animSchematic.model.D / 2, 0, 0.999);
+    }
+    animSchematic.dist = 18;
+    animSchematic.capOffset = 12;
     animSchematic.lastPhase = phase.name;
     drawAnimPhase(phase, 0.016, true);
     updateAnimStatus(phase.name);
@@ -2739,6 +2825,15 @@ permalink: /tools/buck-converter/
     Array.prototype.slice.call(el["bc-duty-ticks"].querySelectorAll(".bc-duty-tick")).forEach(function (tick) {
       tick.setAttribute("aria-disabled", readonly ? "true" : "false");
     });
+    layoutAnimatedCycle(displayPct);
+  }
+
+  function layoutAnimatedCycle(pct) {
+    if (!el["bc-cycle-on"] || !el["bc-cycle-lab-on"] || !el["bc-cycle-lab-off"]) { return; }
+    var displayPct = clamp(pct, 0, 100);
+    el["bc-cycle-on"].style.width = displayPct.toFixed(2) + "%";
+    el["bc-cycle-lab-on"].style.left = (displayPct / 2).toFixed(2) + "%";
+    el["bc-cycle-lab-off"].style.left = ((displayPct + 100) / 2).toFixed(2) + "%";
   }
 
   function syncAnimatedSchematic(s, r) {
@@ -2790,9 +2885,6 @@ permalink: /tools/buck-converter/
   function initAnimatedSchematic() {
     if (!hasAnimatedSchematic() || animSchematic.ready) { return; }
     animSchematic.ready = true;
-    animSchematic.flowHs = buildAnimFlow("bc-geo-hs", "bc-dots-hs", 34);
-    animSchematic.flowLs = buildAnimFlow("bc-geo-ls", "bc-dots-ls", 30);
-    animSchematic.flowMain = buildAnimFlow("bc-geo-main", "bc-dots-main", 32);
 
     animDutyTickValues.forEach(function (pct) {
       var tick = document.createElement("button");
