@@ -25,6 +25,10 @@ math: true
     --blx-plot-bg: var(--paper);
     --blx-separator: var(--paper);
     --blx-thumb-size: 15px;
+    --blx-acc-expand: 250ms;
+    --blx-acc-collapse: 250ms;
+    --blx-acc-chevron: 250ms;
+    --blx-acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .blx-header { margin-bottom: 26px; }
@@ -428,21 +432,95 @@ math: true
     margin: 1rem 0 1.8rem;
   }
   .blx-advanced details {
+    overflow: hidden;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--blx-card-bg);
   }
   .blx-advanced summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     cursor: pointer;
+    list-style: none;
     padding: 11px 14px;
     color: var(--ink);
     font-family: var(--claude-sans);
     font-weight: 650;
+    user-select: none;
+    transition:
+      color var(--blx-motion) var(--claude-ease, var(--ease)),
+      text-shadow var(--blx-motion) var(--claude-ease, var(--ease));
+  }
+  .blx-advanced summary::-webkit-details-marker {
+    display: none;
+  }
+  .blx-advanced summary:focus-visible {
+    outline: none;
+    color: var(--claude-accent-deep, var(--accent));
+    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
+    box-shadow: inset 0 0 0 2px var(--claude-ring);
+    border-radius: 7px;
+  }
+  .blx-acc-chevron {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+    transform: scaleY(1);
+    transform-origin: center;
+    transition: transform var(--blx-acc-chevron) var(--blx-acc-ease);
+  }
+  .blx-acc-chevron svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+  .blx-acc-chevron path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .blx-advanced details[data-open="true"] .blx-acc-chevron {
+    transform: scaleY(-1);
+  }
+  .blx-detail-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--blx-acc-collapse) var(--blx-acc-ease);
+  }
+  .blx-advanced details[data-open="true"] .blx-detail-panel {
+    grid-template-rows: 1fr;
+    transition: grid-template-rows var(--blx-acc-expand) var(--blx-acc-ease);
   }
   .blx-detail-body {
     display: grid;
     gap: 14px;
-    padding: 0 14px 16px;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 14px;
+    opacity: 0;
+    filter: blur(2px);
+    transition:
+      opacity var(--blx-acc-collapse) var(--blx-acc-ease),
+      filter var(--blx-acc-collapse) var(--blx-acc-ease);
+  }
+  .blx-advanced details[data-open="true"] .blx-detail-body {
+    opacity: 1;
+    filter: blur(0);
+    transition:
+      opacity var(--blx-acc-expand) var(--blx-acc-ease),
+      filter var(--blx-acc-expand) var(--blx-acc-ease);
+  }
+  .blx-detail-body > :last-child {
+    margin-bottom: 16px;
   }
   .blx-hint {
     margin: 0;
@@ -629,6 +707,9 @@ math: true
     .blx-actions button,
     .blx-copy button,
     .blx-card .blx-v,
+    .blx-detail-panel,
+    .blx-detail-body,
+    .blx-acc-chevron,
     .blx-field input[type="range"]::-webkit-slider-thumb,
     .blx-field input[type="range"]::-moz-range-thumb,
     .blx-tick {
@@ -734,102 +815,110 @@ math: true
 
   <section class="blx-advanced" aria-label="Advanced loss inputs">
     <details>
-      <summary>Switches/FETs</summary>
-      <div class="blx-detail-body">
-        <p class="blx-hint">RDS(on) raises I²R conduction loss; the low-side FET conducts about (1−D) of the period.</p>
-        <p class="blx-hint">Qg raises gate-drive loss every cycle. Bigger FETs lower RDS(on) but raise Qg.</p>
-        <p class="blx-hint">Overlap is a lumped tr+tf estimate — bracket fast/slow edges, don't claim exact part behavior.</p>
-        <div class="blx-detail-grid">
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-rhs">High-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rhs" data-blx-number="rdsHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-            <input data-blx-range="rdsHigh" type="range" min="0" max="1000" step="1" aria-label="High-side RDS on slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-rls">Low-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rls" data-blx-number="rdsLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-            <input data-blx-range="rdsLow" type="range" min="0" max="1000" step="1" aria-label="Low-side RDS on slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-qhs">High-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qhs" data-blx-number="qgHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
-            <input data-blx-range="qgHigh" type="range" min="0" max="1000" step="1" aria-label="High-side gate charge slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-qls">Low-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qls" data-blx-number="qgLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
-            <input data-blx-range="qgLow" type="range" min="0" max="1000" step="1" aria-label="Low-side gate charge slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-tov">Overlap time t<sub>r</sub>+t<sub>f</sub></label><span class="blx-entry"><input id="blx-num-tov" data-blx-number="tOverlap" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
-            <input data-blx-range="tOverlap" type="range" min="0" max="1000" step="1" aria-label="Switching overlap time slider">
-          </div>
-        </div>
-      </div>
-    </details>
-
-    <details>
-      <summary>Timing/diode</summary>
-      <div class="blx-detail-body">
-        <p class="blx-hint">Dead time: current detours through a body-diode path each edge.</p>
-        <div class="blx-detail-grid">
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-td">Dead time per edge</label><span class="blx-entry"><input id="blx-num-td" data-blx-number="deadTime" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
-            <input data-blx-range="deadTime" type="range" min="0" max="1000" step="1" aria-label="Dead time slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-vf">Diode path V<sub>F</sub></label><span class="blx-entry"><input id="blx-num-vf" data-blx-number="diodeVf" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">V</span></span></div>
-            <input data-blx-range="diodeVf" type="range" min="0" max="1000" step="1" aria-label="Diode forward voltage slider">
+      <summary><span>Switches/FETs</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
+      <div class="blx-detail-panel">
+        <div class="blx-detail-body">
+          <p class="blx-hint">RDS(on) raises I²R conduction loss; the low-side FET conducts about (1−D) of the period.</p>
+          <p class="blx-hint">Qg raises gate-drive loss every cycle. Bigger FETs lower RDS(on) but raise Qg.</p>
+          <p class="blx-hint">Overlap is a lumped tr+tf estimate — bracket fast/slow edges, don't claim exact part behavior.</p>
+          <div class="blx-detail-grid">
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-rhs">High-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rhs" data-blx-number="rdsHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+              <input data-blx-range="rdsHigh" type="range" min="0" max="1000" step="1" aria-label="High-side RDS on slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-rls">Low-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rls" data-blx-number="rdsLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+              <input data-blx-range="rdsLow" type="range" min="0" max="1000" step="1" aria-label="Low-side RDS on slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-qhs">High-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qhs" data-blx-number="qgHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
+              <input data-blx-range="qgHigh" type="range" min="0" max="1000" step="1" aria-label="High-side gate charge slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-qls">Low-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qls" data-blx-number="qgLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
+              <input data-blx-range="qgLow" type="range" min="0" max="1000" step="1" aria-label="Low-side gate charge slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-tov">Overlap time t<sub>r</sub>+t<sub>f</sub></label><span class="blx-entry"><input id="blx-num-tov" data-blx-number="tOverlap" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
+              <input data-blx-range="tOverlap" type="range" min="0" max="1000" step="1" aria-label="Switching overlap time slider">
+            </div>
           </div>
         </div>
       </div>
     </details>
 
     <details>
-      <summary>Passives</summary>
-      <div class="blx-detail-body">
-        <p class="blx-hint">DCR: the inductor is also a resistor.</p>
-        <div class="blx-detail-grid">
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-dcr">Inductor DCR</label><span class="blx-entry"><input id="blx-num-dcr" data-blx-number="dcr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-            <input data-blx-range="dcr" type="range" min="0" max="1000" step="1" aria-label="Inductor DCR slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-esr">Output capacitor ESR</label><span class="blx-entry"><input id="blx-num-esr" data-blx-number="esr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-            <input data-blx-range="esr" type="range" min="0" max="1000" step="1" aria-label="Output capacitor ESR slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-isat">Inductor I<sub>SAT</sub></label><span class="blx-entry"><input id="blx-num-isat" data-blx-number="inductorIsat" type="number" inputmode="decimal" step="0.1" placeholder="none"><span class="blx-unit">A</span></span></div>
-            <input data-blx-range="inductorIsat" type="range" min="0" max="1000" step="1" aria-label="Inductor saturation current slider">
-            <p class="blx-field-help">Blank means no saturation warning.</p>
+      <summary><span>Timing/diode</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
+      <div class="blx-detail-panel">
+        <div class="blx-detail-body">
+          <p class="blx-hint">Dead time: current detours through a body-diode path each edge.</p>
+          <div class="blx-detail-grid">
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-td">Dead time per edge</label><span class="blx-entry"><input id="blx-num-td" data-blx-number="deadTime" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
+              <input data-blx-range="deadTime" type="range" min="0" max="1000" step="1" aria-label="Dead time slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-vf">Diode path V<sub>F</sub></label><span class="blx-entry"><input id="blx-num-vf" data-blx-number="diodeVf" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">V</span></span></div>
+              <input data-blx-range="diodeVf" type="range" min="0" max="1000" step="1" aria-label="Diode forward voltage slider">
+            </div>
           </div>
         </div>
       </div>
     </details>
 
     <details>
-      <summary>Controller</summary>
-      <div class="blx-detail-body">
-        <p class="blx-hint">IQ is a bias floor — at light load even small IQ dominates.</p>
-        <div class="blx-detail-grid">
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-vdrv">Gate drive voltage</label><span class="blx-entry"><input id="blx-num-vdrv" data-blx-number="vDrive" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div>
-            <input data-blx-range="vDrive" type="range" min="0" max="1000" step="1" aria-label="Gate drive voltage slider">
+      <summary><span>Passives</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
+      <div class="blx-detail-panel">
+        <div class="blx-detail-body">
+          <p class="blx-hint">DCR: the inductor is also a resistor.</p>
+          <div class="blx-detail-grid">
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-dcr">Inductor DCR</label><span class="blx-entry"><input id="blx-num-dcr" data-blx-number="dcr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+              <input data-blx-range="dcr" type="range" min="0" max="1000" step="1" aria-label="Inductor DCR slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-esr">Output capacitor ESR</label><span class="blx-entry"><input id="blx-num-esr" data-blx-number="esr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
+              <input data-blx-range="esr" type="range" min="0" max="1000" step="1" aria-label="Output capacitor ESR slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-isat">Inductor I<sub>SAT</sub></label><span class="blx-entry"><input id="blx-num-isat" data-blx-number="inductorIsat" type="number" inputmode="decimal" step="0.1" placeholder="none"><span class="blx-unit">A</span></span></div>
+              <input data-blx-range="inductorIsat" type="range" min="0" max="1000" step="1" aria-label="Inductor saturation current slider">
+              <p class="blx-field-help">Blank means no saturation warning.</p>
+            </div>
           </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-iq">Quiescent current I<sub>Q</sub></label><span class="blx-entry"><input id="blx-num-iq" data-blx-number="iq" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">mA</span></span></div>
-            <input data-blx-range="iq" type="range" min="0" max="1000" step="1" aria-label="Quiescent current slider">
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-vbias">Bias voltage</label><span class="blx-entry"><input id="blx-num-vbias" data-blx-number="vBias" type="number" inputmode="decimal" step="0.1" placeholder="VIN"><span class="blx-unit">V</span></span></div>
-            <input data-blx-range="vBias" type="range" min="0" max="1000" step="1" aria-label="Bias voltage slider">
-            <p class="blx-field-help">Blank uses VIN.</p>
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-eoss">Total E<sub>OSS</sub></label><span class="blx-entry"><input id="blx-num-eoss" data-blx-number="eossTotal" type="number" inputmode="decimal" step="1"><span class="blx-unit">nJ</span></span></div>
-            <input data-blx-range="eossTotal" type="range" min="0" max="1000" step="1" aria-label="Total output capacitance energy slider">
-            <p class="blx-field-help">Optional; most visible at high VIN and fSW.</p>
-          </div>
-          <div class="blx-field">
-            <div class="blx-field-head"><label for="blx-num-qrr">Reverse recovery Q<sub>rr</sub></label><span class="blx-entry"><input id="blx-num-qrr" data-blx-number="qrr" type="number" inputmode="decimal" step="1"><span class="blx-unit">nC</span></span></div>
-            <input data-blx-range="qrr" type="range" min="0" max="1000" step="1" aria-label="Reverse recovery charge slider">
-            <p class="blx-field-help">Optional; leave at zero for ideal synchronous behavior.</p>
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span>Controller</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
+      <div class="blx-detail-panel">
+        <div class="blx-detail-body">
+          <p class="blx-hint">IQ is a bias floor — at light load even small IQ dominates.</p>
+          <div class="blx-detail-grid">
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-vdrv">Gate drive voltage</label><span class="blx-entry"><input id="blx-num-vdrv" data-blx-number="vDrive" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div>
+              <input data-blx-range="vDrive" type="range" min="0" max="1000" step="1" aria-label="Gate drive voltage slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-iq">Quiescent current I<sub>Q</sub></label><span class="blx-entry"><input id="blx-num-iq" data-blx-number="iq" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">mA</span></span></div>
+              <input data-blx-range="iq" type="range" min="0" max="1000" step="1" aria-label="Quiescent current slider">
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-vbias">Bias voltage</label><span class="blx-entry"><input id="blx-num-vbias" data-blx-number="vBias" type="number" inputmode="decimal" step="0.1" placeholder="VIN"><span class="blx-unit">V</span></span></div>
+              <input data-blx-range="vBias" type="range" min="0" max="1000" step="1" aria-label="Bias voltage slider">
+              <p class="blx-field-help">Blank uses VIN.</p>
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-eoss">Total E<sub>OSS</sub></label><span class="blx-entry"><input id="blx-num-eoss" data-blx-number="eossTotal" type="number" inputmode="decimal" step="1"><span class="blx-unit">nJ</span></span></div>
+              <input data-blx-range="eossTotal" type="range" min="0" max="1000" step="1" aria-label="Total output capacitance energy slider">
+              <p class="blx-field-help">Optional; most visible at high VIN and fSW.</p>
+            </div>
+            <div class="blx-field">
+              <div class="blx-field-head"><label for="blx-num-qrr">Reverse recovery Q<sub>rr</sub></label><span class="blx-entry"><input id="blx-num-qrr" data-blx-number="qrr" type="number" inputmode="decimal" step="1"><span class="blx-unit">nC</span></span></div>
+              <input data-blx-range="qrr" type="range" min="0" max="1000" step="1" aria-label="Reverse recovery charge slider">
+              <p class="blx-field-help">Optional; leave at zero for ideal synchronous behavior.</p>
+            </div>
           </div>
         </div>
       </div>
