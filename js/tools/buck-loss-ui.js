@@ -110,7 +110,8 @@ function enforceBuck(rawInputs, editedKey) {
 
 function displayNumber(value, digits) {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return "";
-  return Number(value).toFixed(digits).replace(/\.?0+$/, "");
+  const fixed = Number(value).toFixed(digits);
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
 }
 
 function eng(value, unit = "") {
@@ -413,7 +414,7 @@ function updateCursorReadouts(root, state, options = {}) {
   return result;
 }
 
-function attachCursorEvents(root, state, rail) {
+function attachCursorEvents(root, state, rail, surface) {
   let dragging = false;
   let pointerId = null;
   let pendingCurrent = null;
@@ -432,25 +433,26 @@ function attachCursorEvents(root, state, rail) {
     if (!frame) frame = requestAnimationFrame(applyPending);
   }
 
-  function currentFromEvent(event) {
-    const svg = rail.ownerSVGElement;
+  function currentFromEvent(event, target) {
+    const svg = target.ownerSVGElement;
     const x = clientXToSvgX(svg, event.clientX);
     return scaleFromPlot(state.plot).currentFromX(x);
   }
 
-  rail.addEventListener("pointerdown", (event) => {
+  function startDrag(event, target) {
     if (!state.plot) return;
+    if (target === surface && event.pointerType === "touch") return;
     event.preventDefault();
     dragging = true;
     pointerId = event.pointerId;
-    rail.setPointerCapture(pointerId);
-    queueCurrent(currentFromEvent(event));
-  });
+    target.setPointerCapture(pointerId);
+    queueCurrent(currentFromEvent(event, target));
+  }
 
-  rail.addEventListener("pointermove", (event) => {
+  function moveDrag(event, target) {
     if (!dragging || event.pointerId !== pointerId) return;
-    queueCurrent(currentFromEvent(event));
-  });
+    queueCurrent(currentFromEvent(event, target));
+  }
 
   function finishDrag(event) {
     if (!dragging || event.pointerId !== pointerId) return;
@@ -464,8 +466,12 @@ function attachCursorEvents(root, state, rail) {
     scheduleUrlReplace(root, state);
   }
 
-  rail.addEventListener("pointerup", finishDrag);
-  rail.addEventListener("pointercancel", finishDrag);
+  [surface, rail].filter(Boolean).forEach((target) => {
+    target.addEventListener("pointerdown", (event) => startDrag(event, target));
+    target.addEventListener("pointermove", (event) => moveDrag(event, target));
+    target.addEventListener("pointerup", finishDrag);
+    target.addEventListener("pointercancel", finishDrag);
+  });
 
   rail.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -490,11 +496,11 @@ function renderPlot(root, inputs, result, state) {
   const height = 360;
   const left = 58;
   const right = 80;
-  const top = 26;
+  const top = 28;
   const plotWidth = width - left - right;
-  const plotHeight = 242;
+  const plotHeight = 216;
   const bottom = top + plotHeight;
-  const legendTop = 300;
+  const legendTop = 306;
   const colors = siteColors(root);
   const groupColors = Object.fromEntries(GROUPS.map(([key, , token]) => [key, colorFor(root, token)]));
   const xMin = Math.max(inputs.ioutMax / 1000, 1e-3);
@@ -511,9 +517,9 @@ function renderPlot(root, inputs, result, state) {
 
   svg.append(
     svgEl("rect", { x: left, y: top, width: plotWidth, height: plotHeight, fill: "#fff" }),
-    svgEl("line", { x1: left, y1: bottom, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2 }),
-    svgEl("line", { x1: left, y1: top, x2: left, y2: bottom, stroke: colors.line, "stroke-width": 1.2 }),
-    svgEl("line", { x1: left + plotWidth, y1: top, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2 })
+    svgEl("line", { x1: left, y1: bottom, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2, opacity: "0.9" }),
+    svgEl("line", { x1: left, y1: top, x2: left, y2: bottom, stroke: colors.line, "stroke-width": 1.2, opacity: "0.9" }),
+    svgEl("line", { x1: left + plotWidth, y1: top, x2: left + plotWidth, y2: bottom, stroke: colors.line, "stroke-width": 1.2, opacity: "0.9" })
   );
 
   const forcedBoundary = inputs.coreBoundary ?? computeLossPoint(inputs, xMax).core.deltaIL / 2;
@@ -531,7 +537,7 @@ function renderPlot(root, inputs, result, state) {
     const value = (maxLoss / 4) * i;
     const y = lossY(value);
     svg.append(
-      svgEl("line", { x1: left, y1: y, x2: left + plotWidth, y2: y, stroke: colors.line, "stroke-width": 1, opacity: i === 0 ? "1" : "0.7" }),
+      svgEl("line", { x1: left, y1: y, x2: left + plotWidth, y2: y, stroke: colors.line, "stroke-width": 1, opacity: i === 0 ? "0.85" : "0.34" }),
       svgEl("text", { x: left - 8, y: y + 4, fill: colors.muted, "font-size": 11, "text-anchor": "end" }, lossTickLabel(value))
     );
   }
@@ -553,7 +559,7 @@ function renderPlot(root, inputs, result, state) {
       y2: tick.major ? top : bottom - 5,
       stroke: colors.line,
       "stroke-width": tick.major ? 1 : 0.8,
-      opacity: tick.major ? "0.8" : "0.65"
+      opacity: tick.major ? "0.28" : "0.22"
     }));
     if (tick.major) {
       svg.append(svgEl("text", { x, y: bottom + 18, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, engineeringTick(tick.value, "A")));
@@ -615,6 +621,17 @@ function renderPlot(root, inputs, result, state) {
     "stroke-width": 2,
     "pointer-events": "none"
   });
+  const surface = svgEl("rect", {
+    "data-blx-cursor-surface": "true",
+    x: left,
+    y: top,
+    width: plotWidth,
+    height: plotHeight,
+    fill: "transparent",
+    "pointer-events": "all"
+  });
+  surface.style.touchAction = "pan-y";
+  surface.style.cursor = "ew-resize";
   const rail = svgEl("rect", {
     "data-blx-cursor-rail": "true",
     class: "blx-cursor-rail",
@@ -630,12 +647,12 @@ function renderPlot(root, inputs, result, state) {
   });
   rail.style.touchAction = "none";
   rail.style.cursor = "ew-resize";
-  svg.append(cursorLine, effDot, rail);
+  svg.append(surface, cursorLine, effDot, rail);
 
   svg.append(
     svgEl("text", { x: left, y: top - 8, fill: colors.muted, "font-size": 11 }, "loss"),
     svgEl("text", { x: left + plotWidth + 14, y: top - 8, fill: colors.muted, "font-size": 11 }, "efficiency"),
-    svgEl("text", { x: left + plotWidth / 2, y: bottom + 38, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, "load current")
+    svgEl("text", { x: left + plotWidth / 2, y: bottom + 42, fill: colors.muted, "font-size": 11, "text-anchor": "middle" }, "load current")
   );
 
   let legendX = left;
@@ -658,7 +675,7 @@ function renderPlot(root, inputs, result, state) {
   );
 
   holder.replaceChildren(svg);
-  attachCursorEvents(root, state, rail);
+  attachCursorEvents(root, state, rail, surface);
   updateCursorSvg(root, state, result);
 }
 
