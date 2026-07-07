@@ -1,4 +1,4 @@
-import { classifyRegime, computeLossPoint, computeLossSweep, normalizeInputs, validateInputs } from "./buck-loss-model.js";
+import { classifyRegime, computeLossPoint, normalizeInputs, validateInputs } from "./buck-loss-model.js";
 import { BUCK_LOSS_PRESETS, getBuckLossPreset } from "./buck-loss-presets.js";
 import { parseBuckLossUrl, serializeBuckLossUrl } from "./buck-loss-url.js";
 
@@ -395,27 +395,36 @@ function niceCeil(value) {
   return nice * base;
 }
 
-function logTicks(min, max) {
+function linearSweep(inputs, { points = 200, iMin = 0, iMax = inputs.ioutMax } = {}) {
+  const count = Math.max(2, Math.floor(points));
+  return Array.from({ length: count }, (_, index) => {
+    const t = count === 1 ? 0 : index / (count - 1);
+    return computeLossPoint(inputs, iMin + (iMax - iMin) * t);
+  });
+}
+
+function linearTicks(min, max, targetCount = 5) {
   const ticks = [];
-  const start = Math.floor(Math.log10(min));
-  const end = Math.ceil(Math.log10(max));
-  for (let decade = start; decade <= end; decade += 1) {
-    const base = 10 ** decade;
-    [1, 2, 5].forEach((multiplier) => {
-      const value = base * multiplier;
-      if (value < min || value > max) return;
-      ticks.push({ value, major: multiplier === 1 });
-    });
+  if (!(max > min)) return [{ value: min, major: true }];
+  const step = niceCeil((max - min) / targetCount);
+  const epsilon = step / 1000;
+  let value = Math.ceil(min / step) * step;
+
+  if (Math.abs(value - min) < epsilon) value = min;
+  for (; value <= max + epsilon; value += step) {
+    const rounded = Number(value.toPrecision(12));
+    ticks.push({ value: clamp(rounded, min, max), major: true });
   }
+  const last = ticks[ticks.length - 1]?.value;
+  if (last === undefined || Math.abs(last - max) > epsilon) ticks.push({ value: max, major: true });
   return ticks;
 }
 
 function scaleFromPlot(plot) {
-  const logMin = Math.log(plot.xMin);
-  const logMax = Math.log(plot.xMax);
+  const span = plot.xMax - plot.xMin || 1;
   return {
     xScale(iout) {
-      return plot.left + ((Math.log(iout) - logMin) / (logMax - logMin)) * plot.plotWidth;
+      return plot.left + clamp((iout - plot.xMin) / span, 0, 1) * plot.plotWidth;
     },
     lossY(loss) {
       return plot.bottom - (loss / plot.maxLoss) * plot.plotHeight;
@@ -425,10 +434,10 @@ function scaleFromPlot(plot) {
     },
     currentFromX(x) {
       const f = clamp((x - plot.left) / plot.plotWidth, 0, 1);
-      return Math.exp(logMin + (logMax - logMin) * f);
+      return plot.xMin + span * f;
     },
-    logStep(multiplier = 1) {
-      return ((logMax - logMin) / 60) * multiplier;
+    currentStep(multiplier = 1) {
+      return (span / 60) * multiplier;
     }
   };
 }
@@ -702,8 +711,8 @@ function attachCursorEvents(root, state, rail, surface) {
     if (!(event.key in keyMap)) return;
     event.preventDefault();
     const direction = Math.sign(keyMap[event.key]);
-    const step = scaleFromPlot(state.plot).logStep(Math.abs(keyMap[event.key]) * (event.shiftKey ? 10 : 1));
-    state.cursor = clamp(Math.exp(Math.log(state.cursor) + direction * step), state.plot.xMin, state.plot.xMax);
+    const step = scaleFromPlot(state.plot).currentStep(Math.abs(keyMap[event.key]) * (event.shiftKey ? 10 : 1));
+    state.cursor = clamp(state.cursor + direction * step, state.plot.xMin, state.plot.xMax);
     updateCursorReadouts(root, state, { announce: true });
     scheduleUrlReplace(root, state);
   });
@@ -751,9 +760,9 @@ function renderPlot(root, inputs, result, state) {
   const plotWidth = width - left - right;
   const plotHeight = compact ? 150 : 222;
   const bottom = top + plotHeight;
-  const xMin = Math.max(inputs.ioutMax / 1000, 1e-3);
+  const xMin = 0;
   const xMax = inputs.ioutMax;
-  const sweep = state.sweep && state.sweep.length ? state.sweep : computeLossSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
+  const sweep = state.sweep && state.sweep.length ? state.sweep : linearSweep(inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid);
   const maxLoss = state.plot?.maxLoss ?? niceCeil(1.1 * Math.max(...sweep.map((point) => point.pLoss), result.pLoss, 0.001));
   state.plot = { left, top, plotWidth, plotHeight, bottom, xMin, xMax, maxLoss, width, height, labels: [] };
   const { xScale, lossY, effY } = scaleFromPlot(state.plot);
@@ -811,7 +820,7 @@ function renderPlot(root, inputs, result, state) {
     );
   });
 
-  logTicks(xMin, xMax).forEach((tick) => {
+  linearTicks(xMin, xMax, compact ? 4 : 5).forEach((tick) => {
     const x = xScale(tick.value);
     svg.append(svgEl("line", {
       class: "blx-svg-grid",
@@ -1103,12 +1112,12 @@ function render(root, state, options = {}) {
   activeRawInputsForRanges = state.rawInputs;
   state.inputs = normalizeInputs(state.rawInputs);
   state.validation = validateInputs(state.inputs);
-  state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
+  state.cursor = clamp(state.cursor, 0, state.rawInputs.ioutMax);
 
   const result = computeLossPoint(state.inputs, state.cursor);
-  const xMin = Math.max(state.inputs.ioutMax / 1000, 1e-3);
+  const xMin = 0;
   const xMax = state.inputs.ioutMax;
-  state.sweep = state.validation.valid ? computeLossSweep(state.inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid) : [];
+  state.sweep = state.validation.valid ? linearSweep(state.inputs, { points: 200, iMin: xMin, iMax: xMax }).filter((point) => point.valid) : [];
   state.plot = state.validation.valid
     ? { ...(state.plot || {}), xMin, xMax, maxLoss: niceCeil(1.1 * Math.max(...state.sweep.map((point) => point.pLoss), result.pLoss, 0.001)) }
     : null;
@@ -1169,7 +1178,7 @@ function buildTicks(root, state) {
 }
 
 function clampCursorToRange(state) {
-  state.cursor = clamp(state.cursor, Math.max(state.rawInputs.ioutMax / 1000, 1e-3), state.rawInputs.ioutMax);
+  state.cursor = clamp(state.cursor, 0, state.rawInputs.ioutMax);
 }
 
 function markCustom(state) {
