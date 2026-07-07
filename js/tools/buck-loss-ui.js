@@ -468,18 +468,26 @@ function updateCursorSvg(root, state, result) {
   }
   if (label && labelBg) {
     const labelWidth = Math.max(82, labelText.length * 6.4 + 14);
-    const preferLeft = state.plot.labels?.some((box) => (
-      x + 8 < box.x + box.width &&
-      x + 8 + labelWidth > box.x &&
-      y - 28 < box.y + box.height &&
-      y - 28 + 20 > box.y
+    const labelHeight = 20;
+    const yAbove = clamp(y - 28, state.plot.top + 4, state.plot.bottom - 24);
+    const yBelow = clamp(y + 12, state.plot.top + 4, state.plot.bottom - 24);
+    const rightX = clamp(x + 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth);
+    const leftX = clamp(x - labelWidth - 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth);
+    const baseYs = y < state.plot.top + 34 ? [yBelow, yBelow + 24, yBelow + 48, yAbove] : [yAbove, yBelow, yBelow + 24];
+    const candidates = [];
+    baseYs.forEach((candidateY) => {
+      const clampedY = clamp(candidateY, state.plot.top + 4, state.plot.bottom - 24);
+      candidates.push({ x: rightX, y: clampedY }, { x: leftX, y: clampedY });
+    });
+    const overlapsExisting = (candidate) => (state.plot.labels || []).some((box) => (
+      candidate.x < box.x + box.width + 4 &&
+      candidate.x + labelWidth + 4 > box.x &&
+      candidate.y < box.y + box.height + 4 &&
+      candidate.y + labelHeight + 4 > box.y
     ));
-    const labelX = preferLeft
-      ? clamp(x - labelWidth - 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth)
-      : clamp(x + 8, state.plot.left, state.plot.left + state.plot.plotWidth - labelWidth);
-    const labelY = y < state.plot.top + 34
-      ? clamp(y + 12, state.plot.top + 4, state.plot.bottom - 24)
-      : clamp(y - 28, state.plot.top + 4, state.plot.bottom - 24);
+    const placement = candidates.find((candidate) => !overlapsExisting(candidate)) || candidates[0];
+    const labelX = placement.x;
+    const labelY = placement.y;
     label.textContent = labelText;
     label.setAttribute("x", labelX + 7);
     label.setAttribute("y", labelY + 15);
