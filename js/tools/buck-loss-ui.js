@@ -258,8 +258,12 @@ function cancelRangeThumbGlide(range, finalValue) {
   if (Number.isFinite(finalValue)) range.value = finalValue;
 }
 
+function prefersReducedMotion() {
+  return Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+
 function canGlideRangeThumb() {
-  return !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  return !prefersReducedMotion();
 }
 
 function glideRangeThumb(range, fromValue, toValue) {
@@ -289,6 +293,91 @@ function glideRangeThumb(range, fromValue, toValue) {
   }
 
   range.blxThumbGlideFrame = requestAnimationFrame(step);
+}
+
+function cssTimeToMs(value, fallback = 250) {
+  const raw = String(value || "").trim();
+  const number = Number.parseFloat(raw);
+  if (!Number.isFinite(number)) return fallback;
+  return raw.endsWith("ms") ? number : number * 1000;
+}
+
+function accordionDuration(detail) {
+  const raw = window.getComputedStyle(detail).getPropertyValue("--blx-acc-collapse");
+  return cssTimeToMs(raw, 250);
+}
+
+function setAccordionOpen(detail, open, options = {}) {
+  const summary = detail.querySelector("summary");
+  const panel = detail.querySelector(".blx-detail-panel");
+  clearTimeout(detail.blxAccordionTimer);
+
+  if (open) {
+    detail.open = true;
+    if (summary) summary.setAttribute("aria-expanded", "true");
+    if (options.immediate || prefersReducedMotion()) {
+      detail.dataset.open = "true";
+    } else {
+      detail.dataset.open = "false";
+      requestAnimationFrame(() => {
+        if (detail.open) detail.dataset.open = "true";
+      });
+    }
+    return;
+  }
+
+  if (summary) summary.setAttribute("aria-expanded", "false");
+  detail.dataset.open = "false";
+  if (options.immediate || prefersReducedMotion() || !panel) {
+    detail.open = false;
+    return;
+  }
+
+  const finish = () => {
+    panel.removeEventListener("transitionend", onTransitionEnd);
+    clearTimeout(detail.blxAccordionTimer);
+    if (detail.dataset.open !== "true") detail.open = false;
+  };
+  const onTransitionEnd = (event) => {
+    if (event.target === panel && event.propertyName === "grid-template-rows") finish();
+  };
+
+  panel.addEventListener("transitionend", onTransitionEnd);
+  detail.blxAccordionTimer = setTimeout(finish, accordionDuration(detail) + 80);
+}
+
+function initAdvancedAccordions(root) {
+  root.querySelectorAll(".blx-advanced details").forEach((detail, index) => {
+    if (detail.dataset.blxAccInit === "true") return;
+    const summary = detail.querySelector("summary");
+    const panel = detail.querySelector(".blx-detail-panel");
+    if (!summary || !panel) return;
+
+    detail.dataset.blxAccInit = "true";
+    if (!panel.id) panel.id = `${root.id || "buck-loss-explorer"}-advanced-${index}`;
+    summary.setAttribute("aria-controls", panel.id);
+    setAccordionOpen(detail, detail.open, { immediate: true });
+    const toggle = () => setAccordionOpen(detail, detail.dataset.open !== "true");
+    summary.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      summary.blxSkipAccordionClick = true;
+      clearTimeout(summary.blxSkipAccordionClickTimer);
+      summary.blxSkipAccordionClickTimer = setTimeout(() => {
+        summary.blxSkipAccordionClick = false;
+      }, 220);
+      toggle();
+    });
+    summary.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (summary.blxSkipAccordionClick) {
+        summary.blxSkipAccordionClick = false;
+        clearTimeout(summary.blxSkipAccordionClickTimer);
+        return;
+      }
+      toggle();
+    });
+  });
 }
 
 function lossTickLabel(value) {
@@ -1192,6 +1281,7 @@ export function initBuckLossExplorer(root) {
   const rangeControls = makeControlMap(root, "data-blx-range");
   root.blxNumberControls = numberControls;
   root.blxRangeControls = rangeControls;
+  initAdvancedAccordions(root);
 
   root.querySelectorAll("[data-blx-presets]").forEach((holder) => {
     holder.innerHTML = '<span>Presets:</span>';
