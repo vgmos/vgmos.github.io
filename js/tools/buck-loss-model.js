@@ -259,9 +259,9 @@ const SENTENCES = {
   switching: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
   switchingOverlap: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
   deadTime: "Dead-time loss is noticeable here. Each edge spends time in a diode-like path instead of a low-RDS(on) channel.",
-  floor: "Delivered power is small enough that gate drive and bias power dominate",
-  gateDrive: "Delivered power is small enough that gate drive and bias power dominate",
-  bias: "Delivered power is small enough that gate drive and bias power dominate",
+  floor: "Gate drive and bias power dominate",
+  gateDrive: "Gate drive and bias power dominate",
+  bias: "Gate drive and bias power dominate",
   rippleOther: "No single mechanism dominates. This is the region where frequency, FET sizing, and inductor choice trade against each other.",
   balanced: "No single mechanism dominates. This is the region where frequency, FET sizing, and inductor choice trade against each other.",
   invalid: "Invalid inputs."
@@ -270,7 +270,7 @@ const SENTENCES = {
 function sentenceFor(regime, forcedCCM, lightLoad) {
   let sentence = SENTENCES[regime] ?? SENTENCES.balanced;
   if (regime === "floor" && lightLoad) {
-    sentence += "— this is why real converters change modes at light load.";
+    sentence += ". This is why real converters change modes at light load.";
   } else if (regime === "floor") {
     sentence += ".";
   }

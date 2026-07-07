@@ -2,7 +2,7 @@ import { BUCK_LOSS_PRESET_MAP, DEFAULT_PRESET_ID, getBuckLossPreset } from "./bu
 
 export const PARAM_RANGES = {
   vin: { min: 1, max: 100 },
-  vout: { min: 0.3, max: 100 },
+  vout: { min: 0.3, max: 95 },
   ioutMax: { min: 0.05, max: 60 },
   fsw: { min: 50, max: 6000 },
   inductance: { min: 0.1, max: 470 },
@@ -122,10 +122,12 @@ function clampCursor(value, rawInputs) {
   return { value: clamped, clamped: clamped !== number, valid: true };
 }
 
-function enforceBuck(rawInputs, editedKey) {
+function resolveBuck(rawInputs, explicitInputs) {
   const cap = 0.95 * rawInputs.vin;
   if (rawInputs.vout <= cap) return false;
-  if (editedKey === "vout") {
+  if (explicitInputs.has("vin")) {
+    rawInputs.vout = cap;
+  } else if (explicitInputs.has("vout")) {
     const requiredVin = rawInputs.vout / 0.95;
     const clampedVin = Math.min(PARAM_RANGES.vin.max, Math.max(PARAM_RANGES.vin.min, requiredVin));
     rawInputs.vin = clampedVin;
@@ -194,6 +196,7 @@ export function parseBuckLossUrl(searchString) {
 
   const rawInputs = cloneRaw(preset.rawInputs);
   const explicitOptional = { vBias: false, inductorIsat: false };
+  const explicitInputs = new Set();
   let clamped = false;
 
   for (const [urlKey, inputKey] of Object.entries(URL_KEY_TO_INPUT)) {
@@ -210,11 +213,12 @@ export function parseBuckLossUrl(searchString) {
       continue;
     }
     rawInputs[inputKey] = next.value;
+    explicitInputs.add(inputKey);
     if (range.optional) explicitOptional[inputKey] = true;
-    const buckAdjusted = enforceBuck(rawInputs, inputKey);
-    if (next.clamped || buckAdjusted) clamped = true;
+    if (next.clamped) clamped = true;
   }
 
+  if (resolveBuck(rawInputs, explicitInputs)) clamped = true;
   rawInputs.vout = Math.max(PARAM_RANGES.vout.min, Math.min(rawInputs.vout, 0.95 * rawInputs.vin));
   let cursor = preset.cursor;
   if (params.has("i")) {

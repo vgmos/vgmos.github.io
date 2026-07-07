@@ -26,8 +26,8 @@ describe("buck loss URL state", () => {
 
   it("clamps out-of-range values and records one quiet note", () => {
     const parsed = parseBuckLossUrl("?vin=0&vout=500&imax=1000&fsw=-1&l=0&rhs=-4&vf=9&iq=99&i=1000");
-    assert.equal(parsed.rawInputs.vin, 100);
-    assert.equal(parsed.rawInputs.vout, 95);
+    assert.equal(parsed.rawInputs.vin, 1);
+    assert.equal(parsed.rawInputs.vout, 0.95);
     assert.equal(parsed.rawInputs.ioutMax, 60);
     assert.equal(parsed.rawInputs.fsw, 50);
     assert.equal(parsed.rawInputs.inductance, 0.1);
@@ -36,6 +36,28 @@ describe("buck loss URL state", () => {
     assert.equal(parsed.rawInputs.iq, 20);
     assert.equal(parsed.cursor, 60);
     assert.equal(parsed.notes.filter((entry) => entry.code === "clamped").length, 1);
+  });
+
+  it("lets explicit vin win over conflicting vout", () => {
+    const parsed = parseBuckLossUrl("?vin=10&vout=15&i=1");
+    assert.equal(parsed.rawInputs.vin, 10);
+    assert.equal(parsed.rawInputs.vout, 9.5);
+    assert.equal(parsed.cursor, 1);
+    assert.equal(parsed.notes.filter((entry) => entry.code === "clamped").length, 1);
+  });
+
+  it("raises vin when only vout needs buck headroom", () => {
+    const parsed = parseBuckLossUrl("?vout=15&i=1");
+    assert.equal(parsed.rawInputs.vout, 15);
+    assert.equal(parsed.rawInputs.vin, 15 / 0.95);
+    assert.equal(parsed.notes.filter((entry) => entry.code === "clamped").length, 1);
+  });
+
+  it("clamps huge gate-charge parameters without keeping unknown keys", () => {
+    const parsed = parseBuckLossUrl("?qhs=9999&banana=1&i=1");
+    assert.equal(parsed.rawInputs.qgHigh, 100);
+    assert.equal(parsed.notes.filter((entry) => entry.code === "clamped").length, 1);
+    assert.ok(!serializeBuckLossUrl(parsed).includes("banana"));
   });
 
   it("ignores unknown keys", () => {
