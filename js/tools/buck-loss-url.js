@@ -110,7 +110,7 @@ function clampNumber(value, range) {
 }
 
 function cursorMin(rawInputs) {
-  return Math.max(rawInputs.ioutMax / 1000, 1e-3);
+  return 0;
 }
 
 function clampCursor(value, rawInputs) {

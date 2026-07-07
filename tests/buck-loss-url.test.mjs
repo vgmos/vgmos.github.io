@@ -68,6 +68,12 @@ describe("buck loss URL state", () => {
     assert.ok(!serializeBuckLossUrl(parsed).includes("banana"));
   });
 
+  it("allows zero current cursor for the linear plot axis", () => {
+    const parsed = parseBuckLossUrl("?p=12v-to-3v3-pol&i=0");
+    assert.equal(parsed.cursor, 0);
+    assert.equal(serializeBuckLossUrl(parsed), "p=12v-to-3v3-pol&i=0");
+  });
+
   it("applies preset precedence before explicit parameters", () => {
     const parsed = parseBuckLossUrl("?p=5v-to-1v8-core&vin=12&vout=3.3&i=4");
     assert.equal(parsed.rawInputs.ioutMax, 5);
