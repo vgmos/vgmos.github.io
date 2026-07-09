@@ -33,6 +33,11 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - package.json
+  - package-lock.json
+  - playwright.config.mjs
+  - playwright-report/
+  - test-results/
+  - audit-artifacts/
   - tests/
 
 defaults:

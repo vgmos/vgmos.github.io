@@ -770,7 +770,7 @@ function renderPlot(root, inputs, result, state) {
   const descId = `${state.instanceId}-plot-desc`;
   const svg = svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,
-    role: "img",
+    role: "group",
     "aria-labelledby": `${titleId} ${descId}`
   });
 
@@ -995,6 +995,8 @@ function syncControls(state, numberControls, rangeControls, options = {}) {
     const param = PARAMS[key];
     const value = state.rawInputs[key];
     (numberControls.get(key) || []).forEach((input) => {
+      input.min = String(param.min);
+      input.max = String(dynamicMax(key));
       if (!options.force && document.activeElement === input) return;
       input.value = param.optional && value === null ? "" : displayNumber(value, param.digits);
     });
@@ -1056,12 +1058,13 @@ function renderWarnings(root, result, validation, state = {}) {
   const box = root.querySelector("[data-blx-warnings]");
   if (!box) return;
   const notes = (state.urlNotes || []).map((entry) => URL_NOTE_COPY[entry.code] || entry.message || entry.code);
+  if (state.inputNote) notes.push(state.inputNote);
   if (!validation.valid) {
     notes.push("Check the input values: VIN must be above VOUT, and positive frequency, inductance, and current limits are required.");
   } else {
     result.warnings.forEach((code) => notes.push(WARNING_COPY[code] || code));
   }
-  const shown = notes.slice(0, 2);
+  const shown = [...new Set(notes)];
   const cacheKey = shown.join("\n");
   if (box.dataset.blxWarningsCache === cacheKey) return;
   box.dataset.blxWarningsCache = cacheKey;
@@ -1184,11 +1187,14 @@ function clampCursorToRange(state) {
 function markCustom(state) {
   state.activePresetId = null;
   state.urlNotes = [];
+  state.inputNote = null;
 }
 
 function commitNumberInput(root, state, key, input) {
   activeRawInputsForRanges = state.rawInputs;
   const text = input.value.trim();
+  const previousInputNote = state.inputNote;
+  let inputNote = "";
   if (PARAMS[key].optional && text === "") {
     state.rawInputs[key] = null;
     state.explicitOptional[key] = false;
@@ -1198,11 +1204,23 @@ function commitNumberInput(root, state, key, input) {
       syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
       return;
     }
-    state.rawInputs[key] = clampStaticParam(key, parsed);
+    const clamped = clampStaticParam(key, parsed);
+    state.rawInputs[key] = clamped;
+    if (clamped !== parsed) {
+      inputNote = `${PARAMS[key].label} was limited to ${displayNumber(clamped, PARAMS[key].digits)} ${PARAMS[key].unit}.`;
+    }
     if (PARAMS[key].optional) state.explicitOptional[key] = true;
   }
   markCustom(state);
+  const beforeVin = state.rawInputs.vin;
+  const beforeVout = state.rawInputs.vout;
   enforceBuck(state.rawInputs, key);
+  if (!inputNote && (state.rawInputs.vin !== beforeVin || state.rawInputs.vout !== beforeVout)) {
+    inputNote = key === "vout"
+      ? "Input voltage was adjusted to preserve buck-converter headroom."
+      : "Output voltage was adjusted to preserve buck-converter headroom.";
+  }
+  state.inputNote = inputNote || previousInputNote || null;
   clampCursorToRange(state);
   syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
   buildTicks(root, state);
@@ -1258,6 +1276,7 @@ function undoTryChip(root, state) {
   state.activePresetId = state.undoTry.activePresetId;
   state.explicitOptional = { ...state.undoTry.explicitOptional };
   state.urlNotes = [];
+  state.inputNote = null;
   state.undoTry = null;
   syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
   buildTicks(root, state);
@@ -1276,6 +1295,7 @@ export function initBuckLossExplorer(root) {
     activePresetId: parsedState.activePresetId,
     explicitOptional: { ...parsedState.explicitOptional },
     urlNotes: parsedState.notes,
+    inputNote: null,
     undoTry: null,
     instanceId: `blx-${Math.random().toString(36).slice(2)}`,
     renderTimer: 0,
@@ -1306,6 +1326,7 @@ export function initBuckLossExplorer(root) {
         state.activePresetId = preset.id;
         state.explicitOptional = { vBias: false, inductorIsat: false };
         state.urlNotes = [];
+        state.inputNote = null;
         state.undoTry = null;
         syncControls(state, numberControls, rangeControls);
         buildTicks(root, state);
@@ -1390,6 +1411,7 @@ export function initBuckLossExplorer(root) {
       state.activePresetId = next.activePresetId;
       state.explicitOptional = { ...next.explicitOptional };
       state.urlNotes = next.notes;
+      state.inputNote = null;
       state.undoTry = null;
       syncControls(state, numberControls, rangeControls, { force: true });
       buildTicks(root, state);

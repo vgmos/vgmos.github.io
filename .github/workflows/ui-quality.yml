@@ -1,0 +1,70 @@
+name: UI quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JEKYLL_ENV: production
+  PAGES_REPO_NWO: ${{ github.repository }}
+  PLAYWRIGHT_ARTIFACT_DIR: ${{ github.workspace }}/audit-artifacts/playwright
+
+jobs:
+  verify:
+    name: Build, links, and UI
+    # Visual baselines are intentionally reviewed on macOS so system serif/sans
+    # metrics match the site's native font stack.
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Build the GitHub Pages site
+        run: bundle exec jekyll build --trace
+
+      - name: Check generated internal links and assets
+        run: |
+          mkdir -p audit-artifacts
+          npm run test:links 2>&1 | tee audit-artifacts/internal-links.log
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium webkit
+
+      - name: Run Chromium and WebKit UI tests
+        run: npm run test:ui -- --project=chromium --project=webkit
+
+      - name: Upload UI quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-quality-${{ github.run_attempt }}
+          path: audit-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
