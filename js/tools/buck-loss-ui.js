@@ -1,6 +1,20 @@
-import { classifyRegime, computeLossPoint, normalizeInputs, validateInputs } from "./buck-loss-model.js";
-import { BUCK_LOSS_PRESETS, getBuckLossPreset } from "./buck-loss-presets.js";
-import { parseBuckLossUrl, serializeBuckLossUrl } from "./buck-loss-url.js";
+const moduleVersion = new URL(import.meta.url).searchParams.get("v");
+
+function versionedModuleUrl(path) {
+  const url = new URL(path, import.meta.url);
+  if (moduleVersion) url.searchParams.set("v", moduleVersion);
+  return url.href;
+}
+
+const [
+  { classifyRegime, computeLossPoint, normalizeInputs, validateInputs },
+  { BUCK_LOSS_PRESETS, getBuckLossPreset },
+  { parseBuckLossUrl, serializeBuckLossUrl }
+] = await Promise.all([
+  import(versionedModuleUrl("./buck-loss-model.js")),
+  import(versionedModuleUrl("./buck-loss-presets.js")),
+  import(versionedModuleUrl("./buck-loss-url.js"))
+]);
 
 const PARAMS = {
   vin: { min: 1, max: 100, log: true, digits: 2, label: "Input voltage", unit: "V" },
