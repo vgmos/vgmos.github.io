@@ -1,0 +1,198 @@
+name: Live UI audit
+
+on:
+  schedule:
+    - cron: "0 15 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  pages: read
+
+concurrency:
+  group: live-ui-audit
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://vgmos.github.io
+  JEKYLL_ENV: production
+  PAGES_REPO_NWO: ${{ github.repository }}
+  PLAYWRIGHT_ARTIFACT_DIR: ${{ github.workspace }}/audit-artifacts/playwright
+  # These destinations reject automated probes despite working in a browser.
+  # Keep the allowlist host-specific rather than suppressing whole status classes.
+  EXTERNAL_LINK_ALLOWLIST: /linkedin\.com/,/scholar\.google\.com/
+
+jobs:
+  audit:
+    name: Deployed site, external links, and UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Build link-check input
+        run: bundle exec jekyll build --trace
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Record live audit metadata
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p audit-artifacts
+
+          deployments_json="$(
+            curl --retry 3 --retry-all-errors --silent --show-error --fail \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments?environment=github-pages&per_page=10" \
+              || true
+          )"
+          live_sha=""
+          live_deployment_id=""
+          live_deployment_state=""
+
+          while IFS=$'\t' read -r deployment_id deployment_sha; do
+            [[ -n "${deployment_id}" && -n "${deployment_sha}" ]] || continue
+            statuses_json="$(
+              curl --retry 3 --retry-all-errors --silent --show-error --fail \
+                --header "Authorization: Bearer ${GH_TOKEN}" \
+                --header "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/deployments/${deployment_id}/statuses?per_page=1" \
+                || true
+            )"
+            deployment_state="$(jq -r '.[0].state // empty' <<<"${statuses_json}" 2>/dev/null || true)"
+            if [[ "${deployment_state}" == "success" ]]; then
+              live_sha="${deployment_sha}"
+              live_deployment_id="${deployment_id}"
+              live_deployment_state="${deployment_state}"
+              break
+            fi
+          done < <(jq -r '.[] | [.id, .sha] | @tsv' <<<"${deployments_json}" 2>/dev/null || true)
+
+          commit_source="latest successful github-pages deployment"
+
+          if [[ -z "${live_sha}" ]]; then
+            pages_build_json="$(
+              curl --retry 3 --retry-all-errors --silent --show-error --fail \
+                --header "Authorization: Bearer ${GH_TOKEN}" \
+                --header "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds/latest" \
+                || true
+            )"
+            live_sha="$(jq -r '.commit // empty' <<<"${pages_build_json}" 2>/dev/null || true)"
+            commit_source="latest Pages build"
+            live_deployment_state="unavailable"
+          fi
+
+          if [[ -z "${live_sha}" ]]; then
+            live_sha="${GITHUB_SHA}"
+            commit_source="checked-out commit fallback; deployment API unavailable"
+            live_deployment_state="unavailable"
+          fi
+
+          commit_json="$(
+            curl --retry 3 --retry-all-errors --silent --show-error --fail \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${live_sha}" \
+              || true
+          )"
+          live_commit_date="$(jq -r '.commit.committer.date // empty' <<<"${commit_json}" 2>/dev/null || true)"
+
+          {
+            echo "audit_started_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "site_url=${SITE_URL}"
+            echo "live_commit=${live_sha}"
+            echo "live_commit_source=${commit_source}"
+            echo "live_commit_date=${live_commit_date:-unavailable}"
+            echo "live_deployment_id=${live_deployment_id:-unavailable}"
+            echo "live_deployment_state=${live_deployment_state:-unavailable}"
+            echo "workflow_commit=${GITHUB_SHA}"
+            echo "runner=${RUNNER_OS} ${RUNNER_ARCH}"
+            echo "ruby=$(ruby --version)"
+            echo "bundler=$(bundle --version)"
+            echo "node=$(node --version)"
+            echo "playwright=$(npx playwright --version)"
+          } | tee audit-artifacts/live-audit-metadata.txt
+
+          curl --retry 3 --retry-all-errors --silent --show-error --head "${SITE_URL}/" \
+            > audit-artifacts/live-response-headers.txt \
+            || true
+
+          echo "LIVE_COMMIT=${live_sha}" >> "${GITHUB_ENV}"
+          echo "live_sha=${live_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify external links with retries
+        id: external_links
+        continue-on-error: true
+        run: |
+          status=1
+          for attempt in 1 2 3; do
+            set +e
+            bundle exec htmlproofer _site \
+              --checks Links \
+              --ignore-urls "${EXTERNAL_LINK_ALLOWLIST}" \
+              --typhoeus '{"followlocation":true,"connecttimeout":10,"timeout":30}' \
+              --hydra '{"max_concurrency":5}' \
+              2>&1 | tee "audit-artifacts/external-links-attempt-${attempt}.log"
+            status=${PIPESTATUS[0]}
+            set -e
+
+            if [[ ${status} -eq 0 ]]; then
+              break
+            fi
+
+            if [[ ${attempt} -lt 3 ]]; then
+              sleep $((attempt * 10))
+            fi
+          done
+          exit "${status}"
+
+      - name: Run live Chromium and WebKit audit
+        id: ui_audit
+        continue-on-error: true
+        run: npm run test:ui:live -- --project=chromium --project=webkit
+
+      - name: Upload live audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-ui-audit-${{ github.run_number }}-${{ github.run_attempt }}
+          path: audit-artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Enforce live audit gates
+        if: always()
+        env:
+          EXTERNAL_LINK_OUTCOME: ${{ steps.external_links.outcome }}
+          UI_AUDIT_OUTCOME: ${{ steps.ui_audit.outcome }}
+        run: |
+          if [[ "${EXTERNAL_LINK_OUTCOME}" != "success" ]]; then
+            echo "External-link verification outcome: ${EXTERNAL_LINK_OUTCOME}"
+          fi
+          if [[ "${UI_AUDIT_OUTCOME}" != "success" ]]; then
+            echo "Live UI audit outcome: ${UI_AUDIT_OUTCOME}"
+          fi
+          [[ "${EXTERNAL_LINK_OUTCOME}" == "success" && "${UI_AUDIT_OUTCOME}" == "success" ]]

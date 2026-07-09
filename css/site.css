@@ -7,6 +7,7 @@
   --line: #e4dfd3;
   --accent: #8a4a38;
   --link-hover: #6d382d;
+  --focus-ring: #8a4a38;
   --header-bg: rgba(251, 250, 247, 0.96);
   --sticky-offset: 82px;
   color-scheme: light;
@@ -21,6 +22,7 @@ body {
   background: var(--paper);
   font-size: 17px;
   line-height: 1.72;
+  overflow-wrap: break-word;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -32,10 +34,33 @@ a:hover {
   color: var(--link-hover);
 }
 
-a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
   border-radius: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 12px;
+  z-index: 10000;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 18px));
+}
+
+.skip-link:focus-visible {
+  color: var(--ink);
+  transform: translateY(0);
 }
 
 .post-content > p a,
@@ -103,9 +128,11 @@ a:focus-visible {
 
 .wrapper {
   max-width: 900px;
+  min-width: 0;
 }
 
 .page-content {
+  min-width: 0;
   padding: 48px 0 56px;
 }
 
@@ -1034,14 +1061,42 @@ svg text {
   text-decoration: none;
 }
 
+/* Parent sections are identified on the swappable main element so this
+   remains accurate after the site's soft navigation replaces its content. */
+.nav-current-label {
+  display: none;
+}
+
+body:has(main[data-nav-section="tools"]) .page-link--tools,
+body:has(main[data-nav-section="projects"]) .page-link--projects,
+body:has(main[data-nav-section="notebook"]) .page-link--notebook,
+body:has(main[data-nav-section="about"]) .page-link--about {
+  color: var(--ink);
+}
+
+body:has(main[data-nav-section="tools"]) .page-link--tools:not(.page-link--active),
+body:has(main[data-nav-section="projects"]) .page-link--projects:not(.page-link--active),
+body:has(main[data-nav-section="notebook"]) .page-link--notebook:not(.page-link--active),
+body:has(main[data-nav-section="about"]) .page-link--about:not(.page-link--active) {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+body:has(main[data-nav-section="tools"]) .page-link--tools .nav-current-label,
+body:has(main[data-nav-section="projects"]) .page-link--projects .nav-current-label,
+body:has(main[data-nav-section="notebook"]) .page-link--notebook .nav-current-label,
+body:has(main[data-nav-section="about"]) .page-link--about .nav-current-label {
+  display: inline;
+}
+
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--claude-ring);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
 a:focus-visible {
-  outline: none;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
   text-shadow: var(--text-glow-focus);
 }
 
@@ -1340,6 +1395,10 @@ h3,
   margin-bottom: 2px;
 }
 
+.home-title {
+  margin: 0 0 20px;
+}
+
 .home-hero .hero-lede {
   max-width: 42rem;
   color: var(--ink);
@@ -1517,6 +1576,7 @@ html[data-theme="dark"] {
   --line: #41392f;
   --accent: #d6a08a;
   --link-hover: #f0c4b2;
+  --focus-ring: #d6a08a;
   --header-bg: rgba(26, 24, 20, 0.92);
   --claude-hover: rgba(214, 160, 138, 0.08);
   --claude-hover-strong: rgba(214, 160, 138, 0.14);
@@ -1733,6 +1793,26 @@ html[data-theme="dark"] .theme-toggle__grain {
 
   .nav-underline {
     bottom: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .site-header .wrapper {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .site-nav .trigger {
+    gap: 8px;
+  }
+
+  .site-nav .page-link,
+  .site-nav .trigger .page-link {
+    font-size: 0.82rem;
   }
 }
 
