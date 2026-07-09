@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+  {%- include head.html -%}
+
+  <body>
+
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    {%- include header.html -%}
+
+    {%- assign nav_section = "" -%}
+    {%- if page.url contains "/tools/" -%}
+      {%- assign nav_section = "tools" -%}
+    {%- elsif page.collection == "projects" or page.url contains "/projects/" -%}
+      {%- assign nav_section = "projects" -%}
+    {%- elsif page.collection == "posts" or page.url contains "/writing/" -%}
+      {%- assign nav_section = "notebook" -%}
+    {%- elsif page.url == "/about/" -%}
+      {%- assign nav_section = "about" -%}
+    {%- endif -%}
+
+    <main id="main-content" class="page-content" tabindex="-1" aria-label="Content"{% unless nav_section == "" %} data-nav-section="{{ nav_section }}"{% endunless %}>
+      <div class="wrapper">
+        {{ content }}
+      </div>
+    </main>
+
+    {%- include footer.html -%}
+
+  </body>
+
+</html>
