@@ -1029,6 +1029,6 @@ math: true
 {% endraw %}
 
 <script type="module">
-  import { initBuckLossExplorer } from "{{ '/js/tools/buck-loss-ui.js' | relative_url }}";
+  import { initBuckLossExplorer } from "{{ '/js/tools/buck-loss-ui.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
   initBuckLossExplorer(document.getElementById("buck-loss-explorer"));
 </script>
