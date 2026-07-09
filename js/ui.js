@@ -240,7 +240,12 @@
 
   function setCurrent(link, animate) {
     current = link;
-    navLinks.forEach(function (a) { a.classList.toggle("page-link--active", a === link); });
+    navLinks.forEach(function (a) {
+      var isCurrent = a === link;
+      a.classList.toggle("page-link--active", isCurrent);
+      if (isCurrent) a.setAttribute("aria-current", "location");
+      else a.removeAttribute("aria-current");
+    });
     place(link, animate);
   }
 
@@ -276,6 +281,17 @@
       active = navLinks.filter(function (a) {
         return !hashOf(a) && linkPath(a) === path;
       })[0] || null;
+
+      if (!active) {
+        var parentSection = "";
+        if (/\/tools(?:\/|$)/.test(path)) parentSection = "tools";
+        else if (/\/projects(?:\/|$)/.test(path)) parentSection = "projects";
+        else if (/\/writing(?:\/|$)/.test(path) || /\/\d{4}\/\d{2}\/\d{2}\//.test(path)) parentSection = "notebook";
+
+        if (parentSection) {
+          active = navLinks.filter(function (a) { return hashOf(a) === parentSection; })[0] || null;
+        }
+      }
     }
 
     setCurrent(active, animate);
@@ -307,13 +323,21 @@
     return true;
   }
 
-  function urlWithoutHash(url) {
-    return url.pathname + url.search;
-  }
-
-  function clearHashFromAddress() {
-    if (!history.replaceState || !window.location.hash) return;
-    history.replaceState(history.state, "", window.location.pathname + window.location.search);
+  function preserveHashInAddress(a) {
+    if (!history.pushState) return;
+    var next;
+    try {
+      next = new URL(a.href, window.location.href);
+    } catch (error) {
+      return;
+    }
+    if (!next.hash || next.hash === window.location.hash) return;
+    flushScrollSave();
+    history.pushState(
+      makeHistoryState(null, currentScrollPosition()),
+      "",
+      next.pathname + next.search + next.hash
+    );
   }
 
   /* ---------------------------- smooth scroll for any in-page anchor link */
@@ -330,8 +354,8 @@
       suppressSpyUntil = Date.now() + 1200;
       setCurrent(a, !reduce);
     }
+    preserveHashInAddress(a);
     scrollToHash(id, true);
-    clearHashFromAddress();
     closeMobileNav();
   });
 
@@ -351,6 +375,11 @@
 
     if (url.origin !== window.location.origin) return null;
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    // Interactive tools own long-lived animation and global event handlers.
+    // Use a native page load at either side of that boundary so the browser
+    // tears the old instance down instead of retaining detached tool state.
+    if (/\/tools(?:\/|$)/.test(cleanPath(url.pathname)) ||
+        /\/tools(?:\/|$)/.test(cleanPath(window.location.pathname))) return null;
     if (url.pathname === window.location.pathname &&
         url.search === window.location.search &&
         url.hash) return null;
@@ -554,6 +583,8 @@
 
     layer.className = "page-exit-layer";
     layer.setAttribute("aria-hidden", "true");
+    layer.setAttribute("inert", "");
+    layer.inert = true;
     layer.style.top = rect.top + "px";
     layer.style.left = rect.left + "px";
     layer.style.width = rect.width + "px";
@@ -569,7 +600,7 @@
   function completeNavigation(url, doc, replaceHistory, transientHash, restoreScroll) {
     var nextMain = doc.querySelector("main.page-content");
     var currentMain = document.querySelector("main.page-content");
-    var historyUrl = transientHash && url.hash ? urlWithoutHash(url) : url.href;
+    var historyUrl = url.href;
     var nextScroll = restoreScroll || { x: 0, y: 0 };
 
     if (!nextMain || !currentMain) {

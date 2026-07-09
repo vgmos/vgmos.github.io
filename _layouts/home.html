@@ -2,7 +2,8 @@
 layout: default
 ---
 
-<section class="home-hero">
+<section class="home-hero" aria-labelledby="home-title">
+  <h1 class="home-title" id="home-title">Tools, projects, and notes</h1>
   <p class="hero-lede">I design analog and power ICs at Analog Devices, mostly low-noise DC-DC buck converters for RF, OLED, and automotive systems. This site is a working archive. The tools are small circuit-design calculators. The projects are longer write-ups from my graduate research. The notebook is where the rest goes: technical notes, loose ideas, and things that don’t quite fit on a project page.</p>
 </section>
 
@@ -63,5 +64,6 @@ layout: default
         <p class="quiet-note">Nothing here yet.</p>
       {% endfor %}
     </div>
+    <p class="index-link"><a href="{{ '/writing/' | relative_url }}">Browse all notes</a></p>
   </section>
 </div>

@@ -32,7 +32,10 @@ math: true
   }
 
   .blx-header { margin-bottom: 26px; }
-  .blx-header h1 { margin-bottom: 10px; }
+  .blx-header h1 {
+    margin-bottom: 10px;
+    text-wrap: balance;
+  }
   .blx-hero-line {
     margin: 0 0 0.25rem;
     color: var(--ink);
@@ -686,6 +689,27 @@ math: true
     .blx-controls {
       padding: 16px;
     }
+    .blx-presets button,
+    .blx-try button,
+    .blx-actions button,
+    .blx-copy button,
+    .blx-entry input[type="number"] {
+      min-height: 44px;
+    }
+    .blx-entry input[type="number"] {
+      font-size: 16px;
+    }
+    .blx-field input[type="range"] {
+      height: 28px;
+    }
+    .blx-ticks {
+      height: 24px;
+    }
+    .blx-tick {
+      min-width: 24px;
+      min-height: 24px;
+      padding: 8px 4px 0;
+    }
     .blx-field-head {
       align-items: center;
     }
@@ -694,7 +718,7 @@ math: true
       white-space: normal;
     }
     article.blx-page {
-      --blx-thumb-size: 13px;
+      --blx-thumb-size: 20px;
     }
     .blx-plot {
       min-height: 260px;
@@ -715,6 +739,36 @@ math: true
     .blx-tick {
       transition: none;
     }
+  }
+
+  @media (max-width: 430px) {
+    .blx-header h1 {
+      font-size: clamp(2rem, 10vw, 2.35rem);
+    }
+  }
+
+  .blx-page button:focus-visible,
+  .blx-page summary:focus-visible,
+  .blx-page input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--claude-ring);
+  }
+
+  .blx-equations .katex {
+    position: relative;
+  }
+
+  .blx-equations .katex-mathml {
+    top: 0;
+    left: 0;
+    contain: strict;
+  }
+
+  .blx-related a {
+    text-decoration: underline;
+    text-decoration-color: currentColor;
+    text-underline-offset: 3px;
   }
 </style>
 
