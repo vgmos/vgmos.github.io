@@ -1,4 +1,8 @@
-import { BUCK_LOSS_PRESET_MAP, DEFAULT_PRESET_ID, getBuckLossPreset } from "./buck-loss-presets.js";
+const moduleVersion = new URL(import.meta.url).searchParams.get("v");
+const presetsUrl = new URL("./buck-loss-presets.js", import.meta.url);
+if (moduleVersion) presetsUrl.searchParams.set("v", moduleVersion);
+
+const { BUCK_LOSS_PRESET_MAP, DEFAULT_PRESET_ID, getBuckLossPreset } = await import(presetsUrl.href);
 
 export const PARAM_RANGES = {
   vin: { min: 1, max: 100 },

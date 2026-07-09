@@ -20,6 +20,23 @@ test.describe("route inventory and smoke coverage", () => {
     expect(sitemapRoutes).toEqual([...HTML_ROUTES].sort());
   });
 
+  test("the Loss Explorer module graph is cache-versioned", async ({ page, request }) => {
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    const moduleSource = await page.locator('script[type="module"]').evaluateAll((scripts) => scripts
+      .map((script) => script.textContent || "")
+      .find((source) => source.includes("buck-loss-ui.js")) || "");
+    const entryMatch = moduleSource.match(/\/js\/tools\/buck-loss-ui\.js\?v=\d{14}/);
+    expect(entryMatch, "the HTML entry module must change URL on every build").not.toBeNull();
+
+    const response = await request.get(entryMatch[0]);
+    expect(response.ok()).toBeTruthy();
+    const entrySource = await response.text();
+    expect(entrySource).toContain('searchParams.get("v")');
+    expect(entrySource).toContain("versionedModuleUrl");
+  });
+
   for (const route of AUDIT_ROUTES) {
     test(`${route} renders meaningful, healthy content`, async ({ page }) => {
       const issues = observeRuntimeIssues(page);
