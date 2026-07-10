@@ -194,7 +194,12 @@ function regimeLabel(regime) {
 
 function setText(root, key, value) {
   root.querySelectorAll(`[data-blx-out="${key}"]`).forEach((node) => {
+    const changed = node.textContent !== value;
     node.textContent = value;
+    if (!changed || root.dataset.blxStatus !== "ready" || root.dataset.blxAnimateValues !== "true" || prefersReducedMotion()) return;
+    node.classList.remove("blx-value-swap");
+    void node.offsetWidth;
+    node.classList.add("blx-value-swap");
   });
 }
 
@@ -798,6 +803,7 @@ function announce(root, result, state) {
 }
 
 function updateCursorReadouts(root, state, options = {}) {
+  root.dataset.blxAnimateValues = options.animate ? "true" : "false";
   const result = computeLossPoint(state.inputs, state.cursor);
   const valid = state.validation.valid && result.valid;
   root.classList.toggle("blx-invalid", !valid);
@@ -902,7 +908,7 @@ function render(root, state, options = {}) {
   renderTryChips(root, state);
   renderEfficiencyChart(root, state);
   renderLossChart(root, state);
-  updateCursorReadouts(root, state, { announce: options.announce });
+  updateCursorReadouts(root, state, { announce: options.announce, animate: options.animate !== false });
 }
 
 function scheduleRender(root, state, options = {}) {
@@ -1010,6 +1016,7 @@ function undoTryChip(root, state) {
 function setView(root, state, view, options = {}) {
   if (view !== "point" && view !== "load") return;
   state.view = view;
+  root.querySelector(".blx-view-tabs")?.setAttribute("data-active-view", view);
   root.querySelectorAll("[data-blx-view]").forEach((tab) => {
     const active = tab.dataset.blxView === view;
     tab.setAttribute("aria-selected", active ? "true" : "false");
@@ -1246,5 +1253,7 @@ export function initBuckLossExplorer(root) {
   }
 
   syncControls(state, numberControls, rangeControls);
-  render(root, state);
+  render(root, state, { animate: false });
+  root.dataset.blxStatus = "ready";
+  root.setAttribute("aria-busy", "false");
 }
