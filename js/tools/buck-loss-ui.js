@@ -9,12 +9,16 @@ function versionedModuleUrl(path) {
 const [
   { classifyRegime, computeLossPoint, normalizeInputs, validateInputs },
   { BUCK_LOSS_PRESETS, DEFAULT_PRESET_ID, getBuckLossPreset },
-  { parseBuckLossUrl, serializeBuckLossUrl }
+  { parseBuckLossUrl, serializeBuckLossUrl },
+  { loadCoilcraftCatalog, selectIsat, dcrForMode, groupPartsBySeries }
 ] = await Promise.all([
   import(versionedModuleUrl("./buck-loss-model.js")),
   import(versionedModuleUrl("./buck-loss-presets.js")),
-  import(versionedModuleUrl("./buck-loss-url.js"))
+  import(versionedModuleUrl("./buck-loss-url.js")),
+  import(versionedModuleUrl("./coilcraft-catalog.js"))
 ]);
+
+const CATALOG_EDIT_KEYS = new Set(["inductance", "dcr", "inductorIsat"]);
 
 const PARAMS = {
   vin: { min: 1, max: 100, log: true, digits: 2, label: "Input voltage", unit: "V" },
@@ -895,6 +899,147 @@ function clampCursorToRange(state) {
   state.cursor = clamp(state.cursor, 0, state.rawInputs.ioutMax);
 }
 
+function findCatalogPart(state, base) {
+  return state.catalog?.parts.find((entry) => entry.base_part_number === base) ?? null;
+}
+
+function setCatalogState(root, value) {
+  const container = root.querySelector("[data-blx-catalog]");
+  if (container) container.dataset.catalogState = value;
+}
+
+function showCatalogMessage(root, message) {
+  const node = root.querySelector("[data-blx-catalog-message]");
+  if (!node) return;
+  node.textContent = message || "";
+  node.hidden = !message;
+}
+
+function renderCatalogMeta(root, state) {
+  const meta = root.querySelector("[data-blx-catalog-meta]");
+  if (!meta) return;
+  const part = state.selectedPart ? findCatalogPart(state, state.selectedPart) : null;
+  meta.replaceChildren();
+  if (!part) {
+    meta.hidden = true;
+    return;
+  }
+  const dcr = dcrForMode(part, state.dcrMode);
+  const isat = selectIsat(part);
+  meta.append(
+    document.createTextNode(
+      `${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH · ${state.dcrMode === "max" ? "max" : "typ"} DCR ${displayNumber(dcr, 2)} mΩ`
+    )
+  );
+  if (isat) {
+    meta.append(document.createTextNode(` · Isat ${displayNumber(isat.value, 2)} A `));
+    const drop = document.createElement("span");
+    drop.className = "blx-catalog-drop";
+    drop.textContent = `(${isat.dropPct}% drop)`;
+    meta.append(drop);
+  }
+  meta.append(document.createTextNode(" · "));
+  const link = document.createElement("a");
+  link.href = part.datasheet_url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "Datasheet ↗";
+  meta.append(link);
+  meta.hidden = false;
+}
+
+function clearCatalogSelection(root, state) {
+  if (!state.selectedPart) return;
+  state.selectedPart = null;
+  const partSelect = root.querySelector("[data-blx-catalog-part]");
+  if (partSelect) partSelect.value = "";
+  const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+  if (dcrSelect) dcrSelect.disabled = true;
+  renderCatalogMeta(root, state);
+}
+
+function applyCatalogPart(root, state, base) {
+  const part = findCatalogPart(state, base);
+  if (!part) {
+    clearCatalogSelection(root, state);
+    return;
+  }
+  state.rawInputs.inductance = clampStaticParam("inductance", part.inductance_uh);
+  const dcr = dcrForMode(part, state.dcrMode);
+  if (dcr !== null) state.rawInputs.dcr = clampStaticParam("dcr", dcr);
+  const isat = selectIsat(part);
+  if (isat) {
+    state.rawInputs.inductorIsat = clampStaticParam("inductorIsat", isat.value);
+    state.explicitOptional.inductorIsat = true;
+  }
+  markCustom(state);
+  state.undoTry = null;
+  state.selectedPart = base;
+  const partSelect = root.querySelector("[data-blx-catalog-part]");
+  if (partSelect && partSelect.value !== base) partSelect.value = base;
+  const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+  if (dcrSelect) dcrSelect.disabled = false;
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  render(root, state, { announce: true });
+  scheduleUrlReplace(root, state);
+  renderCatalogMeta(root, state);
+}
+
+function applyCatalogDcrMode(root, state, mode) {
+  state.dcrMode = mode === "max" ? "max" : "typ";
+  const part = state.selectedPart ? findCatalogPart(state, state.selectedPart) : null;
+  if (!part) return;
+  const dcr = dcrForMode(part, state.dcrMode);
+  if (dcr !== null) state.rawInputs.dcr = clampStaticParam("dcr", dcr);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  render(root, state, { announce: true });
+  scheduleUrlReplace(root, state);
+  renderCatalogMeta(root, state);
+}
+
+function populateCatalogOptions(root, catalog) {
+  const select = root.querySelector("[data-blx-catalog-part]");
+  if (!select) return;
+  select.querySelectorAll("optgroup").forEach((group) => group.remove());
+  groupPartsBySeries(catalog.parts).forEach(({ series, parts }) => {
+    const group = document.createElement("optgroup");
+    group.label = series;
+    parts.forEach((part) => {
+      const option = document.createElement("option");
+      option.value = part.base_part_number;
+      option.textContent = `${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH`;
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  });
+}
+
+async function initCoilcraftCatalog(root, state) {
+  const container = root.querySelector("[data-blx-catalog]");
+  if (!container) return;
+  const partSelect = root.querySelector("[data-blx-catalog-part]");
+  const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+  setCatalogState(root, "loading");
+  try {
+    const catalog = await loadCoilcraftCatalog(root.dataset.blxCatalogUrl);
+    state.catalog = catalog;
+    populateCatalogOptions(root, catalog);
+    setCatalogState(root, "ready");
+    showCatalogMessage(root, "");
+    partSelect?.addEventListener("change", () => {
+      if (partSelect.value) applyCatalogPart(root, state, partSelect.value);
+      else clearCatalogSelection(root, state);
+    });
+    dcrSelect?.addEventListener("change", () => applyCatalogDcrMode(root, state, dcrSelect.value));
+  } catch {
+    state.catalog = null;
+    setCatalogState(root, "error");
+    if (partSelect) partSelect.disabled = true;
+    if (dcrSelect) dcrSelect.disabled = true;
+    showCatalogMessage(root, "Coilcraft part list is unavailable right now. Enter inductor values manually.");
+  }
+}
+
 function render(root, state, options = {}) {
   state.inputs = normalizeInputs(state.rawInputs);
   state.validation = validateInputs(state.inputs);
@@ -938,6 +1083,7 @@ function commitNumberInput(root, state, key, input) {
     if (PARAMS[key].optional) state.explicitOptional[key] = true;
   }
   markCustom(state);
+  if (CATALOG_EDIT_KEYS.has(key)) clearCatalogSelection(root, state);
   if (enforceBuck(state.rawInputs, key) && !inputNote) {
     inputNote = key === "vout" ? "Input voltage was adjusted to preserve buck headroom." : "Output voltage was adjusted to preserve buck headroom.";
   }
@@ -959,6 +1105,7 @@ function liveNumberInput(root, state, key, input) {
     if (PARAMS[key].optional) state.explicitOptional[key] = true;
   }
   markCustom(state);
+  if (CATALOG_EDIT_KEYS.has(key)) clearCatalogSelection(root, state);
   clampCursorToRange(state);
   syncControls(state, root.blxNumberControls, root.blxRangeControls);
   scheduleRender(root, state, { updateUrl: true, announce: true });
@@ -972,6 +1119,7 @@ function applyPreset(root, state, preset, options = {}) {
   state.urlNotes = [];
   state.inputNote = null;
   state.undoTry = null;
+  clearCatalogSelection(root, state);
   if (options.clearReference) state.reference = null;
   syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
   render(root, state, { announce: true });
@@ -1104,6 +1252,9 @@ export function initBuckLossExplorer(root) {
     inputNote: null,
     undoTry: null,
     reference: null,
+    catalog: null,
+    selectedPart: null,
+    dcrMode: "typ",
     view: "point",
     showAllLosses: false,
     pinnedHighlight: null,
@@ -1145,6 +1296,7 @@ export function initBuckLossExplorer(root) {
         state.rawInputs[key] = clampParam(key, fromSlider(key, range.value, state.rawInputs), state.rawInputs);
         if (PARAMS[key].optional) state.explicitOptional[key] = true;
         markCustom(state);
+        if (CATALOG_EDIT_KEYS.has(key)) clearCatalogSelection(root, state);
         state.undoTry = null;
         enforceBuck(state.rawInputs, key);
         clampCursorToRange(state);
@@ -1247,6 +1399,7 @@ export function initBuckLossExplorer(root) {
       state.urlNotes = next.notes;
       state.inputNote = null;
       state.undoTry = null;
+      clearCatalogSelection(root, state);
       syncControls(state, numberControls, rangeControls, { force: true });
       render(root, state, { announce: true });
     });
@@ -1256,4 +1409,5 @@ export function initBuckLossExplorer(root) {
   render(root, state, { animate: false });
   root.dataset.blxStatus = "ready";
   root.setAttribute("aria-busy", "false");
+  initCoilcraftCatalog(root, state);
 }
