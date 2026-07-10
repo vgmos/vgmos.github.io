@@ -43,13 +43,16 @@
   {%- endif -%}
 
   <link rel="stylesheet" href="{{ "/css/site.css" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
+  {%- for stylesheet in page.stylesheets -%}
+    <link rel="stylesheet" href="{{ stylesheet | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
+  {%- endfor -%}
   {%- if page.math == true -%}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
     <script
       defer
       src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
-      onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});document.querySelectorAll('.katex-display').forEach(function(el){el.tabIndex=0;});"></script>
+      onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});(function(){var update=function(){document.querySelectorAll('.katex-display').forEach(function(el){var scrollable=el.scrollWidth>el.clientWidth+1;if(scrollable){el.tabIndex=0;}else{el.removeAttribute('tabindex');}});};requestAnimationFrame(update);setTimeout(update,250);if(document.fonts){document.fonts.ready.then(update);}window.addEventListener('resize',update,{passive:true});}());"></script>
   {%- endif -%}
 
   <script defer src="{{ '/js/ui.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"></script>

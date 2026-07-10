@@ -85,6 +85,15 @@ describe("buck loss URL state", () => {
     assert.equal(parsed.activePresetId, null);
   });
 
+  it("resolves removed picker presets only for legacy shared-link fidelity", () => {
+    const parsed = parseBuckLossUrl("?p=high-freq-compact&i=2");
+    assert.equal(parsed.requestedPresetId, "high-freq-compact");
+    assert.equal(parsed.activePresetId, "high-freq-compact");
+    assert.equal(parsed.rawInputs.fsw, 3000);
+    assert.equal(parsed.rawInputs.inductance, 0.68);
+    assert.equal(serializeBuckLossUrl(parsed), "p=high-freq-compact&i=2");
+  });
+
   it("uses default preset and note for unknown preset ids", () => {
     const parsed = parseBuckLossUrl("?p=not-real&i=2");
     const defaultPreset = getBuckLossPreset(DEFAULT_PRESET_ID);

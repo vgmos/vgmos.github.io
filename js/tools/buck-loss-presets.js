@@ -28,7 +28,7 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 2,
-    prompt: "EPC2090 pair at 12 V. Nudge fSW or DCR and watch the ranking move.",
+    prompt: "EPC2090 pair at 12 V. Adjust fSW or DCR and watch the ranking move.",
     expectedDominantLosses: ["switchingOverlap", "fetConduction", "inductorDcr"]
   },
   {
@@ -58,7 +58,7 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 3,
-    prompt: "Halve RDS(on); now halve DCR. Which mattered?",
+    prompt: "Compare the influence of RDS(on) and DCR at this core-rail operating point.",
     expectedDominantLosses: ["fetConduction", "inductorDcr"]
   },
   {
@@ -88,34 +88,24 @@ export const BUCK_LOSS_PRESETS = [
       inductorIsat: null
     },
     cursor: 3,
-    prompt: "Same D as the POL — why is switching 5× worse? Try adding EOSS.",
+    prompt: "Same duty ratio as the POL, but the higher bus voltage makes switching terms much more important.",
     expectedDominantLosses: ["switchingOverlap"]
-  },
+  }
+];
+
+// Removed from every picker, retained only so previously shared v1 URLs keep
+// reproducing their original operating point exactly.
+export const BUCK_LOSS_LEGACY_URL_PRESETS = [
   {
     id: "high-freq-compact",
     name: "High-frequency compact",
+    hidden: true,
     rawInputs: {
-      vin: 12,
-      vout: 3.3,
-      ioutMax: 3,
-      fsw: 3000,
-      inductance: 0.68,
-      rdsHigh: 5.2,
-      rdsLow: 5.2,
-      qgHigh: 7.3,
-      qgLow: 7.3,
-      tOverlap: 15,
-      deadTime: 20,
-      diodeVf: 1.5,
-      dcr: 12,
-      esr: 5,
-      vDrive: 5,
-      iq: 2,
-      vBias: null,
-      eossTotal: 63.5,
-      qrr: 0,
-      inductorAcManual: 0,
-      inductorIsat: null
+      vin: 12, vout: 3.3, ioutMax: 3, fsw: 3000, inductance: 0.68,
+      rdsHigh: 5.2, rdsLow: 5.2, qgHigh: 7.3, qgLow: 7.3,
+      tOverlap: 15, deadTime: 20, diodeVf: 1.5, dcr: 12, esr: 5,
+      vDrive: 5, iq: 2, vBias: null, eossTotal: 63.5, qrr: 0,
+      inductorAcManual: 0, inductorIsat: null
     },
     cursor: 2,
     prompt: "Same converter as the POL at 3× the frequency. Where did the watts go?",
@@ -124,66 +114,38 @@ export const BUCK_LOSS_PRESETS = [
   {
     id: "low-freq-efficient",
     name: "Low-frequency efficient",
+    hidden: true,
     rawInputs: {
-      vin: 12,
-      vout: 3.3,
-      ioutMax: 3,
-      fsw: 300,
-      inductance: 10,
-      rdsHigh: 5.2,
-      rdsLow: 5.2,
-      qgHigh: 7.3,
-      qgLow: 7.3,
-      tOverlap: 15,
-      deadTime: 20,
-      diodeVf: 1.5,
-      dcr: 30,
-      esr: 5,
-      vDrive: 5,
-      iq: 2,
-      vBias: null,
-      eossTotal: 63.5,
-      qrr: 0,
-      inductorAcManual: 0,
-      inductorIsat: null
+      vin: 12, vout: 3.3, ioutMax: 3, fsw: 300, inductance: 10,
+      rdsHigh: 5.2, rdsLow: 5.2, qgHigh: 7.3, qgLow: 7.3,
+      tOverlap: 15, deadTime: 20, diodeVf: 1.5, dcr: 30, esr: 5,
+      vDrive: 5, iq: 2, vBias: null, eossTotal: 63.5, qrr: 0,
+      inductorAcManual: 0, inductorIsat: null
     },
     cursor: 2,
-    prompt: "Cheap efficiency — paid for in inductor size and DCR.",
+    prompt: "Legacy operating point.",
     expectedDominantLosses: ["inductorDcr", "fetConduction"]
   },
   {
     id: "light-load-sensitive",
     name: "Light-load sensitive",
+    hidden: true,
     rawInputs: {
-      vin: 5,
-      vout: 3.3,
-      ioutMax: 0.5,
-      fsw: 1000,
-      inductance: 4.7,
-      rdsHigh: 5.2,
-      rdsLow: 5.2,
-      qgHigh: 7.3,
-      qgLow: 7.3,
-      tOverlap: 6,
-      deadTime: 15,
-      diodeVf: 1.5,
-      dcr: 60,
-      esr: 10,
-      vDrive: 5,
-      iq: 0.5,
-      vBias: null,
-      eossTotal: 11,
-      qrr: 0,
-      inductorAcManual: 0,
-      inductorIsat: null
+      vin: 5, vout: 3.3, ioutMax: 0.5, fsw: 1000, inductance: 4.7,
+      rdsHigh: 5.2, rdsLow: 5.2, qgHigh: 7.3, qgLow: 7.3,
+      tOverlap: 6, deadTime: 15, diodeVf: 1.5, dcr: 60, esr: 10,
+      vDrive: 5, iq: 0.5, vBias: null, eossTotal: 11, qrr: 0,
+      inductorAcManual: 0, inductorIsat: null
     },
     cursor: 0.02,
-    prompt: "Drag to 20 mA. This floor is why PFM exists.",
+    prompt: "Legacy light-load operating point.",
     expectedDominantLosses: ["bias", "gateDrive"]
   }
 ];
 
-export const BUCK_LOSS_PRESET_MAP = new Map(BUCK_LOSS_PRESETS.map((preset) => [preset.id, preset]));
+export const BUCK_LOSS_PRESET_MAP = new Map(
+  [...BUCK_LOSS_PRESETS, ...BUCK_LOSS_LEGACY_URL_PRESETS].map((preset) => [preset.id, preset])
+);
 
 export function getBuckLossPreset(id) {
   return BUCK_LOSS_PRESET_MAP.get(id) ?? null;
