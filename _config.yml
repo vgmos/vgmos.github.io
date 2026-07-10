@@ -39,6 +39,9 @@ exclude:
   - test-results/
   - audit-artifacts/
   - tests/
+  - scripts/
+  - data/
+  - .cache/
 
 defaults:
   - scope:

@@ -9,7 +9,10 @@
     "test:unit": "node --test tests/index.js",
     "test:ui": "playwright test",
     "test:ui:live": "SITE_URL=https://vgmos.github.io PLAYWRIGHT_LIVE=1 playwright test",
-    "test:links": "bundle exec htmlproofer _site --disable-external"
+    "test:links": "bundle exec htmlproofer _site --disable-external",
+    "data:coilcraft:check": "node scripts/coilcraft/acquire.mjs check",
+    "data:coilcraft:accept": "node scripts/coilcraft/acquire.mjs accept",
+    "data:coilcraft:build": "node scripts/coilcraft/acquire.mjs build"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
