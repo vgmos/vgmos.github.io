@@ -32,7 +32,7 @@ describe("buck loss URL state", () => {
     assert.equal(parsed.rawInputs.fsw, 50);
     assert.equal(parsed.rawInputs.inductance, 0.1);
     assert.equal(parsed.rawInputs.rdsHigh, 0.1);
-    assert.equal(parsed.rawInputs.diodeVf, 1.2);
+    assert.equal(parsed.rawInputs.diodeVf, 2.5);
     assert.equal(parsed.rawInputs.iq, 20);
     assert.equal(parsed.cursor, 60);
     assert.equal(parsed.notes.filter((entry) => entry.code === "clamped").length, 1);

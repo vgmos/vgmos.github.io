@@ -242,4 +242,102 @@ test.describe("Buck Converter Loss Explorer", () => {
     const toolText = await page.locator(".blx-page").innerText();
     expect(toolText).not.toMatch(/\b(?:NaN|Infinity)\b/);
   });
+
+  test("top views, held reference, and mobile input disclosure stay connected", async ({ page }) => {
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    const pointTab = page.locator('[data-blx-view="point"]');
+    const loadTab = page.locator('[data-blx-view="load"]');
+    await expect(pointTab).toHaveAttribute("aria-selected", "true");
+    await loadTab.click();
+    await expect(loadTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("[data-blx-efficiency-plot] svg")).toBeVisible();
+    await expect(page.locator("[data-blx-loss-plot] svg")).toBeVisible();
+
+    await loadTab.press("ArrowLeft");
+    await expect(pointTab).toHaveAttribute("aria-selected", "true");
+    const referenceButton = page.locator('.blx-view-panel:not([hidden]) [data-blx-reference]');
+    await referenceButton.click();
+    await expect(referenceButton).toHaveAttribute("aria-pressed", "true");
+    await page.locator('[data-blx-try="half-fsw"]').click();
+    await expect(page.locator("[data-blx-reference-summary]")).toContainText("Held:");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const disclosure = page.locator(".blx-input-disclosure");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await disclosure.locator(":scope > summary").click();
+    await expect(disclosure).toHaveAttribute("open", "");
+
+    const showAll = page.locator("[data-blx-show-all]");
+    await expect(showAll).toHaveAttribute("aria-expanded", "false");
+    await showAll.click();
+    await expect(showAll).toHaveAttribute("aria-expanded", "true");
+    const visibleRows = await page.locator(".blx-loss-row").evaluateAll((rows) => rows.filter((row) => {
+      const style = getComputedStyle(row);
+      return style.display !== "none" && row.getBoundingClientRect().height > 0;
+    }).length);
+    expect(visibleRows).toBe(8);
+  });
+
+  test("responsive workspace, chart surfaces, and equations preserve their layout contracts", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    const desktop = await page.locator(".blx-workspace").evaluate((workspace) => {
+      const style = getComputedStyle(workspace);
+      const powerBalance = document.querySelector("[data-blx-power-balance]");
+      return {
+        width: workspace.getBoundingClientRect().width,
+        columns: style.gridTemplateColumns,
+        powerBalanceBottom: powerBalance?.getBoundingClientRect().bottom,
+        visibleLossRows: [...document.querySelectorAll(".blx-loss-row")]
+          .filter((row) => getComputedStyle(row).display !== "none").length
+      };
+    });
+    expect(desktop.width).toBeCloseTo(1160, 0);
+    expect(desktop.columns).toMatch(/^310px\s+/);
+    expect(desktop.visibleLossRows).toBe(6);
+    expect(desktop.powerBalanceBottom).toBeLessThanOrEqual(901);
+
+    await page.setViewportSize({ width: 768, height: 1024 });
+    const tablet = await page.locator(".blx-workspace").evaluate((workspace) => ({
+      display: getComputedStyle(workspace).display,
+      resultsOrder: getComputedStyle(document.querySelector(".blx-results")).order,
+      inputsOrder: getComputedStyle(document.querySelector(".blx-inputs")).order,
+      controlColumns: getComputedStyle(document.querySelector(".blx-controls")).gridTemplateColumns,
+      inputsOpen: document.querySelector(".blx-input-disclosure")?.open
+    }));
+    expect(tablet.display).toBe("flex");
+    expect(tablet.resultsOrder).toBe("1");
+    expect(tablet.inputsOrder).toBe("2");
+    expect(tablet.controlColumns.split(" ")).toHaveLength(2);
+    expect(tablet.inputsOpen).toBe(true);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator(".blx-input-disclosure")).not.toHaveAttribute("open", "");
+    await page.locator('[data-blx-view="load"]').click();
+    await expect(page.locator("[data-blx-efficiency-plot] svg")).toHaveAttribute("viewBox", "0 0 360 190");
+    await expect(page.locator("[data-blx-loss-plot] svg")).toHaveAttribute("viewBox", "0 0 360 215");
+    const mobile = await page.locator(".blx-page").evaluate((root) => {
+      const equation = root.querySelector(".blx-equations .katex-display");
+      const surfaces = [...root.querySelectorAll("[data-blx-across-surface]")];
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        chartViewBoxes: [...root.querySelectorAll(".blx-plot svg")].map((svg) => svg.getAttribute("viewBox")),
+        chartTouchActions: surfaces.map((surface) => surface.style.touchAction),
+        equationOverflow: equation ? getComputedStyle(equation).overflowX : null,
+        equationScrollable: equation ? equation.scrollWidth >= equation.clientWidth : false
+      };
+    });
+    expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.clientWidth + 1);
+    expect(mobile.chartViewBoxes).toEqual(["0 0 360 190", "0 0 360 215"]);
+    expect(mobile.chartTouchActions).toEqual(["pan-y", "pan-y"]);
+    expect(mobile.equationOverflow).toBe("auto");
+    expect(mobile.equationScrollable).toBe(true);
+  });
 });

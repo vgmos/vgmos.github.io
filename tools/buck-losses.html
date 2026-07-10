@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Buck Converter Loss Explorer
-description: Interactive first-order synchronous buck loss and efficiency model — conduction, switching, gate-drive, dead-time, DCR, ESR, and bias losses across load current.
+title: Buck Converter Loss Tool
+description: Interactive first-order synchronous buck loss and efficiency model using EPC2090 GaN FET defaults — inspect a ranked operating-point loss budget or sweep performance across load.
 permalink: /tools/buck-losses/
 math: true
 ---
@@ -9,747 +9,1134 @@ math: true
 {% raw %}
 <style>
   article.blx-page {
-    max-width: 720px;
-    --blx-motion-fast: 180ms;
-    --blx-motion: 220ms;
-    --blx-cond: #2f7c8d;
-    --blx-dcr: #5c8050;
-    --blx-sw: #ad6b3f;
-    --blx-dead: #a88a43;
-    --blx-gate: #806fa6;
-    --blx-bias: #707983;
-    --blx-other: #aeb6be;
-    --blx-eff: var(--ink);
-    --blx-surface: var(--soft);
-    --blx-card-bg: var(--paper);
-    --blx-plot-bg: var(--paper);
-    --blx-separator: var(--paper);
-    --blx-thumb-size: 15px;
-    --blx-acc-expand: 250ms;
-    --blx-acc-collapse: 250ms;
-    --blx-acc-chevron: 250ms;
-    --blx-acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    max-width: 700px;
+    --blx-motion-fast: 160ms;
+    --blx-motion: 240ms;
+    --blx-motion-slow: 360ms;
+    --blx-cond: #a84d34;
+    --blx-dcr: #66725b;
+    --blx-sw: #b9843f;
+    --blx-dead: #91734f;
+    --blx-gate: #7d6a82;
+    --blx-bias: #69747c;
+    --blx-other: #aaa39a;
+    --blx-thumb-size: 17px;
+    --blx-control-bg: color-mix(in srgb, var(--paper) 92%, var(--soft));
+    --blx-row-hover: color-mix(in srgb, var(--accent) 7%, transparent);
+    --blx-reference: color-mix(in srgb, var(--ink) 52%, transparent);
   }
 
-  .blx-header { margin-bottom: 26px; }
+  html[data-theme="dark"] article.blx-page {
+    --blx-cond: #db8d72;
+    --blx-dcr: #9cab88;
+    --blx-sw: #d8aa64;
+    --blx-dead: #bca178;
+    --blx-gate: #b39cbb;
+    --blx-bias: #99a8b0;
+    --blx-other: #aaa39a;
+    --blx-row-hover: color-mix(in srgb, var(--accent) 11%, transparent);
+  }
+
+  .blx-header {
+    margin: 0 0 1.5rem;
+  }
+
   .blx-header h1 {
-    margin-bottom: 10px;
+    max-width: 680px;
+    margin-bottom: 0.55rem;
+    font-size: clamp(2.25rem, 5vw, 3.15rem);
+    letter-spacing: -0.035em;
+    line-height: 1.04;
     text-wrap: balance;
   }
-  .blx-hero-line {
-    margin: 0 0 0.25rem;
-    color: var(--ink);
-    font-size: 1.32rem;
-    font-weight: 650;
-    line-height: 1.32;
-  }
+
   .blx-dek {
     max-width: 700px;
+    margin: 0;
     color: var(--ink-soft);
     font-family: var(--claude-serif);
-    font-size: 1.18rem;
-    line-height: 1.56;
-  }
-  .blx-top-caveat {
-    margin: 1.1rem 0 0;
-    padding: 10px 14px;
-    border-left: 2px solid var(--accent);
-    border-radius: 0 6px 6px 0;
-    background: var(--soft);
-    color: var(--ink-soft);
-    font-size: 0.94rem;
-    line-height: 1.55;
-  }
-
-  .blx-presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 1.6rem 0 0.45rem;
-  }
-  .blx-presets span {
-    align-self: center;
-    margin-right: 4px;
-    color: var(--muted);
-    font-size: 0.86rem;
-  }
-  .blx-presets button,
-  .blx-try button,
-  .blx-actions button,
-  .blx-copy button {
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--ink-soft);
-    cursor: pointer;
-    font-family: var(--claude-sans);
-    font-size: 0.84rem;
-    font-weight: 500;
-    line-height: 1.08;
-    min-height: 34px;
-    padding: 5px 13px;
-    transition:
-      color var(--blx-motion) var(--claude-ease, var(--ease)),
-      border-color var(--blx-motion) var(--claude-ease, var(--ease)),
-      text-shadow var(--blx-motion) var(--claude-ease, var(--ease));
-  }
-  .blx-presets button[aria-pressed="true"] {
-    border-color: var(--accent);
-    background: transparent;
-    color: var(--ink);
-  }
-  .blx-presets button:hover,
-  .blx-presets button:focus-visible,
-  .blx-try button:hover,
-  .blx-try button:focus-visible,
-  .blx-actions button:hover,
-  .blx-actions button:focus-visible,
-  .blx-copy button:hover,
-  .blx-copy button:focus-visible {
-    border-color: var(--accent);
-    color: var(--claude-accent-deep, var(--accent));
-    background-color: transparent;
-    outline: none;
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .blx-prompt {
-    margin: 0 0 1.2rem;
-    color: var(--muted);
-    font-size: 0.88rem;
+    font-size: clamp(1.08rem, 2vw, 1.24rem);
     line-height: 1.5;
   }
-  .blx-try {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    align-items: center;
-    margin: 0.8rem 0 1.2rem;
-  }
-  .blx-try span {
+
+  .blx-meta {
+    margin: 0.8rem 0 0;
     color: var(--muted);
     font-family: var(--claude-sans);
-    font-size: 0.84rem;
-  }
-  .blx-try button {
-    padding: 4px 11px;
-    font-size: 0.82rem;
+    font-size: 0.79rem;
+    letter-spacing: 0.025em;
   }
 
-  .blx-shell {
-    margin: 1.2rem 0 1.8rem;
-  }
-  .blx-plot {
-    min-height: 320px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--blx-plot-bg);
-    touch-action: pan-y;
-  }
-  .blx-plot svg {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  .blx-cursor-rail:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-  .blx-invalid .blx-plot {
-    opacity: 0.45;
-  }
-  .blx-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 12px;
-    align-items: center;
-    margin: 0.65rem 0 0;
-    color: var(--ink-soft);
-    font-family: var(--claude-sans);
-    font-size: 0.82rem;
-    line-height: 1.4;
-  }
-  .blx-legend span {
-    display: inline-flex;
-    gap: 5px;
-    align-items: center;
-  }
-  .blx-legend i {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    background: var(--legend-color, var(--muted));
-    opacity: 0.86;
-  }
-  .blx-legend .blx-eff-key i {
-    width: 18px;
-    height: 2px;
-    border-radius: 999px;
-    background: var(--blx-eff);
-    opacity: 1;
-  }
-  .blx-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    align-items: center;
-    margin: 0.85rem 0 0;
-  }
-  .blx-actions button {
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-weight: 650;
-    padding: 6px 14px;
-  }
-  .blx-actions span {
-    color: var(--muted);
-    font-family: var(--claude-sans);
-    font-size: 0.86rem;
-  }
-  .blx-readouts {
+  .blx-workspace {
+    width: min(1160px, calc(100vw - 48px));
+    margin: 0 0 3.25rem 50%;
+    transform: translateX(-50%);
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
-    margin: 1rem 0 0.4rem;
-  }
-  .blx-card {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 10px 11px 9px;
-    background: var(--blx-card-bg);
-  }
-  .blx-card .blx-k {
-    margin: 0 0 3px;
-    color: var(--muted);
-    font-family: var(--claude-sans);
-    font-size: 0.82rem;
-    font-weight: 500;
-    line-height: 1.48;
-  }
-  .blx-card .blx-v {
-    margin: 0;
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-size: 1.18rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.2;
-    min-height: 1.4em;
-    transition: color var(--blx-motion-fast) var(--claude-ease, var(--ease)), opacity var(--blx-motion-fast) var(--claude-ease, var(--ease));
-  }
-  .blx-sentence {
-    margin: 0.9rem 0 0;
-    color: var(--ink-soft);
-    line-height: 1.55;
-  }
-  .blx-regime-chip {
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-    margin-right: 6px;
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-size: 0.84rem;
-    font-weight: 650;
-    white-space: nowrap;
-  }
-  .blx-regime-chip i {
-    width: 0.62em;
-    height: 0.62em;
-    border-radius: 999px;
-    background: var(--chip-color, var(--accent));
-  }
-  .blx-warnings {
-    display: grid;
-    gap: 8px;
-    margin-top: 0.8rem;
-  }
-  .blx-note {
-    margin: 0;
-    padding: 10px 14px;
-    border-left: 2px solid var(--accent);
-    border-radius: 0 6px 6px 0;
-    background: var(--blx-surface);
-    color: var(--ink-soft);
-    font-family: var(--claude-sans);
-    font-size: 0.92rem;
-    line-height: 1.55;
+    grid-template-columns: minmax(276px, 310px) minmax(0, 1fr);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
   }
 
-  .blx-controls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px 32px;
-    box-sizing: border-box;
-    margin: 1rem 0 1.2rem;
-    padding: 20px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--soft);
+  .blx-inputs {
+    min-width: 0;
+    border-right: 1px solid var(--line);
   }
-  .blx-field { display: grid; gap: 6px; }
-  .blx-field-head {
+
+  .blx-input-disclosure > summary {
+    display: none;
+  }
+
+  .blx-input-content {
+    padding: 22px 24px 26px 0;
+  }
+
+  .blx-input-sticky {
+    position: sticky;
+    top: 80px;
+  }
+
+  .blx-rail-heading,
+  .blx-result-heading,
+  .blx-section-heading {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 10px;
+    gap: 1rem;
   }
-  .blx-field-head label {
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-size: 0.88rem;
-    font-weight: 600;
-  }
-  .blx-entry {
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
-    font-family: var(--claude-sans);
-  }
-  .blx-entry input[type="number"] {
-    -moz-appearance: textfield;
-    width: 5.3em;
-    padding: 2px 6px;
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    background: var(--blx-card-bg);
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-size: 0.88rem;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    transition:
-      border-color var(--blx-motion) var(--claude-ease, var(--ease)),
-      box-shadow var(--blx-motion) var(--claude-ease, var(--ease));
-  }
-  .blx-entry input[type="number"]::-webkit-outer-spin-button,
-  .blx-entry input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
+
+  .blx-rail-heading h2,
+  .blx-result-heading h2,
+  .blx-section-heading h2 {
     margin: 0;
-  }
-  .blx-entry input[type="number"]:focus-visible {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--claude-ring);
-  }
-  .blx-field input[type="range"]:focus-visible,
-  .blx-tick:focus-visible,
-  .blx-copy input:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-  .blx-unit {
-    min-width: 2.2em;
-    color: var(--muted);
+    color: var(--ink);
     font-family: var(--claude-sans);
-    font-size: 0.86rem;
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.105em;
+    line-height: 1.3;
+    text-transform: uppercase;
   }
-  .blx-field input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 15px;
-    margin: 7px 0;
-    border-radius: 2px;
-    background: linear-gradient(var(--line), var(--line)) center / 100% 3px no-repeat;
-    outline: none;
-  }
-  .blx-field input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: var(--blx-thumb-size);
-    height: var(--blx-thumb-size);
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    box-sizing: border-box;
-    background: var(--blx-card-bg);
-    cursor: pointer;
-    transition:
-      transform var(--blx-motion-fast) var(--claude-ease, var(--ease)),
-      background-color var(--blx-motion-fast) var(--claude-ease, var(--ease));
-  }
-  .blx-field input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.08);
-  }
-  .blx-field input[type="range"]::-moz-range-thumb {
-    width: var(--blx-thumb-size);
-    height: var(--blx-thumb-size);
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    box-sizing: border-box;
-    background: var(--blx-card-bg);
-    cursor: pointer;
-    transition:
-      transform var(--blx-motion-fast) var(--claude-ease, var(--ease)),
-      background-color var(--blx-motion-fast) var(--claude-ease, var(--ease));
-  }
-  .blx-field input[type="range"]::-moz-range-thumb:hover {
-    transform: scale(1.08);
-  }
-  .blx-ticks {
-    position: relative;
-    height: 16px;
-    margin: -4px 0 0;
-  }
-  .blx-tick {
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    padding: 6px 3px 0;
+
+  .blx-reset {
+    padding: 0;
     border: 0;
     background: transparent;
     color: var(--muted);
     cursor: pointer;
     font-family: var(--claude-sans);
-    font-size: 0.66rem;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    transition:
-      color var(--blx-motion) var(--claude-ease, var(--ease)),
-      text-shadow var(--blx-motion) var(--claude-ease, var(--ease));
-  }
-  .blx-tick::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 1px;
-    height: 4px;
-    background: var(--muted);
-    opacity: 0.6;
-    transition: background var(--blx-motion) var(--claude-ease, var(--ease));
-  }
-  .blx-tick:hover,
-  .blx-tick:focus-visible {
-    color: var(--claude-accent-deep, var(--accent));
-    outline: none;
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .blx-tick:hover::before,
-  .blx-tick:focus-visible::before {
-    background: var(--accent);
-    opacity: 1;
+    font-size: 0.78rem;
+    transition: color var(--blx-motion-fast) var(--claude-ease);
   }
 
-  .blx-advanced {
+  .blx-reset:hover,
+  .blx-reset:focus-visible {
+    color: var(--accent);
+  }
+
+  .blx-presets {
     display: grid;
-    gap: 10px;
-    margin: 1rem 0 1.8rem;
-  }
-  .blx-advanced details {
-    overflow: hidden;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0.9rem 0 0;
     border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--blx-card-bg);
+    border-radius: 7px;
+    overflow: hidden;
   }
-  .blx-advanced summary {
+
+  .blx-presets span {
+    display: none;
+  }
+
+  .blx-presets button {
+    min-width: 0;
+    min-height: 38px;
+    padding: 7px 8px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--claude-sans);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    transition: background var(--blx-motion-fast) var(--claude-ease), color var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-presets button:nth-of-type(2n) {
+    border-right: 0;
+  }
+
+  .blx-presets button:nth-last-of-type(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .blx-presets button[aria-pressed="true"] {
+    background: var(--blx-row-hover);
+    color: var(--ink);
+    box-shadow: inset 0 -2px var(--accent);
+  }
+
+  .blx-prompt {
+    min-height: 2.7em;
+    margin: 0.65rem 0 0;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.73rem;
+    line-height: 1.45;
+  }
+
+  .blx-device-note {
+    margin: 1.1rem 0 1.25rem;
+    padding: 10px 11px;
+    border-left: 2px solid var(--accent);
+    background: var(--soft);
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.7rem;
+    line-height: 1.5;
+  }
+
+  .blx-device-note strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .blx-device-note a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, currentColor 48%, transparent);
+    text-underline-offset: 2px;
+  }
+
+  .blx-controls,
+  .blx-detail-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .blx-field {
+    min-width: 0;
+    padding: 9px 10px;
+    background: var(--blx-control-bg);
+  }
+
+  .blx-field-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-    list-style: none;
-    padding: 11px 14px;
-    color: var(--ink);
+    gap: 10px;
+  }
+
+  .blx-field-head label {
+    min-width: 0;
+    color: var(--ink-soft);
     font-family: var(--claude-sans);
-    font-weight: 650;
-    user-select: none;
-    transition:
-      color var(--blx-motion) var(--claude-ease, var(--ease)),
-      text-shadow var(--blx-motion) var(--claude-ease, var(--ease));
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.3;
   }
-  .blx-advanced summary::-webkit-details-marker {
-    display: none;
-  }
-  .blx-advanced summary:focus-visible {
-    outline: none;
-    color: var(--claude-accent-deep, var(--accent));
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-    box-shadow: inset 0 0 0 2px var(--claude-ring);
-    border-radius: 7px;
-  }
-  .blx-acc-chevron {
-    display: inline-flex;
+
+  .blx-entry {
+    display: flex;
     flex: 0 0 auto;
     align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
+    gap: 5px;
+    font-family: var(--claude-sans);
+  }
+
+  .blx-entry input[type="number"] {
+    -moz-appearance: textfield;
+    width: 4.8em;
+    min-height: 30px;
+    box-sizing: border-box;
+    padding: 4px 7px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--claude-sans);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    transition: border-color var(--blx-motion-fast) var(--claude-ease), box-shadow var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-entry input[type="number"]::-webkit-outer-spin-button,
+  .blx-entry input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .blx-entry input[type="number"]:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--claude-ring);
+    outline: none;
+  }
+
+  .blx-unit {
+    min-width: 2.25em;
     color: var(--muted);
-    transform: scaleY(1);
-    transform-origin: center;
-    transition: transform var(--blx-acc-chevron) var(--blx-acc-ease);
+    font-family: var(--claude-sans);
+    font-size: 0.7rem;
   }
+
+  .blx-field > input[type="range"],
+  .blx-ticks {
+    display: none;
+  }
+
+  .blx-current-control {
+    margin: 14px 0 18px;
+  }
+
+  .blx-current-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.78rem;
+  }
+
+  .blx-current-head output {
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .blx-current-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    margin: 3px 0 0;
+    background: linear-gradient(var(--line), var(--line)) center / 100% 2px no-repeat;
+    cursor: ew-resize;
+  }
+
+  .blx-current-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: var(--blx-thumb-size);
+    height: var(--blx-thumb-size);
+    border: 2px solid var(--paper);
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+    transition: transform var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-current-range::-moz-range-thumb {
+    width: var(--blx-thumb-size);
+    height: var(--blx-thumb-size);
+    border: 2px solid var(--paper);
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+    transition: transform var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-current-range:hover::-webkit-slider-thumb {
+    transform: scale(1.12);
+  }
+
+  .blx-current-range:hover::-moz-range-thumb {
+    transform: scale(1.12);
+  }
+
+  .blx-current-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -3px;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .blx-advanced {
+    margin-top: 0.45rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .blx-advanced details {
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .blx-advanced summary {
+    display: flex;
+    min-height: 48px;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 2px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: var(--claude-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    list-style: none;
+    user-select: none;
+  }
+
+  .blx-advanced summary::-webkit-details-marker,
+  .blx-input-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .blx-acc-chevron {
+    display: inline-grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    transition: transform var(--blx-motion) var(--claude-ease);
+  }
+
   .blx-acc-chevron svg {
-    display: block;
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
+
   .blx-acc-chevron path {
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.35;
+  }
+
+  .blx-advanced details[data-open="true"] .blx-acc-chevron,
+  .blx-input-disclosure[open] > summary .blx-acc-chevron {
+    transform: rotate(180deg);
+  }
+
+  .blx-detail-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows var(--blx-motion) var(--claude-ease), visibility 0s linear var(--blx-motion);
+  }
+
+  .blx-advanced details[data-open="true"] .blx-detail-panel {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .blx-detail-body {
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 0 12px;
+  }
+
+  .blx-hint,
+  .blx-field-help {
+    margin: 0 0 0.65rem;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.68rem;
+    line-height: 1.45;
+  }
+
+  .blx-field-help {
+    margin: 5px 0 0;
+  }
+
+  .blx-try {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin: 14px 0 0;
+  }
+
+  .blx-try span {
+    width: 100%;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.68rem;
+  }
+
+  .blx-try button,
+  .blx-actions button,
+  .blx-copy button {
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: var(--claude-sans);
+    font-size: 0.73rem;
+    font-weight: 550;
+    transition: border-color var(--blx-motion-fast) var(--claude-ease), color var(--blx-motion-fast) var(--claude-ease), background var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-try button:hover,
+  .blx-actions button:hover,
+  .blx-copy button:hover,
+  .blx-try button:focus-visible,
+  .blx-actions button:focus-visible,
+  .blx-copy button:focus-visible {
+    border-color: var(--accent);
+    background: var(--blx-row-hover);
+    color: var(--accent);
+  }
+
+  .blx-results {
+    min-width: 0;
+    padding: 0 0 30px 34px;
+  }
+
+  .blx-view-tabs {
+    position: sticky;
+    z-index: 3;
+    top: 63px;
+    display: flex;
+    gap: 28px;
+    margin: 0 0 28px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    backdrop-filter: blur(9px);
+  }
+
+  .blx-view-tabs button {
+    position: relative;
+    min-height: 50px;
+    padding: 2px 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--claude-sans);
+    font-size: 0.84rem;
+    font-weight: 550;
+  }
+
+  .blx-view-tabs button::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    transform: scaleX(0);
+    transform-origin: center;
+    background: var(--accent);
+    transition: transform var(--blx-motion) var(--claude-ease);
+  }
+
+  .blx-view-tabs button[aria-selected="true"] {
+    color: var(--ink);
+  }
+
+  .blx-view-tabs button[aria-selected="true"]::after {
+    transform: scaleX(1);
+  }
+
+  .blx-view-panel[hidden] {
+    display: none !important;
+  }
+
+  .blx-view-panel.blx-panel-enter {
+    animation: blx-panel-enter var(--blx-motion-slow) var(--claude-ease) both;
+  }
+
+  @keyframes blx-panel-enter {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .blx-primary-result {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.35fr);
+    gap: 28px;
+    align-items: end;
+    padding: 0 12px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .blx-efficiency-value {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--claude-serif);
+    font-size: clamp(3rem, 6vw, 4.25rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 0.95;
+  }
+
+  .blx-efficiency-value small {
+    color: var(--ink-soft);
+    font-size: 0.34em;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .blx-current-caption {
+    margin: 0.55rem 0 0;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.76rem;
+  }
+
+  .blx-summary-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .blx-summary-metric {
+    min-width: 0;
+    padding: 0 16px;
+    border-left: 1px solid var(--line);
+  }
+
+  .blx-summary-metric:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .blx-summary-metric strong {
+    display: block;
+    color: var(--ink);
+    font-family: var(--claude-sans);
+    font-size: clamp(1.02rem, 2vw, 1.28rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 550;
+    line-height: 1.15;
+  }
+
+  .blx-summary-metric span {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.68rem;
+  }
+
+  .blx-reference-summary {
+    grid-column: 1 / -1;
+    min-height: 1.3em;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+  }
+
+  .blx-section {
+    padding: 24px 12px 0;
+  }
+
+  .blx-section-heading {
+    margin-bottom: 11px;
+  }
+
+  .blx-section-total {
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .blx-breakdown-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blx-loss-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(150px, 0.42fr) minmax(160px, 1fr) 76px;
+    gap: 13px;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 10px;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: default;
+    font-family: var(--claude-sans);
+    text-align: left;
+    transition: background var(--blx-motion-fast) var(--claude-ease), color var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-loss-row:hover,
+  .blx-loss-row:focus-visible,
+  .blx-loss-row[data-active="true"] {
+    background: var(--blx-row-hover);
+    color: var(--ink);
+    outline: none;
+  }
+
+  .blx-loss-label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.78rem;
+  }
+
+  .blx-loss-label i,
+  .blx-chart-key i {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--blx-loss-color);
+  }
+
+  .blx-loss-track {
+    position: relative;
+    height: 9px;
+    background: color-mix(in srgb, var(--line) 44%, transparent);
+  }
+
+  .blx-loss-bar {
+    display: block;
+    width: var(--blx-loss-width, 0%);
+    height: 100%;
+    background: var(--blx-loss-color);
+    transform-origin: left;
+    transition: width var(--blx-motion) var(--claude-ease), opacity var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-reference-marker {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    left: var(--blx-reference-left, -10px);
+    width: 1px;
+    background: var(--ink);
+    opacity: 0.58;
+  }
+
+  .blx-reference-marker::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+
+  .blx-loss-value {
+    color: var(--ink);
+    font-size: 0.74rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .blx-loss-value small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 400;
+  }
+
+  .blx-show-all {
+    display: inline-block;
+    min-height: 34px;
+    padding: 5px 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--claude-sans);
+    font-size: 0.75rem;
+  }
+
+  .blx-breakdown-list .blx-loss-row:nth-child(n + 7) {
+    display: none;
+  }
+
+  .blx-show-all-losses .blx-breakdown-list .blx-loss-row:nth-child(n + 7) {
+    display: grid;
+  }
+
+  .blx-power-balance {
+    display: flex;
+    min-height: 53px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-family: var(--claude-sans);
+  }
+
+  .blx-power-output,
+  .blx-power-loss {
+    display: flex;
+    min-width: 82px;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 11px;
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  .blx-power-output {
+    width: var(--blx-output-width, 80%);
+    background: color-mix(in srgb, var(--blx-dcr) 17%, var(--soft));
+    color: var(--ink-soft);
+  }
+
+  .blx-power-loss {
+    flex: 1 1 auto;
+    border-left: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+    background: color-mix(in srgb, var(--accent) 9%, var(--paper));
+    color: var(--ink-soft);
+  }
+
+  .blx-power-balance strong {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .blx-operating-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    margin: 18px 0 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .blx-operating-metric {
+    min-width: 0;
+    padding: 13px 12px;
+    border-left: 1px solid var(--line);
+    font-family: var(--claude-sans);
+  }
+
+  .blx-operating-metric:first-child {
+    border-left: 0;
+  }
+
+  .blx-operating-metric span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.64rem;
+    line-height: 1.3;
+  }
+
+  .blx-operating-metric strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--ink);
+    font-size: 0.83rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 550;
+  }
+
+  .blx-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 18px 0 0;
+  }
+
+  .blx-actions button[data-active="true"] {
+    border-color: var(--accent);
+    background: var(--blx-row-hover);
+    color: var(--accent);
+  }
+
+  .blx-actions svg {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    margin-right: 6px;
+  }
+
+  .blx-actions path {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+  }
+
+  .blx-warnings {
+    display: grid;
+    gap: 7px;
+    margin-top: 14px;
+  }
+
+  .blx-note {
+    margin: 0;
+    padding: 9px 11px;
+    border-left: 2px solid var(--accent);
+    background: var(--soft);
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  .blx-sentence {
+    margin: 14px 0 0;
+    color: var(--ink-soft);
+    font-size: 0.91rem;
+    line-height: 1.55;
+  }
+
+  .blx-regime-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 7px;
+    color: var(--ink);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .blx-regime-chip i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--chip-color, var(--accent));
+  }
+
+  .blx-result-heading {
+    align-items: end;
+    margin: 0 12px 20px;
+  }
+
+  .blx-result-heading h2 {
+    font-family: var(--claude-serif);
+    font-size: clamp(1.45rem, 3vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    text-transform: none;
+  }
+
+  .blx-result-heading p {
+    max-width: 390px;
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    text-align: right;
+  }
+
+  .blx-chart-block {
+    margin-top: 24px;
+  }
+
+  .blx-chart-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 12px 7px;
+    color: var(--ink);
+    font-family: var(--claude-sans);
+    font-size: 0.76rem;
+    font-weight: 650;
+  }
+
+  .blx-chart-title span {
+    color: var(--muted);
+    font-size: 0.65rem;
+    font-weight: 450;
+  }
+
+  .blx-plot {
+    min-height: 206px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    touch-action: pan-y;
+  }
+
+  .blx-plot svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .blx-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 11px 12px 0;
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.68rem;
+  }
+
+  .blx-chart-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .blx-chart-key.blx-total-key i,
+  .blx-chart-key.blx-eff-key i {
+    width: 14px;
+    height: 2px;
+    border-radius: 0;
+    background: var(--ink);
+  }
+
+  .blx-svg-axis,
+  .blx-svg-grid {
+    stroke: var(--line);
+  }
+
+  .blx-svg-label {
+    fill: var(--muted);
+    font-family: var(--claude-sans);
+  }
+
+  .blx-svg-line {
+    fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
   }
-  .blx-advanced details[data-open="true"] .blx-acc-chevron {
-    transform: scaleY(-1);
-  }
-  .blx-detail-panel {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows var(--blx-acc-collapse) var(--blx-acc-ease);
-  }
-  .blx-advanced details[data-open="true"] .blx-detail-panel {
-    grid-template-rows: 1fr;
-    transition: grid-template-rows var(--blx-acc-expand) var(--blx-acc-ease);
-  }
-  .blx-detail-body {
-    display: grid;
-    gap: 14px;
-    min-height: 0;
-    overflow: hidden;
-    padding: 0 14px;
-    opacity: 0;
-    filter: blur(2px);
-    transition:
-      opacity var(--blx-acc-collapse) var(--blx-acc-ease),
-      filter var(--blx-acc-collapse) var(--blx-acc-ease);
-  }
-  .blx-advanced details[data-open="true"] .blx-detail-body {
-    opacity: 1;
-    filter: blur(0);
-    transition:
-      opacity var(--blx-acc-expand) var(--blx-acc-ease),
-      filter var(--blx-acc-expand) var(--blx-acc-ease);
-  }
-  .blx-detail-body > :last-child {
-    margin-bottom: 16px;
-  }
-  .blx-hint {
-    margin: 0;
-    color: var(--muted);
-    font-family: var(--claude-sans);
-    font-size: 0.86rem;
-    line-height: 1.5;
-  }
-  .blx-field-help {
-    margin: -1px 0 0;
-    color: var(--muted);
-    font-family: var(--claude-sans);
-    font-size: 0.78rem;
-    line-height: 1.35;
-  }
-  .blx-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px 24px;
+
+  .blx-svg-contributor {
+    transition: opacity var(--blx-motion-fast) var(--claude-ease), stroke-width var(--blx-motion-fast) var(--claude-ease);
   }
 
-  .blx-breakdown {
-    margin: 2rem 0;
+  .blx-page[data-blx-highlight] .blx-svg-contributor {
+    opacity: 0.24;
   }
-  .blx-stack {
-    display: flex;
-    overflow: hidden;
-    height: 18px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
+
+  .blx-page[data-blx-highlight="fetConduction"] [data-blx-series="fetConduction"],
+  .blx-page[data-blx-highlight="inductorDcr"] [data-blx-series="inductorDcr"],
+  .blx-page[data-blx-highlight="switchingOverlap"] [data-blx-series="switchingOverlap"],
+  .blx-page[data-blx-highlight="deadTime"] [data-blx-series="deadTime"],
+  .blx-page[data-blx-highlight="gateDrive"] [data-blx-series="gateDrive"],
+  .blx-page[data-blx-highlight="bias"] [data-blx-series="bias"],
+  .blx-page[data-blx-highlight="rippleOther"] [data-blx-series="rippleOther"] {
+    opacity: 1;
+    stroke-width: 2.7;
+  }
+
+  .blx-svg-efficiency,
+  .blx-svg-total {
+    stroke: var(--ink);
+  }
+
+  .blx-svg-reference {
+    stroke: var(--blx-reference);
+    stroke-dasharray: 5 5;
+  }
+
+  .blx-svg-cursor {
+    stroke: var(--accent);
+    stroke-dasharray: 3 4;
+  }
+
+  .blx-svg-dot {
+    fill: var(--paper);
+    stroke: var(--accent);
+  }
+
+  .blx-svg-cursor-label-bg {
+    fill: var(--paper);
+    stroke: var(--line);
+  }
+
+  .blx-svg-cursor-label {
+    fill: var(--ink);
+    font-family: var(--claude-sans);
+    font-weight: 650;
+  }
+
+  .blx-invalid .blx-view-panel {
+    opacity: 0.55;
+  }
+
+  .blx-top-caveat {
+    margin: 0;
+    padding: 11px 14px;
+    border-left: 2px solid var(--accent);
     background: var(--soft);
-  }
-  .blx-stack span {
-    min-width: 1px;
-    border-right: 1px solid var(--blx-separator);
-  }
-  .blx-breakdown-list {
-    display: grid;
-    gap: 7px;
-    margin: 1rem 0 0;
-    padding: 0;
-    list-style: none;
-  }
-  .blx-breakdown-list li {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 14px;
-    align-items: baseline;
     color: var(--ink-soft);
     font-family: var(--claude-sans);
-    font-size: 0.92rem;
-    font-variant-numeric: tabular-nums;
-  }
-  .blx-breakdown-list li span:first-child {
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-weight: 600;
+    font-size: 0.79rem;
+    line-height: 1.55;
   }
 
   .blx-equations,
   .blx-caveats,
   .blx-related {
-    margin-top: 2rem;
+    margin-top: 2.8rem;
   }
+
   .blx-equations p,
   .blx-caveats li,
   .blx-related p {
     color: var(--ink-soft);
-    line-height: 1.62;
   }
+
   .blx-caveats ol {
-    padding-left: 1.25rem;
+    padding-left: 1.35rem;
   }
+
   .blx-copy {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr auto;
     gap: 8px;
     align-items: center;
-    margin: 1rem 0 0;
+    margin-top: 1rem;
   }
+
   .blx-copy input {
     min-width: 0;
+    min-height: 38px;
+    box-sizing: border-box;
+    padding: 7px 10px;
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 7px 9px;
+    background: var(--soft);
     color: var(--ink-soft);
-    background: var(--blx-card-bg);
     font-family: var(--claude-sans);
-    font-size: 0.88rem;
+    font-size: 0.75rem;
   }
+
   .blx-visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-
-  .blx-svg-bg { fill: var(--blx-plot-bg); }
-  .blx-svg-axis,
-  .blx-svg-eff-tick,
-  .blx-forced-line { stroke: var(--line); }
-  .blx-svg-grid { stroke: var(--line); }
-  .blx-svg-label { fill: var(--muted); }
-  .blx-svg-soft-label { fill: var(--ink-soft); }
-  .blx-band { fill-opacity: 0.82; stroke: var(--blx-separator); stroke-width: 1; stroke-linejoin: round; }
-  .blx-band-fetConduction { fill: var(--blx-cond); }
-  .blx-band-inductorDcr { fill: var(--blx-dcr); }
-  .blx-band-switchingOverlap { fill: var(--blx-sw); }
-  .blx-band-deadTime { fill: var(--blx-dead); }
-  .blx-band-gateDrive { fill: var(--blx-gate); }
-  .blx-band-bias { fill: var(--blx-bias); }
-  .blx-band-rippleOther { fill: var(--blx-other); }
-  .blx-eff-line,
-  .blx-eff-peak { stroke: var(--blx-eff); }
-  .blx-eff-dot {
-    fill: var(--blx-plot-bg);
-    stroke: var(--blx-eff);
-  }
-  .blx-cursor-line { stroke: var(--ink); }
-  .blx-label-pill,
-  .blx-forced-pill {
-    fill: var(--blx-card-bg);
-    stroke: var(--line);
-  }
-  .blx-label-text { fill: var(--ink); }
-  .blx-forced-shade { fill: var(--accent); opacity: 0.075; }
-  .blx-forced-line {
-    stroke: var(--accent);
-    opacity: 0.72;
-  }
-  .blx-forced-text {
-    fill: var(--accent);
-    font-weight: 650;
-  }
-
-  @media (max-width: 700px) {
-    .blx-presets {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      mask-image: linear-gradient(90deg, black calc(100% - 24px), transparent);
-    }
-    .blx-presets::-webkit-scrollbar { display: none; }
-    .blx-presets span,
-    .blx-presets button {
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-    .blx-readouts {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .blx-card:last-child {
-      grid-column: 1 / -1;
-    }
-    .blx-controls,
-    .blx-detail-grid,
-    .blx-copy {
-      grid-template-columns: 1fr;
-    }
-    .blx-controls {
-      padding: 16px;
-    }
-    .blx-presets button,
-    .blx-try button,
-    .blx-actions button,
-    .blx-copy button,
-    .blx-entry input[type="number"] {
-      min-height: 44px;
-    }
-    .blx-entry input[type="number"] {
-      font-size: 16px;
-    }
-    .blx-field input[type="range"] {
-      height: 28px;
-    }
-    .blx-ticks {
-      height: 24px;
-    }
-    .blx-tick {
-      min-width: 24px;
-      min-height: 24px;
-      padding: 8px 4px 0;
-    }
-    .blx-field-head {
-      align-items: center;
-    }
-    .blx-field-head label {
-      min-width: 0;
-      white-space: normal;
-    }
-    article.blx-page {
-      --blx-thumb-size: 20px;
-    }
-    .blx-plot {
-      min-height: 260px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .blx-presets button,
-    .blx-try button,
-    .blx-actions button,
-    .blx-copy button,
-    .blx-card .blx-v,
-    .blx-detail-panel,
-    .blx-detail-body,
-    .blx-acc-chevron,
-    .blx-field input[type="range"]::-webkit-slider-thumb,
-    .blx-field input[type="range"]::-moz-range-thumb,
-    .blx-tick {
-      transition: none;
-    }
-  }
-
-  @media (max-width: 430px) {
-    .blx-header h1 {
-      font-size: clamp(2rem, 10vw, 2.35rem);
-    }
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
   }
 
   .blx-page button:focus-visible,
   .blx-page summary:focus-visible,
-  .blx-page input:focus-visible {
+  .blx-page input:focus-visible,
+  .blx-page [role="slider"]:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     box-shadow: 0 0 0 4px var(--claude-ring);
@@ -770,220 +1157,447 @@ math: true
     text-decoration-color: currentColor;
     text-underline-offset: 3px;
   }
+
+  @media (max-width: 980px) {
+    .blx-workspace {
+      width: min(820px, calc(100vw - 44px));
+      display: flex;
+      flex-direction: column;
+    }
+
+    .blx-results {
+      order: 1;
+      padding-left: 0;
+    }
+
+    .blx-inputs {
+      order: 2;
+      border-top: 1px solid var(--line);
+      border-right: 0;
+    }
+
+    .blx-input-content {
+      padding: 24px 12px 28px;
+    }
+
+    .blx-input-sticky {
+      position: static;
+    }
+
+    .blx-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .blx-advanced .blx-detail-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    article.blx-page {
+      --blx-thumb-size: 20px;
+    }
+
+    .blx-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .blx-header h1 {
+      font-size: clamp(2rem, 10.4vw, 2.55rem);
+      line-height: 1.08;
+    }
+
+    .blx-dek {
+      font-size: 1.03rem;
+    }
+
+    .blx-workspace {
+      width: 100%;
+      margin-bottom: 2.7rem;
+    }
+
+    .blx-view-tabs {
+      top: 54px;
+      gap: 25px;
+      margin-bottom: 22px;
+    }
+
+    .blx-view-tabs button {
+      min-height: 48px;
+      font-size: 0.81rem;
+    }
+
+    .blx-primary-result {
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start;
+      padding: 0 4px 21px;
+    }
+
+    .blx-efficiency-value {
+      font-size: clamp(3rem, 16vw, 4rem);
+    }
+
+    .blx-summary-metric {
+      padding: 0 12px;
+    }
+
+    .blx-summary-metric strong {
+      font-size: 1rem;
+    }
+
+    .blx-section {
+      padding: 24px 4px 0;
+    }
+
+    .blx-section-heading {
+      align-items: center;
+    }
+
+    .blx-loss-row {
+      grid-template-columns: minmax(0, 1fr) 72px;
+      gap: 5px 10px;
+      min-height: 56px;
+      padding: 7px 6px;
+    }
+
+    .blx-loss-track {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      height: 7px;
+    }
+
+    .blx-loss-value {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .blx-breakdown-list .blx-loss-row:nth-child(n + 5) {
+      display: none;
+    }
+
+    .blx-show-all-losses .blx-breakdown-list .blx-loss-row:nth-child(n + 5) {
+      display: grid;
+    }
+
+    .blx-power-balance {
+      min-height: 66px;
+    }
+
+    .blx-power-output,
+    .blx-power-loss {
+      min-width: 76px;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2px;
+      padding: 7px 8px;
+      font-size: 0.64rem;
+    }
+
+    .blx-operating-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .blx-operating-metric:nth-child(3) {
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .blx-operating-metric:nth-child(4) {
+      border-top: 1px solid var(--line);
+    }
+
+    .blx-input-disclosure > summary {
+      display: flex;
+      min-height: 56px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink);
+      cursor: pointer;
+      font-family: var(--claude-serif);
+      font-size: 1.1rem;
+      list-style: none;
+    }
+
+    .blx-input-content {
+      padding: 4px 0 26px;
+    }
+
+    .blx-input-disclosure:not([open]) .blx-input-content {
+      display: none;
+    }
+
+    .blx-controls,
+    .blx-advanced .blx-detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .blx-field {
+      padding: 8px 10px;
+    }
+
+    .blx-entry input[type="number"] {
+      min-height: 44px;
+      font-size: 16px;
+    }
+
+    .blx-current-range {
+      height: 44px;
+    }
+
+    .blx-presets button,
+    .blx-try button,
+    .blx-actions button,
+    .blx-copy button,
+    .blx-reset {
+      min-height: 44px;
+    }
+
+    .blx-result-heading {
+      display: block;
+      margin: 0 4px 17px;
+    }
+
+    .blx-result-heading p {
+      margin-top: 7px;
+      text-align: left;
+    }
+
+    .blx-chart-block {
+      margin-top: 21px;
+    }
+
+    .blx-chart-title,
+    .blx-legend {
+      margin-right: 4px;
+      margin-left: 4px;
+    }
+
+    .blx-plot {
+      min-height: 190px;
+    }
+
+    .blx-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .blx-actions button {
+      width: 100%;
+    }
+
+    .blx-copy {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (min-width: 701px) {
+    .blx-input-disclosure:not([open]) .blx-input-content {
+      display: block;
+    }
+  }
+
+  @media (max-height: 720px) and (min-width: 981px) {
+    .blx-input-sticky {
+      position: static;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blx-page *,
+    .blx-page *::before,
+    .blx-page *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 
 <article class="blx-page" id="buck-loss-explorer">
   <header class="blx-header">
-    <p class="eyebrow">Interactive tool · First-order loss model</p>
-    <h1>Buck Converter Loss Explorer</h1>
-    <p class="blx-hero-line">Where do the watts go?</p>
-    <p class="blx-dek">Drag the load current and watch conduction, switching, gate-drive, dead-time, DCR, ESR, and bias losses trade places.</p>
-    <p class="blx-top-caveat">First-order loss model with generic parameters. Built for design intuition — seeing which mechanism owns the watts and which knob moves them — not for part-level signoff.</p>
+    <h1>Buck Converter Loss Tool</h1>
+    <p class="blx-dek">Estimate where power goes in a synchronous buck converter at steady state.</p>
+    <p class="blx-meta">Steady-state estimate · SI units · EPC2090 GaN pair</p>
   </header>
 
-  <div class="blx-presets" data-blx-presets role="group" aria-label="Buck loss presets"></div>
-  <p class="blx-prompt" data-blx-prompt></p>
-  <div class="blx-try" data-blx-try aria-label="Quick things to try"></div>
-
-  <section class="blx-shell" aria-label="Loss explorer">
-    <div class="blx-plot" data-blx-plot aria-label="Loss versus load plot"></div>
-    <div class="blx-legend" data-blx-legend aria-label="Plot legend"></div>
-    <div class="blx-actions">
-      <button type="button" data-blx-copy>Copy state</button>
-      <span>Opens this design at this load current.</span>
-    </div>
-
-    <div class="blx-readouts">
-      <div class="blx-card">
-        <p class="blx-k">Selected current</p>
-        <p class="blx-v" data-blx-out="current">—</p>
-      </div>
-      <div class="blx-card">
-        <p class="blx-k">Efficiency</p>
-        <p class="blx-v" data-blx-out="efficiency">—</p>
-      </div>
-      <div class="blx-card">
-        <p class="blx-k">Total loss</p>
-        <p class="blx-v" data-blx-out="loss">—</p>
-      </div>
-      <div class="blx-card">
-        <p class="blx-k">Output power</p>
-        <p class="blx-v" data-blx-out="pout">—</p>
-      </div>
-      <div class="blx-card">
-        <p class="blx-k">Regime</p>
-        <p class="blx-v" data-blx-out="regime">—</p>
-      </div>
-    </div>
-
-    <div class="blx-warnings" data-blx-warnings></div>
-    <p class="blx-sentence" data-blx-out="sentence"></p>
-  </section>
-
-  <section class="blx-controls" aria-label="Primary buck inputs">
-    <div class="blx-field">
-      <div class="blx-field-head">
-        <label for="blx-num-vin">Input voltage V<sub>IN</sub></label>
-        <span class="blx-entry"><input id="blx-num-vin" data-blx-number="vin" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span>
-      </div>
-      <input data-blx-range="vin" type="range" min="0" max="1000" step="1" aria-label="Input voltage slider">
-      <div class="blx-ticks" data-blx-ticks="vin"></div>
-    </div>
-
-    <div class="blx-field">
-      <div class="blx-field-head">
-        <label for="blx-num-vout">Output voltage V<sub>OUT</sub></label>
-        <span class="blx-entry"><input id="blx-num-vout" data-blx-number="vout" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span>
-      </div>
-      <input data-blx-range="vout" type="range" min="0" max="1000" step="1" aria-label="Output voltage slider">
-      <div class="blx-ticks" data-blx-ticks="vout"></div>
-    </div>
-
-    <div class="blx-field">
-      <div class="blx-field-head">
-        <label for="blx-num-imax">Maximum load I<sub>OUT</sub></label>
-        <span class="blx-entry"><input id="blx-num-imax" data-blx-number="ioutMax" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">A</span></span>
-      </div>
-      <input data-blx-range="ioutMax" type="range" min="0" max="1000" step="1" aria-label="Maximum load current slider">
-      <div class="blx-ticks" data-blx-ticks="ioutMax"></div>
-    </div>
-
-    <div class="blx-field">
-      <div class="blx-field-head">
-        <label for="blx-num-fsw">Switching frequency f<sub>SW</sub></label>
-        <span class="blx-entry"><input id="blx-num-fsw" data-blx-number="fsw" type="number" inputmode="decimal" step="10"><span class="blx-unit">kHz</span></span>
-      </div>
-      <input data-blx-range="fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider">
-      <div class="blx-ticks" data-blx-ticks="fsw"></div>
-    </div>
-
-    <div class="blx-field">
-      <div class="blx-field-head">
-        <label for="blx-num-l">Inductance L</label>
-        <span class="blx-entry"><input id="blx-num-l" data-blx-number="inductance" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">µH</span></span>
-      </div>
-      <input data-blx-range="inductance" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
-      <div class="blx-ticks" data-blx-ticks="inductance"></div>
-    </div>
-  </section>
-
-  <section class="blx-advanced" aria-label="Advanced loss inputs">
-    <details>
-      <summary><span>Switches/FETs</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
-      <div class="blx-detail-panel">
-        <div class="blx-detail-body">
-          <p class="blx-hint">RDS(on) raises I²R conduction loss; the low-side FET conducts about (1−D) of the period.</p>
-          <p class="blx-hint">Qg raises gate-drive loss every cycle. Bigger FETs lower RDS(on) but raise Qg.</p>
-          <p class="blx-hint">Overlap is a lumped tr+tf estimate — bracket fast/slow edges, don't claim exact part behavior.</p>
-          <div class="blx-detail-grid">
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-rhs">High-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rhs" data-blx-number="rdsHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-              <input data-blx-range="rdsHigh" type="range" min="0" max="1000" step="1" aria-label="High-side RDS on slider">
+  <section class="blx-workspace blx-shell" aria-label="Buck converter loss workspace">
+    <aside class="blx-inputs" aria-label="Inputs and assumptions">
+      <details class="blx-input-disclosure" open>
+        <summary>
+          <span>Inputs &amp; assumptions</span>
+          <span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span>
+        </summary>
+        <div class="blx-input-content">
+          <div class="blx-input-sticky">
+            <div class="blx-rail-heading">
+              <h2>Operating point</h2>
+              <button class="blx-reset" type="button" data-blx-reset>Reset</button>
             </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-rls">Low-side RDS(on)</label><span class="blx-entry"><input id="blx-num-rls" data-blx-number="rdsLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-              <input data-blx-range="rdsLow" type="range" min="0" max="1000" step="1" aria-label="Low-side RDS on slider">
+
+            <div class="blx-presets" data-blx-presets role="group" aria-label="Buck loss presets"></div>
+            <p class="blx-prompt" data-blx-prompt></p>
+
+            <p class="blx-device-note"><strong>EPC2090 defaults</strong><br>5.2 mΩ max R<sub>DS(on)</sub> · 7.3 nC typ Q<sub>G</sub> · 441 pF C<sub>OSS(ER)</sub> per FET · zero Q<sub>RR</sub>. <a href="https://epc-co.com/epc/documents/datasheets/EPC2090_datasheet.pdf">Datasheet</a></p>
+
+            <section class="blx-controls" aria-label="Primary buck inputs">
+              <div class="blx-field">
+                <div class="blx-field-head"><label for="blx-num-vin">Input voltage V<sub>IN</sub></label><span class="blx-entry"><input id="blx-num-vin" data-blx-number="vin" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div>
+                <input data-blx-range="vin" type="range" min="0" max="1000" step="1" aria-label="Input voltage slider"><div class="blx-ticks" data-blx-ticks="vin"></div>
+              </div>
+              <div class="blx-field">
+                <div class="blx-field-head"><label for="blx-num-vout">Output voltage V<sub>OUT</sub></label><span class="blx-entry"><input id="blx-num-vout" data-blx-number="vout" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div>
+                <input data-blx-range="vout" type="range" min="0" max="1000" step="1" aria-label="Output voltage slider"><div class="blx-ticks" data-blx-ticks="vout"></div>
+              </div>
+              <div class="blx-field">
+                <div class="blx-field-head"><label for="blx-num-imax">Maximum load I<sub>OUT</sub></label><span class="blx-entry"><input id="blx-num-imax" data-blx-number="ioutMax" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">A</span></span></div>
+                <input data-blx-range="ioutMax" type="range" min="0" max="1000" step="1" aria-label="Maximum load current slider"><div class="blx-ticks" data-blx-ticks="ioutMax"></div>
+              </div>
+              <div class="blx-field">
+                <div class="blx-field-head"><label for="blx-num-fsw">Switching frequency</label><span class="blx-entry"><input id="blx-num-fsw" data-blx-number="fsw" type="number" inputmode="decimal" step="10"><span class="blx-unit">kHz</span></span></div>
+                <input data-blx-range="fsw" type="range" min="0" max="1000" step="1" aria-label="Switching frequency slider"><div class="blx-ticks" data-blx-ticks="fsw"></div>
+              </div>
+              <div class="blx-field">
+                <div class="blx-field-head"><label for="blx-num-l">Inductance L</label><span class="blx-entry"><input id="blx-num-l" data-blx-number="inductance" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">µH</span></span></div>
+                <input data-blx-range="inductance" type="range" min="0" max="1000" step="1" aria-label="Inductance slider"><div class="blx-ticks" data-blx-ticks="inductance"></div>
+              </div>
+            </section>
+
+            <div class="blx-current-control">
+              <div class="blx-current-head"><label for="blx-current-range">Load current</label><output data-blx-out="current">—</output></div>
+              <input id="blx-current-range" class="blx-current-range" data-blx-cursor-input data-blx-cursor-rail type="range" min="0" max="1000" step="1" role="slider" tabindex="0" aria-label="Selected load current">
+              <div class="blx-current-ticks" aria-hidden="true"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>I<sub>MAX</sub></span></div>
             </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-qhs">High-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qhs" data-blx-number="qgHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
-              <input data-blx-range="qgHigh" type="range" min="0" max="1000" step="1" aria-label="High-side gate charge slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-qls">Low-side Q<sub>g</sub></label><span class="blx-entry"><input id="blx-num-qls" data-blx-number="qgLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div>
-              <input data-blx-range="qgLow" type="range" min="0" max="1000" step="1" aria-label="Low-side gate charge slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-tov">Overlap time t<sub>r</sub>+t<sub>f</sub></label><span class="blx-entry"><input id="blx-num-tov" data-blx-number="tOverlap" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
-              <input data-blx-range="tOverlap" type="range" min="0" max="1000" step="1" aria-label="Switching overlap time slider">
-            </div>
+
+            <section class="blx-advanced" aria-label="Advanced loss inputs">
+              <details>
+                <summary><span>MOSFET &amp; gate drive</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
+                <div class="blx-detail-panel"><div class="blx-detail-body">
+                  <p class="blx-hint">The two switches default to EPC2090 values. R<sub>DS(on)</sub> uses the conservative maximum; Q<sub>G</sub> uses the typical 50 V characterization.</p>
+                  <div class="blx-detail-grid">
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-rhs">High-side R<sub>DS(on)</sub></label><span class="blx-entry"><input id="blx-num-rhs" data-blx-number="rdsHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div><input data-blx-range="rdsHigh" type="range" min="0" max="1000" step="1" aria-label="High-side RDS on slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-rls">Low-side R<sub>DS(on)</sub></label><span class="blx-entry"><input id="blx-num-rls" data-blx-number="rdsLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div><input data-blx-range="rdsLow" type="range" min="0" max="1000" step="1" aria-label="Low-side RDS on slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-qhs">High-side Q<sub>G</sub></label><span class="blx-entry"><input id="blx-num-qhs" data-blx-number="qgHigh" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div><input data-blx-range="qgHigh" type="range" min="0" max="1000" step="1" aria-label="High-side gate charge slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-qls">Low-side Q<sub>G</sub></label><span class="blx-entry"><input id="blx-num-qls" data-blx-number="qgLow" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">nC</span></span></div><input data-blx-range="qgLow" type="range" min="0" max="1000" step="1" aria-label="Low-side gate charge slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-vdrv">Gate drive voltage</label><span class="blx-entry"><input id="blx-num-vdrv" data-blx-number="vDrive" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div><input data-blx-range="vDrive" type="range" min="0" max="1000" step="1" aria-label="Gate drive voltage slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-tov">Overlap t<sub>r</sub>+t<sub>f</sub></label><span class="blx-entry"><input id="blx-num-tov" data-blx-number="tOverlap" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div><input data-blx-range="tOverlap" type="range" min="0" max="1000" step="1" aria-label="Switching overlap time slider"></div>
+                  </div>
+                </div></div>
+              </details>
+
+              <details>
+                <summary><span>Timing &amp; reverse conduction</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
+                <div class="blx-detail-panel"><div class="blx-detail-body">
+                  <p class="blx-hint">GaN has no body diode or reverse-recovery charge; the V<sub>SD</sub> entry represents third-quadrant reverse conduction during dead time.</p>
+                  <div class="blx-detail-grid">
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-td">Dead time per edge</label><span class="blx-entry"><input id="blx-num-td" data-blx-number="deadTime" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div><input data-blx-range="deadTime" type="range" min="0" max="1000" step="1" aria-label="Dead time slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-vf">Reverse path V<sub>SD</sub></label><span class="blx-entry"><input id="blx-num-vf" data-blx-number="diodeVf" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">V</span></span></div><input data-blx-range="diodeVf" type="range" min="0" max="1000" step="1" aria-label="Reverse path voltage slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-qrr">Reverse recovery Q<sub>RR</sub></label><span class="blx-entry"><input id="blx-num-qrr" data-blx-number="qrr" type="number" inputmode="decimal" step="1"><span class="blx-unit">nC</span></span></div><input data-blx-range="qrr" type="range" min="0" max="1000" step="1" aria-label="Reverse recovery charge slider"></div>
+                  </div>
+                </div></div>
+              </details>
+
+              <details>
+                <summary><span>Inductor &amp; capacitors</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
+                <div class="blx-detail-panel"><div class="blx-detail-body">
+                  <p class="blx-hint">Pair E<sub>OSS</sub> defaults are derived from 441 pF C<sub>OSS(ER)</sub> per EPC2090 at each preset input voltage.</p>
+                  <div class="blx-detail-grid">
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-dcr">Inductor DCR</label><span class="blx-entry"><input id="blx-num-dcr" data-blx-number="dcr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div><input data-blx-range="dcr" type="range" min="0" max="1000" step="1" aria-label="Inductor DCR slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-esr">Output capacitor ESR</label><span class="blx-entry"><input id="blx-num-esr" data-blx-number="esr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div><input data-blx-range="esr" type="range" min="0" max="1000" step="1" aria-label="Output capacitor ESR slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-eoss">Pair E<sub>OSS</sub> at V<sub>IN</sub></label><span class="blx-entry"><input id="blx-num-eoss" data-blx-number="eossTotal" type="number" inputmode="decimal" step="1"><span class="blx-unit">nJ</span></span></div><input data-blx-range="eossTotal" type="range" min="0" max="1000" step="1" aria-label="Total output capacitance energy slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-isat">Inductor I<sub>SAT</sub></label><span class="blx-entry"><input id="blx-num-isat" data-blx-number="inductorIsat" type="number" inputmode="decimal" step="0.1" placeholder="none"><span class="blx-unit">A</span></span></div><input data-blx-range="inductorIsat" type="range" min="0" max="1000" step="1" aria-label="Inductor saturation current slider"><p class="blx-field-help">Blank disables the saturation warning.</p></div>
+                  </div>
+                </div></div>
+              </details>
+
+              <details>
+                <summary><span>Controller &amp; bias</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
+                <div class="blx-detail-panel"><div class="blx-detail-body">
+                  <p class="blx-hint">Controller bias creates a fixed loss floor that matters most at light load.</p>
+                  <div class="blx-detail-grid">
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-iq">Quiescent current I<sub>Q</sub></label><span class="blx-entry"><input id="blx-num-iq" data-blx-number="iq" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">mA</span></span></div><input data-blx-range="iq" type="range" min="0" max="1000" step="1" aria-label="Quiescent current slider"></div>
+                    <div class="blx-field"><div class="blx-field-head"><label for="blx-num-vbias">Bias voltage</label><span class="blx-entry"><input id="blx-num-vbias" data-blx-number="vBias" type="number" inputmode="decimal" step="0.1" placeholder="VIN"><span class="blx-unit">V</span></span></div><input data-blx-range="vBias" type="range" min="0" max="1000" step="1" aria-label="Bias voltage slider"><p class="blx-field-help">Blank uses V<sub>IN</sub>.</p></div>
+                  </div>
+                </div></div>
+              </details>
+            </section>
+
+            <div class="blx-try" data-blx-try aria-label="Quick parameter changes"></div>
           </div>
         </div>
-      </div>
-    </details>
+      </details>
+    </aside>
 
-    <details>
-      <summary><span>Timing/diode</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
-      <div class="blx-detail-panel">
-        <div class="blx-detail-body">
-          <p class="blx-hint">Dead time: current detours through a body-diode path each edge.</p>
-          <div class="blx-detail-grid">
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-td">Dead time per edge</label><span class="blx-entry"><input id="blx-num-td" data-blx-number="deadTime" type="number" inputmode="decimal" step="1"><span class="blx-unit">ns</span></span></div>
-              <input data-blx-range="deadTime" type="range" min="0" max="1000" step="1" aria-label="Dead time slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-vf">Diode path V<sub>F</sub></label><span class="blx-entry"><input id="blx-num-vf" data-blx-number="diodeVf" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">V</span></span></div>
-              <input data-blx-range="diodeVf" type="range" min="0" max="1000" step="1" aria-label="Diode forward voltage slider">
-            </div>
+    <div class="blx-results">
+      <div class="blx-view-tabs" role="tablist" aria-label="Loss analysis view">
+        <button id="blx-tab-point" type="button" role="tab" aria-selected="true" aria-controls="blx-panel-point" data-blx-view="point">At this point</button>
+        <button id="blx-tab-load" type="button" role="tab" aria-selected="false" aria-controls="blx-panel-load" tabindex="-1" data-blx-view="load">Across load</button>
+      </div>
+
+      <section id="blx-panel-point" class="blx-view-panel" role="tabpanel" aria-labelledby="blx-tab-point" data-blx-view-panel="point">
+        <div class="blx-primary-result">
+          <div>
+            <p class="blx-efficiency-value"><span data-blx-out="efficiency">—</span><small>efficiency</small></p>
+            <p class="blx-current-caption">at <span data-blx-out="current-caption">—</span> load current · <span data-blx-out="regime">—</span></p>
+          </div>
+          <div class="blx-summary-metrics">
+            <div class="blx-summary-metric"><strong data-blx-out="pout">—</strong><span>output</span></div>
+            <div class="blx-summary-metric"><strong data-blx-out="loss">—</strong><span>total loss</span></div>
+            <div class="blx-summary-metric"><strong data-blx-out="pin">—</strong><span>input</span></div>
+            <p class="blx-reference-summary" data-blx-reference-summary aria-live="polite"></p>
           </div>
         </div>
-      </div>
-    </details>
 
-    <details>
-      <summary><span>Passives</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
-      <div class="blx-detail-panel">
-        <div class="blx-detail-body">
-          <p class="blx-hint">DCR: the inductor is also a resistor.</p>
-          <div class="blx-detail-grid">
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-dcr">Inductor DCR</label><span class="blx-entry"><input id="blx-num-dcr" data-blx-number="dcr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-              <input data-blx-range="dcr" type="range" min="0" max="1000" step="1" aria-label="Inductor DCR slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-esr">Output capacitor ESR</label><span class="blx-entry"><input id="blx-num-esr" data-blx-number="esr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div>
-              <input data-blx-range="esr" type="range" min="0" max="1000" step="1" aria-label="Output capacitor ESR slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-isat">Inductor I<sub>SAT</sub></label><span class="blx-entry"><input id="blx-num-isat" data-blx-number="inductorIsat" type="number" inputmode="decimal" step="0.1" placeholder="none"><span class="blx-unit">A</span></span></div>
-              <input data-blx-range="inductorIsat" type="range" min="0" max="1000" step="1" aria-label="Inductor saturation current slider">
-              <p class="blx-field-help">Blank means no saturation warning.</p>
-            </div>
+        <section class="blx-section" aria-label="Ranked loss budget">
+          <div class="blx-section-heading"><h2>Loss budget · ranked</h2><span class="blx-section-total" data-blx-out="loss-total">—</span></div>
+          <ul class="blx-breakdown-list" data-blx-breakdown-list></ul>
+          <button class="blx-show-all" type="button" aria-expanded="false" data-blx-show-all>Show all losses</button>
+        </section>
+
+        <section class="blx-section" aria-label="Power balance">
+          <div class="blx-section-heading"><h2>Power balance</h2><span class="blx-section-total">Output + modeled losses</span></div>
+          <div class="blx-power-balance" data-blx-power-balance></div>
+          <div class="blx-operating-metrics" data-blx-operating-metrics></div>
+        </section>
+
+        <div class="blx-section">
+          <div class="blx-actions">
+            <button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button>
+            <button type="button" data-blx-copy>Copy state</button>
+          </div>
+          <div class="blx-warnings" data-blx-warnings></div>
+          <p class="blx-sentence" data-blx-out="sentence"></p>
+        </div>
+      </section>
+
+      <section id="blx-panel-load" class="blx-view-panel" role="tabpanel" aria-labelledby="blx-tab-load" data-blx-view-panel="load" hidden>
+        <div class="blx-result-heading">
+          <h2>Performance across load</h2>
+          <p>Both charts share the same current selection. Drag either plot or use the load-current control.</p>
+        </div>
+        <div class="blx-chart-block">
+          <p class="blx-chart-title">Efficiency <span data-blx-across-efficiency>—</span></p>
+          <div class="blx-plot" data-blx-efficiency-plot aria-label="Efficiency versus load current"></div>
+        </div>
+        <div class="blx-chart-block">
+          <p class="blx-chart-title">Losses <span data-blx-across-loss>—</span></p>
+          <div class="blx-plot" data-blx-loss-plot aria-label="Loss versus load current"></div>
+          <div class="blx-legend" data-blx-legend aria-label="Loss plot legend"></div>
+        </div>
+        <div class="blx-section">
+          <div class="blx-actions">
+            <button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button>
+            <button type="button" data-blx-copy>Copy state</button>
           </div>
         </div>
-      </div>
-    </details>
-
-    <details>
-      <summary><span>Controller</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5L8 10.5L12 6.5"></path></svg></span></summary>
-      <div class="blx-detail-panel">
-        <div class="blx-detail-body">
-          <p class="blx-hint">IQ is a bias floor — at light load even small IQ dominates.</p>
-          <div class="blx-detail-grid">
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-vdrv">Gate drive voltage</label><span class="blx-entry"><input id="blx-num-vdrv" data-blx-number="vDrive" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">V</span></span></div>
-              <input data-blx-range="vDrive" type="range" min="0" max="1000" step="1" aria-label="Gate drive voltage slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-iq">Quiescent current I<sub>Q</sub></label><span class="blx-entry"><input id="blx-num-iq" data-blx-number="iq" type="number" inputmode="decimal" step="0.01"><span class="blx-unit">mA</span></span></div>
-              <input data-blx-range="iq" type="range" min="0" max="1000" step="1" aria-label="Quiescent current slider">
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-vbias">Bias voltage</label><span class="blx-entry"><input id="blx-num-vbias" data-blx-number="vBias" type="number" inputmode="decimal" step="0.1" placeholder="VIN"><span class="blx-unit">V</span></span></div>
-              <input data-blx-range="vBias" type="range" min="0" max="1000" step="1" aria-label="Bias voltage slider">
-              <p class="blx-field-help">Blank uses VIN.</p>
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-eoss">Total E<sub>OSS</sub></label><span class="blx-entry"><input id="blx-num-eoss" data-blx-number="eossTotal" type="number" inputmode="decimal" step="1"><span class="blx-unit">nJ</span></span></div>
-              <input data-blx-range="eossTotal" type="range" min="0" max="1000" step="1" aria-label="Total output capacitance energy slider">
-              <p class="blx-field-help">Optional; most visible at high VIN and fSW.</p>
-            </div>
-            <div class="blx-field">
-              <div class="blx-field-head"><label for="blx-num-qrr">Reverse recovery Q<sub>rr</sub></label><span class="blx-entry"><input id="blx-num-qrr" data-blx-number="qrr" type="number" inputmode="decimal" step="1"><span class="blx-unit">nC</span></span></div>
-              <input data-blx-range="qrr" type="range" min="0" max="1000" step="1" aria-label="Reverse recovery charge slider">
-              <p class="blx-field-help">Optional; leave at zero for ideal synchronous behavior.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
+      </section>
+    </div>
   </section>
 
-  <section class="blx-breakdown" aria-label="Loss breakdown">
-    <h2>Loss Breakdown</h2>
-    <div class="blx-stack" data-blx-breakdown-bar aria-hidden="true"></div>
-    <ul class="blx-breakdown-list" data-blx-breakdown-list></ul>
-  </section>
+  <p class="blx-top-caveat">This is a first-order intuition tool, not a part-level signoff model. EPC2090 values anchor the switch defaults; overlap, dead time, passives, layout, temperature, and controller behavior remain editable assumptions.</p>
 
   <section class="blx-equations post-content">
     <h2>Equations In The Open</h2>
@@ -996,7 +1610,7 @@ math: true
     $$P_{HS}=I_{HS,RMS}^2R_{DS,H},\quad P_{LS}=I_{LS,RMS}^2R_{DS,L},\quad P_{DCR}=I_{L,RMS}^2R_{DCR}$$
     $$P_{ESR}=I_{C,RMS}^2R_{ESR},\quad P_G=(Q_{G,H}+Q_{G,L})V_{DRV}f_{SW},\quad P_{BIAS}=V_{BIAS}I_Q$$
     $$P_{SW}=\frac{1}{2}V_{IN}f_{SW}(t_r\max(i_{VAL},0)+t_f\max(i_{PK},0))$$
-    $$P_{DT}=V_F f_{SW}t_{DT}(\max(i_{VAL},0)+\max(i_{PK},0))$$
+    $$P_{DT}=V_{SD} f_{SW}t_{DT}(\max(i_{VAL},0)+\max(i_{PK},0))$$
     $$P_{EOSS}=E_{OSS}f_{SW},\quad P_{Qrr}=V_{IN}Q_{rr}f_{SW}$$
     <p>Total loss is the sum of the terms above. Efficiency is \(\eta=P_{OUT}/(P_{OUT}+P_{LOSS})\) for positive output power.</p>
   </section>
@@ -1004,14 +1618,13 @@ math: true
   <section class="blx-caveats">
     <h2>Caveats</h2>
     <ol>
-      <li>Left of the shaded boundary the inductor current reverses each cycle. The model shows synchronous forced-CCM behavior there; many real converters switch to diode emulation, pulse-skipping, or PFM instead, and their light-load efficiency differs — usually for the better.</li>
-      <li>RDS(on) is whatever you type. The model doesn't iterate junction temperature, and hot FETs are 30–50% more resistive than their 25 °C number — bracket that by hand if it matters.</li>
-      <li>Inductor DCR is counted; core loss is not. At high ripple or high frequency, core loss can rival DCR loss — treat the inductor bar as a floor.</li>
-      <li>Overlap loss uses one lumped edge time. Real switching loss lives in gate drive, layout, capacitances, and ringing — use the overlap knob to bracket fast and slow edges, not to claim a part's exact behavior.</li>
-      <li>EOSS and Qrr default to zero. At high input voltage and high frequency they stop being optional — the 48 V preset is a good place to try them.</li>
-      <li>Input-capacitor ESR loss isn't modeled yet; in a buck it usually exceeds the output-capacitor term shown here.</li>
-      <li>Numbers are rounded on purpose. The model ranks mechanisms and shows tradeoffs; it does not predict a datasheet curve to decimal places.</li>
-      <li>Not a part selector, thermal simulator, EMI model, or SPICE replacement — it's the sketch you do before you open those.</li>
+      <li>Left of the forced-CCM boundary the inductor current reverses each cycle. Many real converters enter diode emulation, pulse-skipping, or PFM instead.</li>
+      <li>R<sub>DS(on)</sub> does not iterate with junction temperature. EPC2090's 5.2 mΩ default is its 25 °C maximum at 5 V gate drive and 16 A.</li>
+      <li>Inductor DCR is counted; core loss is not. At high ripple or frequency, treat the inductor loss as a floor.</li>
+      <li>Overlap is a lumped edge-time estimate. Real switching loss also depends on the driver, package integration, layout, capacitances, and ringing.</li>
+      <li>E<sub>OSS</sub> defaults use the EPC2090 energy-related effective capacitance as a first-order estimate. The real C<sub>OSS</sub> curve is nonlinear with drain voltage.</li>
+      <li>Input-capacitor ESR loss and thermal feedback are not modeled.</li>
+      <li>Numbers are rounded deliberately. Use this to rank mechanisms, then confirm the design with detailed simulation and measurement.</li>
     </ol>
   </section>
 

@@ -16,13 +16,13 @@ export const PARAM_RANGES = {
   qgLow: { min: 0, max: 100 },
   tOverlap: { min: 0, max: 200 },
   deadTime: { min: 0, max: 200 },
-  diodeVf: { min: 0.2, max: 1.2 },
+  diodeVf: { min: 0.2, max: 2.5 },
   dcr: { min: 0, max: 500 },
   esr: { min: 0, max: 500 },
-  vDrive: { min: 2.5, max: 12 },
+  vDrive: { min: 2.5, max: 6 },
   iq: { min: 0, max: 20 },
   vBias: { min: 1, max: 100, optional: true },
-  eossTotal: { min: 0, max: 1000 },
+  eossTotal: { min: 0, max: 5000 },
   qrr: { min: 0, max: 500 },
   inductorIsat: { min: 0.1, max: 200, optional: true }
 };
