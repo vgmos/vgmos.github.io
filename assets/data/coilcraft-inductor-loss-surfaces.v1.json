@@ -1,0 +1,2950 @@
+{
+  "schema_version": 2,
+  "compatible_model_schema_versions": [
+    1,
+    2
+  ],
+  "dataset_id": "coilcraft-inductor-ac-loss-models",
+  "permission_status": "approved",
+  "metric": "Additional inductor AC/core loss beyond RMS DCR",
+  "accounting_convention": "P_DCR=I_L_RMS^2*R_DCR; P_AC_additional=max(0,Coilcraft_ACLoss-I_ripple_RMS^2*R_DCR_typ)",
+  "source_tool_url": "https://www.coilcraft.com/en-us/tools/power-inductor-finder/",
+  "source_model_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+  "captured_at_utc": "2026-07-10T06:38:51.291Z",
+  "ambient_C": 25,
+  "waveform": "triangular",
+  "domain_policy": "verified-plus-guarded-no-srf-inference",
+  "parts": {
+    "XEL4030-201": {
+      "model_schema_version": 1,
+      "part_number": "XEL4030-201",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 21.6,
+      "interpolation": {
+        "frequency_by_interval": [
+          "log",
+          "log",
+          "log",
+          "linear",
+          "log"
+        ],
+        "ripple_by_interval": [
+          "log",
+          "log",
+          "log",
+          "log",
+          "linear"
+        ]
+      },
+      "axes": {
+        "frequency_Hz": [
+          50000,
+          100000,
+          300000,
+          1000000,
+          3000000,
+          6000000
+        ],
+        "dc_current_A": [
+          0,
+          5.4,
+          10.8,
+          15.12
+        ],
+        "ripple_pp_A": [
+          0.216,
+          0.648,
+          2.16,
+          6.48,
+          12.96
+        ]
+      },
+      "ac_loss_W": [
+        [
+          [
+            0.000012447934107583018,
+            0.0001060777369418162,
+            0.0011085583582060925,
+            0.009420639973563382,
+            0.03631494804907872
+          ],
+          [
+            0.000012447934107583018,
+            0.0001060777369418162,
+            0.0011085583582060925,
+            0.009420639973563382,
+            0.03631494804907872
+          ],
+          [
+            0.000012447934107583018,
+            0.0001060777369418162,
+            0.0011085583582060925,
+            0.009420639973563382,
+            0.03631494804907872
+          ],
+          [
+            0.000012447934107583018,
+            0.0001060777369418162,
+            0.0011085583582060925,
+            0.009420639973563382,
+            0.03631494804907872
+          ]
+        ],
+        [
+          [
+            0.00003325506821516604,
+            0.00028738827388363243,
+            0.003053036716412185,
+            0.026364559947126765,
+            0.10272301609815744
+          ],
+          [
+            0.00003325506821516604,
+            0.00028738827388363243,
+            0.003053036716412185,
+            0.026364559947126765,
+            0.10272301609815744
+          ],
+          [
+            0.00003325506821516604,
+            0.00028738827388363243,
+            0.003053036716412185,
+            0.026364559947126765,
+            0.10272301609815744
+          ],
+          [
+            0.00003325506821516604,
+            0.00028738827388363243,
+            0.003053036716412185,
+            0.026364559947126765,
+            0.10272301609815744
+          ]
+        ],
+        [
+          [
+            0.0001164836046454981,
+            0.001012630421650897,
+            0.010830950149236556,
+            0.0941402398413803,
+            0.36835528829447234
+          ],
+          [
+            0.0001164836046454981,
+            0.001012630421650897,
+            0.010830950149236556,
+            0.0941402398413803,
+            0.36835528829447234
+          ],
+          [
+            0.0001164836046454981,
+            0.001012630421650897,
+            0.010830950149236556,
+            0.0941402398413803,
+            0.36835528829447234
+          ],
+          [
+            0.0001164836046454981,
+            0.001012630421650897,
+            0.010830950149236556,
+            0.0941402398413803,
+            0.36835528829447234
+          ]
+        ],
+        [
+          [
+            0.00040778348215166033,
+            0.0035509779388363232,
+            0.03805364716412185,
+            0.33135511947126767,
+            1.2980682409815745
+          ],
+          [
+            0.00040778348215166033,
+            0.0035509779388363232,
+            0.03805364716412185,
+            0.33135511947126767,
+            1.2980682409815745
+          ],
+          [
+            0.00040778348215166033,
+            0.0035509779388363232,
+            0.03805364716412185,
+            0.33135511947126767,
+            1.2980682409815745
+          ],
+          [
+            0.00040778348215166033,
+            0.0035509779388363232,
+            0.03805364716412185,
+            0.33135511947126767,
+            1.2980682409815745
+          ]
+        ],
+        [
+          [
+            0.0004995210278175132,
+            0.005921968408050181,
+            0.08889915041754136,
+            1.0520951954526676,
+            5.000560319100248
+          ],
+          [
+            0.0004995210278175132,
+            0.005921968408050181,
+            0.08889915041754136,
+            1.0520951954526676,
+            5.000560319100248
+          ],
+          [
+            0.0004995210278175132,
+            0.005921968408050181,
+            0.08889915041754136,
+            1.0520951954526676,
+            5.000560319100248
+          ],
+          [
+            0.0004995210278175132,
+            0.005921968408050181,
+            0.08889915041754136,
+            1.0520951954526676,
+            5.000560319100248
+          ]
+        ],
+        [
+          [
+            0.00046956117315837323,
+            0.007374808517753033,
+            0.15029577207427947,
+            2.348386644773593,
+            13.296945952999504
+          ],
+          [
+            0.00046956117315837323,
+            0.007374808517753033,
+            0.15029577207427947,
+            2.348386644773593,
+            13.296945952999504
+          ],
+          [
+            0.00046956117315837323,
+            0.007374808517753033,
+            0.15029577207427947,
+            2.348386644773593,
+            13.296945952999504
+          ],
+          [
+            0.00046956117315837323,
+            0.007374808517753033,
+            0.15029577207427947,
+            2.348386644773593,
+            13.296945952999504
+          ]
+        ]
+      ],
+      "validation": {
+        "count": 60,
+        "median_relative_error": 0.03265976661157507,
+        "p95_relative_error": 0.11963358011064734,
+        "max_relative_error": 0.11963358011064734,
+        "max_sub_5mW_absolute_error_mW": 0.19838015951902221,
+        "failed_sample_ids": [],
+        "passes": true
+      }
+    },
+    "XEL4030-471": {
+      "model_schema_version": 2,
+      "model_type": "frequency-interpolated-ripple-power-law",
+      "part_number": "XEL4030-471",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 15.5,
+      "selected_isat_A": 15.5,
+      "selected_isat_drop_pct": 30,
+      "dcr_typ_mOhm": 4.1,
+      "core_identifier": "HRM40",
+      "coefficient_fingerprint": "a319b4c8b63668acc5bcd74820960be543fa4708ad46f5fbb9bb548239599bf5",
+      "response_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+      "verified_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0.155,
+          9.3
+        ]
+      },
+      "guarded_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0,
+          12.4
+        ]
+      },
+      "knots": [
+        {
+          "frequency_Hz": 50000,
+          "a_W_per_A_pow_B": 0.0007516588786076298,
+          "b": 2.06118276877339,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "9c55b514d352d5606be0",
+            "836470d53c062fe0184a"
+          ]
+        },
+        {
+          "frequency_Hz": 100000,
+          "a_W_per_A_pow_B": 0.0015033177572152596,
+          "b": 2.06118276877339,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "3114850e5c858e3aeb98",
+            "2a5fd7b20f3d9663e1d9"
+          ]
+        },
+        {
+          "frequency_Hz": 250000,
+          "a_W_per_A_pow_B": 0.0037582943930381495,
+          "b": 2.06118276877339,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "b21daf348e8c3f1c1198",
+            "70dcf26785396b05ed63"
+          ]
+        },
+        {
+          "frequency_Hz": 300000,
+          "a_W_per_A_pow_B": 0.0045099532716457785,
+          "b": 2.06118276877339,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "500613e4ca024f975a06",
+            "e257ef5beeed3f7c7a79"
+          ]
+        },
+        {
+          "frequency_Hz": 500000,
+          "a_W_per_A_pow_B": 0.007516588786076299,
+          "b": 2.06118276877339,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "6d1b887adcc6b93ad3cf",
+            "e70eb16e91ee2cccb37a"
+          ]
+        },
+        {
+          "frequency_Hz": 1000000,
+          "a_W_per_A_pow_B": 0.015033177572152598,
+          "b": 2.06118276877339,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "b8c133eb5f5328fe0bfa",
+            "728942feb32fc8897fee"
+          ]
+        },
+        {
+          "frequency_Hz": 1224744.87139,
+          "a_W_per_A_pow_B": 0.017239120620894673,
+          "b": 2.121153772673317,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "1c05cf5dd939d2360df4",
+            "8511f4254ab90f7bd7dd"
+          ]
+        },
+        {
+          "frequency_Hz": 1355403.00541,
+          "a_W_per_A_pow_B": 0.01842638720014347,
+          "b": 2.1491991515028133,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "4b56db5ef1c508cd5495",
+            "57130ace1d13ef7fb96d"
+          ]
+        },
+        {
+          "frequency_Hz": 1500000,
+          "a_W_per_A_pow_B": 0.019679472219192952,
+          "b": 2.1761169849099007,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "8342de06088c6a9bf3d4",
+            "bc2a4b83bdba26591da3"
+          ]
+        },
+        {
+          "frequency_Hz": 1611854.89774,
+          "a_W_per_A_pow_B": 0.020612763822172635,
+          "b": 2.1945821168590864,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "16da0e10f08e9314ae52",
+            "db00f84db41414bd987a"
+          ]
+        },
+        {
+          "frequency_Hz": 1732050.80757,
+          "a_W_per_A_pow_B": 0.021586171671812083,
+          "b": 2.2125516674644543,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "98a87755a49102f150d6",
+            "64a015b22530cef1277d"
+          ]
+        },
+        {
+          "frequency_Hz": 2000000,
+          "a_W_per_A_pow_B": 0.023666430839665253,
+          "b": 2.2470875312410903,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "f6dba2ef4e1a4fa71340",
+            "6bc81d512f1a9c4af4bb"
+          ]
+        },
+        {
+          "frequency_Hz": 3000000,
+          "a_W_per_A_pow_B": 0.03751848528140349,
+          "b": 2.3007136280125806,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "9eb23c4796681aa723b8",
+            "ed1edc3cfcc939f6cb2a"
+          ]
+        },
+        {
+          "frequency_Hz": 3464101.61514,
+          "a_W_per_A_pow_B": 0.046762940080273555,
+          "b": 2.299412027773429,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "c5a0ce0fbfcc9a8635d1",
+            "9fe5fc4848ec4af1a335"
+          ]
+        },
+        {
+          "frequency_Hz": 4000000,
+          "a_W_per_A_pow_B": 0.05743724925843195,
+          "b": 2.29842987234832,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "4c34f8e09e25b14b8a80",
+            "c00b727b6cb57a4fa881"
+          ]
+        },
+        {
+          "frequency_Hz": 4472135.955,
+          "a_W_per_A_pow_B": 0.06650099472100224,
+          "b": 2.331686314362516,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "f7fb99039d09a8e2b2ba",
+            "d7803dcd076c3bca2274"
+          ]
+        },
+        {
+          "frequency_Hz": 5000000,
+          "a_W_per_A_pow_B": 0.07636555464281763,
+          "b": 2.3593489044397504,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "5ea627560133e6b736de",
+            "574c356f5a7043f0609d"
+          ]
+        },
+        {
+          "frequency_Hz": 5477225.57505,
+          "a_W_per_A_pow_B": 0.085121863296653,
+          "b": 2.378724921254324,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "22977c10afa036515520",
+            "5a59bfe6aec7cea4d35a"
+          ]
+        },
+        {
+          "frequency_Hz": 5732656.75323,
+          "a_W_per_A_pow_B": 0.08976238116330919,
+          "b": 2.3875044778812926,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "c856e3c9d369a6920675",
+            "e53443803cdf0a1c9a60"
+          ]
+        },
+        {
+          "frequency_Hz": 6000000,
+          "a_W_per_A_pow_B": 0.09459167428042775,
+          "b": 2.395747892135066,
+          "measured_ripple_pp_A": [
+            0.155,
+            9.3
+          ],
+          "source_sample_ids": [
+            "82ef5370335c8064074e",
+            "565b8e790da2bc1ef2e9"
+          ]
+        }
+      ],
+      "validation": {
+        "summary": {
+          "hidden_count": 8,
+          "median_relative_error": 1.6578103189842721e-15,
+          "p95_relative_error": 0.003747988597843921,
+          "max_relative_error": 0.003747988597843921,
+          "max_sub_5mW_absolute_error_mW": 0.04320608310276344,
+          "max_guarded_relative_error": 0.010046433489270052,
+          "idc_variation_relative": 0,
+          "idc_variation_mW": 0,
+          "zero_ripple_vendor_loss_mW": 0,
+          "materially_negative_residual_count": 0,
+          "max_practical_anchor_relative_error": 2.055725935649456e-15,
+          "max_adaptive_relative_error": 0.0184466378986771,
+          "passes": true,
+          "failures": []
+        },
+        "hidden_checks": [
+          {
+            "sample_id": "408f20b5a23a5e61b338",
+            "kind": "hidden-verified",
+            "frequency_Hz": 547722.557505,
+            "idc_A": 0,
+            "ripple_pp_A": 1.20062483732,
+            "actual_additional_loss_W": 0.011510338678212747,
+            "predicted_additional_loss_W": 0.011510338678212766,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 1.9081958235744878e-14,
+            "relative_error": 1.6578103189842721e-15
+          },
+          {
+            "sample_id": "93e38be6ce11b9057eb1",
+            "kind": "hidden-verified",
+            "frequency_Hz": 1647298.54166,
+            "idc_A": 0,
+            "ripple_pp_A": 0.468201214354,
+            "actual_additional_loss_W": 0.0038186919335393595,
+            "predicted_additional_loss_W": 0.003861898016642123,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.04320608310276344,
+            "relative_error": 0.011314367289826868
+          },
+          {
+            "sample_id": "af9e7037e841af83ab40",
+            "kind": "hidden-verified",
+            "frequency_Hz": 182116.351356,
+            "idc_A": 0,
+            "ripple_pp_A": 3.07880448791,
+            "actual_additional_loss_W": 0.024561311326114044,
+            "predicted_additional_loss_W": 0.024561311326114072,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 2.7755575615628914e-14,
+            "relative_error": 1.1300526770375924e-15
+          },
+          {
+            "sample_id": "6ebaf04b996697f2d72e",
+            "kind": "hidden-verified",
+            "frequency_Hz": 315831.020845,
+            "idc_A": 0,
+            "ripple_pp_A": 0.749755964844,
+            "actual_additional_loss_W": 0.002430299804542585,
+            "predicted_additional_loss_W": 0.002430299804542587,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 2.168404344971009e-15,
+            "relative_error": 8.922373860697947e-16
+          },
+          {
+            "sample_id": "69e1df1b11de06d14bb7",
+            "kind": "hidden-verified",
+            "frequency_Hz": 2856788.94934,
+            "idc_A": 0,
+            "ripple_pp_A": 4.93025639112,
+            "actual_additional_loss_W": 1.376336256408055,
+            "predicted_additional_loss_W": 1.3711777638122384,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 5.158492595816577,
+            "relative_error": 0.003747988597843921
+          },
+          {
+            "sample_id": "8a5cd3db94c5f215d209",
+            "kind": "hidden-verified",
+            "frequency_Hz": 949875.028733,
+            "idc_A": 0,
+            "ripple_pp_A": 0.29237830361,
+            "actual_additional_loss_W": 0.0011030172015133084,
+            "predicted_additional_loss_W": 0.0011030172015133086,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 2.1684043449710089e-16,
+            "relative_error": 1.9658844322609109e-16
+          },
+          {
+            "sample_id": "c53d1abbee2755d63c35",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 0.093,
+            "actual_additional_loss_W": 0.00011007237211661962,
+            "predicted_additional_loss_W": 0.00010896653735114382,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 0.0011058347654758025,
+            "relative_error": 0.010046433489270052
+          },
+          {
+            "sample_id": "e486e4b9190d20c937d2",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 10.85,
+            "actual_additional_loss_W": 3.277013564520898,
+            "predicted_additional_loss_W": 3.266622677547906,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 10.390886972992064,
+            "relative_error": 0.003170840391230184
+          }
+        ]
+      }
+    },
+    "XEL4030-102": {
+      "model_schema_version": 2,
+      "model_type": "frequency-interpolated-ripple-power-law",
+      "part_number": "XEL4030-102",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 9,
+      "selected_isat_A": 9,
+      "selected_isat_drop_pct": 30,
+      "dcr_typ_mOhm": 8.89,
+      "core_identifier": "HRM40",
+      "coefficient_fingerprint": "de1d1b196fc5284e2b3e731528cd468c29bb25c91dd2d8e1d7573abf7492f529",
+      "response_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+      "verified_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0.09,
+          5.4
+        ]
+      },
+      "guarded_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0,
+          7.2
+        ]
+      },
+      "knots": [
+        {
+          "frequency_Hz": 50000,
+          "a_W_per_A_pow_B": 0.0017233840331150406,
+          "b": 2.1107827944854205,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "177f188305cd9be69906",
+            "73ae11dc4b9042656d5c"
+          ]
+        },
+        {
+          "frequency_Hz": 100000,
+          "a_W_per_A_pow_B": 0.003446768066230081,
+          "b": 2.1107827944854205,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "573df9afdd2a614d30fb",
+            "44d5df38eed4ca0f08f2"
+          ]
+        },
+        {
+          "frequency_Hz": 250000,
+          "a_W_per_A_pow_B": 0.008616920165575203,
+          "b": 2.1107827944854205,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "52c9fc4089918562e5fb",
+            "b6bfcb931a55fa5e96fa"
+          ]
+        },
+        {
+          "frequency_Hz": 300000,
+          "a_W_per_A_pow_B": 0.010340304198690241,
+          "b": 2.1107827944854205,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "fb5fe0935fc6abf7c194",
+            "8d538d3a6d55f790c3b7"
+          ]
+        },
+        {
+          "frequency_Hz": 500000,
+          "a_W_per_A_pow_B": 0.017233840331150406,
+          "b": 2.1107827944854205,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "7d8710a50303550adbec",
+            "9c147927534b22e7fc85"
+          ]
+        },
+        {
+          "frequency_Hz": 1000000,
+          "a_W_per_A_pow_B": 0.03446768066230081,
+          "b": 2.1107827944854205,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "4053f3d446adaa85e521",
+            "154ae10c4fc5d7d089ca"
+          ]
+        },
+        {
+          "frequency_Hz": 1500000,
+          "a_W_per_A_pow_B": 0.049479263875577634,
+          "b": 2.2081999651907327,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "08e823347421b661bfdb",
+            "af50f883a042147beecf"
+          ]
+        },
+        {
+          "frequency_Hz": 2000000,
+          "a_W_per_A_pow_B": 0.06340676492482743,
+          "b": 2.26442127132087,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "2124fcb55415bd3354c9",
+            "62b6899ced950c284e4d"
+          ]
+        },
+        {
+          "frequency_Hz": 3000000,
+          "a_W_per_A_pow_B": 0.10587544693373442,
+          "b": 2.3094805401362803,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "b43a7618bd63d625d164",
+            "55ea85b0ee510f7abd8e"
+          ]
+        },
+        {
+          "frequency_Hz": 3464101.61514,
+          "a_W_per_A_pow_B": 0.13280015263588335,
+          "b": 2.3117025354168117,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "1f5206be8f681032a1a8",
+            "2d277a9df1ed43be227f"
+          ]
+        },
+        {
+          "frequency_Hz": 4000000,
+          "a_W_per_A_pow_B": 0.16388798219636647,
+          "b": 2.3133623880281506,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "0d352852ce22d1cc5f52",
+            "ef7fd5e159bb4b3383cd"
+          ]
+        },
+        {
+          "frequency_Hz": 4472135.955,
+          "a_W_per_A_pow_B": 0.20209770190080667,
+          "b": 2.2725145593041463,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "b656b044008ac2c64139",
+            "67242b498fe4e0289260"
+          ]
+        },
+        {
+          "frequency_Hz": 5000000,
+          "a_W_per_A_pow_B": 0.24375521119556276,
+          "b": 2.2425671770345406,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "7a01b89f843804723890",
+            "09bc5218708907be3668"
+          ]
+        },
+        {
+          "frequency_Hz": 5233175.69696,
+          "a_W_per_A_pow_B": 0.2619413005631382,
+          "b": 2.232501351296065,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "ef0448de9d6b1ea3378d",
+            "de630b18b6ef933883d6"
+          ]
+        },
+        {
+          "frequency_Hz": 5477225.57505,
+          "a_W_per_A_pow_B": 0.28087601905542514,
+          "b": 2.2234212671090448,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "9e89b90e3dcf74fea540",
+            "6bce59e7a22ba1070b90"
+          ]
+        },
+        {
+          "frequency_Hz": 5732656.75323,
+          "a_W_per_A_pow_B": 0.300606545415002,
+          "b": 2.2151915847658326,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "20721baffeaf386bcdb1",
+            "320b6c9008290116a455"
+          ]
+        },
+        {
+          "frequency_Hz": 6000000,
+          "a_W_per_A_pow_B": 0.3211802102634536,
+          "b": 2.2077015333926355,
+          "measured_ripple_pp_A": [
+            0.09,
+            5.4
+          ],
+          "source_sample_ids": [
+            "1a501a5c096906fdd719",
+            "1daa2a096dc6bf0df6a7"
+          ]
+        }
+      ],
+      "validation": {
+        "summary": {
+          "hidden_count": 8,
+          "median_relative_error": 2.18816209904306e-15,
+          "p95_relative_error": 0.005234988699332054,
+          "max_relative_error": 0.005234988699332054,
+          "max_sub_5mW_absolute_error_mW": 0.024258487146123445,
+          "max_guarded_relative_error": 0.005234988699332054,
+          "idc_variation_relative": 0,
+          "idc_variation_mW": 0,
+          "zero_ripple_vendor_loss_mW": 0,
+          "materially_negative_residual_count": 0,
+          "max_practical_anchor_relative_error": 3.026657325055949e-15,
+          "max_adaptive_relative_error": 0.009493540800899388,
+          "passes": true,
+          "failures": []
+        },
+        "hidden_checks": [
+          {
+            "sample_id": "ebaf592dd463d70688aa",
+            "kind": "hidden-verified",
+            "frequency_Hz": 547722.557505,
+            "idc_A": 0,
+            "ripple_pp_A": 0.697137002317,
+            "actual_additional_loss_W": 0.00845554335106454,
+            "predicted_additional_loss_W": 0.008455543351064557,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 1.734723475976807e-14,
+            "relative_error": 2.05158131648442e-15
+          },
+          {
+            "sample_id": "6153e7fa7c7f15166694",
+            "kind": "hidden-verified",
+            "frequency_Hz": 1647298.54166,
+            "idc_A": 0,
+            "ripple_pp_A": 0.271858769625,
+            "actual_additional_loss_W": 0.002872587006751867,
+            "predicted_additional_loss_W": 0.0028968454938979905,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.024258487146123445,
+            "relative_error": 0.008444822415858989
+          },
+          {
+            "sample_id": "b7f103e8c99acac17e55",
+            "kind": "hidden-verified",
+            "frequency_Hz": 182116.351356,
+            "idc_A": 0,
+            "ripple_pp_A": 1.78769292847,
+            "actual_additional_loss_W": 0.01902663584276993,
+            "predicted_additional_loss_W": 0.019026635842769972,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 4.163336342344337e-14,
+            "relative_error": 2.18816209904306e-15
+          },
+          {
+            "sample_id": "5c26d5ae9553afd66c56",
+            "kind": "hidden-verified",
+            "frequency_Hz": 315831.020845,
+            "idc_A": 0,
+            "ripple_pp_A": 0.435342173135,
+            "actual_additional_loss_W": 0.0017411504846156654,
+            "predicted_additional_loss_W": 0.001741150484615669,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 3.469446951953614e-15,
+            "relative_error": 1.9926175150331397e-15
+          },
+          {
+            "sample_id": "c198d35bd65aa9338cb4",
+            "kind": "hidden-verified",
+            "frequency_Hz": 2856788.94934,
+            "idc_A": 0,
+            "ripple_pp_A": 2.86272951742,
+            "actual_additional_loss_W": 1.1216306317297986,
+            "predicted_additional_loss_W": 1.116920477827461,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 4.710153902337533,
+            "relative_error": 0.004199380588486113
+          },
+          {
+            "sample_id": "c855f56333d26940f17b",
+            "kind": "hidden-verified",
+            "frequency_Hz": 949875.028733,
+            "idc_A": 0,
+            "ripple_pp_A": 0.169768047258,
+            "actual_additional_loss_W": 0.0007539517725336319,
+            "predicted_additional_loss_W": 0.0007539517725336322,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 3.2526065174565133e-16,
+            "relative_error": 4.3140776850039475e-16
+          },
+          {
+            "sample_id": "bc46bf1e2db0fa11d9f9",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 0.054,
+            "actual_additional_loss_W": 0.0000760079469154045,
+            "predicted_additional_loss_W": 0.00007567294334356478,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 0.00033500357183972613,
+            "relative_error": 0.004407480867922655
+          },
+          {
+            "sample_id": "672214b93635ce3dae9c",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 6.3,
+            "actual_additional_loss_W": 2.679817620846618,
+            "predicted_additional_loss_W": 2.665788805885215,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 14.028814961402958,
+            "relative_error": 0.005234988699332054
+          }
+        ]
+      }
+    },
+    "XEL4030-222": {
+      "model_schema_version": 2,
+      "model_type": "frequency-interpolated-ripple-power-law",
+      "part_number": "XEL4030-222",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 6.1,
+      "selected_isat_A": 6.1,
+      "selected_isat_drop_pct": 30,
+      "dcr_typ_mOhm": 20.1,
+      "core_identifier": "HRM40",
+      "coefficient_fingerprint": "eaeb206653862346b125ae298da266aaed94d408cb63e03c2e2cfbf7b403f6d8",
+      "response_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+      "verified_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0.061,
+          3.66
+        ]
+      },
+      "guarded_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0,
+          4.88
+        ]
+      },
+      "knots": [
+        {
+          "frequency_Hz": 50000,
+          "a_W_per_A_pow_B": 0.00495331358449352,
+          "b": 1.9622889301541904,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "e672ab29addbe3a128f9",
+            "30ca852cb12173f387aa"
+          ]
+        },
+        {
+          "frequency_Hz": 100000,
+          "a_W_per_A_pow_B": 0.00990662716898704,
+          "b": 1.9622889301541904,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "ec33357752c2c95aa6ae",
+            "4bf526b258757927e7af"
+          ]
+        },
+        {
+          "frequency_Hz": 250000,
+          "a_W_per_A_pow_B": 0.0247665679224676,
+          "b": 1.9622889301541904,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "a70d84ce579a205140f9",
+            "75704d12095982e73cdd"
+          ]
+        },
+        {
+          "frequency_Hz": 300000,
+          "a_W_per_A_pow_B": 0.02971988150696112,
+          "b": 1.9622889301541904,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "a2c2171a7db138a7ed58",
+            "a9b48694429743cc6ae3"
+          ]
+        },
+        {
+          "frequency_Hz": 500000,
+          "a_W_per_A_pow_B": 0.0495331358449352,
+          "b": 1.9622889301541904,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "2c67d326aca0836e4e73",
+            "53178a4a52b3b760feb4"
+          ]
+        },
+        {
+          "frequency_Hz": 1000000,
+          "a_W_per_A_pow_B": 0.09289304557701168,
+          "b": 2.11452521336457,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "0e2a3a4e4db5261826d6",
+            "80b6b7b597a0514485ad"
+          ]
+        },
+        {
+          "frequency_Hz": 1500000,
+          "a_W_per_A_pow_B": 0.14676495245195773,
+          "b": 2.1866374129062067,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "9b20ebf8b4b4f751f707",
+            "cb3b2029f0f18e930ad7"
+          ]
+        },
+        {
+          "frequency_Hz": 2000000,
+          "a_W_per_A_pow_B": 0.19925146323294282,
+          "b": 2.22320935748585,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "4790f2a41667b13af10b",
+            "2beeb4e1fd0a74ba3095"
+          ]
+        },
+        {
+          "frequency_Hz": 2449489.74278,
+          "a_W_per_A_pow_B": 0.2684822647610519,
+          "b": 2.250882421653128,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "3b77c9d91f12d708d771",
+            "99b5e958c4ce02129b0f"
+          ]
+        },
+        {
+          "frequency_Hz": 3000000,
+          "a_W_per_A_pow_B": 0.35267880829142356,
+          "b": 2.27073012795621,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "4e41a977c571fca23fbd",
+            "14f9f01bd6c2cfbb3d22"
+          ]
+        },
+        {
+          "frequency_Hz": 3464101.61514,
+          "a_W_per_A_pow_B": 0.44249082898447123,
+          "b": 2.2561707353317546,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "0f169162b77981692635",
+            "286bf5138965676a696a"
+          ]
+        },
+        {
+          "frequency_Hz": 4000000,
+          "a_W_per_A_pow_B": 0.5459281867837029,
+          "b": 2.24551273643739,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "3e4d942274dc96cecde9",
+            "bf7f05f54aea5b4d1069"
+          ]
+        },
+        {
+          "frequency_Hz": 4472135.955,
+          "a_W_per_A_pow_B": 0.671293803234347,
+          "b": 2.1595517365005605,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "db051d1cb52d89567202",
+            "dcdea3c970866ed99e6d"
+          ]
+        },
+        {
+          "frequency_Hz": 4728708.04502,
+          "a_W_per_A_pow_B": 0.7342193390917771,
+          "b": 2.1276145722828987,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "b0b584e3718a97dd8242",
+            "f18a6a8f7d677ce29391"
+          ]
+        },
+        {
+          "frequency_Hz": 5000000,
+          "a_W_per_A_pow_B": 0.7983775112073881,
+          "b": 2.10044585582415,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "40641cacd0096347550c",
+            "b48e701a4d7ea793ffd8"
+          ]
+        },
+        {
+          "frequency_Hz": 5233175.69696,
+          "a_W_per_A_pow_B": 0.8520977480776899,
+          "b": 2.0810107347265725,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "b03a70c6a09671201fb5",
+            "3e807e0976d060bdaca3"
+          ]
+        },
+        {
+          "frequency_Hz": 5477225.57505,
+          "a_W_per_A_pow_B": 0.9072524246647373,
+          "b": 2.0635971739751557,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "3c7b5d99ef81b258fac2",
+            "b24302116ad539c8d43b"
+          ]
+        },
+        {
+          "frequency_Hz": 5732656.75323,
+          "a_W_per_A_pow_B": 0.9640573607277586,
+          "b": 2.04788268721238,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "4749412250a36c2212a3",
+            "db8e4b962be4511beda4"
+          ]
+        },
+        {
+          "frequency_Hz": 6000000,
+          "a_W_per_A_pow_B": 1.0227088067303227,
+          "b": 2.033616000811669,
+          "measured_ripple_pp_A": [
+            0.061,
+            3.66
+          ],
+          "source_sample_ids": [
+            "099764fcc49764490852",
+            "8b8cb5e2f3b612cb92c6"
+          ]
+        }
+      ],
+      "validation": {
+        "summary": {
+          "hidden_count": 8,
+          "median_relative_error": 0.0019874488426780733,
+          "p95_relative_error": 0.005612424486709989,
+          "max_relative_error": 0.005612424486709989,
+          "max_sub_5mW_absolute_error_mW": 0.015899518217203732,
+          "max_guarded_relative_error": 0.005130031548069098,
+          "idc_variation_relative": 0,
+          "idc_variation_mW": 0,
+          "zero_ripple_vendor_loss_mW": 0,
+          "materially_negative_residual_count": 0,
+          "max_practical_anchor_relative_error": 3.065290591203185e-15,
+          "max_adaptive_relative_error": 0.021264666270774016,
+          "passes": true,
+          "failures": []
+        },
+        "hidden_checks": [
+          {
+            "sample_id": "ef03521f2b9ebef20b98",
+            "kind": "hidden-verified",
+            "frequency_Hz": 547722.557505,
+            "idc_A": 0,
+            "ripple_pp_A": 0.472503968237,
+            "actual_additional_loss_W": 0.011732752367871389,
+            "predicted_additional_loss_W": 0.011798601554557335,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.06584918668594598,
+            "relative_error": 0.005612424486709989
+          },
+          {
+            "sample_id": "81653a896ad171329fa8",
+            "kind": "hidden-verified",
+            "frequency_Hz": 1647298.54166,
+            "idc_A": 0,
+            "ripple_pp_A": 0.184259832746,
+            "actual_additional_loss_W": 0.003861574285663809,
+            "predicted_additional_loss_W": 0.0038774738038810127,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.015899518217203732,
+            "relative_error": 0.0041173669185210525
+          },
+          {
+            "sample_id": "60708465a525a84b16fc",
+            "kind": "hidden-verified",
+            "frequency_Hz": 182116.351356,
+            "idc_A": 0,
+            "ripple_pp_A": 1.2116585404,
+            "actual_additional_loss_W": 0.023836978006888044,
+            "predicted_additional_loss_W": 0.023836978006888082,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 3.8163916471489756e-14,
+            "relative_error": 1.6010383724170797e-15
+          },
+          {
+            "sample_id": "8bf283131c3a0220eb12",
+            "kind": "hidden-verified",
+            "frequency_Hz": 315831.020845,
+            "idc_A": 0,
+            "ripple_pp_A": 0.295065250681,
+            "actual_additional_loss_W": 0.0027065441013974863,
+            "predicted_additional_loss_W": 0.0027065441013974924,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 6.071532165918825e-15,
+            "relative_error": 2.2432784903759276e-15
+          },
+          {
+            "sample_id": "b1acd59e3e9c27b88506",
+            "kind": "hidden-verified",
+            "frequency_Hz": 2856788.94934,
+            "idc_A": 0,
+            "ripple_pp_A": 1.9402944507,
+            "actual_additional_loss_W": 1.479454197536553,
+            "predicted_additional_loss_W": 1.4765138580038637,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 2.94033953268924,
+            "relative_error": 0.0019874488426780733
+          },
+          {
+            "sample_id": "48f2491a8bff23a4f0ee",
+            "kind": "hidden-verified",
+            "frequency_Hz": 949875.028733,
+            "idc_A": 0,
+            "ripple_pp_A": 0.115065009808,
+            "actual_additional_loss_W": 0.0009130194267768502,
+            "predicted_additional_loss_W": 0.000916832122389901,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.003812695613050732,
+            "relative_error": 0.004175919483455403
+          },
+          {
+            "sample_id": "a19011d5bc638b87872f",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 0.0366,
+            "actual_additional_loss_W": 0.00010103944387438078,
+            "predicted_additional_loss_W": 0.00010097684151513312,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 0.00006260235924765954,
+            "relative_error": 0.0006195833710792304
+          },
+          {
+            "sample_id": "29c47473eb80ba85684f",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 4.27,
+            "actual_additional_loss_W": 3.260091835953517,
+            "predicted_additional_loss_W": 3.243367461985473,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 16.72437396804405,
+            "relative_error": 0.005130031548069098
+          }
+        ]
+      }
+    },
+    "XGL6060-102": {
+      "model_schema_version": 2,
+      "model_type": "frequency-interpolated-ripple-power-law",
+      "part_number": "XGL6060-102",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 17.2,
+      "selected_isat_A": 17.2,
+      "selected_isat_drop_pct": 20,
+      "dcr_typ_mOhm": 2.5,
+      "core_identifier": "M800",
+      "coefficient_fingerprint": "6662a7491f6bc0465df5d69d3cef9d32177add233860d2271ca5429b637a199e",
+      "response_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+      "verified_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0.172,
+          10.32
+        ]
+      },
+      "guarded_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0,
+          13.76
+        ]
+      },
+      "knots": [
+        {
+          "frequency_Hz": 50000,
+          "a_W_per_A_pow_B": 0.0014059101143436687,
+          "b": 2.10146879458968,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "ae48a6826ac3f3d1eaab",
+            "69143fa03a82c1b097ec"
+          ]
+        },
+        {
+          "frequency_Hz": 100000,
+          "a_W_per_A_pow_B": 0.0028118202286873373,
+          "b": 2.10146879458968,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "7b09be117d4ace8fa0b2",
+            "c74b16f549233379bcf9"
+          ]
+        },
+        {
+          "frequency_Hz": 250000,
+          "a_W_per_A_pow_B": 0.0070295505717183435,
+          "b": 2.10146879458968,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "d58497600697ca1b1c21",
+            "7e384b59e133bdf1b0cf"
+          ]
+        },
+        {
+          "frequency_Hz": 300000,
+          "a_W_per_A_pow_B": 0.008435460686062012,
+          "b": 2.10146879458968,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "299f0d23e72f3558e67d",
+            "5e0e4216de86243cb780"
+          ]
+        },
+        {
+          "frequency_Hz": 500000,
+          "a_W_per_A_pow_B": 0.014059101143436687,
+          "b": 2.10146879458968,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "a25c97a75ea941244ae0",
+            "514250a6d5d185894fc1"
+          ]
+        },
+        {
+          "frequency_Hz": 1000000,
+          "a_W_per_A_pow_B": 0.028118202286873374,
+          "b": 2.10146879458968,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "28dfc26a41821446904b",
+            "dacb3c3be65e4a5a8c83"
+          ]
+        },
+        {
+          "frequency_Hz": 1106681.9197,
+          "a_W_per_A_pow_B": 0.029584555487255963,
+          "b": 2.139939467151902,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "5127f9286a287d4e55dc",
+            "e95a8f5e650990039654"
+          ]
+        },
+        {
+          "frequency_Hz": 1224744.87139,
+          "a_W_per_A_pow_B": 0.031021825787934727,
+          "b": 2.1776959115841867,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "eee73d323d9ce0ff1998",
+            "1f8fd70eb5684492e77b"
+          ]
+        },
+        {
+          "frequency_Hz": 1355403.00541,
+          "a_W_per_A_pow_B": 0.032423737188355325,
+          "b": 2.215009916962843,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "80689ad6b13852a5e5d3",
+            "f1eae593492d2be48179"
+          ]
+        },
+        {
+          "frequency_Hz": 1500000,
+          "a_W_per_A_pow_B": 0.03378130827723326,
+          "b": 2.2521305251851826,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "cfacd51f7c21b5135eba",
+            "c797bf6f16d423ab78a5"
+          ]
+        },
+        {
+          "frequency_Hz": 1611854.89774,
+          "a_W_per_A_pow_B": 0.034711166741144876,
+          "b": 2.27848188961549,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "638b3550b547098aefc5",
+            "72a97d7c914afa0f8696"
+          ]
+        },
+        {
+          "frequency_Hz": 1732050.80757,
+          "a_W_per_A_pow_B": 0.0356073437860269,
+          "b": 2.3049420459267678,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "9da6684a8859d1fc970e",
+            "32fde7bc4f8969793583"
+          ]
+        },
+        {
+          "frequency_Hz": 1861209.7182,
+          "a_W_per_A_pow_B": 0.0364634432995412,
+          "b": 2.3315993846995804,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "eed66dd808f89490d048",
+            "9a2b98528e51c2313b8a"
+          ]
+        },
+        {
+          "frequency_Hz": 2000000,
+          "a_W_per_A_pow_B": 0.03727189179960366,
+          "b": 2.3585473175698803,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "e6148821b455846d67cb",
+            "35fec126b2c597fe3949"
+          ]
+        },
+        {
+          "frequency_Hz": 2449489.74278,
+          "a_W_per_A_pow_B": 0.048015637685496146,
+          "b": 2.398492146368537,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "8a8eb801d522400f3162",
+            "5884c3d05c0fb3cb9cf8"
+          ]
+        },
+        {
+          "frequency_Hz": 3000000,
+          "a_W_per_A_pow_B": 0.06091690956002964,
+          "b": 2.42785084113443,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "8ae1fed70cbf5e87433f",
+            "9741629559e0918d4a72"
+          ]
+        },
+        {
+          "frequency_Hz": 3464101.61514,
+          "a_W_per_A_pow_B": 0.08527420536197788,
+          "b": 2.3364941098248755,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "406521ae9149a4fa64ba",
+            "23949631d3b79f6dabcd"
+          ]
+        },
+        {
+          "frequency_Hz": 3722419.43641,
+          "a_W_per_A_pow_B": 0.09802123188651993,
+          "b": 2.3035798224163804,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "6cd2f42d5a222d965a52",
+            "6c86d0663859407d2aeb"
+          ]
+        },
+        {
+          "frequency_Hz": 4000000,
+          "a_W_per_A_pow_B": 0.11134053230957978,
+          "b": 2.2760110124418,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "64bb9a4777bc37e5fbdd",
+            "d75354645d01dc90090b"
+          ]
+        },
+        {
+          "frequency_Hz": 4229485.05376,
+          "a_W_per_A_pow_B": 0.12550645570568925,
+          "b": 2.2546661913903083,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "a36f27e158ec3ef9bb5a",
+            "d5f43984ecef8f4d98d8"
+          ]
+        },
+        {
+          "frequency_Hz": 4472135.955,
+          "a_W_per_A_pow_B": 0.1402801496711461,
+          "b": 2.236547240227398,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "4d108f5edc8753daa162",
+            "f8a63aeb22337dcbd398"
+          ]
+        },
+        {
+          "frequency_Hz": 4728708.04502,
+          "a_W_per_A_pow_B": 0.15573406771099885,
+          "b": 2.2209564107476854,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "e1dac9dea6678b7921fa",
+            "50f944a669d44d8d5763"
+          ]
+        },
+        {
+          "frequency_Hz": 5000000,
+          "a_W_per_A_pow_B": 0.17193548519664897,
+          "b": 2.20739271227593,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "7f8af8f65353d75e4f16",
+            "b5fe7bb14fb2e1a052a0"
+          ]
+        },
+        {
+          "frequency_Hz": 5477225.57505,
+          "a_W_per_A_pow_B": 0.2070948402399583,
+          "b": 2.1775990424308502,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "feee71d7bd0f1cd74d2e",
+            "9bb9d5476c2031582b87"
+          ]
+        },
+        {
+          "frequency_Hz": 5732656.75323,
+          "a_W_per_A_pow_B": 0.22567476266501646,
+          "b": 2.165295632083913,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "a9a6c8ddce66cdfe0554",
+            "75fe54639846a084fb4c"
+          ]
+        },
+        {
+          "frequency_Hz": 6000000,
+          "a_W_per_A_pow_B": 0.24499328362491699,
+          "b": 2.1543373136118316,
+          "measured_ripple_pp_A": [
+            0.172,
+            10.32
+          ],
+          "source_sample_ids": [
+            "18bfdf8cc98f0495243a",
+            "505065e17b996f5e5a9e"
+          ]
+        }
+      ],
+      "validation": {
+        "summary": {
+          "hidden_count": 8,
+          "median_relative_error": 1.4727753693234525e-15,
+          "p95_relative_error": 0.022709175134386667,
+          "max_relative_error": 0.022709175134386667,
+          "max_sub_5mW_absolute_error_mW": 0.004053039727454192,
+          "max_guarded_relative_error": 0.01937922753169378,
+          "idc_variation_relative": 0,
+          "idc_variation_mW": 0,
+          "zero_ripple_vendor_loss_mW": 0,
+          "materially_negative_residual_count": 0,
+          "max_practical_anchor_relative_error": 2.1368914572686875e-15,
+          "max_adaptive_relative_error": 0.03455040006480778,
+          "passes": true,
+          "failures": []
+        },
+        "hidden_checks": [
+          {
+            "sample_id": "aff1c6c04a97d4cc812c",
+            "kind": "hidden-verified",
+            "frequency_Hz": 547722.557505,
+            "idc_A": 0,
+            "ripple_pp_A": 1.3323062711,
+            "actual_additional_loss_W": 0.02777510243776406,
+            "predicted_additional_loss_W": 0.0277751024377641,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 3.8163916471489756e-14,
+            "relative_error": 1.3740333292020798e-15
+          },
+          {
+            "sample_id": "4acb2433ddbb451c9e5a",
+            "kind": "hidden-verified",
+            "frequency_Hz": 1647298.54166,
+            "idc_A": 0,
+            "ripple_pp_A": 0.519552315283,
+            "actual_additional_loss_W": 0.007598438921226597,
+            "predicted_additional_loss_W": 0.0077709932014366715,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.17255428021007488,
+            "relative_error": 0.022709175134386667
+          },
+          {
+            "sample_id": "1281150110eefec6813d",
+            "kind": "hidden-verified",
+            "frequency_Hz": 182116.351356,
+            "idc_A": 0,
+            "ripple_pp_A": 3.41647981884,
+            "actual_additional_loss_W": 0.06527561345512875,
+            "predicted_additional_loss_W": 0.06527561345512882,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 6.938893903907228e-14,
+            "relative_error": 1.063014736533592e-15
+          },
+          {
+            "sample_id": "6ec113e9f8dd9fe50749",
+            "kind": "hidden-verified",
+            "frequency_Hz": 315831.020845,
+            "idc_A": 0,
+            "ripple_pp_A": 0.831987264214,
+            "actual_additional_loss_W": 0.005889300948771588,
+            "predicted_additional_loss_W": 0.005889300948771597,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 8.673617379884035e-15,
+            "relative_error": 1.4727753693234525e-15
+          },
+          {
+            "sample_id": "0df15097ccaa3f29e7e5",
+            "kind": "hidden-verified",
+            "frequency_Hz": 2856788.94934,
+            "idc_A": 0,
+            "ripple_pp_A": 5.47099418886,
+            "actual_additional_loss_W": 3.520022198998583,
+            "predicted_additional_loss_W": 3.5133185351036724,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 6.703663894910505,
+            "relative_error": 0.0019044379597428795
+          },
+          {
+            "sample_id": "cfe7baea25ec681e22e2",
+            "kind": "hidden-verified",
+            "frequency_Hz": 949875.028733,
+            "idc_A": 0,
+            "ripple_pp_A": 0.324445601426,
+            "actual_additional_loss_W": 0.002486106922786131,
+            "predicted_additional_loss_W": 0.002486106922786131,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0,
+            "relative_error": 0
+          },
+          {
+            "sample_id": "f5e2b147556a5491591b",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 0.1032,
+            "actual_additional_loss_W": 0.0002091435131160746,
+            "predicted_additional_loss_W": 0.0002050904733886204,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 0.004053039727454192,
+            "relative_error": 0.01937922753169378
+          },
+          {
+            "sample_id": "7a675d00b90eced8ffcc",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 12.04,
+            "actual_additional_loss_W": 8.605605480677367,
+            "predicted_additional_loss_W": 8.556811522279887,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 48.79395839748035,
+            "relative_error": 0.005670020373004558
+          }
+        ]
+      }
+    },
+    "XGL6060-222": {
+      "model_schema_version": 2,
+      "model_type": "frequency-interpolated-ripple-power-law",
+      "part_number": "XGL6060-222",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 12.1,
+      "selected_isat_A": 12.1,
+      "selected_isat_drop_pct": 20,
+      "dcr_typ_mOhm": 4.3,
+      "core_identifier": "M800",
+      "coefficient_fingerprint": "487fcdab73f55db3df439bbda6839ae262bfd7d91b44cfd745941ca264003925",
+      "response_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+      "verified_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0.121,
+          7.26
+        ]
+      },
+      "guarded_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0,
+          9.68
+        ]
+      },
+      "knots": [
+        {
+          "frequency_Hz": 50000,
+          "a_W_per_A_pow_B": 0.0035212870520444947,
+          "b": 2.00706546750473,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "ee9b6af7994661248662",
+            "30d8a0ad3b08b9b2d9b2"
+          ]
+        },
+        {
+          "frequency_Hz": 100000,
+          "a_W_per_A_pow_B": 0.007042574104088989,
+          "b": 2.00706546750473,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "24defd38410fc247cfbe",
+            "e7784eb69219cfd10bec"
+          ]
+        },
+        {
+          "frequency_Hz": 250000,
+          "a_W_per_A_pow_B": 0.017606435260222472,
+          "b": 2.00706546750473,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "bed9fa78c99c2cd06aed",
+            "0c711e47a384cc015570"
+          ]
+        },
+        {
+          "frequency_Hz": 300000,
+          "a_W_per_A_pow_B": 0.02112772231226697,
+          "b": 2.00706546750473,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "e0f283a42bb7dc3804fd",
+            "9fb226219a4ceb023e2d"
+          ]
+        },
+        {
+          "frequency_Hz": 500000,
+          "a_W_per_A_pow_B": 0.035212870520444944,
+          "b": 2.00706546750473,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "9cc16b6f2fd1f972b911",
+            "497c84aa7860cc6390a1"
+          ]
+        },
+        {
+          "frequency_Hz": 594603.557502,
+          "a_W_per_A_pow_B": 0.037648609446543455,
+          "b": 2.0650978989388524,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "dc1e4d95878dafe6a3db",
+            "2603b8cb777d3342dad2"
+          ]
+        },
+        {
+          "frequency_Hz": 707106.781187,
+          "a_W_per_A_pow_B": 0.03993510331992532,
+          "b": 2.1264055312577734,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "8aa4fb34495811969c5a",
+            "e1eee527fba5088d6097"
+          ]
+        },
+        {
+          "frequency_Hz": 840896.415254,
+          "a_W_per_A_pow_B": 0.041918865518249554,
+          "b": 2.192400802976342,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "124bbac310eacdb86d0f",
+            "ea4df375b69c6a0dfe10"
+          ]
+        },
+        {
+          "frequency_Hz": 1000000,
+          "a_W_per_A_pow_B": 0.04336150370445256,
+          "b": 2.2652859244411903,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "d290f762ca7cfb306e43",
+            "fae05db659d11fb14ecb"
+          ]
+        },
+        {
+          "frequency_Hz": 1106681.9197,
+          "a_W_per_A_pow_B": 0.04760154291802609,
+          "b": 2.2992102731963313,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "0e3d04cfa8b243fae637",
+            "0c2775159bf206f98a17"
+          ]
+        },
+        {
+          "frequency_Hz": 1224744.87139,
+          "a_W_per_A_pow_B": 0.05207072666053702,
+          "b": 2.3306105301632702,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "6eb7067709719f88259f",
+            "3bd277c50c4dc2772a57"
+          ]
+        },
+        {
+          "frequency_Hz": 1355403.00541,
+          "a_W_per_A_pow_B": 0.05680622646420057,
+          "b": 2.3598471496332536,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "7d83eb700a6f6c9de96a",
+            "6ab4ccd599e4c56bcfd5"
+          ]
+        },
+        {
+          "frequency_Hz": 1500000,
+          "a_W_per_A_pow_B": 0.06184693616825573,
+          "b": 2.387190391806264,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "9a64f536a01ee01f1ca4",
+            "caa4f9106cfd6aeea7aa"
+          ]
+        },
+        {
+          "frequency_Hz": 1611854.89774,
+          "a_W_per_A_pow_B": 0.06563105058405848,
+          "b": 2.405557594694204,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "3f03af7aee59c9dba3cc",
+            "f2c98fad0105d5c61bcc"
+          ]
+        },
+        {
+          "frequency_Hz": 1732050.80757,
+          "a_W_per_A_pow_B": 0.0696053764159735,
+          "b": 2.4231357452771705,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "bcf94753cfe989a1a5ef",
+            "ed015b4139ac1eea9029"
+          ]
+        },
+        {
+          "frequency_Hz": 1861209.7182,
+          "a_W_per_A_pow_B": 0.07378663979576182,
+          "b": 2.439974720889971,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "be86c5974e854f0940e6",
+            "25ac187e82e94ca0be11"
+          ]
+        },
+        {
+          "frequency_Hz": 2000000,
+          "a_W_per_A_pow_B": 0.07819264050655561,
+          "b": 2.45611690465622,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "07e763f759e4656e3d34",
+            "e879a485195f2d8126ae"
+          ]
+        },
+        {
+          "frequency_Hz": 2213363.8394,
+          "a_W_per_A_pow_B": 0.0961276614506271,
+          "b": 2.4176864182313316,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "14655e11b774105abbb6",
+            "7e8d81a988ce979056c0"
+          ]
+        },
+        {
+          "frequency_Hz": 2449489.74278,
+          "a_W_per_A_pow_B": 0.11550961749164408,
+          "b": 2.389007913040727,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "c3f15abd2856dc2ea305",
+            "2f91eab91604b1b1130f"
+          ]
+        },
+        {
+          "frequency_Hz": 2710806.01083,
+          "a_W_per_A_pow_B": 0.13663439947962028,
+          "b": 2.366747488889407,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "e978fd6445178358780d",
+            "4e090e4ead93dcf035ea"
+          ]
+        },
+        {
+          "frequency_Hz": 3000000,
+          "a_W_per_A_pow_B": 0.15977465307496497,
+          "b": 2.3489812799452703,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "9317194e6b7e892c1d60",
+            "b3aa1b16ebba44605107"
+          ]
+        },
+        {
+          "frequency_Hz": 3464101.61514,
+          "a_W_per_A_pow_B": 0.2152176727303623,
+          "b": 2.263822464987964,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "504dcc4747513a226155",
+            "571a8211302ec7b65cd0"
+          ]
+        },
+        {
+          "frequency_Hz": 3722419.43641,
+          "a_W_per_A_pow_B": 0.2442392920513329,
+          "b": 2.2329120350804783,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "8b193cd37206b955afdf",
+            "b90a960ab9b0e9c882a1"
+          ]
+        },
+        {
+          "frequency_Hz": 4000000,
+          "a_W_per_A_pow_B": 0.2745755406033904,
+          "b": 2.20696775591777,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "b784bbc3e079b0571d71",
+            "de056da80814f2929e4a"
+          ]
+        },
+        {
+          "frequency_Hz": 4229485.05376,
+          "a_W_per_A_pow_B": 0.3125533832896725,
+          "b": 2.196729220679677,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "3329f9766cbacbbe3058",
+            "74f37019b6c0644b99aa"
+          ]
+        },
+        {
+          "frequency_Hz": 4472135.955,
+          "a_W_per_A_pow_B": 0.3525940230126246,
+          "b": 2.1883087284853473,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "276a4cefc405079a55e6",
+            "b0ba0e1b6c3106896354"
+          ]
+        },
+        {
+          "frequency_Hz": 4728708.04502,
+          "a_W_per_A_pow_B": 0.39484181762056036,
+          "b": 2.1812676782942475,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "abac160b1a09b399663a",
+            "ddd9a486eca3b8451586"
+          ]
+        },
+        {
+          "frequency_Hz": 5000000,
+          "a_W_per_A_pow_B": 0.4394419602131951,
+          "b": 2.1752990227223,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "7174a83dafbb20905653",
+            "4686534c4427b8039723"
+          ]
+        },
+        {
+          "frequency_Hz": 5233175.69696,
+          "a_W_per_A_pow_B": 0.47773256504612754,
+          "b": 2.1710618188515634,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "447b02182fbbee42b161",
+            "2e686fb3148618407659"
+          ]
+        },
+        {
+          "frequency_Hz": 5477225.57505,
+          "a_W_per_A_pow_B": 0.5177762325625072,
+          "b": 2.167299893706488,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "25f84ab2b7339c3a3f37",
+            "39421303e063a00dfda4"
+          ]
+        },
+        {
+          "frequency_Hz": 5732656.75323,
+          "a_W_per_A_pow_B": 0.5596593072971572,
+          "b": 2.163940452396737,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "0a42250c8bb49fc96773",
+            "80030460d9e6691aa006"
+          ]
+        },
+        {
+          "frequency_Hz": 6000000,
+          "a_W_per_A_pow_B": 0.6034713143935726,
+          "b": 2.1609248843801847,
+          "measured_ripple_pp_A": [
+            0.121,
+            7.26
+          ],
+          "source_sample_ids": [
+            "95ba0339d70267168293",
+            "4d442719d34e02bf9e55"
+          ]
+        }
+      ],
+      "validation": {
+        "summary": {
+          "hidden_count": 8,
+          "median_relative_error": 0.0003161070649796712,
+          "p95_relative_error": 0.013493934547216388,
+          "max_relative_error": 0.013493934547216388,
+          "max_sub_5mW_absolute_error_mW": 0.004858633352596443,
+          "max_guarded_relative_error": 0.010316662911386044,
+          "idc_variation_relative": 0,
+          "idc_variation_mW": 0,
+          "zero_ripple_vendor_loss_mW": 0,
+          "materially_negative_residual_count": 0,
+          "max_practical_anchor_relative_error": 1.9618850301319308e-15,
+          "max_adaptive_relative_error": 0.03525702929810693,
+          "passes": true,
+          "failures": []
+        },
+        "hidden_checks": [
+          {
+            "sample_id": "011b1c14f02032c7ace5",
+            "kind": "hidden-verified",
+            "frequency_Hz": 547722.557505,
+            "idc_A": 0,
+            "ripple_pp_A": 0.937261969782,
+            "actual_additional_loss_W": 0.031226773084435305,
+            "predicted_additional_loss_W": 0.031648145116557454,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.4213720321221484,
+            "relative_error": 0.013493934547216388
+          },
+          {
+            "sample_id": "4c59477d2f227a98a7d5",
+            "kind": "hidden-verified",
+            "frequency_Hz": 1647298.54166,
+            "idc_A": 0,
+            "ripple_pp_A": 0.365499012496,
+            "actual_additional_loss_W": 0.005788805111686783,
+            "predicted_additional_loss_W": 0.005854213242546569,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.06540813085978599,
+            "relative_error": 0.011299072882542923
+          },
+          {
+            "sample_id": "60e2fe374968c414f6f6",
+            "kind": "hidden-verified",
+            "frequency_Hz": 182116.351356,
+            "idc_A": 0,
+            "ripple_pp_A": 2.40345382605,
+            "actual_additional_loss_W": 0.07247920844501479,
+            "predicted_additional_loss_W": 0.07247920844501488,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 8.326672684688674e-14,
+            "relative_error": 1.1488360404771215e-15
+          },
+          {
+            "sample_id": "8930c53e44be532cb7ee",
+            "kind": "hidden-verified",
+            "frequency_Hz": 315831.020845,
+            "idc_A": 0,
+            "ripple_pp_A": 0.585293366104,
+            "actual_additional_loss_W": 0.007468085673067439,
+            "predicted_additional_loss_W": 0.007468085673067451,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 1.214306433183765e-14,
+            "relative_error": 1.625994245838641e-15
+          },
+          {
+            "sample_id": "f4a7b44fe1b2ae705dca",
+            "kind": "hidden-verified",
+            "frequency_Hz": 2856788.94934,
+            "idc_A": 0,
+            "ripple_pp_A": 3.84878079565,
+            "actual_additional_loss_W": 3.5470273115270636,
+            "predicted_additional_loss_W": 3.548148551919913,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 1.121240392849554,
+            "relative_error": 0.0003161070649796712
+          },
+          {
+            "sample_id": "a587074c0ab1cbd00513",
+            "kind": "hidden-verified",
+            "frequency_Hz": 949875.028733,
+            "idc_A": 0,
+            "ripple_pp_A": 0.22824370798,
+            "actual_additional_loss_W": 0.0015367837942822837,
+            "predicted_additional_loss_W": 0.0015416424276348802,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.004858633352596443,
+            "relative_error": 0.003161559466382547
+          },
+          {
+            "sample_id": "6b371b8ba4adb02e31c8",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 0.0726,
+            "actual_additional_loss_W": 0.00011661775020766144,
+            "predicted_additional_loss_W": 0.00011541464418928478,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 0.0012031060183766628,
+            "relative_error": 0.010316662911386044
+          },
+          {
+            "sample_id": "12dba5a1d67b7db55e7d",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 1426910.96925,
+            "idc_A": 0,
+            "ripple_pp_A": 8.47,
+            "actual_additional_loss_W": 9.462494385411444,
+            "predicted_additional_loss_W": 9.429136602814948,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 33.35778259649658,
+            "relative_error": 0.0035252631323010424
+          }
+        ]
+      }
+    },
+    "XGL6060-472": {
+      "model_schema_version": 2,
+      "model_type": "frequency-interpolated-ripple-power-law",
+      "part_number": "XGL6060-472",
+      "ambient_C": 25,
+      "waveform": "triangular",
+      "reference_current_A": 7.8,
+      "selected_isat_A": 7.8,
+      "selected_isat_drop_pct": 20,
+      "dcr_typ_mOhm": 9.1,
+      "core_identifier": "M800",
+      "coefficient_fingerprint": "01e3d341d545d2f0cb0f20579413af77132a883940d33f84689b925701984642",
+      "response_fingerprint": "10f51a1979af868c9516ee5d718d4462fcb0d5d935698a1d8a42f5c76f93cab7",
+      "verified_domain": {
+        "frequency_Hz": [
+          50000,
+          4750000
+        ],
+        "ripple_pp_A": [
+          0.078,
+          4.68
+        ]
+      },
+      "guarded_domain": {
+        "frequency_Hz": [
+          50000,
+          6000000
+        ],
+        "ripple_pp_A": [
+          0,
+          6.24
+        ]
+      },
+      "knots": [
+        {
+          "frequency_Hz": 50000,
+          "a_W_per_A_pow_B": 0.006781725552907915,
+          "b": 2.08162986511504,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "098771c7c3699ecead9a",
+            "0aa04a01185529531f87"
+          ]
+        },
+        {
+          "frequency_Hz": 100000,
+          "a_W_per_A_pow_B": 0.01356345110581583,
+          "b": 2.08162986511504,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "64d188289a7c1b136985",
+            "85db6127a24ac7949a2d"
+          ]
+        },
+        {
+          "frequency_Hz": 250000,
+          "a_W_per_A_pow_B": 0.03390862776453958,
+          "b": 2.08162986511504,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "0c64521edf585264b79c",
+            "9a92dbfc3f2017cc98e3"
+          ]
+        },
+        {
+          "frequency_Hz": 300000,
+          "a_W_per_A_pow_B": 0.04069035331744749,
+          "b": 2.08162986511504,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "ce7ab4ed6ac1995f0e96",
+            "bf69d152fa8533a11d45"
+          ]
+        },
+        {
+          "frequency_Hz": 500000,
+          "a_W_per_A_pow_B": 0.06781725552907916,
+          "b": 2.08162986511504,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "744f85a801ff2f6a35e4",
+            "a551acb52ef9068bdab8"
+          ]
+        },
+        {
+          "frequency_Hz": 594603.557502,
+          "a_W_per_A_pow_B": 0.07602590814004061,
+          "b": 2.1471993854027227,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "5a786f36bd0f18cb035a",
+            "b4c1e204cc3f0399e2de"
+          ]
+        },
+        {
+          "frequency_Hz": 707106.781187,
+          "a_W_per_A_pow_B": 0.08435867923236058,
+          "b": 2.2142069755010563,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "7715e8494cbbbf6a7070",
+            "0b58aaa0ad9c2948e39b"
+          ]
+        },
+        {
+          "frequency_Hz": 840896.415254,
+          "a_W_per_A_pow_B": 0.09257322485426661,
+          "b": 2.2843093808088213,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "5c6dcb93642fa67bd366",
+            "5844866b2e85009c139f"
+          ]
+        },
+        {
+          "frequency_Hz": 1000000,
+          "a_W_per_A_pow_B": 0.10024917390830307,
+          "b": 2.35975858896513,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "17ce17f537c1b9a227dc",
+            "8750ef493c75c785913a"
+          ]
+        },
+        {
+          "frequency_Hz": 1224744.87139,
+          "a_W_per_A_pow_B": 0.13120079369175222,
+          "b": 2.3707137379274945,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "3f74c15dff7a36cce336",
+            "a54ec57a830af1d37a04"
+          ]
+        },
+        {
+          "frequency_Hz": 1500000,
+          "a_W_per_A_pow_B": 0.16905809845748085,
+          "b": 2.378746793194679,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "5d615f91b71aefeccc42",
+            "8934f2986ecae9dcea01"
+          ]
+        },
+        {
+          "frequency_Hz": 2000000,
+          "a_W_per_A_pow_B": 0.23776464642914052,
+          "b": 2.3868645940997806,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "3f478e96c5469ec1a271",
+            "3074763790c01b4fce9f"
+          ]
+        },
+        {
+          "frequency_Hz": 2213363.8394,
+          "a_W_per_A_pow_B": 0.2915625543197568,
+          "b": 2.3333765022030226,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "2d378d438ad9a18e95d3",
+            "36e2efdb154f79a276c9"
+          ]
+        },
+        {
+          "frequency_Hz": 2449489.74278,
+          "a_W_per_A_pow_B": 0.34860745506907465,
+          "b": 2.2947967476769926,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "126a7eb52a3dabc834fb",
+            "288b3e80cf2d66b4210f"
+          ]
+        },
+        {
+          "frequency_Hz": 3000000,
+          "a_W_per_A_pow_B": 0.477003068098175,
+          "b": 2.24232992118382,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "4a9d3c8b26feb2b2498b",
+            "240d4c7b9e03d8fa8796"
+          ]
+        },
+        {
+          "frequency_Hz": 3223709.79547,
+          "a_W_per_A_pow_B": 0.5592470382137346,
+          "b": 2.201488256063829,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "42ea2e98d55f219ccc76",
+            "7113c880cac8a53f2d9e"
+          ]
+        },
+        {
+          "frequency_Hz": 3464101.61514,
+          "a_W_per_A_pow_B": 0.6447037482364362,
+          "b": 2.1701615494955635,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "cac851b82c646bb35a9e",
+            "e2471f953683e82e5443"
+          ]
+        },
+        {
+          "frequency_Hz": 3722419.43641,
+          "a_W_per_A_pow_B": 0.7344780513868727,
+          "b": 2.145240015551909,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "5bb0036ea8149d21f44a",
+            "6b485f07a2a3473b2ee6"
+          ]
+        },
+        {
+          "frequency_Hz": 4000000,
+          "a_W_per_A_pow_B": 0.8294258551394742,
+          "b": 2.12489077209844,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "84bb5953c1c2d7a728a2",
+            "7ee18a8b4bc113844551"
+          ]
+        },
+        {
+          "frequency_Hz": 4175595.25986,
+          "a_W_per_A_pow_B": 0.9611833364461005,
+          "b": 2.144220090073485,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "c498cd56b5b6b1f6d135",
+            "b62cfe21498effecbb83"
+          ]
+        },
+        {
+          "frequency_Hz": 4358898.94354,
+          "a_W_per_A_pow_B": 1.0975660274374361,
+          "b": 2.159739962841364,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "bdbe496cec86e54186c1",
+            "0eab681df2efcaebfdf1"
+          ]
+        },
+        {
+          "frequency_Hz": 4550249.44171,
+          "a_W_per_A_pow_B": 1.2390627167504749,
+          "b": 2.1724887624094267,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "18c11c7f02aecded7b6c",
+            "152f1021b4acdad5ddc6"
+          ]
+        },
+        {
+          "frequency_Hz": 4750000,
+          "a_W_per_A_pow_B": 1.3860935986694685,
+          "b": 2.1831523646048927,
+          "measured_ripple_pp_A": [
+            0.078,
+            4.68
+          ],
+          "source_sample_ids": [
+            "4004c569625878bd8b42",
+            "9c2fa3515c034bb8f2da"
+          ]
+        }
+      ],
+      "validation": {
+        "summary": {
+          "hidden_count": 8,
+          "median_relative_error": 6.065460101426736e-16,
+          "p95_relative_error": 0.07356081066416925,
+          "max_relative_error": 0.07356081066416925,
+          "max_sub_5mW_absolute_error_mW": 0.04692885840108145,
+          "max_guarded_relative_error": 0.07356081066416925,
+          "idc_variation_relative": 0,
+          "idc_variation_mW": 0,
+          "zero_ripple_vendor_loss_mW": 0,
+          "materially_negative_residual_count": 0,
+          "max_practical_anchor_relative_error": 0.09220375531397035,
+          "max_adaptive_relative_error": 0.04113518355865084,
+          "passes": true,
+          "failures": []
+        },
+        "hidden_checks": [
+          {
+            "sample_id": "6fa525cad34b05cb0c01",
+            "kind": "hidden-verified",
+            "frequency_Hz": 487339.71724,
+            "idc_A": 0,
+            "ripple_pp_A": 0.604185402008,
+            "actual_additional_loss_W": 0.022880024888054382,
+            "predicted_additional_loss_W": 0.022880024888054396,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 1.3877787807814457e-14,
+            "relative_error": 6.065460101426736e-16
+          },
+          {
+            "sample_id": "a18b87ce053ee46dcf4b",
+            "kind": "hidden-verified",
+            "frequency_Hz": 1389019.15936,
+            "idc_A": 0,
+            "ripple_pp_A": 0.235610933675,
+            "actual_additional_loss_W": 0.004914425106141914,
+            "predicted_additional_loss_W": 0.004910296754595324,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.004128351546589526,
+            "relative_error": 0.000840047708007601
+          },
+          {
+            "sample_id": "2a59c1e03655b03da0b9",
+            "kind": "hidden-verified",
+            "frequency_Hz": 170983.962604,
+            "idc_A": 0,
+            "ripple_pp_A": 1.54933387134,
+            "actual_additional_loss_W": 0.0558745301845635,
+            "predicted_additional_loss_W": 0.0558745301845635,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0,
+            "relative_error": 0
+          },
+          {
+            "sample_id": "70b0dc415d915aecfc70",
+            "kind": "hidden-verified",
+            "frequency_Hz": 288664.642774,
+            "idc_A": 0,
+            "ripple_pp_A": 0.377296550051,
+            "actual_additional_loss_W": 0.005039285953512333,
+            "predicted_additional_loss_W": 0.005039285953512332,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 8.673617379884035e-16,
+            "relative_error": 1.7211996818395688e-16
+          },
+          {
+            "sample_id": "1e4a5bc887b07e52fea3",
+            "kind": "hidden-verified",
+            "frequency_Hz": 2345019.45877,
+            "idc_A": 0,
+            "ripple_pp_A": 2.48103224843,
+            "actual_additional_loss_W": 2.620333842602212,
+            "predicted_additional_loss_W": 2.6323634366846433,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 12.029594082431316,
+            "relative_error": 0.004590863151423834
+          },
+          {
+            "sample_id": "621b2bb690102133dfdc",
+            "kind": "hidden-verified",
+            "frequency_Hz": 822754.036371,
+            "idc_A": 0,
+            "ripple_pp_A": 0.147132307623,
+            "actual_additional_loss_W": 0.0011316788467635305,
+            "predicted_additional_loss_W": 0.001151838102155621,
+            "predicted_state": "interpolated",
+            "absolute_error_mW": 0.02015925539209057,
+            "relative_error": 0.017813583288000555
+          },
+          {
+            "sample_id": "81c6f9c2177dd043ae7f",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 5528929.80403,
+            "idc_A": 0,
+            "ripple_pp_A": 0.0468,
+            "actual_additional_loss_W": 0.0022462051395545917,
+            "predicted_additional_loss_W": 0.002293133997955673,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 0.04692885840108145,
+            "relative_error": 0.020892507801129487
+          },
+          {
+            "sample_id": "63076723be0f98d14002",
+            "kind": "hidden-guarded",
+            "frequency_Hz": 5528929.80403,
+            "idc_A": 0,
+            "ripple_pp_A": 5.46,
+            "actual_additional_loss_W": 83.20905419245575,
+            "predicted_additional_loss_W": 89.32997967345159,
+            "predicted_state": "guarded-extrapolation",
+            "absolute_error_mW": 6120.925480995837,
+            "relative_error": 0.07356081066416925
+          }
+        ]
+      }
+    }
+  },
+  "dataset_version": "2026-07-10T06:38:51.291Z+2c77ed6e9a25"
+}

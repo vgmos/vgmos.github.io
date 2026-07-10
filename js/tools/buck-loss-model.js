@@ -39,6 +39,7 @@ function makeNullLosses() {
     condHigh: null,
     condLow: null,
     dcr: null,
+    inductorAc: null,
     esr: null,
     gate: null,
     switching: null,
@@ -53,6 +54,7 @@ function makeNullGroupedLosses() {
   return {
     fetConduction: null,
     inductorDcr: null,
+    inductorAc: null,
     switchingOverlap: null,
     deadTime: null,
     gateDrive: null,
@@ -91,6 +93,7 @@ export function normalizeInputs(rawInputs = {}) {
     vBias: optionalBias(rawInputs.vBias ?? rawInputs.vbias, vin),
     eossTotal: toNumber(rawInputs.eossTotal) * 1e-9,
     qrr: toNumber(rawInputs.qrr) * 1e-9,
+    inductorAcManual: toNumber(rawInputs.inductorAcManual) * 1e-3,
     inductorIsat: optionalPositive(rawInputs.inductorIsat ?? rawInputs.isat)
   };
 
@@ -116,7 +119,8 @@ export function validateInputs(inputs = {}) {
     "vDrive",
     "vBias",
     "eossTotal",
-    "qrr"
+    "qrr",
+    "inductorAcManual"
   ];
 
   if (!(inputs.vin > 0)) errors.push("vin");
@@ -160,12 +164,13 @@ export function computeBuckCore(inputs, iout) {
   };
 }
 
-export function computeLossPoint(inputs, iout) {
+export function computeLossPoint(inputs, iout, options = {}) {
+  const inductorAcLossW = options.inductorAcLossW ?? 0;
   const coreResult = computeBuckCore(inputs, iout);
-  if (!coreResult.valid) {
+  if (!coreResult.valid || !(Number.isFinite(inductorAcLossW) && inductorAcLossW >= 0)) {
     return {
       valid: false,
-      errors: coreResult.errors,
+      errors: coreResult.valid ? ["inductorAcLossW"] : coreResult.errors,
       iout,
       core: coreResult.core,
       losses: makeNullLosses(),
@@ -187,6 +192,7 @@ export function computeLossPoint(inputs, iout) {
     condHigh: core.iHighRms2 * inputs.rdsHigh,
     condLow: core.iLowRms2 * inputs.rdsLow,
     dcr: core.iLrms2 * inputs.dcr,
+    inductorAc: inductorAcLossW,
     esr: core.iCapRms2 * inputs.esr,
     gate: (inputs.qgHigh + inputs.qgLow) * inputs.vDrive * inputs.fsw,
     switching: 0.5 * inputs.vin * inputs.fsw * (tr * positiveValley + tf * positivePeak),
@@ -202,6 +208,7 @@ export function computeLossPoint(inputs, iout) {
   const groupedLosses = {
     fetConduction: losses.condHigh + losses.condLow,
     inductorDcr: losses.dcr,
+    inductorAc: losses.inductorAc,
     switchingOverlap: losses.switching,
     deadTime: losses.deadTime,
     gateDrive: losses.gate,
@@ -255,6 +262,7 @@ const SENTENCES = {
   fetConduction: "Most loss here scales with current squared. Lower RDS(on) or inductor DCR helps more than lowering fSW.",
   dcr: "The inductor's resistance owns this region. A larger or better wire gauge helps more than FET changes.",
   inductorDcr: "The inductor's resistance owns this region. A larger or better wire gauge helps more than FET changes.",
+  inductorAc: "The selected inductor's modeled core and AC winding loss dominates here. Frequency and ripple current are the strongest levers.",
   frequency: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
   switching: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",
   switchingOverlap: "Most loss here is frequency- and edge-dependent. Lower fSW or faster effective edges help — but ripple and EMI move too.",

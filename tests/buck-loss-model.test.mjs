@@ -84,6 +84,7 @@ describe("buck loss model", () => {
       vBias: "",
       eossTotal: 12,
       qrr: 3,
+      inductorAcManual: 125,
       inductorIsat: ""
     });
     assert.equal(n.fsw, 1_000_000);
@@ -94,6 +95,7 @@ describe("buck loss model", () => {
     relTol(n.eossTotal, 12e-9);
     assert.equal(n.iq, 0.002);
     assert.equal(n.vBias, 12);
+    assert.equal(n.inductorAcManual, 0.125);
     assert.equal(n.inductorIsat, null);
   });
 
@@ -175,6 +177,16 @@ describe("buck loss model", () => {
     assert.ok(result.efficiency > 0 && result.efficiency < 1);
   });
 
+  it("injects optional inductor AC loss exactly once", () => {
+    const baseline = computeLossPoint(v2Inputs(), 2);
+    const modeled = computeLossPoint(v2Inputs(), 2, { inductorAcLossW: 0.125 });
+    relTol(modeled.losses.inductorAc, 0.125);
+    relTol(modeled.groupedLosses.inductorAc, 0.125);
+    relTol(modeled.pLoss, baseline.pLoss + 0.125);
+    assert.ok(modeled.efficiency < baseline.efficiency);
+    assert.equal(computeLossPoint(v2Inputs(), 2, { inductorAcLossW: -1 }).valid, false);
+  });
+
   it("handles invalid edges and finite low current", () => {
     assert.equal(validateInputs(normalizeInputs({ ...baseRaw, vout: 12 })).valid, false);
     assert.equal(validateInputs(normalizeInputs({ ...baseRaw, inductance: 0 })).valid, false);
@@ -208,6 +220,9 @@ describe("buck loss model", () => {
 
     const dcrInputs = v2Inputs({ rdsHigh: 1, rdsLow: 1, dcr: 500, tOverlap: 0, deadTime: 0, qgHigh: 0, qgLow: 0, iq: 0 });
     assert.equal(classifyRegime(computeLossPoint(dcrInputs, 2), dcrInputs).regime, "inductorDcr");
+
+    const acInputs = v2Inputs({ rdsHigh: 1, rdsLow: 1, dcr: 1, tOverlap: 0, deadTime: 0, qgHigh: 0, qgLow: 0, iq: 0 });
+    assert.equal(classifyRegime(computeLossPoint(acInputs, 2, { inductorAcLossW: 2 }), acInputs).regime, "inductorAc");
 
     const swInputs = v2Inputs({ tOverlap: 100, deadTime: 0, rdsHigh: 1, rdsLow: 1, dcr: 1, qgHigh: 0, qgLow: 0, iq: 0 });
     assert.equal(classifyRegime(computeLossPoint(swInputs, 2), swInputs).regime, "switchingOverlap");

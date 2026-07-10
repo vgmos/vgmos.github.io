@@ -243,6 +243,151 @@ test.describe("Buck Converter Loss Explorer", () => {
     expect(toolText).not.toMatch(/\b(?:NaN|Infinity)\b/);
   });
 
+  test("Coilcraft selector fills electrical values and preserves manual fallback", async ({ page }) => {
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const details = page.locator(".blx-advanced details").filter({ hasText: "Inductor & capacitors" });
+    await details.locator("summary").click();
+    const part = page.locator("#blx-catalog-part");
+    await expect(part.locator("option")).toHaveCount(34);
+    await part.selectOption("XEL4030-201");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("additional AC/core modeled at 25 °C");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toContainText("Total");
+    await expect(page.locator("[data-blx-warnings]")).not.toContainText("outside the characterized");
+
+    await part.selectOption("XGL6060-222");
+    await expect(page.locator("#blx-num-l")).toHaveValue("2.2");
+    await expect(page.locator("#blx-num-dcr")).toHaveValue("4.3");
+    await expect(page.locator("#blx-num-isat")).toHaveValue("12.1");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("20% drop");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("additional AC/core modeled at 25 °C");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("verified 50 kHz–6 MHz");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("A ripple p-p");
+    await page.locator("#blx-catalog-dcr").selectOption("max");
+    await expect(page.locator("#blx-num-dcr")).toHaveValue("4.8");
+    await expect.poll(() => new URL(page.url()).searchParams.get("part")).toBe("XGL6060-222");
+    await expect.poll(() => new URL(page.url()).searchParams.get("dcrm")).toBe("max");
+
+    await part.selectOption("XGL6060-332");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("part-specific AC/core not modeled");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("RMS-DCR-only subtotals");
+    await page.locator("#blx-num-inductor-ac").fill("25");
+    await page.locator("#blx-num-inductor-ac").press("Enter");
+    await expect.poll(() => new URL(page.url()).searchParams.get("lac")).toBe("25");
+    const manualAcRow = page.locator("[data-blx-breakdown-list] [data-blx-loss-key=\"inductorAc\"]");
+    await expect(manualAcRow).toContainText("25 mW");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("RMS DCR and the manual AC/core loss");
+    await page.locator("#blx-num-dcr").fill("5");
+    await expect(part).toHaveValue("");
+    await expect(page.locator("[data-blx-catalog-meta]")).toBeHidden();
+    await expect(page.locator("#blx-catalog-dcr")).toBeDisabled();
+  });
+
+  test("approved residual AC-loss surfaces add once and stop at their domain", async ({ page }) => {
+    const axes = { frequency_Hz: [500_000, 2_000_000], dc_current_A: [0, 4], ripple_pp_A: [0.5, 2] };
+    await page.route("**/assets/data/coilcraft-inductor-loss-surfaces.v1.json*", async (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        schema_version: 1,
+        permission_status: "approved",
+        dataset_version: "ui-fixture",
+        parts: {
+          "XGL6060-222": {
+            part_number: "XGL6060-222",
+            ambient_C: 25,
+            axes,
+            ac_loss_W: axes.frequency_Hz.map(() => axes.dc_current_A.map(() => axes.ripple_pp_A.map(() => 0.1)))
+          }
+        }
+      })
+    }));
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const details = page.locator(".blx-advanced details").filter({ hasText: "Inductor & capacitors" });
+    await details.locator("summary").click();
+    await page.locator("#blx-catalog-part").selectOption("XGL6060-222");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("additional AC/core modeled at 25 °C");
+    const acRow = page.locator("[data-blx-breakdown-list] [data-blx-loss-key=\"inductorAc\"]");
+    await expect(acRow).toContainText("Additional inductor AC/core");
+    await expect(acRow).toContainText("100 mW");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toContainText("Total");
+
+    await page.locator("#blx-catalog-dcr").selectOption("max");
+    await expect(acRow).toContainText("100 mW");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("maximum RMS DCR with modeled typical additional AC/core loss");
+
+    await page.locator("#blx-num-fsw").fill("6000");
+    await page.locator("#blx-num-fsw").press("Enter");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("frequency, ripple-current condition is outside the guarded model limits");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toContainText("Subtotal");
+    await expect(acRow).toContainText("not modeled");
+  });
+
+  test("schema-v2 models expose verified, guarded, and rejected UI states", async ({ page }) => {
+    const model = {
+      model_schema_version: 2,
+      model_type: "frequency-interpolated-ripple-power-law",
+      part_number: "XGL6060-472",
+      ambient_C: 25,
+      waveform: "triangular",
+      reference_current_A: 7.8,
+      selected_isat_A: 7.8,
+      dcr_typ_mOhm: 9.1,
+      verified_domain: { frequency_Hz: [500_000, 2_000_000], ripple_pp_A: [0.1, 2] },
+      guarded_domain: { frequency_Hz: [50_000, 6_000_000], ripple_pp_A: [0, 6.24] },
+      knots: [
+        { frequency_Hz: 500_000, a_W_per_A_pow_B: 0.01, b: 2, measured_ripple_pp_A: [0.1, 2] },
+        { frequency_Hz: 2_000_000, a_W_per_A_pow_B: 0.04, b: 2, measured_ripple_pp_A: [0.1, 2] }
+      ]
+    };
+    await page.route("**/assets/data/coilcraft-inductor-loss-surfaces.v1.json*", async (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        schema_version: 2,
+        permission_status: "approved",
+        dataset_version: "ui-v2-fixture",
+        parts: { "XGL6060-472": model }
+      })
+    }));
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const details = page.locator(".blx-advanced details").filter({ hasText: "Inductor & capacitors" });
+    await details.locator("summary").click();
+    await expect(page.locator('#blx-catalog-part option[value="XGL6060-472"]')).toContainText("AC modeled");
+    await page.locator("#blx-catalog-part").selectOption("XGL6060-472");
+    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("verified 500 kHz–2 MHz, 0.1–2 A ripple p-p");
+    await expect(page.locator("[data-blx-warnings]")).not.toContainText("Guarded extrapolation");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toContainText("Total");
+    const v2AcRow = page.locator('[data-blx-breakdown-list] [data-blx-loss-key="inductorAc"]');
+    const modeledAcMw = Number((await v2AcRow.innerText()).match(/([\d.]+) mW/)?.[1]);
+    expect(modeledAcMw).toBeGreaterThan(0);
+    await page.locator("#blx-num-inductor-ac").fill("25");
+    await page.locator("#blx-num-inductor-ac").press("Enter");
+    await expect.poll(async () => Number((await v2AcRow.innerText()).match(/([\d.]+) mW/)?.[1]) - modeledAcMw).toBeCloseTo(25, 1);
+
+    const referenceButton = page.locator('.blx-view-panel:not([hidden]) [data-blx-reference]');
+    await referenceButton.click();
+    await expect(referenceButton).toHaveAttribute("aria-pressed", "true");
+    await page.locator("#blx-num-fsw").fill("5000");
+    await page.locator("#blx-num-fsw").press("Enter");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("Guarded extrapolation");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toContainText("Total");
+    await expect(page.locator("[data-blx-reference-summary]")).toContainText("Held:");
+    await page.locator('[data-blx-view="load"]').click();
+    await expect(page.locator("[data-blx-efficiency-plot] svg")).toBeVisible();
+    await expect(page.locator("[data-blx-loss-plot] svg")).toBeVisible();
+
+    await page.locator("#blx-num-inductor-ac").fill("0");
+    await page.locator("#blx-num-inductor-ac").press("Enter");
+    await page.locator("#blx-num-fsw").fill("50");
+    await page.locator("#blx-num-fsw").press("Enter");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("outside the guarded model limits");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toContainText("Subtotal");
+    await expect(page.locator('[data-blx-breakdown-list] [data-blx-loss-key="inductorAc"]')).toContainText("not modeled");
+  });
+
   test("top views, held reference, and mobile input disclosure stay connected", async ({ page }) => {
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -279,7 +424,7 @@ test.describe("Buck Converter Loss Explorer", () => {
       const style = getComputedStyle(row);
       return style.display !== "none" && row.getBoundingClientRect().height > 0;
     }).length);
-    expect(visibleRows).toBe(8);
+    expect(visibleRows).toBe(9);
   });
 
   test("responsive workspace, chart surfaces, and equations preserve their layout contracts", async ({ page }) => {
