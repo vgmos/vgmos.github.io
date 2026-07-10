@@ -1,5 +1,6 @@
 export const SITE_URL = process.env.SITE_URL || "http://127.0.0.1:4000";
 export const LIVE_COMMIT = process.env.LIVE_COMMIT || process.env.GITHUB_SHA || "unknown";
+export const BUCK_LOSS_V2_ROUTE = "/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=epc2090&i=2";
 
 export const HTML_ROUTES = [
   "/",
@@ -16,12 +17,16 @@ export const HTML_ROUTES = [
   "/writing/index/"
 ];
 
-export const AUDIT_ROUTES = [...HTML_ROUTES, "/404.html"];
+export const AUDIT_ROUTES = [
+  ...HTML_ROUTES.filter((route) => route !== "/tools/buck-losses/"),
+  BUCK_LOSS_V2_ROUTE,
+  "/404.html"
+];
 
 export const CRITICAL_VISUAL_ROUTES = [
   { name: "home", path: "/" },
   { name: "buck-converter", path: "/tools/buck-converter/" },
-  { name: "buck-losses", path: "/tools/buck-losses/" },
+  { name: "buck-losses", path: BUCK_LOSS_V2_ROUTE },
   { name: "sar-project", path: "/projects/georgia-tech-noise-shaping-sar-adc/" },
   { name: "notebook-post", path: "/2026/06/12/a-working-notebook.html" },
   { name: "not-found", path: "/404.html" }

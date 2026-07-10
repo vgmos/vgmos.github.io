@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "./fixtures.mjs";
 import {
   AUDIT_ROUTES,
+  BUCK_LOSS_V2_ROUTE,
   CRITICAL_VISUAL_ROUTES,
   pageOverflow,
   setStoredTheme,
@@ -45,6 +46,20 @@ test.describe("automated accessibility", () => {
       await auditRoute(page, route.path, "dark", testInfo);
     });
   }
+
+  test("the first-visit device chooser has an accessible dialog contract", async ({ page }) => {
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    const chooser = page.locator("[data-blx-device-dialog]");
+    await expect(chooser).toBeVisible();
+    await expect(chooser).toHaveAttribute("aria-labelledby", "blx-device-dialog-title");
+    const results = await new AxeBuilder({ page }).include("[data-blx-device-dialog]").withTags(WCAG_TAGS).analyze();
+    const severe = results.violations.filter((violation) => ["critical", "serious"].includes(violation.impact));
+    expect(severe).toEqual([]);
+  });
+
+  test("the read-only legacy viewer has no serious or critical WCAG violations", async ({ page }, testInfo) => {
+    await auditRoute(page, "/tools/buck-losses/?p=12v-to-3v3-pol&i=2", "light", testInfo);
+  });
 });
 
 test.describe("keyboard and assistive-technology contracts", () => {
@@ -101,7 +116,7 @@ test.describe("keyboard and assistive-technology contracts", () => {
   });
 
   test("the loss plot exposes its cursor slider outside image semantics", async ({ page }) => {
-    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
 
     const slider = page.locator("[data-blx-cursor-rail]");
@@ -119,7 +134,7 @@ test.describe("keyboard and assistive-technology contracts", () => {
 });
 
 test.describe("touch targets and zoom reflow", () => {
-  for (const route of ["/tools/buck-converter/", "/tools/buck-losses/"]) {
+  for (const route of ["/tools/buck-converter/", BUCK_LOSS_V2_ROUTE]) {
     test(`${route} provides usable touch targets at 390px`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(route, { waitUntil: "domcontentloaded" });
@@ -144,7 +159,7 @@ test.describe("touch targets and zoom reflow", () => {
 
       const primarySelector = route.includes("buck-converter")
         ? ".bc-presets button, .bc-segmented button, .bc-dcm-toggle"
-        : ".blx-presets button, .blx-try button, .blx-actions button, .blx-copy button";
+        : ".blx-presets button, .blx-actions button, .blx-copy button";
       const undersizedPrimary = await page.locator(primarySelector).evaluateAll((elements) => elements.flatMap((element) => {
         const rect = element.getBoundingClientRect();
         if (!rect.width || !rect.height) return [];

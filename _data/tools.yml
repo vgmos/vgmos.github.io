@@ -3,7 +3,7 @@
   url: /tools/buck-converter/
   meta: Interactive tool · Ideal-component model
   summary: Set v<sub>IN</sub>, v<sub>OUT</sub>, load, f<sub>SW</sub>, L<sub>X</sub>, and C<sub>O</sub>; read D, Δi<sub>L</sub>, and Δv<sub>OUT</sub> live.
-- title: Buck Converter Loss Tool
+- title: Buck Converter Loss Explorer
   url: /tools/buck-losses/
-  meta: Interactive tool · First-order loss model
-  summary: Rank the losses at one operating point or sweep efficiency and the largest contributors across load — using EPC2090 GaN defaults and equations in the open.
+  meta: Interactive tool · Analytical intuition model v2
+  summary: Rank losses at one operating point or across load with explicit GaN or silicon teaching templates, CCM/DCM waveforms, and equations in the open.

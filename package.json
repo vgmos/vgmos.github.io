@@ -16,6 +16,7 @@
     "data:coilcraft:loss:v2:merge-refinement": "node scripts/coilcraft/acquire-losses-v2.mjs merge-refinement",
     "data:coilcraft:loss:v2:validate": "node scripts/coilcraft/acquire-losses-v2.mjs validate",
     "data:coilcraft:loss:v2:promote": "node scripts/coilcraft/acquire-losses-v2.mjs promote",
+    "data:buck-loss:spice:regenerate": "node scripts/buck-loss/spice/regenerate-goldens.mjs",
     "test:unit": "node --test tests/index.js",
     "test:ui": "playwright test",
     "test:ui:live": "SITE_URL=https://vgmos.github.io PLAYWRIGHT_LIVE=1 playwright test",

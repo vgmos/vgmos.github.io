@@ -1,0 +1,1813 @@
+const moduleVersion = new URL(import.meta.url).searchParams.get("v");
+
+function versionedModuleUrl(path) {
+  const url = new URL(path, import.meta.url);
+  if (moduleVersion) url.searchParams.set("v", moduleVersion);
+  return url.href;
+}
+
+const [
+  { animateDialog, animateFlip, animatePanelSwap, animatePointSeries, prefersReducedMotion },
+  { classifyRegime, normalizeInputs, validateInputs },
+  { BUCK_LOSS_PRESETS, DEFAULT_PRESET_ID, getBuckLossPreset },
+  { parseBuckLossUrl, serializeBuckLossUrl },
+  { loadCoilcraftCatalog, selectIsat, dcrForMode, groupPartsBySeries },
+  { evaluateBuckLossPoint, evaluateBuckLossSweep }
+] = await Promise.all([
+  import(versionedModuleUrl("./buck-loss-motion.js")),
+  import(versionedModuleUrl("./buck-loss-model.js")),
+  import(versionedModuleUrl("./buck-loss-presets.js")),
+  import(versionedModuleUrl("./buck-loss-url.js")),
+  import(versionedModuleUrl("./coilcraft-catalog.js")),
+  import(versionedModuleUrl("./buck-loss-evaluator.js"))
+]);
+
+const CATALOG_EDIT_KEYS = new Set(["inductance", "dcr", "inductorIsat"]);
+
+const PARAMS = {
+  vin: { min: 1, max: 100, log: true, digits: 2, label: "Input voltage", unit: "V" },
+  vout: { min: 0.3, max: 95, log: true, digits: 2, label: "Output voltage", unit: "V" },
+  ioutMax: { min: 0.05, max: 60, log: true, digits: 2, label: "Maximum load current", unit: "A" },
+  fsw: { min: 50, max: 6000, log: true, digits: 0, label: "Switching frequency", unit: "kHz" },
+  inductance: { min: 0.1, max: 470, log: true, digits: 2, label: "Inductance", unit: "uH" },
+  rdsHigh: { min: 0.1, max: 500, log: true, digits: 2, label: "High-side RDS(on)", unit: "mohm" },
+  rdsLow: { min: 0.1, max: 500, log: true, digits: 2, label: "Low-side RDS(on)", unit: "mohm" },
+  qgHigh: { min: 0, max: 100, log: false, digits: 1, label: "High-side gate charge", unit: "nC" },
+  qgLow: { min: 0, max: 100, log: false, digits: 1, label: "Low-side gate charge", unit: "nC" },
+  tOverlap: { min: 0, max: 200, log: false, digits: 1, label: "Switching overlap time", unit: "ns" },
+  deadTime: { min: 0, max: 200, log: false, digits: 1, label: "Dead time per edge", unit: "ns" },
+  diodeVf: { min: 0.2, max: 2.5, log: false, digits: 2, label: "Reverse path voltage", unit: "V" },
+  dcr: { min: 0, max: 500, log: false, digits: 2, label: "Inductor DCR", unit: "mohm" },
+  esr: { min: 0, max: 500, log: false, digits: 2, label: "Output capacitor ESR", unit: "mohm" },
+  inductorIsat: { min: 0.1, max: 200, log: true, digits: 2, optional: true, label: "Inductor saturation current", unit: "A" },
+  vDrive: { min: 2.5, max: 6, log: false, digits: 2, label: "Gate drive voltage", unit: "V" },
+  iq: { min: 0, max: 20, log: false, digits: 2, label: "Quiescent current", unit: "mA" },
+  vBias: { min: 1, max: 100, log: true, digits: 2, optional: true, label: "Bias voltage", unit: "V" },
+  eossTotal: { min: 0, max: 5000, log: false, digits: 1, label: "Pair EOSS", unit: "nJ" },
+  qrr: { min: 0, max: 500, log: false, digits: 1, label: "Reverse recovery charge", unit: "nC" },
+  inductorAcManual: { min: 0, max: 100000, log: false, digits: 1, label: "Manual additional inductor AC/core loss", unit: "mW" }
+};
+
+const GROUPS = [
+  ["fetConduction", "FET conduction", "--blx-cond"],
+  ["inductorDcr", "Inductor DCR", "--blx-dcr"],
+  ["inductorAc", "Additional inductor AC/core", "--blx-inductor-ac"],
+  ["switchingOverlap", "Switching overlap", "--blx-sw"],
+  ["deadTime", "Dead time", "--blx-dead"],
+  ["gateDrive", "Gate drive", "--blx-gate"],
+  ["bias", "Controller bias", "--blx-bias"],
+  ["rippleOther", "Capacitive + ESR", "--blx-other"]
+];
+
+const POINT_LOSSES = [
+  ["condHigh", "High-side conduction", "--blx-cond", "fetConduction", (result) => result.losses.condHigh],
+  ["condLow", "Low-side conduction", "--blx-cond", "fetConduction", (result) => result.losses.condLow],
+  ["dcr", "Inductor copper (DCR)", "--blx-dcr", "inductorDcr", (result) => result.losses.dcr],
+  ["inductorAc", "Additional inductor AC/core", "--blx-inductor-ac", "inductorAc", (result) => result.losses.inductorAc],
+  ["switching", "Switching overlap", "--blx-sw", "switchingOverlap", (result) => result.losses.switching],
+  ["deadTime", "Dead time", "--blx-dead", "deadTime", (result) => result.losses.deadTime],
+  ["gate", "Gate drive", "--blx-gate", "gateDrive", (result) => result.losses.gate],
+  ["bias", "Controller bias", "--blx-bias", "bias", (result) => result.losses.bias],
+  ["rippleOther", "COSS, ESR & recovery", "--blx-other", "rippleOther", (result) => result.losses.esr + result.losses.eoss + result.losses.qrr]
+];
+
+const REGIME_COLOR_CLASS = {
+  floor: "gate",
+  gateDrive: "gate",
+  bias: "bias",
+  fetConduction: "cond",
+  conduction: "cond",
+  inductorDcr: "dcr",
+  dcr: "dcr",
+  inductorAc: "inductor-ac",
+  switchingOverlap: "sw",
+  switching: "sw",
+  frequency: "sw",
+  deadTime: "dead",
+  rippleOther: "other",
+  balanced: "cond"
+};
+
+const WARNING_COPY = {
+  "forced-ccm": "The selected current is in forced CCM: inductor current reverses before the next cycle.",
+  "high-ripple": "Inductor ripple exceeds 60% of the maximum load current.",
+  isat: "Estimated peak inductor current exceeds the entered saturation current.",
+  "high-loss": "Estimated loss exceeds delivered output power at this point.",
+  "extreme-duty": "The ideal duty cycle is near the edge of the useful buck range."
+};
+
+const URL_NOTE_COPY = {
+  "unknown-preset": "Unknown preset in the URL; the default EPC2090 example was loaded instead.",
+  "unknown-inductor": "Unknown inductor in the URL; manual values remain active.",
+  "unknown-dcr-mode": "Unknown DCR mode in the URL; typical DCR was selected.",
+  clamped: "Some URL values were outside the allowed range and were limited."
+};
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function cloneRaw(rawInputs) {
+  return { ...rawInputs };
+}
+
+function readFinite(text) {
+  const parsed = Number.parseFloat(String(text).trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function dynamicMax(key, rawInputs) {
+  if (key === "vout") return Math.max(PARAMS.vout.min, 0.95 * rawInputs.vin);
+  return PARAMS[key].max;
+}
+
+function clampParam(key, value, rawInputs) {
+  const param = PARAMS[key];
+  if (param.optional && (value === "" || value === null || value === undefined)) return null;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return param.optional ? null : param.min;
+  return clamp(number, param.min, dynamicMax(key, rawInputs));
+}
+
+function clampStaticParam(key, value) {
+  const param = PARAMS[key];
+  if (param.optional && (value === "" || value === null || value === undefined)) return null;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return param.optional ? null : param.min;
+  return clamp(number, param.min, param.max);
+}
+
+function enforceBuck(rawInputs, editedKey) {
+  const cap = 0.95 * rawInputs.vin;
+  if (rawInputs.vout <= cap) return false;
+  if (editedKey === "vout") {
+    rawInputs.vin = clamp(rawInputs.vout / 0.95, PARAMS.vin.min, PARAMS.vin.max);
+    rawInputs.vout = Math.min(rawInputs.vout, 0.95 * rawInputs.vin);
+  } else {
+    rawInputs.vout = cap;
+  }
+  return true;
+}
+
+function displayNumber(value, digits) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "";
+  const fixed = Number(value).toFixed(digits);
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
+}
+
+function eng(value, unit = "") {
+  if (!Number.isFinite(value)) return "—";
+  const abs = Math.abs(value);
+  if (abs > 0 && abs < 0.001) return `${Number((value * 1e6).toPrecision(3))} µ${unit}`;
+  if (abs > 0 && abs < 1) return `${Number((value * 1e3).toPrecision(3))} m${unit}`;
+  return `${Number(value.toPrecision(3))} ${unit}`.trim();
+}
+
+function formatCurrent(value) {
+  if (!Number.isFinite(value)) return "—";
+  if (value < 1) return `${Number((value * 1000).toPrecision(3))} mA`;
+  return `${Number(value.toPrecision(3))} A`;
+}
+
+function percent(value) {
+  return Number.isFinite(value) ? `${(100 * value).toFixed(1)}%` : "—";
+}
+
+function signed(value, digits = 1, suffix = "") {
+  if (!Number.isFinite(value)) return "—";
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${Math.abs(value).toFixed(digits)}${suffix}`;
+}
+
+function ariaPower(value) {
+  if (!Number.isFinite(value)) return "unknown loss";
+  if (value > 0 && value < 0.001) return `${Number((value * 1e6).toPrecision(3))} microwatts`;
+  if (value > 0 && value < 1) return `${Number((value * 1e3).toPrecision(3))} milliwatts`;
+  return `${Number(value.toPrecision(3))} watts`;
+}
+
+function regimeLabel(regime) {
+  const labels = {
+    invalid: "Invalid",
+    floor: "Fixed-loss floor",
+    fetConduction: "FET conduction",
+    inductorDcr: "Inductor DCR",
+    inductorAc: "Inductor AC/core",
+    switchingOverlap: "Switching",
+    deadTime: "Dead time",
+    gateDrive: "Gate drive",
+    bias: "Controller bias",
+    rippleOther: "Capacitive terms",
+    conduction: "Conduction limited",
+    frequency: "Frequency limited",
+    balanced: "Balanced"
+  };
+  return labels[regime] ?? "Balanced";
+}
+
+function setText(root, key, value) {
+  root.querySelectorAll(`[data-blx-out="${key}"]`).forEach((node) => {
+    const changed = node.textContent !== value;
+    node.textContent = value;
+    if (!changed || root.dataset.blxStatus !== "ready" || root.dataset.blxAnimateValues !== "true" || prefersReducedMotion()) return;
+    node.classList.remove("blx-value-swap");
+    void node.offsetWidth;
+    node.classList.add("blx-value-swap");
+  });
+}
+
+function makeControlMap(root, attr) {
+  const map = new Map();
+  root.querySelectorAll(`[${attr}]`).forEach((node) => {
+    const key = node.getAttribute(attr);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(node);
+  });
+  return map;
+}
+
+function svgEl(name, attrs = {}, text = "") {
+  const node = document.createElementNS(SVG_NS, name);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
+  if (text) node.textContent = text;
+  return node;
+}
+
+function svgPath(points) {
+  return points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
+}
+
+function niceCeil(value) {
+  if (!(value > 0)) return 1;
+  const exp = Math.floor(Math.log10(value));
+  const base = 10 ** exp;
+  const ratio = value / base;
+  const nice = ratio <= 1 ? 1 : ratio <= 2 ? 2 : ratio <= 5 ? 5 : 10;
+  return nice * base;
+}
+
+function lossTickLabel(value) {
+  if (value === 0) return "0";
+  if (value < 1) return `${Number((value * 1000).toPrecision(2))} mW`;
+  return `${Number(value.toPrecision(2))} W`;
+}
+
+function currentTickLabel(value) {
+  if (value < 1) return `${Number((value * 1000).toPrecision(2))}m`;
+  return `${Number(value.toPrecision(3))}`;
+}
+
+function isCompact() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 700px)").matches;
+}
+
+function evaluationContext(state, snapshot = state) {
+  return {
+    inductorPartNumber: snapshot?.selectedPart || null,
+    inductorAcDataset: snapshot?.inductorAcDataset ?? state.inductorAcDataset ?? null,
+    ambientC: 25,
+    waveform: "triangular"
+  };
+}
+
+function evaluatePoint(state, current, snapshot = state) {
+  const inputs = snapshot === state ? state.inputs : normalizeInputs(snapshot.rawInputs);
+  return evaluateBuckLossPoint(inputs, current, evaluationContext(state, snapshot));
+}
+
+function linearSweep(inputs, context, { points = 180, iMin = 0, iMax = inputs.ioutMax } = {}) {
+  return evaluateBuckLossSweep(inputs, context, { points, iMin, iMax });
+}
+
+function canonicalQuery(state) {
+  return serializeBuckLossUrl({
+    rawInputs: state.rawInputs,
+    cursor: state.cursor,
+    activePresetId: state.activePresetId,
+    selectedInductorPart: state.selectedPart,
+    inductorDcrMode: state.dcrMode,
+    explicitOptional: state.explicitOptional
+  });
+}
+
+function canonicalHref(state) {
+  const query = canonicalQuery(state);
+  if (typeof window === "undefined") return query ? `?${query}` : "";
+  return `${window.location.origin}${window.location.pathname}${query ? `?${query}` : ""}`;
+}
+
+function updateCopyUrl(root, state) {
+  const input = root.querySelector("[data-blx-copy-url]");
+  if (input) input.value = canonicalHref(state);
+}
+
+function scheduleUrlReplace(root, state) {
+  if (typeof window === "undefined" || !window.history?.replaceState) return;
+  updateCopyUrl(root, state);
+  clearTimeout(state.urlTimer);
+  state.urlTimer = setTimeout(() => {
+    state.urlTimer = 0;
+    const query = canonicalQuery(state);
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, 320);
+}
+
+async function copyCanonicalUrl(root, state, triggerButton = null) {
+  const input = root.querySelector("[data-blx-copy-url]");
+  const href = canonicalHref(state);
+  if (input) input.value = href;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(href);
+    } else if (input) {
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+    }
+  } catch {
+    if (input) {
+      input.focus();
+      input.select();
+      document.execCommand("copy");
+    }
+  }
+  if (triggerButton) {
+    const original = triggerButton.textContent;
+    triggerButton.textContent = "Copied";
+    clearTimeout(triggerButton.blxCopyTimer);
+    triggerButton.blxCopyTimer = setTimeout(() => {
+      triggerButton.textContent = original;
+    }, 1400);
+  }
+}
+
+function accordionDuration(detail) {
+  const raw = window.getComputedStyle(detail).getPropertyValue("--blx-motion");
+  const parsed = Number.parseFloat(raw);
+  if (!Number.isFinite(parsed)) return 240;
+  return String(raw).trim().endsWith("ms") ? parsed : parsed * 1000;
+}
+
+function setAccordionOpen(detail, open, options = {}) {
+  const summary = detail.querySelector("summary");
+  const panel = detail.querySelector(".blx-detail-panel");
+  clearTimeout(detail.blxAccordionTimer);
+  if (open) {
+    detail.open = true;
+    summary?.setAttribute("aria-expanded", "true");
+    if (options.immediate || prefersReducedMotion()) {
+      detail.dataset.open = "true";
+    } else {
+      detail.dataset.open = "false";
+      requestAnimationFrame(() => {
+        if (detail.open) detail.dataset.open = "true";
+      });
+    }
+    return;
+  }
+  summary?.setAttribute("aria-expanded", "false");
+  detail.dataset.open = "false";
+  if (options.immediate || prefersReducedMotion() || !panel) {
+    detail.open = false;
+    return;
+  }
+  detail.blxAccordionTimer = setTimeout(() => {
+    if (detail.dataset.open !== "true") detail.open = false;
+  }, accordionDuration(detail) + 70);
+}
+
+function initAdvancedAccordions(root) {
+  root.querySelectorAll(".blx-advanced details").forEach((detail, index) => {
+    if (detail.dataset.blxAccInit === "true") return;
+    const summary = detail.querySelector("summary");
+    const panel = detail.querySelector(".blx-detail-panel");
+    if (!summary || !panel) return;
+    detail.dataset.blxAccInit = "true";
+    if (!panel.id) panel.id = `${root.id || "buck-loss-explorer"}-advanced-${index}`;
+    summary.setAttribute("aria-controls", panel.id);
+    setAccordionOpen(detail, detail.open, { immediate: true });
+    summary.addEventListener("click", (event) => {
+      event.preventDefault();
+      setAccordionOpen(detail, detail.dataset.open !== "true");
+    });
+  });
+}
+
+function renderPrompt(root, state) {
+  const prompt = root.querySelector("[data-blx-prompt]");
+  if (!prompt) return;
+  const preset = state.activePresetId ? getBuckLossPreset(state.activePresetId) : null;
+  prompt.textContent = preset ? preset.prompt : "Custom operating point. Change one assumption at a time to see what moves.";
+}
+
+function renderSentence(root, classification) {
+  const node = root.querySelector('[data-blx-out="sentence"]');
+  if (!node) return;
+  if (!classification || classification.regime === "invalid") {
+    node.textContent = "Adjust VIN, VOUT, switching frequency, inductance, and the current limit to return to a valid operating point.";
+    return;
+  }
+  const chipKey = REGIME_COLOR_CLASS[classification.regime] || "cond";
+  node.replaceChildren();
+  const chip = document.createElement("span");
+  chip.className = "blx-regime-chip";
+  const dot = document.createElement("i");
+  dot.style.setProperty("--chip-color", `var(--blx-${chipKey})`);
+  dot.setAttribute("aria-hidden", "true");
+  chip.append(dot, document.createTextNode(regimeLabel(classification.regime)));
+  const sentence = classification.partial
+    ? "Dominant-loss classification uses the modeled subtotal because part-specific additional AC/core loss is unavailable."
+    : classification.sentence;
+  node.append(chip, document.createTextNode(sentence));
+}
+
+function renderWarnings(root, result, validation, state) {
+  const box = root.querySelector("[data-blx-warnings]");
+  if (!box) return;
+  const notes = (state.urlNotes || []).map((entry) => URL_NOTE_COPY[entry.code] || entry.message || entry.code);
+  if (state.inputNote) notes.push(state.inputNote);
+  if (!validation.valid) {
+    notes.push("Check the inputs: VIN must exceed VOUT, and frequency, inductance, and the current limit must be positive.");
+  } else if (result?.valid) {
+    result.warnings.forEach((code) => notes.push(WARNING_COPY[code] || code));
+    const estimate = result.inductorAcEstimate;
+    if (state.selectedPart && estimate?.status === "not-characterized") {
+      notes.push(result.manualInductorAcLossW > 0
+        ? "Part-specific additional AC/core loss is not modeled; this subtotal includes RMS DCR and the manual AC/core loss."
+        : "Part-specific additional AC/core loss is not modeled; loss and efficiency are RMS-DCR-only subtotals.");
+    } else if (state.selectedPart && estimate?.status === "guarded-extrapolation") {
+      notes.push("Guarded extrapolation: the additional AC/core estimate is outside the model's verified frequency or ripple range, but remains inside its separately validated guarded range.");
+    } else if (state.selectedPart && estimate?.status === "out-of-domain") {
+      const axes = estimate.outsideAxes?.join(", ") || "operating point";
+      notes.push(`Part-specific additional AC/core loss was rejected because the ${axes} condition is outside the guarded model limits; loss and efficiency exclude that modeled term and are labeled as subtotals.`);
+    } else if (state.selectedPart && estimate?.status === "invalid") {
+      notes.push("The part-specific additional AC/core-loss model is invalid; loss and efficiency exclude it.");
+    }
+    if (result.inductorAcIncluded && state.dcrMode === "max") {
+      notes.push("This combines maximum RMS DCR with modeled typical additional AC/core loss; it is not a worst-case total-loss guarantee.");
+    }
+  }
+  const shown = [...new Set(notes)];
+  const key = shown.join("\n");
+  if (box.dataset.blxWarningsCache === key) return;
+  box.dataset.blxWarningsCache = key;
+  box.replaceChildren();
+  shown.forEach((text) => {
+    const note = document.createElement("p");
+    note.className = "blx-note";
+    note.textContent = text;
+    box.appendChild(note);
+  });
+}
+
+function referenceResult(state) {
+  if (!state.reference) return null;
+  const result = evaluatePoint(state, state.reference.cursor, state.reference);
+  return result.valid ? result : null;
+}
+
+function createLossRow(item) {
+  const row = document.createElement("li");
+  row.className = "blx-loss-row";
+  row.dataset.blxLossKey = item.groupKey;
+  row.dataset.blxLossItem = item.key;
+  row.style.setProperty("--blx-loss-color", `var(${item.token})`);
+
+  const label = document.createElement("span");
+  label.className = "blx-loss-label";
+  const dot = document.createElement("i");
+  dot.setAttribute("aria-hidden", "true");
+  label.append(dot, document.createTextNode(item.label));
+
+  const track = document.createElement("span");
+  track.className = "blx-loss-track";
+  const bar = document.createElement("span");
+  bar.className = "blx-loss-bar";
+  const marker = document.createElement("span");
+  marker.className = "blx-reference-marker";
+  marker.hidden = true;
+  track.append(bar, marker);
+
+  const value = document.createElement("span");
+  value.className = "blx-loss-value";
+  const watts = document.createTextNode("—");
+  const share = document.createElement("small");
+  value.append(watts, share);
+  row.append(label, track, value);
+  row.blxParts = { bar, marker, watts, share };
+  return row;
+}
+
+function renderBreakdown(root, result, state, options = {}) {
+  const list = root.querySelector("[data-blx-breakdown-list]");
+  if (!list) return;
+  if (!state.lossRows) {
+    state.lossRows = new Map();
+    POINT_LOSSES.forEach(([key, label, token, groupKey]) => {
+      const row = createLossRow({ key, label, token, groupKey });
+      state.lossRows.set(key, row);
+      list.appendChild(row);
+    });
+  }
+  if (!result?.valid || !(result.pLoss > 0)) {
+    state.lossRows.forEach((row) => { row.hidden = true; });
+    return;
+  }
+
+  const held = referenceResult(state);
+  const items = POINT_LOSSES.map(([key, label, token, groupKey, read]) => ({
+    key,
+    label,
+    token,
+    groupKey,
+    value: read(result),
+    referenceValue: held ? read(held) : null,
+    unavailable: key === "inductorAc" && !result.inductorAcAnyIncluded,
+    referenceUnavailable: key === "inductorAc" && held && !held.inductorAcAnyIncluded
+  })).sort((a, b) => b.value - a.value);
+  const maxValue = Math.max(0.000001, ...items.flatMap((item) => [item.value, item.referenceValue || 0]));
+  const rows = items.map((item) => state.lossRows.get(item.key));
+  const beforeRects = new Map(rows.map((row) => [row, row.getBoundingClientRect()]));
+
+  items.forEach((item, index) => {
+    const row = rows[index];
+    row.hidden = false;
+    row.dataset.active = root.dataset.blxHighlight === item.groupKey ? "true" : "false";
+    row.setAttribute("aria-label", item.unavailable
+      ? `${item.label}: not modeled`
+      : `${item.label}: ${ariaPower(item.value)}, ${(100 * item.value / result.pLoss).toFixed(1)} percent of loss`);
+    row.blxParts.bar.style.setProperty("--blx-loss-scale", item.unavailable ? "0" : String(Math.max(0.004, item.value / maxValue)));
+    if (item.referenceValue !== null && !item.referenceUnavailable) {
+      row.blxParts.marker.hidden = false;
+      row.blxParts.marker.style.setProperty("--blx-reference-left", `${clamp(100 * item.referenceValue / maxValue, 0, 100)}%`);
+      const delta = item.value - item.referenceValue;
+      row.blxParts.marker.title = `Held reference: ${eng(item.referenceValue, "W")}; delta ${signed(delta * 1000, 1, " mW")}`;
+    } else {
+      row.blxParts.marker.hidden = true;
+    }
+    row.blxParts.watts.nodeValue = item.unavailable ? "—" : eng(item.value, "W");
+    row.blxParts.share.textContent = item.unavailable ? "not modeled" : `${(100 * item.value / result.pLoss).toFixed(1)}%`;
+  });
+
+  if (options.commit || !state.lossOrder?.length) {
+    rows.forEach((row) => list.appendChild(row));
+    if (options.animateOrder) animateFlip(rows, beforeRects);
+    state.lossOrder = items.map((item) => item.key);
+  }
+}
+
+function renderPowerBalance(root, result) {
+  const holder = root.querySelector("[data-blx-power-balance]");
+  if (!holder) return;
+  if (!holder.blxParts) {
+    const output = document.createElement("div");
+    output.className = "blx-power-output";
+    output.innerHTML = "<span>Output power</span><strong>—</strong>";
+    const loss = document.createElement("div");
+    loss.className = "blx-power-loss";
+    loss.innerHTML = "<span>Losses</span><strong>—</strong>";
+    holder.append(output, loss);
+    holder.blxParts = { output, loss };
+  }
+  if (!result?.valid || !(result.pInEstimated > 0)) {
+    holder.hidden = true;
+    return;
+  }
+  holder.hidden = false;
+  const outputShare = clamp(result.pOut / result.pInEstimated, 0, 1);
+  holder.blxParts.output.style.setProperty("--blx-output-width", `${Math.max(18, 100 * outputShare)}%`);
+  holder.blxParts.output.querySelector("strong").textContent = eng(result.pOut, "W");
+  holder.blxParts.loss.querySelector("span").textContent = result.lossEstimateKind === "modeled-subtotal" ? "Modeled subtotal" : "Losses";
+  holder.blxParts.loss.querySelector("strong").textContent = eng(result.pLoss, "W");
+}
+
+function renderOperatingMetrics(root, result) {
+  const holder = root.querySelector("[data-blx-operating-metrics]");
+  if (!holder) return;
+  if (!result?.valid) {
+    holder.hidden = true;
+    return;
+  }
+  const values = [
+    ["Duty cycle", `${(100 * result.core.D).toFixed(1)}%`],
+    ["Ripple (pk–pk)", formatCurrent(result.core.deltaIL)],
+    ["Inductor peak", formatCurrent(result.core.iPeak)],
+    ["Inductor RMS", formatCurrent(Math.sqrt(result.core.iLrms2))]
+  ];
+  if (!holder.blxMetrics) {
+    holder.blxMetrics = values.map(([label]) => {
+      const metric = document.createElement("div");
+      metric.className = "blx-operating-metric";
+      metric.innerHTML = `<span>${label}</span><strong>—</strong>`;
+      holder.appendChild(metric);
+      return metric;
+    });
+  }
+  holder.hidden = false;
+  values.forEach(([, value], index) => {
+    holder.blxMetrics[index].querySelector("strong").textContent = value;
+  });
+}
+
+function renderReferenceState(root, result, state) {
+  const held = referenceResult(state);
+  root.querySelectorAll("[data-blx-reference]").forEach((button) => {
+    button.dataset.active = held ? "true" : "false";
+    button.querySelector("span").textContent = held ? "Clear reference" : "Hold reference";
+    button.setAttribute("aria-pressed", held ? "true" : "false");
+  });
+  const summary = root.querySelector("[data-blx-reference-summary]");
+  if (!summary) return;
+  if (!held || !result?.valid) {
+    summary.textContent = "";
+    return;
+  }
+  const efficiencyDelta = 100 * (result.efficiency - held.efficiency);
+  const lossDelta = result.pLoss - held.pLoss;
+  summary.replaceChildren();
+  [
+    `Reference ${percent(held.efficiency)} at ${formatCurrent(state.reference.cursor)}`,
+    `${signed(efficiencyDelta, 1, " pp")} efficiency`,
+    `${signed(lossDelta * 1000, 1, " mW")} loss`
+  ].forEach((text) => {
+    const chip = document.createElement("span");
+    chip.className = "blx-reference-delta";
+    chip.textContent = text;
+    summary.appendChild(chip);
+  });
+}
+
+function chartGeometry(kind, holder) {
+  const measured = Math.round(holder?.clientWidth || (isCompact() ? 360 : 780));
+  const width = Math.max(280, measured);
+  const compact = width <= 700;
+  const height = kind === "efficiency" ? (compact ? 190 : 218) : (compact ? 215 : 246);
+  const left = compact ? 42 : 54;
+  const right = compact ? 12 : 18;
+  const top = kind === "efficiency" ? 16 : 24;
+  const bottom = height - (compact ? 34 : 39);
+  return { compact, width, height, left, right, top, bottom, plotWidth: width - left - right, plotHeight: bottom - top };
+}
+
+function appendAxes(svg, geometry, yTicks, xMax, yScale, yFormatter) {
+  const { left, top, bottom, plotWidth, plotHeight, compact } = geometry;
+  yTicks.forEach((value) => {
+    const y = yScale(value);
+    svg.append(
+      svgEl("line", { class: "blx-svg-grid", x1: left, y1: y, x2: left + plotWidth, y2: y, "stroke-width": 1, opacity: value === 0 ? 0.8 : 0.45 }),
+      svgEl("text", { class: "blx-svg-label", x: left - 8, y: y + 3.5, "font-size": compact ? 11 : 11.5, "text-anchor": "end" }, yFormatter(value))
+    );
+  });
+  const fractions = geometry.width < 340 ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1];
+  fractions.forEach((fraction) => {
+    const x = left + fraction * plotWidth;
+    svg.append(
+      svgEl("line", { class: "blx-svg-grid", x1: x, y1: top, x2: x, y2: bottom, "stroke-width": 1, opacity: fraction === 0 ? 0.7 : 0.25 }),
+      svgEl("text", { class: "blx-svg-label", x, y: bottom + (compact ? 18 : 20), "font-size": compact ? 11 : 11.5, "text-anchor": "middle" }, currentTickLabel(xMax * fraction))
+    );
+  });
+  svg.append(svgEl("text", { class: "blx-svg-label", x: left + plotWidth, y: bottom + (compact ? 31 : 33), "font-size": 11, "text-anchor": "end" }, "load current (A)"));
+}
+
+function appendForcedCcmBand(group, geometry, state, xScale) {
+  const boundary = clamp((state.sweep.find((point) => point.valid)?.core.deltaIL || 0) / 2, 0, state.inputs.ioutMax);
+  if (!(boundary > 0)) return;
+  const x = xScale(boundary);
+  group.append(
+    svgEl("rect", { class: "blx-svg-ccm-band", x: geometry.left, y: geometry.top, width: Math.max(0, x - geometry.left), height: geometry.plotHeight }),
+    svgEl("line", { class: "blx-svg-ccm-boundary", x1: x, y1: geometry.top, x2: x, y2: geometry.bottom, "stroke-width": 1 }),
+    svgEl("text", { class: "blx-svg-ccm-label", x: geometry.left + 5, y: geometry.top + 13 }, "forced CCM")
+  );
+}
+
+function appendCursor(svg, geometry, state, plot, labelText) {
+  const { left, top, bottom, plotWidth, plotHeight, compact } = geometry;
+  const x = plot.xScale(state.cursor);
+  const y = plot.yScale(plot.valueAt(state.cursor));
+  const labelWidth = compact ? 72 : 76;
+  const labelX = clamp(x + 7, left + 2, left + plotWidth - labelWidth - 2);
+  const labelY = top + 6;
+  const cursor = svgEl("line", { "data-blx-chart-cursor": plot.kind, class: "blx-svg-cursor", x1: x, y1: top, x2: x, y2: bottom, "stroke-width": 1.2, "pointer-events": "none" });
+  const dot = svgEl("circle", { "data-blx-chart-dot": plot.kind, class: "blx-svg-dot", cx: x, cy: y, r: compact ? 3.6 : 4.2, "stroke-width": 1.8, "pointer-events": "none" });
+  const labelBg = svgEl("rect", { "data-blx-chart-label-bg": plot.kind, class: "blx-svg-cursor-label-bg", x: labelX, y: labelY, width: labelWidth, height: 19, rx: 5, "stroke-width": 1, "pointer-events": "none" });
+  const label = svgEl("text", { "data-blx-chart-label": plot.kind, class: "blx-svg-cursor-label", x: labelX + 6, y: labelY + 13, "font-size": compact ? 11.5 : 12, "pointer-events": "none" }, labelText);
+  const surface = svgEl("rect", { "data-blx-across-surface": plot.kind, x: left, y: top, width: plotWidth, height: plotHeight, fill: "transparent", "pointer-events": "all" });
+  surface.style.cursor = "ew-resize";
+  surface.style.touchAction = "pan-y";
+  svg.append(surface, cursor, dot, labelBg, label);
+  return surface;
+}
+
+function clientXToSvgX(svg, clientX) {
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = 0;
+  return point.matrixTransform(svg.getScreenCTM().inverse()).x;
+}
+
+function attachAcrossPointer(root, state, surface, plot) {
+  let dragging = false;
+  let pointerId = null;
+  const currentFromEvent = (event) => {
+    const x = clientXToSvgX(surface.ownerSVGElement, event.clientX);
+    const fraction = clamp((x - plot.geometry.left) / plot.geometry.plotWidth, 0, 1);
+    return fraction * state.inputs.ioutMax;
+  };
+  const update = (event, announce = false) => {
+    state.cursor = currentFromEvent(event);
+    updateCursorReadouts(root, state, { announce });
+  };
+  surface.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    dragging = true;
+    root.dataset.blxManipulating = "true";
+    pointerId = event.pointerId;
+    surface.setPointerCapture(pointerId);
+    update(event);
+  });
+  surface.addEventListener("pointermove", (event) => {
+    if (!dragging || event.pointerId !== pointerId) return;
+    update(event);
+  });
+  const finish = (event) => {
+    if (!dragging || event.pointerId !== pointerId) return;
+    dragging = false;
+    pointerId = null;
+    root.dataset.blxManipulating = "false";
+    state.cursor = currentFromEvent(event);
+    updateCursorReadouts(root, state, { announce: true, commit: true, animateOrder: true });
+    scheduleUrlReplace(root, state);
+  };
+  surface.addEventListener("pointerup", finish);
+  surface.addEventListener("pointercancel", finish);
+}
+
+function referenceSweep(state) {
+  if (!state.reference) return [];
+  const inputs = normalizeInputs(state.reference.rawInputs);
+  if (!validateInputs(inputs).valid) return [];
+  return linearSweep(inputs, evaluationContext(state, state.reference), {
+    points: state.sweep.length || 180,
+    iMin: 0,
+    iMax: inputs.ioutMax
+  }).filter((point) => point.valid);
+}
+
+function plottableTotals(points) {
+  return points.filter((point) => !["out-of-domain", "invalid"].includes(point.inductorAcEstimate?.status));
+}
+
+function ensureChart(holder, kind, titleId, titleText) {
+  if (holder.blxChart) return holder.blxChart;
+  const svg = svgEl("svg", { role: "group", "aria-labelledby": titleId });
+  const title = svgEl("title", { id: titleId }, titleText);
+  const band = svgEl("g");
+  const axes = svgEl("g");
+  const series = svgEl("g");
+  const overlay = svgEl("g");
+  svg.append(title, band, axes, series, overlay);
+  holder.appendChild(svg);
+  holder.blxChart = { svg, band, axes, series, overlay, paths: new Map(), points: new Map(), animations: new Map() };
+  return holder.blxChart;
+}
+
+function updatePath(chart, key, path, points, options = {}) {
+  chart.animations.get(key)?.cancel?.();
+  const previous = chart.points.get(key);
+  if (options.animate) {
+    const animation = animatePointSeries({
+      fromPoints: previous,
+      toPoints: points,
+      draw: (next) => path.setAttribute("d", svgPath(next))
+    });
+    if (animation) chart.animations.set(key, animation);
+    else path.setAttribute("d", svgPath(points));
+  } else {
+    path.setAttribute("d", svgPath(points));
+  }
+  chart.points.set(key, points);
+}
+
+function renderEfficiencyChart(root, state, options = {}) {
+  const holder = root.querySelector("[data-blx-efficiency-plot]");
+  if (!holder) return;
+  if (!state.validation.valid || !state.sweep.length) {
+    holder.hidden = true;
+    return;
+  }
+  holder.hidden = false;
+  const geometry = chartGeometry("efficiency", holder);
+  const { width, height, left, plotWidth, bottom, top } = geometry;
+  const xScale = (current) => left + clamp(current / state.inputs.ioutMax, 0, 1) * plotWidth;
+  const yScale = (efficiency) => bottom - clamp(efficiency, 0, 1) * geometry.plotHeight;
+  const valueAt = (current) => evaluatePoint(state, current).efficiency;
+  const plot = { kind: "efficiency", geometry, xScale, yScale, valueAt };
+  state.acrossPlots.efficiency = plot;
+  const titleId = `${state.instanceId}-efficiency-title`;
+  const chart = ensureChart(holder, "efficiency", titleId, "Efficiency versus load current, including the forced-CCM current-reversal region");
+  chart.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  chart.band.replaceChildren();
+  appendForcedCcmBand(chart.band, geometry, state, xScale);
+  chart.axes.replaceChildren();
+  appendAxes(chart.axes, geometry, [0, 0.25, 0.5, 0.75, 1], state.inputs.ioutMax, yScale, (value) => `${Math.round(value * 100)}%`);
+  let referencePath = chart.paths.get("reference");
+  if (!referencePath) {
+    referencePath = svgEl("path", { class: "blx-svg-line blx-svg-reference", fill: "none", "stroke-width": 1.4 });
+    chart.paths.set("reference", referencePath);
+    chart.series.appendChild(referencePath);
+  }
+  const heldSweep = referenceSweep(state);
+  if (heldSweep.length) {
+    referencePath.hidden = false;
+    updatePath(chart, "reference", referencePath, plottableTotals(heldSweep).map((point) => [xScale(point.iout), yScale(point.efficiency)]), options);
+  } else {
+    referencePath.hidden = true;
+  }
+  let currentPath = chart.paths.get("current");
+  if (!currentPath) {
+    currentPath = svgEl("path", { class: "blx-svg-line blx-svg-efficiency", fill: "none", "stroke-width": 2.2 });
+    chart.paths.set("current", currentPath);
+    chart.series.appendChild(currentPath);
+  }
+  updatePath(chart, "current", currentPath, plottableTotals(state.sweep).map((point) => [xScale(point.iout), yScale(point.efficiency)]), options);
+  chart.overlay.replaceChildren();
+  const surface = appendCursor(chart.overlay, geometry, state, plot, formatCurrent(state.cursor));
+  attachAcrossPointer(root, state, surface, plot);
+}
+
+function renderLossChart(root, state, options = {}) {
+  const holder = root.querySelector("[data-blx-loss-plot]");
+  if (!holder) return;
+  if (!state.validation.valid || !state.sweep.length) {
+    holder.hidden = true;
+    return;
+  }
+  holder.hidden = false;
+  const geometry = chartGeometry("loss", holder);
+  const { width, height, left, plotWidth, bottom } = geometry;
+  const maxLoss = niceCeil(1.08 * Math.max(...state.sweep.map((point) => point.pLoss), 0.001));
+  const xScale = (current) => left + clamp(current / state.inputs.ioutMax, 0, 1) * plotWidth;
+  const yScale = (loss) => bottom - clamp(loss / maxLoss, 0, 1) * geometry.plotHeight;
+  const valueAt = (current) => evaluatePoint(state, current).pLoss;
+  const plot = { kind: "loss", geometry, xScale, yScale, valueAt, maxLoss };
+  state.acrossPlots.loss = plot;
+  const rankedGroups = GROUPS.map((group) => ({
+    group,
+    peak: Math.max(...state.sweep.map((point) => point.groupedLosses[group[0]]))
+  })).sort((a, b) => b.peak - a.peak);
+  const topGroups = rankedGroups.slice(0, 3).map((entry) => entry.group);
+  state.topGroups = topGroups;
+  const titleId = `${state.instanceId}-loss-title`;
+  const chart = ensureChart(holder, "loss", titleId, "Total loss and largest contributors versus load current, including the forced-CCM current-reversal region");
+  chart.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  chart.band.replaceChildren();
+  appendForcedCcmBand(chart.band, geometry, state, xScale);
+  chart.axes.replaceChildren();
+  appendAxes(chart.axes, geometry, [0, 0.25, 0.5, 0.75, 1].map((fraction) => fraction * maxLoss), state.inputs.ioutMax, yScale, lossTickLabel);
+  let referencePath = chart.paths.get("reference");
+  if (!referencePath) {
+    referencePath = svgEl("path", { class: "blx-svg-line blx-svg-reference", fill: "none", "stroke-width": 1.4 });
+    chart.paths.set("reference", referencePath);
+    chart.series.appendChild(referencePath);
+  }
+  const heldSweep = referenceSweep(state);
+  if (heldSweep.length) {
+    referencePath.hidden = false;
+    updatePath(chart, "reference", referencePath, plottableTotals(heldSweep).map((point) => [xScale(point.iout), yScale(point.pLoss)]), options);
+  } else {
+    referencePath.hidden = true;
+  }
+  topGroups.forEach(([key, , token]) => {
+    const points = key === "inductorAc" ? state.sweep.filter((point) => point.inductorAcAnyIncluded) : state.sweep;
+    let path = chart.paths.get(key);
+    if (!path) {
+      path = svgEl("path", { class: "blx-svg-line blx-svg-contributor", "data-blx-series": key, fill: "none", "stroke-width": 1.55 });
+      chart.paths.set(key, path);
+      chart.series.appendChild(path);
+    }
+    path.hidden = false;
+    path.setAttribute("stroke", `var(${token})`);
+    updatePath(chart, key, path, points.map((point) => [xScale(point.iout), yScale(point.groupedLosses[key])]), options);
+  });
+  const activeKeys = new Set(topGroups.map(([key]) => key));
+  GROUPS.forEach(([key]) => {
+    const path = chart.paths.get(key);
+    if (path && !activeKeys.has(key)) path.hidden = true;
+  });
+  let totalPath = chart.paths.get("total");
+  if (!totalPath) {
+    totalPath = svgEl("path", { class: "blx-svg-line blx-svg-total", fill: "none", "stroke-width": 2.25 });
+    chart.paths.set("total", totalPath);
+    chart.series.appendChild(totalPath);
+  }
+  updatePath(chart, "total", totalPath, plottableTotals(state.sweep).map((point) => [xScale(point.iout), yScale(point.pLoss)]), options);
+  chart.overlay.replaceChildren();
+  const surface = appendCursor(chart.overlay, geometry, state, plot, formatCurrent(state.cursor));
+  attachAcrossPointer(root, state, surface, plot);
+  renderLegend(root, topGroups, state);
+}
+
+function renderLegend(root, topGroups = [], state = null) {
+  const holder = root.querySelector("[data-blx-legend]");
+  if (!holder) return;
+  if (!holder.blxTotal) {
+    const total = document.createElement("span");
+    total.className = "blx-chart-key blx-total-key";
+    total.innerHTML = "<i aria-hidden=\"true\"></i>Current total";
+    holder.blxTotal = total;
+    holder.appendChild(total);
+    const reference = document.createElement("span");
+    reference.className = "blx-chart-key blx-reference-key";
+    reference.innerHTML = "<i aria-hidden=\"true\"></i>Reference";
+    holder.blxReference = reference;
+    holder.appendChild(reference);
+  }
+  holder.blxReference.hidden = !state?.reference;
+  holder.querySelectorAll("button").forEach((button) => { button.hidden = true; });
+  topGroups.forEach(([key, label, token]) => {
+    let item = holder.querySelector(`button[data-blx-loss-key="${key}"]`);
+    if (!item) {
+      item = document.createElement("button");
+      item.type = "button";
+      item.className = "blx-chart-key";
+      item.dataset.blxLossKey = key;
+      item.innerHTML = `<i aria-hidden="true"></i><span></span>`;
+      holder.appendChild(item);
+    }
+    item.hidden = false;
+    item.setAttribute("aria-pressed", root.dataset.blxPinnedHighlight === key ? "true" : "false");
+    item.style.setProperty("--blx-loss-color", `var(${token})`);
+    item.querySelector("span").textContent = label === "Inductor copper (DCR)" ? "Inductor DCR" : label;
+  });
+}
+
+function updateAcrossCursor(root, state, result) {
+  Object.values(state.acrossPlots || {}).forEach((plot) => {
+    const holder = root.querySelector(`[data-blx-${plot.kind === "efficiency" ? "efficiency" : "loss"}-plot]`);
+    const svg = holder?.querySelector("svg");
+    if (!svg) return;
+    const x = plot.xScale(state.cursor);
+    const y = plot.yScale(plot.valueAt(state.cursor));
+    const line = svg.querySelector(`[data-blx-chart-cursor="${plot.kind}"]`);
+    const dot = svg.querySelector(`[data-blx-chart-dot="${plot.kind}"]`);
+    const label = svg.querySelector(`[data-blx-chart-label="${plot.kind}"]`);
+    const labelBg = svg.querySelector(`[data-blx-chart-label-bg="${plot.kind}"]`);
+    const width = plot.geometry.compact ? 72 : 76;
+    const labelX = clamp(x + 7, plot.geometry.left + 2, plot.geometry.left + plot.geometry.plotWidth - width - 2);
+    if (line) {
+      line.setAttribute("x1", x);
+      line.setAttribute("x2", x);
+    }
+    if (dot) {
+      dot.setAttribute("cx", x);
+      dot.setAttribute("cy", y);
+    }
+    if (label && labelBg) {
+      label.textContent = formatCurrent(state.cursor);
+      label.setAttribute("x", labelX + 6);
+      labelBg.setAttribute("x", labelX);
+    }
+  });
+  const efficiency = root.querySelector("[data-blx-across-efficiency]");
+  const loss = root.querySelector("[data-blx-across-loss]");
+  if (efficiency) efficiency.textContent = `${percent(result.efficiency)} at ${formatCurrent(state.cursor)}`;
+  if (loss) loss.textContent = `${eng(result.pLoss, "W")} at ${formatCurrent(state.cursor)}`;
+}
+
+function syncCursorControl(root, state, result = null) {
+  const max = Math.max(0.001, state.rawInputs.ioutMax);
+  root.querySelectorAll("[data-blx-cursor-input]").forEach((input) => {
+    input.min = "0";
+    input.max = String(max);
+    input.step = String(max / 1000);
+    input.value = String(clamp(state.cursor, 0, max));
+    input.setAttribute("aria-valuemin", "0");
+    input.setAttribute("aria-valuemax", String(max));
+    input.setAttribute("aria-valuenow", String(state.cursor));
+    input.setAttribute("aria-valuetext", result?.valid ? `${formatCurrent(state.cursor)}, ${percent(result.efficiency)} efficiency, ${ariaPower(result.pLoss)} loss` : formatCurrent(state.cursor));
+  });
+}
+
+function announce(root, result, state) {
+  const live = root.querySelector("[data-blx-live]");
+  if (!live || !result?.valid) return;
+  live.textContent = `${formatCurrent(state.cursor)}, ${(100 * result.efficiency).toFixed(1)} percent efficiency, ${ariaPower(result.pLoss)} loss`;
+}
+
+function formatSwitchingFrequency(valueKHz) {
+  if (valueKHz >= 1000) return `${displayNumber(valueKHz / 1000, 2)} MHz`;
+  return `${displayNumber(valueKHz, 0)} kHz`;
+}
+
+function updateMobileSummary(root, state) {
+  const summary = root.querySelector("[data-blx-mobile-summary]");
+  if (!summary) return;
+  summary.textContent = `${displayNumber(state.rawInputs.vin, 2)} V → ${displayNumber(state.rawInputs.vout, 2)} V · ${formatCurrent(state.cursor)} · ${formatSwitchingFrequency(state.rawInputs.fsw)}`;
+}
+
+function updateCursorReadouts(root, state, options = {}) {
+  root.dataset.blxAnimateValues = options.animate ? "true" : "false";
+  const result = evaluatePoint(state, state.cursor);
+  const valid = state.validation.valid && result.valid;
+  root.classList.toggle("blx-invalid", !valid);
+  syncCursorControl(root, state, result);
+  updateCopyUrl(root, state);
+  updateMobileSummary(root, state);
+  if (!valid) {
+    ["current", "mobile-current", "current-caption", "efficiency", "sheet-efficiency", "loss", "sheet-loss", "pout", "pin", "loss-total"].forEach((key) => setText(root, key, "—"));
+    setText(root, "regime", "Invalid");
+    renderBreakdown(root, null, state);
+    renderPowerBalance(root, null);
+    renderOperatingMetrics(root, null);
+    renderReferenceState(root, null, state);
+    renderSentence(root, null);
+    renderWarnings(root, result, state.validation, state);
+    return result;
+  }
+  const classification = classifyRegime(result, state.inputs);
+  classification.partial = Boolean(state.selectedPart && !result.inductorAcIncluded);
+  setText(root, "current", formatCurrent(state.cursor));
+  setText(root, "mobile-current", formatCurrent(state.cursor));
+  setText(root, "current-caption", formatCurrent(state.cursor));
+  setText(root, "efficiency", percent(result.efficiency));
+  setText(root, "sheet-efficiency", percent(result.efficiency));
+  setText(root, "loss", eng(result.pLoss, "W"));
+  setText(root, "sheet-loss", eng(result.pLoss, "W"));
+  setText(root, "loss-total", `${result.lossEstimateKind === "modeled-subtotal" ? "Subtotal" : "Total"} ${eng(result.pLoss, "W")}`);
+  setText(root, "pout", eng(result.pOut, "W"));
+  setText(root, "pin", eng(result.pInEstimated, "W"));
+  setText(root, "regime", regimeLabel(classification.regime));
+  renderBreakdown(root, result, state, { commit: options.commit, animateOrder: options.animateOrder });
+  renderPowerBalance(root, result);
+  renderOperatingMetrics(root, result);
+  renderReferenceState(root, result, state);
+  renderSentence(root, classification);
+  renderWarnings(root, result, state.validation, state);
+  updateAcrossCursor(root, state, result);
+  if (options.announce) announce(root, result, state);
+  return result;
+}
+
+function updatePresetButtons(root, activePresetId) {
+  root.querySelectorAll("[data-blx-preset]").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.blxPreset === activePresetId ? "true" : "false");
+  });
+}
+
+function controlValueText(key, value) {
+  const param = PARAMS[key];
+  if (param.optional && value === null) return `${param.label}: none`;
+  return `${param.label}: ${displayNumber(value, param.digits)} ${param.unit}`;
+}
+
+function toSlider(key, value, rawInputs) {
+  const param = PARAMS[key];
+  const max = dynamicMax(key, rawInputs);
+  const safe = param.optional && value === null ? param.min : clamp(value, param.min, max);
+  if (param.log) return Math.round(1000 * Math.log(safe / param.min) / Math.log(max / param.min));
+  return Math.round(1000 * (safe - param.min) / (max - param.min));
+}
+
+function fromSlider(key, sliderValue, rawInputs) {
+  const param = PARAMS[key];
+  const fraction = Number(sliderValue) / 1000;
+  const max = dynamicMax(key, rawInputs);
+  return param.log ? param.min * Math.pow(max / param.min, fraction) : param.min + fraction * (max - param.min);
+}
+
+function syncControls(state, numberControls, rangeControls, options = {}) {
+  Object.keys(PARAMS).forEach((key) => {
+    const param = PARAMS[key];
+    const value = state.rawInputs[key];
+    (numberControls.get(key) || []).forEach((input) => {
+      input.min = String(param.min);
+      input.max = String(dynamicMax(key, state.rawInputs));
+      if (!options.force && document.activeElement === input) return;
+      input.value = param.optional && value === null ? "" : displayNumber(value, param.digits);
+    });
+    (rangeControls.get(key) || []).forEach((input) => {
+      if (!options.force && document.activeElement === input) return;
+      input.value = String(toSlider(key, value, state.rawInputs));
+      input.setAttribute("aria-valuetext", controlValueText(key, value));
+    });
+  });
+}
+
+function markCustom(state) {
+  state.activePresetId = null;
+  state.urlNotes = [];
+  state.inputNote = null;
+}
+
+function clampCursorToRange(state) {
+  state.cursor = clamp(state.cursor, 0, state.rawInputs.ioutMax);
+}
+
+function findCatalogPart(state, base) {
+  return state.catalog?.parts.find((entry) => entry.base_part_number === base) ?? null;
+}
+
+function setCatalogState(root, value) {
+  const container = root.querySelector("[data-blx-catalog]");
+  if (container) container.dataset.catalogState = value;
+}
+
+function showCatalogMessage(root, message) {
+  const node = root.querySelector("[data-blx-catalog-message]");
+  if (!node) return;
+  node.textContent = message || "";
+  node.hidden = !message;
+}
+
+function compactNumber(value, maximumFractionDigits = 3) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(value);
+}
+
+function compactFrequency(frequencyHz) {
+  if (frequencyHz >= 1e6) return `${compactNumber(frequencyHz / 1e6)} MHz`;
+  return `${compactNumber(frequencyHz / 1e3, 0)} kHz`;
+}
+
+function modeledDomainCopy(model) {
+  if (model?.model_schema_version !== 2) return null;
+  const frequency = model.verified_domain?.frequency_Hz;
+  const ripple = model.verified_domain?.ripple_pp_A;
+  if (!Array.isArray(frequency) || frequency.length !== 2 || !Array.isArray(ripple) || ripple.length !== 2) return null;
+  return `verified ${compactFrequency(frequency[0])}–${compactFrequency(frequency[1])}, ${compactNumber(ripple[0])}–${compactNumber(ripple[1])} A ripple p-p`;
+}
+
+function renderCatalogMeta(root, state) {
+  const meta = root.querySelector("[data-blx-catalog-meta]");
+  if (!meta) return;
+  const part = state.selectedPart ? findCatalogPart(state, state.selectedPart) : null;
+  meta.replaceChildren();
+  if (!part) {
+    meta.hidden = true;
+    return;
+  }
+  const dcr = dcrForMode(part, state.dcrMode);
+  const isat = selectIsat(part);
+  meta.append(
+    document.createTextNode(
+      `${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH · ${state.dcrMode === "max" ? "max" : "typ"} DCR ${displayNumber(dcr, 2)} mΩ`
+    )
+  );
+  if (isat) {
+    meta.append(document.createTextNode(` · Isat ${displayNumber(isat.value, 2)} A `));
+    const drop = document.createElement("span");
+    drop.className = "blx-catalog-drop";
+    drop.textContent = `(${isat.dropPct}% drop)`;
+    meta.append(drop);
+  }
+  meta.append(document.createTextNode(" · "));
+  const link = document.createElement("a");
+  link.href = part.datasheet_url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "Datasheet ↗";
+  meta.append(link);
+  const model = state.inductorAcDataset?.permission_status === "approved"
+    ? state.inductorAcDataset.parts?.[part.base_part_number]
+    : null;
+  if (model) {
+    meta.append(document.createTextNode(" · additional AC/core modeled at 25 °C"));
+    const domain = modeledDomainCopy(model);
+    if (domain) meta.append(document.createTextNode(` · ${domain}`));
+  } else {
+    meta.append(document.createTextNode(" · part-specific AC/core not modeled"));
+  }
+  meta.hidden = false;
+}
+
+function clearCatalogSelection(root, state) {
+  state.selectedPart = null;
+  const partSelect = root.querySelector("[data-blx-catalog-part]");
+  if (partSelect) partSelect.value = "";
+  const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+  if (dcrSelect) dcrSelect.disabled = true;
+  renderCatalogMeta(root, state);
+}
+
+function applyCatalogPart(root, state, base) {
+  const part = findCatalogPart(state, base);
+  if (!part) {
+    clearCatalogSelection(root, state);
+    return;
+  }
+  state.rawInputs.inductance = clampStaticParam("inductance", part.inductance_uh);
+  const dcr = dcrForMode(part, state.dcrMode);
+  if (dcr !== null) state.rawInputs.dcr = clampStaticParam("dcr", dcr);
+  const isat = selectIsat(part);
+  if (isat) {
+    state.rawInputs.inductorIsat = clampStaticParam("inductorIsat", isat.value);
+    state.explicitOptional.inductorIsat = true;
+  }
+  markCustom(state);
+  state.selectedPart = base;
+  const partSelect = root.querySelector("[data-blx-catalog-part]");
+  if (partSelect && partSelect.value !== base) partSelect.value = base;
+  const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+  if (dcrSelect) dcrSelect.disabled = false;
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  render(root, state, { announce: true, animate: true, commit: true });
+  scheduleUrlReplace(root, state);
+  renderCatalogMeta(root, state);
+}
+
+function applyCatalogDcrMode(root, state, mode) {
+  state.dcrMode = mode === "max" ? "max" : "typ";
+  const part = state.selectedPart ? findCatalogPart(state, state.selectedPart) : null;
+  if (!part) return;
+  const dcr = dcrForMode(part, state.dcrMode);
+  if (dcr !== null) state.rawInputs.dcr = clampStaticParam("dcr", dcr);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  render(root, state, { announce: true, animate: true, commit: true });
+  scheduleUrlReplace(root, state);
+  renderCatalogMeta(root, state);
+}
+
+function populateCatalogOptions(root, catalog, state) {
+  const select = root.querySelector("[data-blx-catalog-part]");
+  if (!select) return;
+  select.querySelectorAll("optgroup").forEach((group) => group.remove());
+  groupPartsBySeries(catalog.parts).forEach(({ series, parts }) => {
+    const group = document.createElement("optgroup");
+    group.label = series;
+    parts.forEach((part) => {
+      const option = document.createElement("option");
+      option.value = part.base_part_number;
+      const modeled = state.inductorAcDataset?.permission_status === "approved" && state.inductorAcDataset.parts?.[part.base_part_number];
+      option.textContent = `${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH${modeled ? " · AC modeled" : ""}`;
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  });
+}
+
+async function initCoilcraftCatalog(root, state) {
+  const container = root.querySelector("[data-blx-catalog]");
+  if (!container) return;
+  const partSelect = root.querySelector("[data-blx-catalog-part]");
+  const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+  setCatalogState(root, "loading");
+  try {
+    const catalogRequest = loadCoilcraftCatalog(root.dataset.blxCatalogUrl);
+    const lossRequest = root.dataset.blxInductorAcLossUrl ? fetch(root.dataset.blxInductorAcLossUrl) : null;
+    const catalog = await catalogRequest;
+    if (lossRequest) {
+      try {
+        const response = await lossRequest;
+        if (!response.ok) throw new Error(`Coilcraft AC-loss request failed (HTTP ${response.status}).`);
+        state.inductorAcDataset = await response.json();
+      } catch (error) {
+        state.inductorAcDataset = null;
+        console.warn("Coilcraft AC-loss model unavailable", error);
+      }
+    }
+    state.catalog = catalog;
+    populateCatalogOptions(root, catalog, state);
+    setCatalogState(root, "ready");
+    showCatalogMessage(root, "");
+    partSelect?.addEventListener("change", () => {
+      if (partSelect.value) applyCatalogPart(root, state, partSelect.value);
+      else clearCatalogSelection(root, state);
+    });
+    dcrSelect?.addEventListener("change", () => applyCatalogDcrMode(root, state, dcrSelect.value));
+    if (state.selectedPart) {
+      if (dcrSelect) dcrSelect.value = state.dcrMode;
+      if (findCatalogPart(state, state.selectedPart)) applyCatalogPart(root, state, state.selectedPart);
+      else {
+        state.urlNotes.push({ code: "unknown-inductor" });
+        clearCatalogSelection(root, state);
+      }
+    } else {
+      render(root, state, { animate: false, commit: true });
+    }
+  } catch {
+    state.catalog = null;
+    setCatalogState(root, "error");
+    if (partSelect) partSelect.disabled = true;
+    if (dcrSelect) dcrSelect.disabled = true;
+    showCatalogMessage(root, "Coilcraft part list is unavailable right now. Enter inductor values manually.");
+  }
+}
+
+function render(root, state, options = {}) {
+  state.inputs = normalizeInputs(state.rawInputs);
+  state.validation = validateInputs(state.inputs);
+  const invalidKeys = new Set(state.validation.errors.map((key) => key === "vout-lt-vin" ? "vout" : key));
+  root.querySelectorAll("[data-blx-number][aria-invalid]").forEach((input) => {
+    if (!invalidKeys.has(input.dataset.blxNumber)) input.removeAttribute("aria-invalid");
+  });
+  invalidKeys.forEach((key) => {
+    if (!PARAMS[key]) return;
+    const message = key === "vout"
+      ? "Output voltage must remain below input voltage."
+      : `${PARAMS[key].label} is outside the valid range.`;
+    setFieldMessage(root, key, message, "error");
+    if (options.announce) announceMessage(root, message);
+  });
+  clampCursorToRange(state);
+  state.sweep = state.validation.valid
+    ? linearSweep(state.inputs, evaluationContext(state), { points: 180, iMin: 0, iMax: state.inputs.ioutMax }).filter((point) => point.valid)
+    : [];
+  state.acrossPlots = {};
+  updatePresetButtons(root, state.activePresetId);
+  renderPrompt(root, state);
+  const motionOptions = { animate: options.animate !== false && options.commit === true };
+  renderEfficiencyChart(root, state, motionOptions);
+  renderLossChart(root, state, motionOptions);
+  updateCursorReadouts(root, state, {
+    announce: options.announce,
+    animate: options.animate !== false && options.commit === true,
+    commit: options.commit !== false,
+    animateOrder: options.animate !== false && options.commit === true
+  });
+}
+
+function scheduleRender(root, state, options = {}) {
+  state.pendingRenderOptions = {
+    ...state.pendingRenderOptions,
+    ...options,
+    commit: Boolean(state.pendingRenderOptions?.commit || options.commit),
+    announce: Boolean(state.pendingRenderOptions?.announce || options.announce),
+    updateUrl: Boolean(state.pendingRenderOptions?.updateUrl || options.updateUrl)
+  };
+  if (state.renderFrame) return;
+  state.renderFrame = requestAnimationFrame(() => {
+    state.renderFrame = 0;
+    const nextOptions = state.pendingRenderOptions || {};
+    state.pendingRenderOptions = null;
+    render(root, state, nextOptions);
+    if (nextOptions.updateUrl) scheduleUrlReplace(root, state);
+  });
+}
+
+function fieldMessageId(key) {
+  return `blx-field-message-${key}`;
+}
+
+function ensureFieldMessages(root) {
+  root.querySelectorAll("[data-blx-number]").forEach((input) => {
+    const key = input.dataset.blxNumber;
+    const field = input.closest(".blx-field");
+    if (!field || field.querySelector(`[data-blx-field-message="${key}"]`)) return;
+    const message = document.createElement("p");
+    message.id = fieldMessageId(key);
+    message.className = "blx-field-message";
+    message.dataset.blxFieldMessage = key;
+    message.hidden = true;
+    field.appendChild(message);
+  });
+}
+
+function setFieldMessage(root, key, text = "", tone = "note", options = {}) {
+  const message = root.querySelector(`[data-blx-field-message="${key}"]`);
+  const inputs = root.querySelectorAll(`[data-blx-number="${key}"]`);
+  const field = inputs[0]?.closest(".blx-field");
+  if (message) {
+    message.textContent = text;
+    message.dataset.tone = tone;
+    message.hidden = !text;
+  }
+  inputs.forEach((input) => {
+    if (tone === "error" && text) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+    if (text) input.setAttribute("aria-describedby", fieldMessageId(key));
+    else if (input.getAttribute("aria-describedby") === fieldMessageId(key)) input.removeAttribute("aria-describedby");
+  });
+  if (options.pulse && field) {
+    field.dataset.blxAdjusted = "false";
+    void field.offsetWidth;
+    field.dataset.blxAdjusted = "true";
+    setTimeout(() => { delete field.dataset.blxAdjusted; }, 300);
+  }
+}
+
+function announceMessage(root, text) {
+  const live = root.querySelector("[data-blx-live]");
+  if (live && text) live.textContent = text;
+}
+
+function commitNumberInput(root, state, key, input) {
+  const text = input.value.trim();
+  let inputNote = "";
+  if (PARAMS[key].optional && text === "") {
+    state.rawInputs[key] = null;
+    state.explicitOptional[key] = false;
+  } else {
+    const parsed = readFinite(text);
+    if (parsed === null) {
+      const message = `Enter a valid ${PARAMS[key].label.toLowerCase()}.`;
+      setFieldMessage(root, key, message, "error");
+      announceMessage(root, message);
+      return;
+    }
+    const clamped = clampStaticParam(key, parsed);
+    state.rawInputs[key] = clamped;
+    if (clamped !== parsed) inputNote = `${PARAMS[key].label} was limited to ${displayNumber(clamped, PARAMS[key].digits)} ${PARAMS[key].unit}.`;
+    if (PARAMS[key].optional) state.explicitOptional[key] = true;
+  }
+  markCustom(state);
+  setFieldMessage(root, key);
+  if (CATALOG_EDIT_KEYS.has(key)) clearCatalogSelection(root, state);
+  if (enforceBuck(state.rawInputs, key)) {
+    const adjustedKey = key === "vout" ? "vin" : "vout";
+    const adjusted = state.rawInputs[adjustedKey];
+    const adjustment = `${PARAMS[adjustedKey].label} was adjusted to ${displayNumber(adjusted, PARAMS[adjustedKey].digits)} ${PARAMS[adjustedKey].unit} to preserve buck headroom.`;
+    setFieldMessage(root, adjustedKey, adjustment, "note", { pulse: true });
+    announceMessage(root, adjustment);
+    if (!inputNote) inputNote = adjustment;
+  } else if (inputNote) {
+    setFieldMessage(root, key, inputNote, "note", { pulse: true });
+    announceMessage(root, inputNote);
+  }
+  state.inputNote = inputNote || null;
+  clampCursorToRange(state);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  scheduleRender(root, state, { updateUrl: true, announce: true, animate: true, commit: true });
+}
+
+function liveNumberInput(root, state, key, input) {
+  const text = input.value.trim();
+  if (PARAMS[key].optional && text === "") {
+    state.rawInputs[key] = null;
+    state.explicitOptional[key] = false;
+  } else {
+    const parsed = readFinite(text);
+    if (parsed === null) return;
+    state.rawInputs[key] = clampStaticParam(key, parsed);
+    if (PARAMS[key].optional) state.explicitOptional[key] = true;
+  }
+  markCustom(state);
+  if (CATALOG_EDIT_KEYS.has(key)) clearCatalogSelection(root, state);
+  clampCursorToRange(state);
+  syncControls(state, root.blxNumberControls, root.blxRangeControls);
+  scheduleRender(root, state, { updateUrl: true, announce: false, animate: false, commit: false });
+}
+
+function applyPreset(root, state, preset, options = {}) {
+  state.rawInputs = cloneRaw(preset.rawInputs);
+  state.cursor = preset.cursor;
+  state.activePresetId = preset.id;
+  state.explicitOptional = { vBias: false, inductorIsat: false };
+  state.urlNotes = [];
+  state.inputNote = null;
+  clearCatalogSelection(root, state);
+  if (options.clearReference) state.reference = null;
+  syncControls(state, root.blxNumberControls, root.blxRangeControls, { force: true });
+  render(root, state, { announce: true, animate: true, commit: true });
+  scheduleUrlReplace(root, state);
+}
+
+async function setView(root, state, view, options = {}) {
+  if (view !== "point" && view !== "load") return;
+  if (state.viewTransition && !options.immediate) await state.viewTransition;
+  const previousView = state.view;
+  state.view = view;
+  root.querySelector(".blx-view-tabs")?.setAttribute("data-active-view", view);
+  root.querySelectorAll("[data-blx-view]").forEach((tab) => {
+    const active = tab.dataset.blxView === view;
+    tab.setAttribute("aria-selected", active ? "true" : "false");
+    tab.tabIndex = active ? 0 : -1;
+  });
+  root.querySelectorAll("[data-blx-view-panel]").forEach((panel) => {
+    if (panel.dataset.blxViewPanel === view) panel.removeAttribute("aria-hidden");
+    else panel.setAttribute("aria-hidden", "true");
+  });
+  const fromPanel = root.querySelector(`[data-blx-view-panel="${previousView}"]`);
+  const toPanel = root.querySelector(`[data-blx-view-panel="${view}"]`);
+  const container = root.querySelector("[data-blx-view-panels]");
+  if (options.immediate || previousView === view || prefersReducedMotion() || !container) {
+    root.querySelectorAll("[data-blx-view-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.blxViewPanel !== view;
+    });
+  } else {
+    const direction = view === "load" ? 1 : -1;
+    const transition = animatePanelSwap(container, fromPanel, toPanel, direction);
+    state.viewTransition = transition;
+    await transition;
+    if (state.viewTransition === transition) state.viewTransition = null;
+  }
+  const tabs = root.querySelector(".blx-view-tabs");
+  if (tabs && tabs.getBoundingClientRect().top <= parseFloat(getComputedStyle(tabs).top || "0") + 2) {
+    const targetTop = tabs.getBoundingClientRect().bottom + 12;
+    const panelTop = toPanel?.getBoundingClientRect().top ?? targetTop;
+    if (panelTop < targetTop - 1) {
+      window.scrollBy({ top: panelTop - targetTop, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    }
+  }
+  if (options.focus) root.querySelector(`[data-blx-view="${view}"]`)?.focus();
+}
+
+function initViewTabs(root, state) {
+  const tabs = [...root.querySelectorAll("[data-blx-view]")];
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => setView(root, state, tab.dataset.blxView));
+    tab.addEventListener("keydown", (event) => {
+      const index = tabs.indexOf(tab);
+      let next = null;
+      if (event.key === "ArrowRight") next = tabs[(index + 1) % tabs.length];
+      if (event.key === "ArrowLeft") next = tabs[(index - 1 + tabs.length) % tabs.length];
+      if (event.key === "Home") next = tabs[0];
+      if (event.key === "End") next = tabs[tabs.length - 1];
+      if (!next) return;
+      event.preventDefault();
+      setView(root, state, next.dataset.blxView, { focus: true });
+    });
+  });
+  setView(root, state, state.view, { immediate: true });
+}
+
+function initInputSheet(root) {
+  const disclosure = root.querySelector(".blx-input-disclosure");
+  const desktopSlot = root.querySelector("[data-blx-desktop-input-slot]");
+  const mobileSlot = root.querySelector("[data-blx-mobile-input-slot]");
+  const dialog = root.querySelector("[data-blx-input-sheet]");
+  const openButton = root.querySelector("[data-blx-input-open]");
+  const closeButton = root.querySelector("[data-blx-input-close]");
+  const title = root.querySelector("#blx-input-sheet-title");
+  if (!disclosure || !desktopSlot || !mobileSlot || !dialog || typeof window === "undefined") return;
+  const mobile = window.matchMedia("(max-width: 700px)");
+  let closing = false;
+  const close = async () => {
+    if (!dialog.open || closing) return;
+    closing = true;
+    await animateDialog(dialog, false);
+    dialog.close();
+    closing = false;
+    openButton?.focus();
+  };
+  const open = async () => {
+    if (!mobile.matches || dialog.open) return;
+    dialog.showModal();
+    await animateDialog(dialog, true);
+    title?.focus();
+  };
+  const sync = (event = mobile) => {
+    if (event.matches) {
+      disclosure.open = true;
+      mobileSlot.appendChild(disclosure);
+    } else {
+      if (dialog.open) dialog.close();
+      disclosure.open = true;
+      desktopSlot.appendChild(disclosure);
+    }
+  };
+  openButton?.addEventListener("click", open);
+  closeButton?.addEventListener("click", close);
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    close();
+  });
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) close();
+  });
+  sync();
+  mobile.addEventListener?.("change", sync);
+}
+
+function initLossHighlighting(root, state) {
+  const setHighlight = (key) => {
+    if (key) root.dataset.blxHighlight = key;
+    else delete root.dataset.blxHighlight;
+    root.querySelectorAll("[data-blx-loss-key]").forEach((node) => {
+      if (node.classList.contains("blx-loss-row")) node.dataset.active = key && node.dataset.blxLossKey === key ? "true" : "false";
+      if (node.matches("button")) node.setAttribute("aria-pressed", state.pinnedHighlight === node.dataset.blxLossKey ? "true" : "false");
+    });
+  };
+  root.addEventListener("pointerover", (event) => {
+    const target = event.target.closest("[data-blx-loss-key]");
+    if (target) setHighlight(target.dataset.blxLossKey);
+  });
+  root.addEventListener("pointerout", (event) => {
+    const target = event.target.closest("[data-blx-loss-key]");
+    if (!target || target.contains(event.relatedTarget)) return;
+    setHighlight(state.pinnedHighlight);
+  });
+  root.addEventListener("focusin", (event) => {
+    const target = event.target.closest("[data-blx-loss-key]");
+    if (target) setHighlight(target.dataset.blxLossKey);
+  });
+  root.addEventListener("focusout", (event) => {
+    const target = event.target.closest("[data-blx-loss-key]");
+    if (!target || target.contains(event.relatedTarget)) return;
+    setHighlight(state.pinnedHighlight);
+  });
+  root.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-blx-loss-key]");
+    if (!button) return;
+    state.pinnedHighlight = state.pinnedHighlight === button.dataset.blxLossKey ? null : button.dataset.blxLossKey;
+    if (state.pinnedHighlight) root.dataset.blxPinnedHighlight = state.pinnedHighlight;
+    else delete root.dataset.blxPinnedHighlight;
+    setHighlight(state.pinnedHighlight);
+  });
+}
+
+export function initBuckLossExplorer(root) {
+  if (!root || root.dataset.blxInit === "true") return;
+  root.dataset.blxInit = "true";
+  const parsed = parseBuckLossUrl(typeof window === "undefined" ? "" : window.location.search);
+  const state = {
+    rawInputs: cloneRaw(parsed.rawInputs),
+    cursor: parsed.cursor,
+    activePresetId: parsed.activePresetId,
+    explicitOptional: { ...parsed.explicitOptional },
+    urlNotes: parsed.notes,
+    inputNote: null,
+    reference: null,
+    catalog: null,
+    selectedPart: parsed.selectedInductorPart,
+    dcrMode: parsed.inductorDcrMode,
+    inductorAcDataset: null,
+    view: "point",
+    showAllLosses: false,
+    pinnedHighlight: null,
+    instanceId: `blx-${Math.random().toString(36).slice(2)}`,
+    renderFrame: 0,
+    pendingRenderOptions: null,
+    urlTimer: 0,
+    inputs: normalizeInputs(parsed.rawInputs),
+    validation: { valid: true, errors: [] },
+    sweep: [],
+    acrossPlots: {},
+    topGroups: [],
+    lossRows: null,
+    lossOrder: []
+  };
+
+  const numberControls = makeControlMap(root, "data-blx-number");
+  const rangeControls = makeControlMap(root, "data-blx-range");
+  root.blxNumberControls = numberControls;
+  root.blxRangeControls = rangeControls;
+  ensureFieldMessages(root);
+  initAdvancedAccordions(root);
+  initInputSheet(root);
+  initViewTabs(root, state);
+  initLossHighlighting(root, state);
+
+  root.querySelectorAll("[data-blx-presets]").forEach((holder) => {
+    holder.innerHTML = "<span>Presets:</span>";
+    BUCK_LOSS_PRESETS.forEach((preset) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.blxPreset = preset.id;
+      button.setAttribute("aria-pressed", preset.id === state.activePresetId ? "true" : "false");
+      button.textContent = preset.name;
+      button.addEventListener("click", () => applyPreset(root, state, preset));
+      holder.appendChild(button);
+    });
+  });
+
+  Object.keys(PARAMS).forEach((key) => {
+    (rangeControls.get(key) || []).forEach((range) => {
+      range.addEventListener("input", () => {
+        state.rawInputs[key] = clampParam(key, fromSlider(key, range.value, state.rawInputs), state.rawInputs);
+        if (PARAMS[key].optional) state.explicitOptional[key] = true;
+        markCustom(state);
+        if (CATALOG_EDIT_KEYS.has(key)) clearCatalogSelection(root, state);
+        enforceBuck(state.rawInputs, key);
+        clampCursorToRange(state);
+        range.setAttribute("aria-valuetext", controlValueText(key, state.rawInputs[key]));
+        syncControls(state, numberControls, rangeControls);
+        scheduleRender(root, state, { updateUrl: true, announce: false, animate: false, commit: false });
+      });
+    });
+    (numberControls.get(key) || []).forEach((input) => {
+      input.addEventListener("input", () => {
+        liveNumberInput(root, state, key, input);
+      });
+      input.addEventListener("change", () => commitNumberInput(root, state, key, input));
+      input.addEventListener("blur", () => commitNumberInput(root, state, key, input));
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        commitNumberInput(root, state, key, input);
+      });
+    });
+  });
+
+  root.querySelectorAll("[data-blx-cursor-input]").forEach((cursorInput) => {
+    cursorInput.addEventListener("keydown", (event) => {
+      const directionByKey = {
+        ArrowLeft: -1,
+        ArrowDown: -1,
+        ArrowRight: 1,
+        ArrowUp: 1,
+        PageDown: -10,
+        PageUp: 10
+      };
+      if (event.key === "Home" || event.key === "End") {
+        event.preventDefault();
+        state.cursor = event.key === "Home" ? 0 : state.rawInputs.ioutMax;
+      } else if (event.key in directionByKey) {
+        event.preventDefault();
+        const multiplier = directionByKey[event.key] * (event.shiftKey ? 10 : 1);
+        state.cursor = clamp(state.cursor + (state.rawInputs.ioutMax / 100) * multiplier, 0, state.rawInputs.ioutMax);
+      } else {
+        return;
+      }
+      updateCursorReadouts(root, state, { announce: true, commit: true, animateOrder: true });
+      scheduleUrlReplace(root, state);
+    });
+    cursorInput.addEventListener("input", () => {
+      state.cursor = clamp(Number(cursorInput.value), 0, state.rawInputs.ioutMax);
+      root.dataset.blxManipulating = "true";
+      updateCursorReadouts(root, state, { commit: false });
+      scheduleUrlReplace(root, state);
+    });
+    cursorInput.addEventListener("change", () => {
+      root.dataset.blxManipulating = "false";
+      updateCursorReadouts(root, state, { announce: true, commit: true, animateOrder: true });
+    });
+  });
+
+  root.querySelector("[data-blx-reset]")?.addEventListener("click", () => {
+    const preset = getBuckLossPreset(DEFAULT_PRESET_ID);
+    if (preset) {
+      clearCatalogSelection(root, state);
+      applyPreset(root, state, preset, { clearReference: true });
+    }
+  });
+
+  root.querySelector("[data-blx-show-all]")?.addEventListener("click", (event) => {
+    state.showAllLosses = !state.showAllLosses;
+    root.classList.toggle("blx-show-all-losses", state.showAllLosses);
+    event.currentTarget.setAttribute("aria-expanded", state.showAllLosses ? "true" : "false");
+    event.currentTarget.textContent = state.showAllLosses ? "Show fewer losses" : "Show all losses";
+  });
+
+  root.querySelectorAll("[data-blx-reference]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.reference) {
+        state.reference = null;
+      } else {
+        state.reference = {
+          rawInputs: cloneRaw(state.rawInputs),
+          cursor: state.cursor,
+          selectedPart: state.selectedPart,
+          dcrMode: state.dcrMode,
+          inductorAcDataset: state.inductorAcDataset
+        };
+      }
+      render(root, state, { announce: true, animate: true, commit: true });
+    });
+  });
+
+  root.querySelectorAll("[data-blx-copy]").forEach((button) => {
+    button.addEventListener("click", () => copyCanonicalUrl(root, state, button));
+  });
+
+  if (typeof window !== "undefined") {
+    let resizeFrame = 0;
+    const renderAtNewSize = () => {
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+        render(root, state, { animate: false, commit: true });
+      });
+    };
+    if ("ResizeObserver" in window) {
+      const observedWidths = new WeakMap();
+      const resizeObserver = new ResizeObserver((entries) => {
+        const widthChanged = entries.some((entry) => {
+          const width = entry.contentRect.width;
+          const previous = observedWidths.get(entry.target);
+          observedWidths.set(entry.target, width);
+          return previous !== undefined && Math.abs(previous - width) > 0.5;
+        });
+        if (widthChanged) renderAtNewSize();
+      });
+      root.querySelectorAll(".blx-plot").forEach((plot) => resizeObserver.observe(plot));
+      root.blxResizeObserver = resizeObserver;
+    } else {
+      window.addEventListener("resize", renderAtNewSize, { passive: true });
+    }
+    window.addEventListener("popstate", () => {
+      const next = parseBuckLossUrl(window.location.search);
+      state.rawInputs = cloneRaw(next.rawInputs);
+      state.cursor = next.cursor;
+      state.activePresetId = next.activePresetId;
+      state.explicitOptional = { ...next.explicitOptional };
+      state.selectedPart = next.selectedInductorPart;
+      state.dcrMode = next.inductorDcrMode;
+      state.urlNotes = next.notes;
+      state.inputNote = null;
+      const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+      if (dcrSelect) dcrSelect.value = state.dcrMode;
+      if (state.catalog && findCatalogPart(state, state.selectedPart)) applyCatalogPart(root, state, state.selectedPart);
+      else clearCatalogSelection(root, state);
+      syncControls(state, numberControls, rangeControls, { force: true });
+      render(root, state, { announce: true, animate: true, commit: true });
+    });
+  }
+
+  syncControls(state, numberControls, rangeControls);
+  render(root, state, { animate: false, commit: true });
+  root.dataset.blxStatus = "ready";
+  root.setAttribute("aria-busy", "false");
+  initCoilcraftCatalog(root, state);
+}

@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "ngspice-46",
+  "fixtureRevision": "2026-07-10",
+  "reviewStatus": "reviewed",
+  "reviewNotes": "Checked for steady-state convergence, nonnegative DCM current, expected CCM/DCM classification, and agreement with the declared acceptance tolerances.",
+  "methodology": "CCM cases are closed-loop-by-search fixed-frequency transient buck simulations with independently solved PWM duty. The DCM case is a SPICE-integrated ideal triangular PWL reference with a zero-current interval. Switching overlap, Qrr, gate-drive, EOSS, capacitor ESR, core residual, and controller bias are intentionally outside these static waveform fixtures.",
+  "tolerances": {
+    "waveformRelative": 0.03,
+    "staticLossRelative": 0.03,
+    "aggregateStaticRelative": 0.08,
+    "efficiencyAbsolute": 0.01
+  },
+  "cases": [
+    {
+      "id": "epc2090-12v-3v3-2a-ccm",
+      "expectedMode": "ccm",
+      "deviceTemplate": "epc2090",
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 0,
+        "esr": 0,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 2
+      },
+      "simulation": {
+        "dutyCommand": 0.28396072387695315,
+        "voutAverage": 3.29998,
+        "inductorAverage": 1.99812,
+        "inductorRms": 2.02318,
+        "highSideRms": 1.07943,
+        "lowSideRms": 1.6615,
+        "deadTimeCurrentAverage": 0.0790025,
+        "peakCurrent": 2.56677,
+        "valleyCurrent": 1.43007,
+        "losses": {
+          "highSideConduction": 0.0044276426746199995,
+          "lowSideConduction": 0.010490212550000001,
+          "inductorCopperTotal": 0.081865146248,
+          "deadTimeConduction": 0.11850375
+        },
+        "aggregateStaticLoss": 0.21528675147262,
+        "efficiencyStatic": 0.968411196869141
+      }
+    },
+    {
+      "id": "silicon30-12v-3v3-2a-ccm",
+      "expectedMode": "ccm",
+      "deviceTemplate": "silicon-30v",
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 0,
+        "esr": 0,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 2
+      },
+      "simulation": {
+        "dutyCommand": 0.2818214797973633,
+        "voutAverage": 3.30001,
+        "inductorAverage": 1.99824,
+        "inductorRms": 2.02329,
+        "highSideRms": 1.07522,
+        "lowSideRms": 1.66434,
+        "deadTimeCurrentAverage": 0.0790317,
+        "peakCurrent": 2.56198,
+        "valleyCurrent": 1.43511,
+        "losses": {
+          "highSideConduction": 0.005780490242000001,
+          "lowSideConduction": 0.013850138178,
+          "inductorCopperTotal": 0.08187404848199999,
+          "deadTimeConduction": 0.06322536
+        },
+        "aggregateStaticLoss": 0.164730036902,
+        "efficiencyStatic": 0.9756486901911254
+      }
+    },
+    {
+      "id": "epc2090-12v-3v3-50ma-dcm",
+      "expectedMode": "dcm",
+      "deviceTemplate": "epc2090",
+      "method": "ideal-dcm-pwl-transient",
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 0,
+        "dcr": 0,
+        "rac": 0,
+        "inductorAcManual": 0,
+        "inputEsr": 0,
+        "esr": 0,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.05
+      },
+      "simulation": {
+        "dutyCommand": 0.08339078479367938,
+        "dutyMeasured": 0.08339078479367938,
+        "lowSideDutyMeasured": 0.21984843263788204,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.05,
+        "inductorRms": 0.104845,
+        "highSideRms": 0.0549816,
+        "lowSideRms": 0.0892723,
+        "deadTimeCurrentAverage": 0,
+        "peakCurrent": 0.329773,
+        "valleyCurrent": 0,
+        "losses": {
+          "highSideConduction": 0.000011487310086528,
+          "lowSideConduction": 0.000030284265479702004,
+          "inductorCopperTotal": 0,
+          "deadTimeConduction": 0
+        },
+        "aggregateStaticLoss": 0.00004177157556623,
+        "efficiencyStatic": 0.9997469030102655
+      }
+    }
+  ],
+  "switchingReferences": [
+    {
+      "id": "silicon30-12v-3v3-2a-ccm-switching-phases",
+      "method": "textbook-phase-pwl-integration",
+      "expectedMode": "ccm",
+      "deviceTemplate": "silicon-30v",
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 0,
+        "esr": 0,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 2
+      },
+      "referenceCurrents": {
+        "turnOnCurrent": 1.43511,
+        "turnOffCurrent": 2.56198
+      },
+      "phaseDurations": {
+        "currentRise": 3.2e-9,
+        "voltageFall": 4e-9,
+        "voltageRise": 4e-9,
+        "currentFall": 3.2e-9,
+        "recoveryDuration": 2e-8
+      },
+      "simulation": {
+        "energies": {
+          "turnOnOverlap": 5.63352e-8,
+          "turnOffOverlap": 1.00571e-7,
+          "reverseRecovery": 5.51082e-8
+        },
+        "powers": {
+          "turnOnOverlap": 0.0563352,
+          "turnOffOverlap": 0.100571,
+          "reverseRecovery": 0.055108199999999996
+        },
+        "aggregateSwitchingRecovery": 0.2120144
+      }
+    }
+  ]
+}
