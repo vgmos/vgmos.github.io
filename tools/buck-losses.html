@@ -288,6 +288,109 @@ math: true
     display: none;
   }
 
+  .blx-catalog {
+    margin: 0 0 13px;
+  }
+
+  .blx-catalog-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .blx-catalog-field + .blx-catalog-field {
+    margin-top: 9px;
+  }
+
+  .blx-catalog-field label {
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .blx-select-wrap {
+    position: relative;
+  }
+
+  .blx-select-wrap::after {
+    content: "";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    transform: translateY(-65%) rotate(45deg);
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    pointer-events: none;
+  }
+
+  .blx-catalog select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 100%;
+    min-height: 34px;
+    box-sizing: border-box;
+    padding: 6px 30px 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--claude-sans);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color var(--blx-motion-fast) var(--claude-ease), box-shadow var(--blx-motion-fast) var(--claude-ease);
+  }
+
+  .blx-catalog select:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--claude-ring);
+    outline: none;
+  }
+
+  .blx-catalog select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .blx-catalog[data-catalog-state="error"] select[data-blx-catalog-part],
+  .blx-catalog[data-catalog-state="loading"] select[data-blx-catalog-part] {
+    opacity: 0.5;
+    cursor: progress;
+  }
+
+  .blx-catalog-meta {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border-left: 2px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    background: var(--soft);
+    color: var(--ink-soft);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  .blx-catalog-meta a {
+    color: var(--accent);
+    font-weight: 550;
+    white-space: nowrap;
+  }
+
+  .blx-catalog-meta .blx-catalog-drop {
+    color: var(--muted);
+  }
+
+  .blx-catalog-message {
+    margin: 9px 0 0;
+    color: var(--muted);
+    font-family: var(--claude-sans);
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
   .blx-current-control {
     margin: 14px 0 18px;
   }
@@ -2189,6 +2292,28 @@ math: true
               <details>
                 <summary><span>Inductor &amp; capacitors</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
                 <div class="blx-detail-panel"><div class="blx-detail-body">
+                  <div class="blx-catalog" data-blx-catalog data-catalog-state="loading">
+                    <div class="blx-catalog-field">
+                      <label for="blx-catalog-part">Coilcraft part</label>
+                      <div class="blx-select-wrap">
+                        <select id="blx-catalog-part" data-blx-catalog-part aria-describedby="blx-catalog-meta">
+                          <option value="">Custom / manual</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="blx-catalog-field">
+                      <label for="blx-catalog-dcr">DCR assumption</label>
+                      <div class="blx-select-wrap">
+                        <select id="blx-catalog-dcr" data-blx-catalog-dcr disabled>
+                          <option value="typ">Typical DCR</option>
+                          <option value="max">Maximum DCR</option>
+                        </select>
+                      </div>
+                    </div>
+                    <p class="blx-catalog-meta" id="blx-catalog-meta" data-blx-catalog-meta hidden></p>
+                    <p class="blx-catalog-message" data-blx-catalog-message role="status" hidden></p>
+                    <p class="blx-field-help">Selecting a part fills inductance, inductor DCR, and I<sub>SAT</sub> from the manufacturer datasheet. DCR models DC copper loss only; AC and core loss are not modeled. Confirm the current datasheet before design release. This tool is unaffiliated with Coilcraft.</p>
+                  </div>
                   <p class="blx-hint">Pair E<sub>OSS</sub> defaults are derived from 441 pF C<sub>OSS(ER)</sub> per EPC2090 at each preset input voltage.</p>
                   <div class="blx-detail-grid">
                     <div class="blx-field"><div class="blx-field-head"><label for="blx-num-dcr">Inductor DCR</label><span class="blx-entry"><input id="blx-num-dcr" data-blx-number="dcr" type="number" inputmode="decimal" step="0.1"><span class="blx-unit">mΩ</span></span></div><input data-blx-range="dcr" type="range" min="0" max="1000" step="1" aria-label="Inductor DCR slider"></div>
@@ -2329,5 +2454,7 @@ math: true
 
 <script type="module">
   import { initBuckLossExplorer } from "{{ '/js/tools/buck-loss-ui.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
-  initBuckLossExplorer(document.getElementById("buck-loss-explorer"));
+  const buckLossRoot = document.getElementById("buck-loss-explorer");
+  buckLossRoot.dataset.blxCatalogUrl = "{{ '/assets/data/coilcraft-inductors.v1.json' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
+  initBuckLossExplorer(buckLossRoot);
 </script>
