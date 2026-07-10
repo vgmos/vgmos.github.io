@@ -287,6 +287,20 @@ test.describe("Buck Converter Loss Explorer", () => {
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
 
+    const initialized = await page.locator(".blx-page").evaluate((root) => ({
+      status: root.dataset.blxStatus,
+      busy: root.getAttribute("aria-busy"),
+      loaderDisplay: getComputedStyle(root.querySelector(".blx-loading-state")).display,
+      unresolvedOutputs: [...root.querySelectorAll(".blx-workspace [data-blx-out]")]
+        .filter((node) => node.textContent.trim() === "—").length
+    }));
+    expect(initialized).toEqual({
+      status: "ready",
+      busy: "false",
+      loaderDisplay: "none",
+      unresolvedOutputs: 0
+    });
+
     const desktop = await page.locator(".blx-workspace").evaluate((workspace) => {
       const style = getComputedStyle(workspace);
       const powerBalance = document.querySelector("[data-blx-power-balance]");
@@ -298,8 +312,8 @@ test.describe("Buck Converter Loss Explorer", () => {
           .filter((row) => getComputedStyle(row).display !== "none").length
       };
     });
-    expect(desktop.width).toBeCloseTo(1160, 0);
-    expect(desktop.columns).toMatch(/^310px\s+/);
+    expect(desktop.width).toBeCloseTo(1240, 0);
+    expect(desktop.columns).toMatch(/^380px\s+/);
     expect(desktop.visibleLossRows).toBe(6);
     expect(desktop.powerBalanceBottom).toBeLessThanOrEqual(901);
 
