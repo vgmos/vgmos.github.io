@@ -38,9 +38,10 @@ exclude:
   - playwright-report/
   - test-results/
   - audit-artifacts/
-  - tests/
-  - scripts/
   - data/
+  - scripts/
+  - claude-coilcraft-implementation-prompt.md
+  - tests/
   - .cache/
 
 defaults:

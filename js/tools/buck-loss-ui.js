@@ -7,15 +7,17 @@ function versionedModuleUrl(path) {
 }
 
 const [
-  { classifyRegime, computeLossPoint, normalizeInputs, validateInputs },
+  { classifyRegime, normalizeInputs, validateInputs },
   { BUCK_LOSS_PRESETS, DEFAULT_PRESET_ID, getBuckLossPreset },
   { parseBuckLossUrl, serializeBuckLossUrl },
-  { loadCoilcraftCatalog, selectIsat, dcrForMode, groupPartsBySeries }
+  { loadCoilcraftCatalog, selectIsat, dcrForMode, groupPartsBySeries },
+  { evaluateBuckLossPoint, evaluateBuckLossSweep }
 ] = await Promise.all([
   import(versionedModuleUrl("./buck-loss-model.js")),
   import(versionedModuleUrl("./buck-loss-presets.js")),
   import(versionedModuleUrl("./buck-loss-url.js")),
-  import(versionedModuleUrl("./coilcraft-catalog.js"))
+  import(versionedModuleUrl("./coilcraft-catalog.js")),
+  import(versionedModuleUrl("./buck-loss-evaluator.js"))
 ]);
 
 const CATALOG_EDIT_KEYS = new Set(["inductance", "dcr", "inductorIsat"]);
@@ -40,12 +42,14 @@ const PARAMS = {
   iq: { min: 0, max: 20, log: false, digits: 2, label: "Quiescent current", unit: "mA" },
   vBias: { min: 1, max: 100, log: true, digits: 2, optional: true, label: "Bias voltage", unit: "V" },
   eossTotal: { min: 0, max: 5000, log: false, digits: 1, label: "Pair EOSS", unit: "nJ" },
-  qrr: { min: 0, max: 500, log: false, digits: 1, label: "Reverse recovery charge", unit: "nC" }
+  qrr: { min: 0, max: 500, log: false, digits: 1, label: "Reverse recovery charge", unit: "nC" },
+  inductorAcManual: { min: 0, max: 100000, log: false, digits: 1, label: "Manual additional inductor AC/core loss", unit: "mW" }
 };
 
 const GROUPS = [
   ["fetConduction", "FET conduction", "--blx-cond"],
   ["inductorDcr", "Inductor DCR", "--blx-dcr"],
+  ["inductorAc", "Additional inductor AC/core", "--blx-inductor-ac"],
   ["switchingOverlap", "Switching overlap", "--blx-sw"],
   ["deadTime", "Dead time", "--blx-dead"],
   ["gateDrive", "Gate drive", "--blx-gate"],
@@ -57,6 +61,7 @@ const POINT_LOSSES = [
   ["condHigh", "High-side conduction", "--blx-cond", "fetConduction", (result) => result.losses.condHigh],
   ["condLow", "Low-side conduction", "--blx-cond", "fetConduction", (result) => result.losses.condLow],
   ["dcr", "Inductor copper (DCR)", "--blx-dcr", "inductorDcr", (result) => result.losses.dcr],
+  ["inductorAc", "Additional inductor AC/core", "--blx-inductor-ac", "inductorAc", (result) => result.losses.inductorAc],
   ["switching", "Switching overlap", "--blx-sw", "switchingOverlap", (result) => result.losses.switching],
   ["deadTime", "Dead time", "--blx-dead", "deadTime", (result) => result.losses.deadTime],
   ["gate", "Gate drive", "--blx-gate", "gateDrive", (result) => result.losses.gate],
@@ -72,6 +77,7 @@ const REGIME_COLOR_CLASS = {
   conduction: "cond",
   inductorDcr: "dcr",
   dcr: "dcr",
+  inductorAc: "inductor-ac",
   switchingOverlap: "sw",
   switching: "sw",
   frequency: "sw",
@@ -90,6 +96,8 @@ const WARNING_COPY = {
 
 const URL_NOTE_COPY = {
   "unknown-preset": "Unknown preset in the URL; the default EPC2090 example was loaded instead.",
+  "unknown-inductor": "Unknown inductor in the URL; manual values remain active.",
+  "unknown-dcr-mode": "Unknown DCR mode in the URL; typical DCR was selected.",
   clamped: "Some URL values were outside the allowed range and were limited."
 };
 
@@ -184,6 +192,7 @@ function regimeLabel(regime) {
     floor: "Fixed-loss floor",
     fetConduction: "FET conduction",
     inductorDcr: "Inductor DCR",
+    inductorAc: "Inductor AC/core",
     switchingOverlap: "Switching",
     deadTime: "Dead time",
     gateDrive: "Gate drive",
@@ -256,12 +265,22 @@ function prefersReducedMotion() {
   return Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 
-function linearSweep(inputs, { points = 180, iMin = 0, iMax = inputs.ioutMax } = {}) {
-  const count = Math.max(2, Math.floor(points));
-  return Array.from({ length: count }, (_, index) => {
-    const t = index / (count - 1);
-    return computeLossPoint(inputs, iMin + (iMax - iMin) * t);
-  });
+function evaluationContext(state, snapshot = state) {
+  return {
+    inductorPartNumber: snapshot?.selectedPart || null,
+    inductorAcDataset: snapshot?.inductorAcDataset ?? state.inductorAcDataset ?? null,
+    ambientC: 25,
+    waveform: "triangular"
+  };
+}
+
+function evaluatePoint(state, current, snapshot = state) {
+  const inputs = snapshot === state ? state.inputs : normalizeInputs(snapshot.rawInputs);
+  return evaluateBuckLossPoint(inputs, current, evaluationContext(state, snapshot));
+}
+
+function linearSweep(inputs, context, { points = 180, iMin = 0, iMax = inputs.ioutMax } = {}) {
+  return evaluateBuckLossSweep(inputs, context, { points, iMin, iMax });
 }
 
 function canonicalQuery(state) {
@@ -269,6 +288,8 @@ function canonicalQuery(state) {
     rawInputs: state.rawInputs,
     cursor: state.cursor,
     activePresetId: state.activePresetId,
+    selectedInductorPart: state.selectedPart,
+    inductorDcrMode: state.dcrMode,
     explicitOptional: state.explicitOptional
   });
 }
@@ -426,7 +447,10 @@ function renderSentence(root, classification) {
   dot.style.setProperty("--chip-color", `var(--blx-${chipKey})`);
   dot.setAttribute("aria-hidden", "true");
   chip.append(dot, document.createTextNode(regimeLabel(classification.regime)));
-  node.append(chip, document.createTextNode(classification.sentence));
+  const sentence = classification.partial
+    ? "Dominant-loss classification uses the modeled subtotal because part-specific additional AC/core loss is unavailable."
+    : classification.sentence;
+  node.append(chip, document.createTextNode(sentence));
 }
 
 function renderWarnings(root, result, validation, state) {
@@ -438,6 +462,22 @@ function renderWarnings(root, result, validation, state) {
     notes.push("Check the inputs: VIN must exceed VOUT, and frequency, inductance, and the current limit must be positive.");
   } else if (result?.valid) {
     result.warnings.forEach((code) => notes.push(WARNING_COPY[code] || code));
+    const estimate = result.inductorAcEstimate;
+    if (state.selectedPart && estimate?.status === "not-characterized") {
+      notes.push(result.manualInductorAcLossW > 0
+        ? "Part-specific additional AC/core loss is not modeled; this subtotal includes RMS DCR and the manual AC/core loss."
+        : "Part-specific additional AC/core loss is not modeled; loss and efficiency are RMS-DCR-only subtotals.");
+    } else if (state.selectedPart && estimate?.status === "guarded-extrapolation") {
+      notes.push("Guarded extrapolation: the additional AC/core estimate is outside the model's verified frequency or ripple range, but remains inside its separately validated guarded range.");
+    } else if (state.selectedPart && estimate?.status === "out-of-domain") {
+      const axes = estimate.outsideAxes?.join(", ") || "operating point";
+      notes.push(`Part-specific additional AC/core loss was rejected because the ${axes} condition is outside the guarded model limits; loss and efficiency exclude that modeled term and are labeled as subtotals.`);
+    } else if (state.selectedPart && estimate?.status === "invalid") {
+      notes.push("The part-specific additional AC/core-loss model is invalid; loss and efficiency exclude it.");
+    }
+    if (result.inductorAcIncluded && state.dcrMode === "max") {
+      notes.push("This combines maximum RMS DCR with modeled typical additional AC/core loss; it is not a worst-case total-loss guarantee.");
+    }
   }
   const shown = [...new Set(notes)];
   const key = shown.join("\n");
@@ -454,8 +494,7 @@ function renderWarnings(root, result, validation, state) {
 
 function referenceResult(state) {
   if (!state.reference) return null;
-  const inputs = normalizeInputs(state.reference.rawInputs);
-  const result = computeLossPoint(inputs, state.reference.cursor);
+  const result = evaluatePoint(state, state.reference.cursor, state.reference);
   return result.valid ? result : null;
 }
 
@@ -472,7 +511,9 @@ function renderBreakdown(root, result, state) {
     token,
     groupKey,
     value: read(result),
-    referenceValue: held ? read(held) : null
+    referenceValue: held ? read(held) : null,
+    unavailable: key === "inductorAc" && !result.inductorAcAnyIncluded,
+    referenceUnavailable: key === "inductorAc" && held && !held.inductorAcAnyIncluded
   })).sort((a, b) => b.value - a.value);
   const maxValue = Math.max(0.000001, ...items.flatMap((item) => [item.value, item.referenceValue || 0]));
 
@@ -482,7 +523,9 @@ function renderBreakdown(root, result, state) {
     row.tabIndex = 0;
     row.dataset.blxLossKey = item.groupKey;
     row.dataset.active = root.dataset.blxHighlight === item.groupKey ? "true" : "false";
-    row.setAttribute("aria-label", `${item.label}: ${ariaPower(item.value)}, ${(100 * item.value / result.pLoss).toFixed(1)} percent of loss`);
+    row.setAttribute("aria-label", item.unavailable
+      ? `${item.label}: not modeled`
+      : `${item.label}: ${ariaPower(item.value)}, ${(100 * item.value / result.pLoss).toFixed(1)} percent of loss`);
     row.style.setProperty("--blx-loss-color", `var(${item.token})`);
 
     const label = document.createElement("span");
@@ -495,9 +538,9 @@ function renderBreakdown(root, result, state) {
     track.className = "blx-loss-track";
     const bar = document.createElement("span");
     bar.className = "blx-loss-bar";
-    bar.style.setProperty("--blx-loss-width", `${Math.max(0.4, 100 * item.value / maxValue)}%`);
+    bar.style.setProperty("--blx-loss-width", item.unavailable ? "0%" : `${Math.max(0.4, 100 * item.value / maxValue)}%`);
     track.appendChild(bar);
-    if (item.referenceValue !== null) {
+    if (item.referenceValue !== null && !item.referenceUnavailable) {
       const marker = document.createElement("span");
       marker.className = "blx-reference-marker";
       marker.style.setProperty("--blx-reference-left", `${clamp(100 * item.referenceValue / maxValue, 0, 100)}%`);
@@ -507,9 +550,9 @@ function renderBreakdown(root, result, state) {
 
     const value = document.createElement("span");
     value.className = "blx-loss-value";
-    value.append(document.createTextNode(eng(item.value, "W")));
+    value.append(document.createTextNode(item.unavailable ? "—" : eng(item.value, "W")));
     const share = document.createElement("small");
-    share.textContent = `${(100 * item.value / result.pLoss).toFixed(1)}%`;
+    share.textContent = item.unavailable ? "not modeled" : `${(100 * item.value / result.pLoss).toFixed(1)}%`;
     value.appendChild(share);
     row.append(label, track, value);
     list.appendChild(row);
@@ -528,7 +571,7 @@ function renderPowerBalance(root, result) {
   output.innerHTML = `<span>Output power</span><strong>${eng(result.pOut, "W")}</strong>`;
   const loss = document.createElement("div");
   loss.className = "blx-power-loss";
-  loss.innerHTML = `<span>Losses</span><strong>${eng(result.pLoss, "W")}</strong>`;
+  loss.innerHTML = `<span>${result.lossEstimateKind === "modeled-subtotal" ? "Modeled subtotal" : "Losses"}</span><strong>${eng(result.pLoss, "W")}</strong>`;
   holder.append(output, loss);
 }
 
@@ -661,7 +704,15 @@ function referenceSweep(state) {
   if (!state.reference) return [];
   const inputs = normalizeInputs(state.reference.rawInputs);
   if (!validateInputs(inputs).valid) return [];
-  return linearSweep(inputs, { points: state.sweep.length || 180, iMin: 0, iMax: state.inputs.ioutMax }).filter((point) => point.valid);
+  return linearSweep(inputs, evaluationContext(state, state.reference), {
+    points: state.sweep.length || 180,
+    iMin: 0,
+    iMax: inputs.ioutMax
+  }).filter((point) => point.valid);
+}
+
+function plottableTotals(points) {
+  return points.filter((point) => !["out-of-domain", "invalid"].includes(point.inductorAcEstimate?.status));
 }
 
 function renderEfficiencyChart(root, state) {
@@ -673,7 +724,7 @@ function renderEfficiencyChart(root, state) {
   const { width, height, left, plotWidth, bottom, top } = geometry;
   const xScale = (current) => left + clamp(current / state.inputs.ioutMax, 0, 1) * plotWidth;
   const yScale = (efficiency) => bottom - clamp(efficiency, 0, 1) * geometry.plotHeight;
-  const valueAt = (current) => computeLossPoint(state.inputs, current).efficiency;
+  const valueAt = (current) => evaluatePoint(state, current).efficiency;
   const plot = { kind: "efficiency", geometry, xScale, yScale, valueAt };
   state.acrossPlots.efficiency = plot;
   const titleId = `${state.instanceId}-efficiency-title`;
@@ -682,9 +733,9 @@ function renderEfficiencyChart(root, state) {
   appendAxes(svg, geometry, [0, 0.25, 0.5, 0.75, 1], state.inputs.ioutMax, yScale, (value) => `${Math.round(value * 100)}%`);
   const heldSweep = referenceSweep(state);
   if (heldSweep.length) {
-    svg.append(svgEl("path", { d: svgPath(heldSweep.map((point) => [xScale(point.iout), yScale(point.efficiency)])), class: "blx-svg-line blx-svg-reference", fill: "none", "stroke-width": 1.4 }));
+    svg.append(svgEl("path", { d: svgPath(plottableTotals(heldSweep).map((point) => [xScale(point.iout), yScale(point.efficiency)])), class: "blx-svg-line blx-svg-reference", fill: "none", "stroke-width": 1.4 }));
   }
-  svg.append(svgEl("path", { d: svgPath(state.sweep.map((point) => [xScale(point.iout), yScale(point.efficiency)])), class: "blx-svg-line blx-svg-efficiency", fill: "none", "stroke-width": 2.2 }));
+  svg.append(svgEl("path", { d: svgPath(plottableTotals(state.sweep).map((point) => [xScale(point.iout), yScale(point.efficiency)])), class: "blx-svg-line blx-svg-efficiency", fill: "none", "stroke-width": 2.2 }));
   const surface = appendCursor(svg, geometry, state, plot, formatCurrent(state.cursor));
   holder.appendChild(svg);
   attachAcrossPointer(root, state, surface, plot);
@@ -700,7 +751,7 @@ function renderLossChart(root, state) {
   const maxLoss = niceCeil(1.08 * Math.max(...state.sweep.map((point) => point.pLoss), 0.001));
   const xScale = (current) => left + clamp(current / state.inputs.ioutMax, 0, 1) * plotWidth;
   const yScale = (loss) => bottom - clamp(loss / maxLoss, 0, 1) * geometry.plotHeight;
-  const valueAt = (current) => computeLossPoint(state.inputs, current).pLoss;
+  const valueAt = (current) => evaluatePoint(state, current).pLoss;
   const plot = { kind: "loss", geometry, xScale, yScale, valueAt, maxLoss };
   state.acrossPlots.loss = plot;
   const rankedGroups = GROUPS.map((group) => ({
@@ -715,11 +766,12 @@ function renderLossChart(root, state) {
   appendAxes(svg, geometry, [0, 0.25, 0.5, 0.75, 1].map((fraction) => fraction * maxLoss), state.inputs.ioutMax, yScale, lossTickLabel);
   const heldSweep = referenceSweep(state);
   if (heldSweep.length) {
-    svg.append(svgEl("path", { d: svgPath(heldSweep.map((point) => [xScale(point.iout), yScale(point.pLoss)])), class: "blx-svg-line blx-svg-reference", fill: "none", "stroke-width": 1.4 }));
+    svg.append(svgEl("path", { d: svgPath(plottableTotals(heldSweep).map((point) => [xScale(point.iout), yScale(point.pLoss)])), class: "blx-svg-line blx-svg-reference", fill: "none", "stroke-width": 1.4 }));
   }
   topGroups.forEach(([key, , token]) => {
+    const points = key === "inductorAc" ? state.sweep.filter((point) => point.inductorAcAnyIncluded) : state.sweep;
     const path = svgEl("path", {
-      d: svgPath(state.sweep.map((point) => [xScale(point.iout), yScale(point.groupedLosses[key])])),
+      d: svgPath(points.map((point) => [xScale(point.iout), yScale(point.groupedLosses[key])])),
       class: "blx-svg-line blx-svg-contributor",
       "data-blx-series": key,
       fill: "none",
@@ -728,7 +780,7 @@ function renderLossChart(root, state) {
     });
     svg.appendChild(path);
   });
-  svg.append(svgEl("path", { d: svgPath(state.sweep.map((point) => [xScale(point.iout), yScale(point.pLoss)])), class: "blx-svg-line blx-svg-total", fill: "none", "stroke-width": 2.25 }));
+  svg.append(svgEl("path", { d: svgPath(plottableTotals(state.sweep).map((point) => [xScale(point.iout), yScale(point.pLoss)])), class: "blx-svg-line blx-svg-total", fill: "none", "stroke-width": 2.25 }));
   const surface = appendCursor(svg, geometry, state, plot, formatCurrent(state.cursor));
   holder.appendChild(svg);
   attachAcrossPointer(root, state, surface, plot);
@@ -808,7 +860,7 @@ function announce(root, result, state) {
 
 function updateCursorReadouts(root, state, options = {}) {
   root.dataset.blxAnimateValues = options.animate ? "true" : "false";
-  const result = computeLossPoint(state.inputs, state.cursor);
+  const result = evaluatePoint(state, state.cursor);
   const valid = state.validation.valid && result.valid;
   root.classList.toggle("blx-invalid", !valid);
   syncCursorControl(root, state, result);
@@ -825,11 +877,12 @@ function updateCursorReadouts(root, state, options = {}) {
     return result;
   }
   const classification = classifyRegime(result, state.inputs);
+  classification.partial = Boolean(state.selectedPart && !result.inductorAcIncluded);
   setText(root, "current", formatCurrent(state.cursor));
   setText(root, "current-caption", formatCurrent(state.cursor));
   setText(root, "efficiency", percent(result.efficiency));
   setText(root, "loss", eng(result.pLoss, "W"));
-  setText(root, "loss-total", `Total ${eng(result.pLoss, "W")}`);
+  setText(root, "loss-total", `${result.lossEstimateKind === "modeled-subtotal" ? "Subtotal" : "Total"} ${eng(result.pLoss, "W")}`);
   setText(root, "pout", eng(result.pOut, "W"));
   setText(root, "pin", eng(result.pInEstimated, "W"));
   setText(root, "regime", regimeLabel(classification.regime));
@@ -915,6 +968,23 @@ function showCatalogMessage(root, message) {
   node.hidden = !message;
 }
 
+function compactNumber(value, maximumFractionDigits = 3) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(value);
+}
+
+function compactFrequency(frequencyHz) {
+  if (frequencyHz >= 1e6) return `${compactNumber(frequencyHz / 1e6)} MHz`;
+  return `${compactNumber(frequencyHz / 1e3, 0)} kHz`;
+}
+
+function modeledDomainCopy(model) {
+  if (model?.model_schema_version !== 2) return null;
+  const frequency = model.verified_domain?.frequency_Hz;
+  const ripple = model.verified_domain?.ripple_pp_A;
+  if (!Array.isArray(frequency) || frequency.length !== 2 || !Array.isArray(ripple) || ripple.length !== 2) return null;
+  return `verified ${compactFrequency(frequency[0])}–${compactFrequency(frequency[1])}, ${compactNumber(ripple[0])}–${compactNumber(ripple[1])} A ripple p-p`;
+}
+
 function renderCatalogMeta(root, state) {
   const meta = root.querySelector("[data-blx-catalog-meta]");
   if (!meta) return;
@@ -945,11 +1015,20 @@ function renderCatalogMeta(root, state) {
   link.rel = "noopener noreferrer";
   link.textContent = "Datasheet ↗";
   meta.append(link);
+  const model = state.inductorAcDataset?.permission_status === "approved"
+    ? state.inductorAcDataset.parts?.[part.base_part_number]
+    : null;
+  if (model) {
+    meta.append(document.createTextNode(" · additional AC/core modeled at 25 °C"));
+    const domain = modeledDomainCopy(model);
+    if (domain) meta.append(document.createTextNode(` · ${domain}`));
+  } else {
+    meta.append(document.createTextNode(" · part-specific AC/core not modeled"));
+  }
   meta.hidden = false;
 }
 
 function clearCatalogSelection(root, state) {
-  if (!state.selectedPart) return;
   state.selectedPart = null;
   const partSelect = root.querySelector("[data-blx-catalog-part]");
   if (partSelect) partSelect.value = "";
@@ -997,7 +1076,7 @@ function applyCatalogDcrMode(root, state, mode) {
   renderCatalogMeta(root, state);
 }
 
-function populateCatalogOptions(root, catalog) {
+function populateCatalogOptions(root, catalog, state) {
   const select = root.querySelector("[data-blx-catalog-part]");
   if (!select) return;
   select.querySelectorAll("optgroup").forEach((group) => group.remove());
@@ -1007,7 +1086,8 @@ function populateCatalogOptions(root, catalog) {
     parts.forEach((part) => {
       const option = document.createElement("option");
       option.value = part.base_part_number;
-      option.textContent = `${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH`;
+      const modeled = state.inductorAcDataset?.permission_status === "approved" && state.inductorAcDataset.parts?.[part.base_part_number];
+      option.textContent = `${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH${modeled ? " · AC modeled" : ""}`;
       group.appendChild(option);
     });
     select.appendChild(group);
@@ -1021,9 +1101,21 @@ async function initCoilcraftCatalog(root, state) {
   const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
   setCatalogState(root, "loading");
   try {
-    const catalog = await loadCoilcraftCatalog(root.dataset.blxCatalogUrl);
+    const catalogRequest = loadCoilcraftCatalog(root.dataset.blxCatalogUrl);
+    const lossRequest = root.dataset.blxInductorAcLossUrl ? fetch(root.dataset.blxInductorAcLossUrl) : null;
+    const catalog = await catalogRequest;
+    if (lossRequest) {
+      try {
+        const response = await lossRequest;
+        if (!response.ok) throw new Error(`Coilcraft AC-loss request failed (HTTP ${response.status}).`);
+        state.inductorAcDataset = await response.json();
+      } catch (error) {
+        state.inductorAcDataset = null;
+        console.warn("Coilcraft AC-loss model unavailable", error);
+      }
+    }
     state.catalog = catalog;
-    populateCatalogOptions(root, catalog);
+    populateCatalogOptions(root, catalog, state);
     setCatalogState(root, "ready");
     showCatalogMessage(root, "");
     partSelect?.addEventListener("change", () => {
@@ -1031,6 +1123,16 @@ async function initCoilcraftCatalog(root, state) {
       else clearCatalogSelection(root, state);
     });
     dcrSelect?.addEventListener("change", () => applyCatalogDcrMode(root, state, dcrSelect.value));
+    if (state.selectedPart) {
+      if (dcrSelect) dcrSelect.value = state.dcrMode;
+      if (findCatalogPart(state, state.selectedPart)) applyCatalogPart(root, state, state.selectedPart);
+      else {
+        state.urlNotes.push({ code: "unknown-inductor" });
+        clearCatalogSelection(root, state);
+      }
+    } else {
+      render(root, state);
+    }
   } catch {
     state.catalog = null;
     setCatalogState(root, "error");
@@ -1045,7 +1147,7 @@ function render(root, state, options = {}) {
   state.validation = validateInputs(state.inputs);
   clampCursorToRange(state);
   state.sweep = state.validation.valid
-    ? linearSweep(state.inputs, { points: 180, iMin: 0, iMax: state.inputs.ioutMax }).filter((point) => point.valid)
+    ? linearSweep(state.inputs, evaluationContext(state), { points: 180, iMin: 0, iMax: state.inputs.ioutMax }).filter((point) => point.valid)
     : [];
   state.acrossPlots = {};
   updatePresetButtons(root, state.activePresetId);
@@ -1253,8 +1355,9 @@ export function initBuckLossExplorer(root) {
     undoTry: null,
     reference: null,
     catalog: null,
-    selectedPart: null,
-    dcrMode: "typ",
+    selectedPart: parsed.selectedInductorPart,
+    dcrMode: parsed.inductorDcrMode,
+    inductorAcDataset: null,
     view: "point",
     showAllLosses: false,
     pinnedHighlight: null,
@@ -1359,7 +1462,10 @@ export function initBuckLossExplorer(root) {
 
   root.querySelector("[data-blx-reset]")?.addEventListener("click", () => {
     const preset = getBuckLossPreset(DEFAULT_PRESET_ID);
-    if (preset) applyPreset(root, state, preset, { clearReference: true });
+    if (preset) {
+      clearCatalogSelection(root, state);
+      applyPreset(root, state, preset, { clearReference: true });
+    }
   });
 
   root.querySelector("[data-blx-show-all]")?.addEventListener("click", (event) => {
@@ -1374,7 +1480,13 @@ export function initBuckLossExplorer(root) {
       if (state.reference) {
         state.reference = null;
       } else {
-        state.reference = { rawInputs: cloneRaw(state.rawInputs), cursor: state.cursor };
+        state.reference = {
+          rawInputs: cloneRaw(state.rawInputs),
+          cursor: state.cursor,
+          selectedPart: state.selectedPart,
+          dcrMode: state.dcrMode,
+          inductorAcDataset: state.inductorAcDataset
+        };
       }
       render(root, state, { announce: true });
     });
@@ -1396,10 +1508,15 @@ export function initBuckLossExplorer(root) {
       state.cursor = next.cursor;
       state.activePresetId = next.activePresetId;
       state.explicitOptional = { ...next.explicitOptional };
+      state.selectedPart = next.selectedInductorPart;
+      state.dcrMode = next.inductorDcrMode;
       state.urlNotes = next.notes;
       state.inputNote = null;
       state.undoTry = null;
-      clearCatalogSelection(root, state);
+      const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
+      if (dcrSelect) dcrSelect.value = state.dcrMode;
+      if (state.catalog && findCatalogPart(state, state.selectedPart)) applyCatalogPart(root, state, state.selectedPart);
+      else clearCatalogSelection(root, state);
       syncControls(state, numberControls, rangeControls, { force: true });
       render(root, state, { announce: true });
     });

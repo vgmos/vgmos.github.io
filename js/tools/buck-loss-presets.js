@@ -24,6 +24,7 @@ export const BUCK_LOSS_PRESETS = [
       vBias: null,
       eossTotal: 63.5,
       qrr: 0,
+      inductorAcManual: 0,
       inductorIsat: null
     },
     cursor: 2,
@@ -53,6 +54,7 @@ export const BUCK_LOSS_PRESETS = [
       vBias: null,
       eossTotal: 11,
       qrr: 0,
+      inductorAcManual: 0,
       inductorIsat: null
     },
     cursor: 3,
@@ -82,6 +84,7 @@ export const BUCK_LOSS_PRESETS = [
       vBias: null,
       eossTotal: 1016.1,
       qrr: 0,
+      inductorAcManual: 0,
       inductorIsat: null
     },
     cursor: 3,
@@ -111,6 +114,7 @@ export const BUCK_LOSS_PRESETS = [
       vBias: null,
       eossTotal: 63.5,
       qrr: 0,
+      inductorAcManual: 0,
       inductorIsat: null
     },
     cursor: 2,
@@ -140,6 +144,7 @@ export const BUCK_LOSS_PRESETS = [
       vBias: null,
       eossTotal: 63.5,
       qrr: 0,
+      inductorAcManual: 0,
       inductorIsat: null
     },
     cursor: 2,
@@ -169,6 +174,7 @@ export const BUCK_LOSS_PRESETS = [
       vBias: null,
       eossTotal: 11,
       qrr: 0,
+      inductorAcManual: 0,
       inductorIsat: null
     },
     cursor: 0.02,

@@ -6,6 +6,16 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "data:coilcraft:loss:plan": "node scripts/coilcraft/acquire-losses.mjs plan",
+    "data:coilcraft:loss:collect": "node scripts/coilcraft/acquire-losses.mjs collect",
+    "data:coilcraft:loss:validate": "node scripts/coilcraft/acquire-losses.mjs validate",
+    "data:coilcraft:loss:promote": "node scripts/coilcraft/acquire-losses.mjs promote",
+    "data:coilcraft:loss:v2:discovery": "node scripts/coilcraft/acquire-losses-v2.mjs discovery-plan",
+    "data:coilcraft:loss:v2:plan": "node scripts/coilcraft/acquire-losses-v2.mjs plan",
+    "data:coilcraft:loss:v2:refine": "node scripts/coilcraft/acquire-losses-v2.mjs refine",
+    "data:coilcraft:loss:v2:merge-refinement": "node scripts/coilcraft/acquire-losses-v2.mjs merge-refinement",
+    "data:coilcraft:loss:v2:validate": "node scripts/coilcraft/acquire-losses-v2.mjs validate",
+    "data:coilcraft:loss:v2:promote": "node scripts/coilcraft/acquire-losses-v2.mjs promote",
     "test:unit": "node --test tests/index.js",
     "test:ui": "playwright test",
     "test:ui:live": "SITE_URL=https://vgmos.github.io PLAYWRIGHT_LIVE=1 playwright test",
@@ -16,6 +26,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
-    "@playwright/test": "1.61.1"
+    "@playwright/test": "1.61.1",
+    "pdfjs-dist": "5.4.624"
   }
 }

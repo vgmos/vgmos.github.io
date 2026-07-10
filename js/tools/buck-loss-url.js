@@ -24,6 +24,7 @@ export const PARAM_RANGES = {
   vBias: { min: 1, max: 100, optional: true },
   eossTotal: { min: 0, max: 5000 },
   qrr: { min: 0, max: 500 },
+  inductorAcManual: { min: 0, max: 100000 },
   inductorIsat: { min: 0.1, max: 200, optional: true }
 };
 
@@ -47,6 +48,7 @@ export const URL_KEY_TO_INPUT = {
   vbias: "vBias",
   eoss: "eossTotal",
   qrr: "qrr",
+  lac: "inductorAcManual",
   isat: "inductorIsat"
 };
 
@@ -56,6 +58,8 @@ export const INPUT_TO_URL_KEY = Object.fromEntries(
 
 const ORDERED_URL_KEYS = [
   "p",
+  "part",
+  "dcrm",
   "vin",
   "vout",
   "imax",
@@ -75,6 +79,7 @@ const ORDERED_URL_KEYS = [
   "vbias",
   "eoss",
   "qrr",
+  "lac",
   "isat",
   "i"
 ];
@@ -162,7 +167,7 @@ function canonicalNumber(value) {
 }
 
 function knownUrlKeys(params) {
-  return [...params.keys()].filter((key) => key === "p" || key === "i" || URL_KEY_TO_INPUT[key]);
+  return [...params.keys()].filter((key) => ["p", "part", "dcrm", "i"].includes(key) || URL_KEY_TO_INPUT[key]);
 }
 
 export function makeBuckLossState(rawInputs, options = {}) {
@@ -173,6 +178,8 @@ export function makeBuckLossState(rawInputs, options = {}) {
     cursor: options.cursor ?? defaultPreset.cursor,
     activePresetId,
     requestedPresetId: options.requestedPresetId ?? activePresetId,
+    selectedInductorPart: options.selectedInductorPart ?? null,
+    inductorDcrMode: options.inductorDcrMode === "max" ? "max" : "typ",
     explicitOptional: {
       vBias: Boolean(options.explicitOptional?.vBias),
       inductorIsat: Boolean(options.explicitOptional?.inductorIsat)
@@ -202,6 +209,18 @@ export function parseBuckLossUrl(searchString) {
   const explicitOptional = { vBias: false, inductorIsat: false };
   const explicitInputs = new Set();
   let clamped = false;
+  let selectedInductorPart = null;
+  let inductorDcrMode = params.get("dcrm") === "max" ? "max" : "typ";
+
+  if (params.has("part")) {
+    const requestedPart = String(params.get("part") || "").trim().toUpperCase();
+    if (/^[A-Z0-9-]{3,32}$/.test(requestedPart)) selectedInductorPart = requestedPart;
+    else notes.push(note("unknown-inductor", "Unknown inductor in the URL; manual values remain active."));
+  }
+  if (params.has("dcrm") && !["typ", "max"].includes(params.get("dcrm"))) {
+    inductorDcrMode = "typ";
+    notes.push(note("unknown-dcr-mode", "Unknown DCR mode in the URL; typical DCR was selected."));
+  }
 
   for (const [urlKey, inputKey] of Object.entries(URL_KEY_TO_INPUT)) {
     if (!params.has(urlKey)) continue;
@@ -244,6 +263,8 @@ export function parseBuckLossUrl(searchString) {
     cursor,
     activePresetId,
     requestedPresetId,
+    selectedInductorPart,
+    inductorDcrMode,
     explicitOptional,
     notes
   };
@@ -255,9 +276,13 @@ export function serializeBuckLossUrl(state) {
   const entries = [];
 
   if (activePreset) entries.push(["p", activePreset.id]);
+  if (state.selectedInductorPart) {
+    entries.push(["part", String(state.selectedInductorPart).toUpperCase()]);
+    entries.push(["dcrm", state.inductorDcrMode === "max" ? "max" : "typ"]);
+  }
 
   for (const urlKey of ORDERED_URL_KEYS) {
-    if (urlKey === "p" || urlKey === "i") continue;
+    if (["p", "part", "dcrm", "i"].includes(urlKey)) continue;
     const inputKey = URL_KEY_TO_INPUT[urlKey];
     if (!inputKey) continue;
     const value = state.rawInputs[inputKey];

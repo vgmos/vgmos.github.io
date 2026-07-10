@@ -9,12 +9,13 @@ import {
 
 describe("buck loss URL state", () => {
   it("round-trips parse and serialize through canonical state", () => {
-    const first = parseBuckLossUrl("?p=48v-to-12v-bus&fsw=800&eoss=20&qrr=4&isat=4&i=2.5");
+    const first = parseBuckLossUrl("?p=48v-to-12v-bus&fsw=800&eoss=20&qrr=4&lac=12.5&isat=4&i=2.5");
     assert.equal(first.activePresetId, null);
     assert.equal(first.requestedPresetId, "48v-to-12v-bus");
     assert.equal(first.rawInputs.fsw, 800);
     assert.equal(first.rawInputs.eossTotal, 20);
     assert.equal(first.rawInputs.qrr, 4);
+    assert.equal(first.rawInputs.inductorAcManual, 12.5);
     assert.equal(first.rawInputs.inductorIsat, 4);
     assert.equal(first.cursor, 2.5);
     const canonical = serializeBuckLossUrl(first);
@@ -120,5 +121,24 @@ describe("buck loss URL state", () => {
       explicitOptional: { vBias: true, inductorIsat: true }
     });
     assert.equal(serializeBuckLossUrl(explicit), "vbias=5&isat=2&i=2");
+  });
+
+  it("round-trips selected inductor identity and DCR mode", () => {
+    const parsed = parseBuckLossUrl("?part=xgl6060-222&dcrm=max&l=2.2&dcr=4.8&isat=12.1&i=4");
+    assert.equal(parsed.selectedInductorPart, "XGL6060-222");
+    assert.equal(parsed.inductorDcrMode, "max");
+    const canonical = serializeBuckLossUrl(parsed);
+    assert.ok(canonical.includes("part=XGL6060-222"));
+    assert.ok(canonical.includes("dcrm=max"));
+    const roundTrip = parseBuckLossUrl(canonical);
+    assert.equal(roundTrip.selectedInductorPart, parsed.selectedInductorPart);
+    assert.equal(roundTrip.inductorDcrMode, "max");
+  });
+
+  it("quietly rejects malformed part and DCR mode URL values", () => {
+    const parsed = parseBuckLossUrl("?part=%3Cscript%3E&dcrm=worst&i=1");
+    assert.equal(parsed.selectedInductorPart, null);
+    assert.equal(parsed.inductorDcrMode, "typ");
+    assert.deepEqual(parsed.notes.map((entry) => entry.code), ["unknown-inductor", "unknown-dcr-mode"]);
   });
 });
