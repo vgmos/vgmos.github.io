@@ -41,6 +41,8 @@ exclude:
   - data/
   - scripts/
   - claude-coilcraft-implementation-prompt.md
+  - CLAUDE_LIVE_REVIEW.md
+  - CLAUDE_LIVE_REVIEW_PROMPT.md
   - tests/
   - .cache/
 

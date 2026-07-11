@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 2,
+  "models": [
+    {
+      "id": "infineon-bsc010n04ls6-280225",
+      "manufacturer": "Infineon",
+      "publisher": "Infineon Technologies AG",
+      "partNumber": "BSC010N04LS6",
+      "productUrl": "https://www.infineon.com/part/BSC010N04LS6",
+      "downloadUrl": "https://community.infineon.com/gfawx74859/attachments/gfawx74859/mosfetsisic/9679/1/OptiMOS6_40V_Spice.zip?nobounce",
+      "modelVersion": "280225",
+      "retrievalDate": "2026-07-10",
+      "archiveFilename": "OptiMOS6_40V_Spice.zip",
+      "archiveSha256": "91f64250423a6a0dd3b0e955784eb834552619fa07422035e8af0cbbeddbcfe9",
+      "modelFilename": "OptiMOS6_40V_Spice.lib",
+      "modelSha256": "886953049f10db1ed5356323b6c882003cf9df4168ca80c46d81404215bb13d9",
+      "redistribution": false,
+      "datasheet": {
+        "url": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-bsc010n04ls6-datasheet-en.pdf?fileId=5546d462689a790c0168bd076e184818",
+        "documentId": "BSC010N04LS6 Final Data Sheet",
+        "revision": "2.3",
+        "publicationDate": "2022-07-21"
+      },
+      "subcircuit": {
+        "name": "BSC010N04LS6_L1",
+        "pins": ["drain", "gate", "source"]
+      },
+      "fallbackSubcircuit": {
+        "name": "BSC010N04LS6_L0",
+        "pins": ["drain", "gate", "source"],
+        "modelLevel": "simplified-standard-spice-compatible",
+        "purpose": "bounded-full-buck-convergence-fallback"
+      },
+      "requiredDirectives": [".options Thev_Induc=1"],
+      "characterization": {
+        "gateDriveV": 4.5,
+        "rdsGateVoltages": [4.5, 10],
+        "gateAbsoluteMaximumV": 20,
+        "gateChargeFinalVoltageRelativeLimit": 0.15
+      },
+      "publishedConditionContracts": {
+        "rdsOn": [
+          {
+            "id": "rds-on-vgs4v5-id50a-tj25c",
+            "sourceLocation": { "pdfPage": 4, "section": "Table 4 — Static characteristics" },
+            "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 4.5, "drainCurrentA": 50 },
+            "published": { "typicalOhm": 0.0011, "maximumOhm": 0.0014 },
+            "acceptance": { "typicalRelativeLimit": 0.1, "requireAtOrBelowPublishedMaximum": true }
+          },
+          {
+            "id": "rds-on-vgs10-id50a-tj25c",
+            "sourceLocation": { "pdfPage": 4, "section": "Table 4 — Static characteristics" },
+            "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 10, "drainCurrentA": 50 },
+            "published": { "typicalOhm": 0.00089, "maximumOhm": 0.001 },
+            "acceptance": { "typicalRelativeLimit": 0.1, "requireAtOrBelowPublishedMaximum": true }
+          }
+        ],
+        "sourceDrainForwardVoltage": {
+          "id": "vsd-vgs0-if50a-tj25c",
+          "sourceLocation": { "pdfPage": 5, "section": "Table 7 — Reverse diode" },
+          "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 0, "reverseCurrentA": 50 },
+          "published": { "typicalV": 0.8, "maximumV": 1 },
+          "acceptance": { "typicalRelativeLimit": 0.15, "requireAtOrBelowPublishedMaximum": true }
+        },
+        "totalGateCharge": {
+          "id": "qg-vdd20-id50a-vgs4v5-tj25c",
+          "sourceLocation": { "pdfPage": 4, "section": "Table 6 — Gate charge characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "drainSupplyV": 20, "drainCurrentA": 50, "gateVoltageRangeV": [0, 4.5] },
+          "published": { "typicalC": 3.2e-8 },
+          "acceptance": { "typicalRelativeLimit": 0.2 }
+        },
+        "partitionedGateCharge": {
+          "id": "qgs-qgd-vdd20-id50a-vgs10-tj25c",
+          "sourceLocation": { "pdfPage": 4, "section": "Table 6 — Gate charge characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "drainSupplyV": 20, "drainCurrentA": 50, "gateVoltageRangeV": [0, 10] },
+          "published": {
+            "totalGateChargeC": 6.7e-8,
+            "totalGateChargeMaximumC": 8.3e-8,
+            "gateSourceChargeC": 1.2e-8,
+            "gateDrainChargeC": 8.1e-9,
+            "gateDrainChargeMaximumC": 1.2e-8,
+            "gateChargeAtThresholdC": 7.3e-9
+          },
+          "acceptance": { "typicalRelativeLimit": 0.25 }
+        },
+        "outputCharge": {
+          "id": "qoss-vds20-vgs0-tj25c",
+          "sourceLocation": { "pdfPage": 4, "section": "Table 6 — Gate charge characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 0, "drainSourceVoltageRangeV": [0, 20] },
+          "published": { "typicalC": 7.3e-8, "maximumC": 9.7e-8 },
+          "acceptance": { "typicalRelativeLimit": 0.2, "requireAtOrBelowPublishedMaximum": true }
+        },
+        "reverseRecovery": {
+          "id": "qrr-vr20-if10a-didt400apus-tj25c",
+          "sourceLocation": { "pdfPage": 5, "section": "Table 7 — Reverse diode" },
+          "conditions": { "junctionTemperatureC": 25, "reverseVoltageV": 20, "forwardCurrentA": 10, "currentFallRateAPerS": 400000000 },
+          "published": { "typicalC": 9.7e-8, "maximumC": 1.94e-7, "typicalRecoveryTimeS": 3e-8, "maximumRecoveryTimeS": 6e-8 },
+          "acceptance": { "typicalRelativeLimit": 0.25, "requireAtOrBelowPublishedMaximum": true },
+          "qualification": "Defined by design; not subject to production test."
+        }
+      },
+      "strictRequiredCoverage": [
+        "rdsOn",
+        "reverseConductionVsd",
+        "totalGateCharge",
+        "partitionedGateChargeQgsQgd",
+        "outputChargeQoss",
+        "outputEnergyEoss",
+        "reverseRecoveryQrr",
+        "separateTurnOnTurnOffEnergy",
+        "deadTimeRecovery",
+        "fullBuckVendorModel"
+      ],
+      "simulator": {
+        "name": "LTspice",
+        "requiredVersion": "17.0.38",
+        "darwinExecutable": "/Applications/LTspice.app/Contents/MacOS/LTspice",
+        "args": ["-b"]
+      },
+      "adapter": {
+        "kind": "identity",
+        "revision": 1
+      }
+    },
+    {
+      "id": "epc2090-ltspice-v1.104",
+      "manufacturer": "EPC",
+      "publisher": "Efficient Power Conversion Corporation",
+      "partNumber": "EPC2090",
+      "productUrl": "https://epc-co.com/epc/products/gan-fets-and-ics/epc2090",
+      "downloadUrl": "https://epc-co.com/epc/documents/spice-files/LTSPICE/EPCGaNLibrary.zip",
+      "modelVersion": "1.104",
+      "modelDate": "2025-07-22",
+      "retrievalDate": "2026-07-10",
+      "archiveFilename": "EPCGaNLibrary.zip",
+      "archiveSha256": "4ee090c07d4f184d160fdba634aa568c35092aa14035c847932468ccc14305f8",
+      "modelFilename": "EPCGaNLibrary.lib",
+      "modelSha256": "36f8cafc0b80db8c7bfbffd21a15890306891319c37938aa276aa738fa521ef8",
+      "redistribution": false,
+      "datasheet": {
+        "url": "https://epc-co.com/epc/documents/datasheets/EPC2090_datasheet.pdf",
+        "documentId": "EPC2090 eGaN FET Datasheet",
+        "revision": "Revised December 19, 2024",
+        "publicationDate": "2024-12-19"
+      },
+      "subcircuit": {
+        "name": "EPC2090",
+        "pins": ["gatein", "drainin", "sourcein"]
+      },
+      "requiredDirectives": [],
+      "characterization": {
+        "gateDriveV": 5,
+        "rdsGateVoltages": [5],
+        "gateAbsoluteMaximumV": 6,
+        "gateChargeFinalVoltageRelativeLimit": 0.15
+      },
+      "publishedConditionContracts": {
+        "rdsOn": [
+          {
+            "id": "rds-on-vgs5-id16a-tj25c",
+            "sourceLocation": { "pdfPage": 1, "section": "Static Characteristics" },
+            "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 5, "drainCurrentA": 16 },
+            "published": { "typicalOhm": 0.0038, "maximumOhm": 0.0052 },
+            "acceptance": { "typicalRelativeLimit": 0.1, "requireAtOrBelowPublishedMaximum": true }
+          }
+        ],
+        "sourceDrainForwardVoltage": {
+          "id": "vsd-vgs0-is0p5a-tj25c",
+          "sourceLocation": { "pdfPage": 1, "section": "Static Characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 0, "reverseCurrentA": 0.5 },
+          "published": { "typicalV": 1.5 },
+          "acceptance": { "typicalRelativeLimit": 0.15 },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "totalGateCharge": {
+          "id": "qg-vds50-id16a-vgs5-tj25c",
+          "sourceLocation": { "pdfPage": 2, "section": "Dynamic Characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "drainSupplyV": 50, "drainCurrentA": 16, "gateVoltageRangeV": [0, 5] },
+          "published": { "typicalC": 7.3e-9, "maximumC": 9.3e-9 },
+          "acceptance": { "typicalRelativeLimit": 0.2, "requireAtOrBelowPublishedMaximum": true },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "partitionedGateCharge": {
+          "id": "qgs-qgd-vds50-id16a-vgs5-tj25c",
+          "sourceLocation": { "pdfPage": 2, "section": "Dynamic Characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "drainSupplyV": 50, "drainCurrentA": 16, "gateVoltageRangeV": [0, 5] },
+          "published": {
+            "totalGateChargeC": 7.3e-9,
+            "totalGateChargeMaximumC": 9.3e-9,
+            "gateSourceChargeC": 2.8e-9,
+            "gateDrainChargeC": 7e-10,
+            "gateChargeAtThresholdC": 2.1e-9
+          },
+          "acceptance": { "typicalRelativeLimit": 0.25 },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "outputCharge": {
+          "id": "qoss-vds50-vgs0-tj25c",
+          "sourceLocation": { "pdfPage": 2, "section": "Dynamic Characteristics" },
+          "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 0, "drainSourceVoltageRangeV": [0, 50] },
+          "published": { "typicalC": 2.7e-8, "maximumC": 3.5e-8 },
+          "acceptance": { "typicalRelativeLimit": 0.2, "requireAtOrBelowPublishedMaximum": true },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "outputEnergy": {
+          "id": "eoss-cosser-vds0to50-vgs0-tj25c",
+          "sourceLocation": { "pdfPage": 2, "section": "Dynamic Characteristics, COSS(ER) Note 1" },
+          "conditions": { "junctionTemperatureC": 25, "gateSourceVoltageV": 0, "drainSourceVoltageRangeV": [0, 50] },
+          "published": { "energyEquivalentCapacitanceF": 4.41e-10, "derivedStoredEnergyJ": 5.5125e-7 },
+          "derivation": "0.5 * COSS(ER) * VDS^2",
+          "acceptance": { "typicalRelativeLimit": 0.2 },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "reverseRecovery": {
+          "id": "qrr-majority-carrier-not-applicable",
+          "sourceLocation": { "pdfPage": 2, "section": "Dynamic Characteristics, QRR" },
+          "applicability": "not-applicable",
+          "published": { "chargeC": 0 },
+          "reason": "EPC specifies a majority-carrier reverse path and zero QRR; a silicon-style minority-carrier recovery fixture is not applicable."
+        }
+      },
+      "strictRequiredCoverage": [
+        "rdsOn",
+        "reverseConductionVsd",
+        "totalGateCharge",
+        "partitionedGateChargeQgsQgd",
+        "outputChargeQoss",
+        "outputEnergyEoss",
+        "reverseRecoveryQrr",
+        "separateTurnOnTurnOffEnergy",
+        "deadTimeRecovery",
+        "fullBuckVendorModel"
+      ],
+      "simulator": {
+        "name": "LTspice",
+        "requiredVersion": "17.0.38",
+        "darwinExecutable": "/Applications/LTspice.app/Contents/MacOS/LTspice",
+        "args": ["-b"]
+      },
+      "adapter": {
+        "kind": "comment-known-header-line",
+        "revision": 1
+      }
+    }
+  ]
+}

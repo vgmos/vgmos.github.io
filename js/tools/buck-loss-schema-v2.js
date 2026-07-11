@@ -1,4 +1,5 @@
 export const BUCK_LOSS_MODEL_VERSION = 2;
+export const BUCK_LOSS_MODEL_REVISION = "2.1";
 
 const field = (config) => Object.freeze(config);
 

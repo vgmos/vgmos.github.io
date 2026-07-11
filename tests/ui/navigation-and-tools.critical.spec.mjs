@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.mjs";
-import { BUCK_LOSS_V2_ROUTE, pageOverflow, settlePage } from "./site.mjs";
+import { BUCK_LOSS_V2_ROUTE, observeRuntimeIssues, pageOverflow, settlePage } from "./site.mjs";
 
 test.describe("global navigation", () => {
   test("soft navigation keeps metadata, theme, focus, and history coherent", async ({ page }) => {
@@ -191,7 +191,16 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     const chooser = page.locator("[data-blx-device-dialog]");
     await expect(chooser).toBeVisible();
     await expect(chooser).toHaveAttribute("aria-labelledby", "blx-device-dialog-title");
-    await expect(chooser).toContainText("Choose a switch technology");
+    await expect(chooser).toContainText("Choose a switch-pair model");
+    await expect(chooser).toContainText("Model v2.1");
+    await expect(chooser).toContainText("this is a model input, not a part recommendation");
+    const chooserGroups = chooser.locator(".blx-device-choice-group");
+    await expect(chooserGroups).toHaveCount(2);
+    await expect(chooserGroups.nth(0).getByRole("heading", { level: 3 })).toHaveText("Manufacturer-sourced");
+    await expect(chooserGroups.nth(0).locator("[data-blx-device-choice]")).toHaveCount(2);
+    await expect(chooserGroups.nth(0)).toContainText("Infineon BSC010N04LS6 pair");
+    await expect(chooserGroups.nth(1).getByRole("heading", { level: 3 })).toHaveText("Teaching baselines");
+    await expect(chooserGroups.nth(1).locator("[data-blx-device-choice]")).toHaveCount(3);
     const epc = page.locator('[data-blx-device-choice="epc2090"]');
     await expect(epc).toBeFocused();
     await epc.click();
@@ -224,6 +233,43 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page).toHaveURL(/device=silicon-60v/);
   });
 
+  test("Infineon source conditions and unavailable loss families stay explicit", async ({ page }) => {
+    await page.goto("/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=infineon-bsc010n04ls6-4v5&control=auto-dcm&timing=effective&i=2", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    await expect(page.locator("[data-blx-device-label]")).toHaveText("Infineon BSC010N04LS6 pair");
+    await expect(page.locator("[data-blx-device-source]")).toHaveAttribute("href", /bsc010n04ls6-datasheet-en\.pdf/i);
+    await expect(page.locator("[data-blx-device-model-source]")).toHaveAttribute("href", /OptiMOS6_40V_Spice\.zip/i);
+    await expect(page.locator("[data-blx-device-model-source]")).toHaveAttribute("title", /LTspice requires \.options Thev_Induc=1/);
+    await expect(page.locator("[data-blx-device-model-guide]")).toHaveAttribute("href", /powermosfet-simulationmodels/i);
+    await expect(page.locator("[data-blx-device-model-note]")).toContainText("Model 280225 · 28-Feb-2025");
+    await expect(page.locator("[data-blx-device-model-note]")).toContainText("LTspice requires .options Thev_Induc=1");
+    await expect(page.locator("[data-blx-device-notes] li")).toHaveCount(5);
+    await expect(page.locator("[data-blx-device-notes]")).toContainText("QRR scales linearly from its 10 A reference point");
+    await expect(page.locator("[data-blx-device-notes]")).toContainText("QGD and QRR are defined by design");
+    await expect(page.locator("[data-blx-result-badges]")).toContainText("Mixed datasheet typical · 25 °C · VGS 4.5 V");
+    await expect(page.locator("[data-blx-operating-metrics]")).toContainText("3 terms omitted");
+
+    const conditions = page.locator("[data-blx-device-conditions]");
+    await conditions.locator("summary").click();
+    await expect(conditions.locator("li")).toHaveCount(9);
+    await expect(conditions).toContainText("High/low-side QGD: 8.1 nC typical");
+    await expect(conditions).toContainText("maximum 12 nC");
+    await expect(conditions).toContainText("Defined by design; not subject to production test");
+    await expect(conditions).toContainText("QRR reference current: 10 A reference condition");
+    await expect(conditions).toContainText("Gate drive voltage: 4.5 V selected test condition");
+
+    for (const familyId of ["switchingTransitions", "nodeEnergy"]) {
+      const family = page.locator(`[data-blx-family="${familyId}"]`);
+      await expect(family).toHaveAttribute("data-blx-availability", "unavailable");
+      await expect(family.locator("summary > strong")).toHaveText("—");
+      await expect(family.locator("summary > strong")).toHaveAttribute("aria-label", "Not available");
+      await family.locator("summary").click();
+      await expect(family).toContainText("Not available");
+    }
+    await expect(page.locator("[data-blx-warnings]")).toContainText("Missing terms are not treated as zero");
+  });
+
   test("presets, keyboard cursor, equation details, URL state, copy, and related navigation work", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -232,15 +278,28 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(root).toHaveAttribute("aria-busy", "false");
     await expect(page.locator("[data-blx-catalog]")).toHaveAttribute("data-catalog-state", "ready");
     await expect(root).toHaveAttribute("data-blx-model", "2");
+    await expect(root).toHaveAttribute("data-blx-revision", "2.1");
     await expect(page.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
     await expect(page.locator(".blx-operating-metric")).toHaveCount(6);
     await expect(page.locator("[data-blx-result-badges]")).toContainText("Total");
+    await expect(page.locator("[data-blx-result-badges]")).toContainText("Model v2.1");
+    await expect(page.locator("[data-blx-result-badges]")).toContainText("Mixed datasheet typical · 25 °C");
+    await expect(page.locator("[data-blx-device-model-source]")).toHaveAttribute("href", /EPCGaNLibrary\.zip$/);
+    await expect(page.locator("[data-blx-device-model-note]")).toContainText("Model 1.104 · 22-Jul-2025");
+    await expect(page.locator("[data-blx-operating-metrics]")).toContainText("Coverage");
+    await expect(page.locator("[data-blx-operating-metrics]")).toContainText("All terms modeled");
     await expect(page.locator(".blx-controls [data-blx-v2-input]")).toHaveCount(5);
     await expect(page.locator("[data-blx-v2-group]")).toHaveCount(6);
     await expect(page.locator("[data-blx-presets] button")).toHaveCount(3);
     await expect(page.locator("[data-blx-try]")).toHaveCount(0);
     await expect(page.locator(".blx-page")).not.toContainText("Light-load sensitive");
+    const mismatch = page.locator('[data-blx-view-panel="point"] [data-blx-report-mismatch]');
+    await expect(mismatch).toHaveAttribute("href", /github\.com\/vgmos\/vgmos\.github\.io\/issues\/new/);
+    const mismatchBody = await mismatch.getAttribute("href").then((href) => new URL(href).searchParams.get("body"));
+    expect(mismatchBody).toContain("Model revision: 2.1");
+    expect(mismatchBody).toContain("Device: epc2090");
+    expect(mismatchBody).toContain("Coverage: total");
 
     await page.locator('[data-blx-preset="48v-to-12v-bus"]').click();
     await expect(page.locator("#blx-v2-vin")).toHaveValue("48");
@@ -272,8 +331,9 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(conduction).toContainText("datasheet");
     const controller = page.locator('[data-blx-family="controllerBias"]');
     await controller.locator("summary").click();
-    await expect(controller).toContainText("Printed p. 236");
+    await expect(controller).toContainText("printed p. 236");
     await expect(controller).toContainText("PDF p. 250");
+    await expect(page.getByText("Switched Inductor Power IC Design", { exact: true })).toHaveCount(1);
 
     const stateURL = page.url();
     const vinBeforeReload = await page.locator("#blx-v2-vin").inputValue();
@@ -282,7 +342,7 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page).toHaveURL(stateURL);
     await expect(page.locator("#blx-v2-vin")).toHaveValue(vinBeforeReload);
 
-    const copyButton = page.locator('[data-blx-view-panel="point"] [data-blx-copy]');
+    const copyButton = page.locator('[data-blx-view-panel="point"] [data-blx-copy]:visible');
     await copyButton.click();
     await expect(copyButton).toHaveText("Copied");
     await page.getByRole("link", { name: "Buck Converter Ripple Tool" }).click();
@@ -296,6 +356,11 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(root).toHaveAttribute("data-blx-mode", "dcm");
     await expect(page.locator('[data-blx-out="regime"]')).toHaveText("DCM");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("Zero-current window");
+    await expect(page.locator("[data-blx-efficiency-label]")).toHaveText("known-loss ceiling");
+    await expect(page.locator("[data-blx-input-label]")).toHaveText("known-input floor");
+    await expect(page.locator("[data-blx-power-copy]")).toHaveText("Output + known analytical losses");
+    await expect(page.locator("[data-blx-operating-metrics]")).toContainText(/\d+ terms? omitted/);
+    await expect(page.locator("[data-blx-warnings]")).toContainText("Known-loss subtotal");
 
     const reference = page.locator('[data-blx-view-panel="point"] [data-blx-reference]');
     await reference.click();
@@ -303,8 +368,12 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await page.locator('[data-blx-v2-group="controller"] summary').click();
     await page.locator("[data-blx-control-mode]").selectOption("forced-ccm");
     await expect(root).toHaveAttribute("data-blx-mode", "ccm");
-    await expect(page.locator("[data-blx-reference-card]")).toContainText("v2 · GaN · DCM");
-    await expect(page.locator("[data-blx-reference-card]")).toContainText("v2 · GaN · CCM");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("Approximate commutation");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("ZVS, signed dead-time paths, QRR, turn-on overlap, and EOSS");
+    await expect(page.locator("[data-blx-efficiency-label]")).toHaveText("efficiency");
+    await expect(page.locator("[data-blx-reference-card]")).toContainText("v2.1 · GaN · DCM");
+    await expect(page.locator("[data-blx-reference-card]")).toContainText("v2.1 · GaN · CCM");
+    await expect(page.locator("[data-blx-reference-card]")).toContainText("Efficiency delta suppressed unless both results have total coverage");
 
     await page.locator("[data-blx-change-device]").click();
     await page.locator('[data-blx-device-choice="silicon-30v"]').click();
@@ -321,6 +390,12 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page.locator(".blx-chart-peak")).toHaveCount(1);
     await expect(page.locator(".blx-chart-reference-line")).toHaveCount(4);
     await expect(page.locator("[data-reference-series]")).toHaveCount(3);
+    await expect(page.locator("[data-blx-reference-key]")).toContainText("Solid:");
+    await expect(page.locator("[data-blx-reference-key]")).toContainText("Dashed:");
+    await expect(page.locator("[data-blx-reference-key]")).toContainText("subtotal");
+    const character = page.locator("[data-blx-loss-character]");
+    await expect(character.locator("span[data-kind]")).not.toHaveCount(0);
+    await expect(page.locator("[data-blx-causal-insight]")).toContainText(/terms lead at .* of known loss/);
     const firstSeries = page.getByRole("combobox", { name: "Loss series 1" });
     await firstSeries.selectOption("switchingTransitions");
     await expect(firstSeries).toHaveValue("switchingTransitions");
@@ -365,12 +440,194 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     expect(await page.locator(".blx-page").innerText()).not.toMatch(/\b(?:NaN|Infinity)\b/);
   });
 
+  test("near-dropout and dead-time failures clear stale results and recover safely", async ({ page }) => {
+    const runtimeIssues = observeRuntimeIssues(page);
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const root = page.locator("#buck-loss-explorer");
+    await expect(root).toHaveAttribute("data-blx-mode", "ccm");
+    await page.locator('[data-blx-view-panel="point"] [data-blx-reference]').click();
+    await page.locator('[data-blx-view="load"]').click();
+    await expect(page.locator("[data-blx-efficiency-plot] svg")).toBeVisible();
+    await expect(page.locator("[data-blx-reference-key]")).toBeVisible();
+
+    await page.locator("#blx-v2-vout").fill("11.9");
+    await page.locator("#blx-v2-vout").press("Tab");
+    await expect(root).toHaveAttribute("data-blx-mode", "infeasible");
+    const failure = page.locator("[data-blx-model-failure]");
+    await expect(failure).toBeVisible();
+    await expect(failure).toContainText("negative low-side window");
+    await expect(failure.locator("[data-blx-failure-equation]")).toContainText("DLS = -");
+    await expect(page.locator("[data-blx-result-badges]")).toContainText("Model v2.1");
+    await expect(page.locator("[data-blx-result-badges]")).toContainText("Out of regulation · low-side-window-negative");
+    await expect(page.locator("[data-blx-result-badges]")).toContainText("No result");
+    for (const output of ["efficiency", "pout", "loss", "pin"]) {
+      await expect(page.locator(`[data-blx-out="${output}"]`)).toHaveText("—");
+    }
+    await expect(page.locator("[data-blx-family]")).toHaveCount(0);
+    await expect(page.locator("[data-blx-waveform-diagram] svg")).toHaveCount(0);
+    await expect(page.locator(".blx-v2-power-track")).toHaveCount(0);
+    await expect(page.locator("[data-blx-efficiency-plot] svg")).toHaveCount(0);
+    await expect(page.locator("[data-blx-loss-plot] svg")).toHaveCount(0);
+    await expect(page.locator("[data-blx-reference-card]")).toBeHidden();
+    await expect(page.locator("[data-blx-reference-key]")).toBeHidden();
+    await expect(page.locator('[data-blx-view="load"]')).toBeDisabled();
+    await expect(page.locator("[data-blx-reference]").first()).toBeDisabled();
+    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep)).toBeNull();
+    expect(await page.locator(".blx-page").innerText()).not.toMatch(/\b(?:NaN|Infinity)\b/);
+
+    await page.locator("#blx-v2-vout").fill("3.3");
+    await page.locator("#blx-v2-vout").press("Tab");
+    await expect(root).toHaveAttribute("data-blx-mode", "ccm");
+    await expect(failure).toBeHidden();
+    await expect(page.locator("[data-blx-family]")).toHaveCount(8);
+    await expect(page.locator(".blx-v2-power-track")).toHaveCount(1);
+    await expect(page.locator('[data-blx-view="load"]')).toBeEnabled();
+
+    await page.locator('[data-blx-v2-group="timing"] summary').click();
+    await page.locator("#blx-v2-deadTime").fill("500");
+    await page.locator("#blx-v2-deadTime").press("Tab");
+    await expect(root).toHaveAttribute("data-blx-mode", "infeasible");
+    await expect(failure).toContainText("Dead time consumes the switching period");
+    await expect(failure.locator("[data-blx-failure-equation]")).toContainText("2tDEAD / TSW = 1");
+    await expect(page.locator("[data-blx-family]")).toHaveCount(0);
+
+    await page.locator("#blx-v2-deadTime").fill("20");
+    await page.locator("#blx-v2-deadTime").press("Tab");
+    await expect(root).toHaveAttribute("data-blx-mode", "ccm");
+    await expect(failure).toBeHidden();
+    await expect(page.locator("[data-blx-family]")).toHaveCount(8);
+    expect(runtimeIssues).toEqual([]);
+  });
+
+  test("chart sliders preview without URL mutation, commit quantized current, and reuse the sweep", async ({ page }) => {
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.locator('[data-blx-view="load"]').click();
+    const efficiencyPlot = page.locator("[data-blx-efficiency-plot]");
+    const lossPlot = page.locator("[data-blx-loss-plot]");
+    for (const plot of [efficiencyPlot, lossPlot]) {
+      await expect(plot).toHaveAttribute("role", "slider");
+      await expect(plot).toHaveAttribute("tabindex", "0");
+      await expect(plot).toHaveAttribute("aria-valuemin", "0");
+      await expect(plot).toHaveAttribute("aria-valuemax", "3");
+      await expect(plot).toHaveAttribute("aria-valuetext", /A; /);
+    }
+    await page.evaluate(() => { window.__buckSweep = document.querySelector("#buck-loss-explorer").blxV2State.sweep; });
+    const initialUrl = page.url();
+    const initialCurrent = await page.locator('[data-blx-out="current"]').textContent();
+    await efficiencyPlot.scrollIntoViewIfNeeded();
+    const box = await efficiencyPlot.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box.x + box.width * 0.32, box.y + box.height * 0.55);
+    await expect.poll(() => page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.previewCursor)).not.toBeNull();
+    const previewCurrent = await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.previewCursor);
+    expect(previewCurrent).toBe(Number(previewCurrent.toPrecision(3)));
+    await expect.poll(() => page.locator('[data-blx-out="current"]').textContent()).not.toBe(initialCurrent);
+    await page.waitForTimeout(320);
+    expect(page.url()).toBe(initialUrl);
+    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
+
+    await page.mouse.move(1, 1);
+    await expect.poll(() => page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.previewCursor)).toBeNull();
+    await expect(page.locator('[data-blx-out="current"]')).toHaveText(initialCurrent || "");
+    expect(page.url()).toBe(initialUrl);
+
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.55);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.57, box.y + box.height * 0.55, { steps: 3 });
+    await page.mouse.up();
+    await expect.poll(() => page.url()).not.toBe(initialUrl);
+    const committed = await page.evaluate(() => ({
+      cursor: document.querySelector("#buck-loss-explorer").blxV2State.cursor,
+      preview: document.querySelector("#buck-loss-explorer").blxV2State.previewCursor
+    }));
+    const committedText = new URL(page.url()).searchParams.get("i");
+    expect(Number(committedText)).toBe(committed.cursor);
+    expect(committed.preview).toBeNull();
+    const significantDigits = committedText.replace(/^[+-]?0*\.?0*/, "").replace(/[^0-9]/g, "").length;
+    expect(significantDigits).toBeLessThanOrEqual(3);
+    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
+
+    const rail = page.locator("[data-blx-cursor-rail]");
+    await rail.fill("667");
+    await expect(rail).toHaveAttribute("aria-valuenow", "2");
+    await expect.poll(() => new URL(page.url()).searchParams.get("i")).toBe("2");
+    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
+
+    await efficiencyPlot.focus();
+    await page.keyboard.press("Home");
+    await expect(efficiencyPlot).toHaveAttribute("aria-valuenow", "0");
+    await expect.poll(() => new URL(page.url()).searchParams.get("i")).toBe("0");
+    await page.keyboard.press("ArrowRight");
+    await expect(efficiencyPlot).toHaveAttribute("aria-valuenow", "0.01");
+    await expect.poll(() => new URL(page.url()).searchParams.get("i")).toBe("0.01");
+    await page.keyboard.press("End");
+    await expect(efficiencyPlot).toHaveAttribute("aria-valuenow", "3");
+    await expect.poll(() => new URL(page.url()).searchParams.get("i")).toBe("3");
+    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
+
+    await page.locator('[data-blx-view="point"]').click();
+    const boundary = page.locator("[data-blx-boundary-copy]");
+    await expect(boundary).toHaveText(/DCM below/);
+    const exactBoundary = Number(await boundary.getAttribute("data-blx-boundary-current"));
+    await boundary.click();
+    const snapped = await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.cursor);
+    expect(Math.abs(snapped - exactBoundary) / exactBoundary).toBeLessThan(0.005);
+    expect(Number(new URL(page.url()).searchParams.get("i"))).toBe(snapped);
+    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
+
+    await page.locator('[data-blx-view="load"]').click();
+    await expect(page.locator("[data-blx-loss-character] span[data-kind]")).not.toHaveCount(0);
+    await expect(page.locator("[data-blx-causal-insight]")).toContainText(/At .* terms lead at .* of known loss/);
+  });
+
   test("desktop and mobile layouts, focus, charts, and reduced motion satisfy their contracts", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
+    const powerGeometry = await page.locator("[data-blx-power-balance]").evaluate((holder) => {
+      const track = holder.querySelector(".blx-v2-power-track");
+      return { holder: holder.getBoundingClientRect().width, track: track?.getBoundingClientRect().width || 0 };
+    });
+    expect(powerGeometry.track).toBeGreaterThanOrEqual(powerGeometry.holder - 1);
+    const vinInput = page.locator("#blx-v2-vin");
+    await vinInput.click();
+    await expect(vinInput).toBeFocused();
+    const inputFocus = await vinInput.evaluate((input) => {
+      const style = getComputedStyle(input);
+      return { outlineStyle: style.outlineStyle, outlineWidth: Number.parseFloat(style.outlineWidth) || 0, boxShadow: style.boxShadow };
+    });
+    expect(inputFocus.outlineStyle).not.toBe("none");
+    expect(inputFocus.outlineWidth).toBeGreaterThanOrEqual(1);
+    expect(inputFocus.boxShadow).not.toBe("none");
+
+    const transitionSummary = page.locator('[data-blx-family="switchingTransitions"] summary');
+    await transitionSummary.click();
+    await transitionSummary.focus();
+    const orderBefore = await page.locator("[data-blx-family]").evaluateAll((rows) => rows.map((row) => row.dataset.blxFamily));
+    await page.evaluate(() => {
+      window.__focusedFamilyRow = document.querySelector('[data-blx-family="switchingTransitions"]');
+      window.__familyAnimationCalls = 0;
+      const originalAnimate = Element.prototype.animate;
+      Element.prototype.animate = function (...args) {
+        if (this.matches?.("[data-blx-family]")) window.__familyAnimationCalls += 1;
+        return originalAnimate.apply(this, args);
+      };
+      const rail = document.querySelector("[data-blx-cursor-rail]");
+      rail.value = "17";
+      rail.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-mode", "dcm");
+    const orderAfter = await page.locator("[data-blx-family]").evaluateAll((rows) => rows.map((row) => row.dataset.blxFamily));
+    expect(orderAfter).not.toEqual(orderBefore);
+    await expect(transitionSummary).toBeFocused();
+    await expect(page.locator('[data-blx-family="switchingTransitions"] details')).toHaveAttribute("open", "");
+    expect(await page.evaluate(() => document.querySelector('[data-blx-family="switchingTransitions"]') === window.__focusedFamilyRow)).toBe(true);
+    expect(await page.evaluate(() => window.__familyAnimationCalls)).toBe(0);
     let overflow = await pageOverflow(page);
     expect(overflow.scrollWidth, JSON.stringify(overflow.offenders)).toBeLessThanOrEqual(overflow.clientWidth + 1);
     expect(overflow.offenders, "desktop content must not clip past either viewport edge").toEqual([]);

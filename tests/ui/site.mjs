@@ -56,6 +56,15 @@ export function htmlRoutesFromSitemap(xml) {
 
 export async function settlePage(page) {
   await page.locator("body > main.page-content").waitFor({ state: "visible" });
+  const lossExplorer = page.locator("#buck-loss-explorer");
+  if (await lossExplorer.count()) {
+    await lossExplorer.waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.querySelector("#buck-loss-explorer")?.dataset.blxStatus === "ready");
+    await page.waitForFunction(() => {
+      const state = document.querySelector("[data-blx-catalog]")?.dataset.catalogState;
+      return !state || state === "ready" || state === "error";
+    });
+  }
   await page.evaluate(async () => {
     if (document.fonts?.ready) await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
