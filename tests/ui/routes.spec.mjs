@@ -1,6 +1,7 @@
 import { test, expect } from "./fixtures.mjs";
 import {
   AUDIT_ROUTES,
+  BUCK_LOSS_V2_ROUTE,
   HTML_ROUTES,
   SITE_URL,
   TARGET_VIEWPORTS,
@@ -21,7 +22,7 @@ test.describe("route inventory and smoke coverage", () => {
   });
 
   test("the Loss Explorer module graph is cache-versioned", async ({ page, request }) => {
-    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
 
     const moduleSource = await page.locator('script[type="module"]').evaluateAll((scripts) => scripts
