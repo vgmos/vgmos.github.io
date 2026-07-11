@@ -114,12 +114,12 @@ test.describe("Coilcraft inductor catalog", () => {
 
     await page.locator("[data-blx-catalog-part]").selectOption("XGL6060-332");
     await expect(page.locator("[data-blx-catalog-meta]")).toContainText("AC/core residual unavailable");
-    await expect(page.locator("[data-blx-result-badges]")).toContainText("Subtotal");
-    await expect(page.locator("[data-blx-warnings]")).toContainText(/inductor (?:AC\/)?core residual/);
+    await expect(page.locator("[data-blx-availability-label]")).toHaveText("Subtotal");
+    await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("never counted as zero");
 
     await page.locator("#blx-v2-inductorAcManual").fill("25");
     await page.locator("#blx-v2-inductorAcManual").press("Tab");
-    await expect(page.locator("[data-blx-result-badges]")).toContainText("Total");
+    await expect(page.locator("[data-blx-availability-label]")).toHaveText("Total");
     const magnetics = page.locator('[data-blx-family="magnetics"]');
     await magnetics.locator("summary").click();
     await expect(magnetics).toContainText("Inductor characterized core residual");

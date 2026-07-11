@@ -193,7 +193,8 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(chooser).toHaveAttribute("aria-labelledby", "blx-device-dialog-title");
     await expect(chooser).toContainText("Choose a switch-pair model");
     await expect(chooser).toContainText("Model v2.1");
-    await expect(chooser).toContainText("this is a model input, not a part recommendation");
+    await expect(chooser).toContainText("This is a model input, not a part recommendation");
+    await expect(chooser).toContainText("Continue with the preloaded example →");
     const chooserGroups = chooser.locator(".blx-device-choice-group");
     await expect(chooserGroups).toHaveCount(2);
     await expect(chooserGroups.nth(0).getByRole("heading", { level: 3 })).toHaveText("Manufacturer-sourced");
@@ -247,12 +248,20 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page.locator("[data-blx-device-notes] li")).toHaveCount(5);
     await expect(page.locator("[data-blx-device-notes]")).toContainText("QRR scales linearly from its 10 A reference point");
     await expect(page.locator("[data-blx-device-notes]")).toContainText("QGD and QRR are defined by design");
-    await expect(page.locator("[data-blx-result-badges]")).toContainText("Mixed datasheet typical · 25 °C · VGS 4.5 V");
+    await expect(page.locator("[data-blx-device-summary]")).toContainText("Mixed datasheet typical · 25 °C · VGS 4.5 V");
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("QGS2 is inferred");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("3 terms omitted");
+    await page.locator("[data-blx-efficiency-label]").click();
+    const coverage = page.locator("[data-blx-coverage-popover]");
+    await expect(coverage).toBeVisible();
+    await expect(coverage).toContainText("Why this is a ceiling, not an estimate");
+    await expect(coverage).toContainText("Missing terms are never counted as zero");
+    await page.keyboard.press("Escape");
+    await expect(coverage).toBeHidden();
 
     const conditions = page.locator("[data-blx-device-conditions]");
     await conditions.locator("summary").click();
-    await expect(conditions.locator("li")).toHaveCount(9);
+    await expect(conditions.locator("[data-blx-device-condition-list] li")).toHaveCount(9);
     await expect(conditions).toContainText("High/low-side QGD: 8.1 nC typical");
     await expect(conditions).toContainText("maximum 12 nC");
     await expect(conditions).toContainText("Defined by design; not subject to production test");
@@ -267,7 +276,7 @@ test.describe("Buck Converter Loss Explorer v2", () => {
       await family.locator("summary").click();
       await expect(family).toContainText("Not available");
     }
-    await expect(page.locator("[data-blx-warnings]")).toContainText("Missing terms are not treated as zero");
+    await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("never counted as zero");
   });
 
   test("presets, keyboard cursor, equation details, URL state, copy, and related navigation work", async ({ page }) => {
@@ -282,9 +291,9 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
     await expect(page.locator(".blx-operating-metric")).toHaveCount(6);
-    await expect(page.locator("[data-blx-result-badges]")).toContainText("Total");
-    await expect(page.locator("[data-blx-result-badges]")).toContainText("Model v2.1");
-    await expect(page.locator("[data-blx-result-badges]")).toContainText("Mixed datasheet typical · 25 °C");
+    await expect(page.locator("[data-blx-availability-label]")).toHaveText("Total");
+    await expect(page.locator("[data-blx-model-label]")).toContainText("v2.1");
+    await expect(page.locator("[data-blx-device-summary]")).toContainText("Mixed datasheet typical · 25 °C");
     await expect(page.locator("[data-blx-device-model-source]")).toHaveAttribute("href", /EPCGaNLibrary\.zip$/);
     await expect(page.locator("[data-blx-device-model-note]")).toContainText("Model 1.104 · 22-Jul-2025");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("Coverage");
@@ -357,10 +366,10 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page.locator('[data-blx-out="regime"]')).toHaveText("DCM");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("Zero-current window");
     await expect(page.locator("[data-blx-efficiency-label]")).toHaveText("known-loss ceiling");
-    await expect(page.locator("[data-blx-input-label]")).toHaveText("known-input floor");
+    await expect(page.locator("[data-blx-input-label]")).toHaveText("input · floor");
     await expect(page.locator("[data-blx-power-copy]")).toHaveText("Output + known analytical losses");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText(/\d+ terms? omitted/);
-    await expect(page.locator("[data-blx-warnings]")).toContainText("Known-loss subtotal");
+    await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("never counted as zero");
 
     const reference = page.locator('[data-blx-view-panel="point"] [data-blx-reference]');
     await reference.click();
@@ -373,7 +382,7 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await expect(page.locator("[data-blx-efficiency-label]")).toHaveText("efficiency");
     await expect(page.locator("[data-blx-reference-card]")).toContainText("v2.1 · GaN · DCM");
     await expect(page.locator("[data-blx-reference-card]")).toContainText("v2.1 · GaN · CCM");
-    await expect(page.locator("[data-blx-reference-card]")).toContainText("Efficiency delta suppressed unless both results have total coverage");
+    await expect(page.locator("[data-blx-reference-card]")).toContainText("Efficiency deltas stay hidden while either run has omitted terms");
 
     await page.locator("[data-blx-change-device]").click();
     await page.locator('[data-blx-device-choice="silicon-30v"]').click();
@@ -430,6 +439,9 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await page.locator("#blx-v2-vin").press("Tab");
     await expect(page.locator('[data-blx-v2-message="vout"]')).toBeVisible();
     await expect(page.locator('[data-blx-out="efficiency"]')).toHaveText("—");
+    await expect(page.locator("[data-blx-model-failure]")).toBeVisible();
+    await expect(page.locator("[data-blx-model-failure]")).toContainText("a buck converter can only step down");
+    await expect(page.locator("[data-blx-fix-output]")).toBeVisible();
 
     await page.locator("#blx-v2-vin").fill("12");
     await page.locator("#blx-v2-vin").press("Tab");
@@ -654,6 +666,12 @@ test.describe("Buck Converter Loss Explorer v2", () => {
     await page.locator('[data-blx-view="load"]').click();
     await expect(page.locator("[data-blx-efficiency-plot] svg")).toBeVisible();
     await expect(page.locator("[data-blx-loss-plot] svg")).toBeVisible();
+    const mobileStack = await page.evaluate(() => {
+      const actions = document.querySelector('[data-blx-view-panel="load"] .blx-actions').getBoundingClientRect();
+      const equations = document.querySelector('.blx-equations').getBoundingClientRect();
+      return { actionsBottom: actions.bottom, equationsTop: equations.top };
+    });
+    expect(mobileStack.actionsBottom).toBeLessThanOrEqual(mobileStack.equationsTop + 1);
     overflow = await pageOverflow(page);
     expect(overflow.scrollWidth, JSON.stringify(overflow.offenders)).toBeLessThanOrEqual(overflow.clientWidth + 1);
     expect(overflow.offenders, "mobile content must not clip past either viewport edge").toEqual([]);
