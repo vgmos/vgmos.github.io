@@ -1,4 +1,5 @@
 import { buildBuckLossSweepAnnotationsV2, computeBuckLossPointV2, computeBuckWaveformV2, findCcmBoundaryV2 } from "./buck-loss-model-v2.js";
+import { BUCK_LOSS_MODEL_REVISION } from "./buck-loss-schema-v2.js";
 import { estimateInductorAcLoss } from "./inductor-ac-loss.js";
 
 function unavailable(status, extra = {}) {
@@ -9,6 +10,7 @@ function inductorEstimate(inputs, iout, waveform, context) {
   const partNumber = context.inductorPartNumber || null;
   const dataset = context.inductorAcDataset || null;
   if (!partNumber) return unavailable("not-selected");
+  if (waveform.mode === "dcm") return unavailable("dcm-waveform", { method: "catalog-triangle-out-of-domain" });
   if (!dataset || dataset.permission_status !== "approved") return unavailable("not-characterized");
   const surface = dataset.parts?.[partNumber];
   return estimateInductorAcLoss(surface, {
@@ -37,6 +39,7 @@ export function evaluateBuckLossPointV2(inputs, iout, context = {}) {
     ...context,
     ccmBoundary,
     inductorAcLossW,
+    inductorCatalogOutOfDomain: Boolean(context.inductorPartNumber) && waveform.mode === "dcm",
     inductorCoreResidualScaling: included ? "characterized" : manualLossW !== null ? "fixed" : "unclassified",
     inductorCoreResidualFixedW: manualLossW ?? 0
   });
@@ -48,7 +51,9 @@ export function evaluateBuckLossPointV2(inputs, iout, context = {}) {
     manualInductorAcLossW: manualLossW,
     lossEstimateKind: !context.inductorPartNumber
       ? (manualLossW !== null ? "manual-estimate" : "manual-subtotal")
-      : included ? "catalog-estimate" : manualLossW !== null ? "catalog-manual-estimate" : "catalog-subtotal"
+      : estimate.status === "dcm-waveform"
+        ? manualLossW !== null ? "dcm-manual-estimate" : "dcm-catalog-subtotal"
+        : included ? "catalog-estimate" : manualLossW !== null ? "catalog-manual-estimate" : "catalog-subtotal"
   };
 }
 
@@ -68,6 +73,7 @@ export function evaluateBuckLossSweepV2(inputs, context = {}, options = {}) {
   }, null);
   return {
     modelVersion: 2,
+    modelRevision: BUCK_LOSS_MODEL_REVISION,
     points: values,
     annotations: buildBuckLossSweepAnnotationsV2(values, ccmBoundary, peak)
   };

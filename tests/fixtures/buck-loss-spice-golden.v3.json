@@ -1,0 +1,1277 @@
+{
+  "schemaVersion": 3,
+  "generatedBy": "ngspice-46",
+  "fixtureRevision": "2026-07-10-v2.1",
+  "methodology": "Independent topology cases use switched buck circuits and simulator-side duty/threshold searches. Formula-generated PWL integrations are isolated as analytical identities and never contribute to topology loss or efficiency gates.",
+  "tolerances": {
+    "waveformRelative": 0.03,
+    "staticLossRelative": 0.03,
+    "aggregateStaticRelative": 0.08,
+    "efficiencyAbsolute": 0.01,
+    "boundaryRelative": 0.03,
+    "dropoutVoutFraction": 0.01,
+    "absolute": {
+      "currentA": 0.005,
+      "deadCurrentA": 0.0002,
+      "dutyFraction": 0.005,
+      "voltageV": 0.005,
+      "staticLossW": 0.0002,
+      "deadLossW": 0.0002,
+      "aggregateLossW": 0.001
+    }
+  },
+  "topologyCases": [
+    {
+      "id": "12v-3.3v-b0p25-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-zero-current-clamped",
+      "expectedMode": "dcm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.25,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.1387069383772139
+      },
+      "netlistSha256": "a80739f50347b38eea3ee0d17b4c351cf00e2ddefbbd2028291f8db5417b4681",
+      "simulation": {
+        "dutyCommand": 0.14172999020465632,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.138706,
+        "inductorRms": 0.225723,
+        "highSideRms": 0.121724,
+        "lowSideRms": 0.174249,
+        "inputCapRms": 0.11590130543781636,
+        "inputCapRmsGatedEstimate": 0.12012601104095917,
+        "outputCapRms": 0.17807655088478042,
+        "deadTimeCurrentAverage": 0.01070570101183,
+        "lowDeadTimeCurrentAverage": 0.0107057,
+        "highDeadTimeCurrentAverage": 1.01183e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0107057,
+        "highDeadTimeCurrentAverageSigned": -1.01183e-9,
+        "lowDeadTimeCurrentRms": 0.0759095,
+        "highDeadTimeCurrentRms": 1.01184e-9,
+        "peakCurrent": 0.559798,
+        "valleyCurrent": -1.00346e-9,
+        "valleyCurrentRaw": -1.00346e-9,
+        "duties": {
+          "highSide": 0.14172999020465632,
+          "lowSide": 0.34247000979534326,
+          "deadTime": 0.019999999999999993,
+          "zeroCurrent": 0.4958000000000004
+        },
+        "segmentDurations": {
+          "highSide": 1.4172999020465632e-7,
+          "lowSide": 3.4247000979534324e-7,
+          "deadTime": 1.9999999999999994e-8,
+          "zeroCurrent": 4.958000000000004e-7
+        },
+        "losses": {
+          "highSideConduction": 0.0000563035822688,
+          "lowSideConduction": 0.00011537831320379998,
+          "inductorCopperTotal": 0.00101901745458,
+          "inputCapEsr": 0.00006716556301095,
+          "outputCapEsr": 0.00015855628987509893,
+          "deadTimeConduction": 0.016058551517745
+        },
+        "aggregateStaticLoss": 0.01747497272068365,
+        "efficiencyStatic": 0.9632266764773556,
+        "convergence": {
+          "currentWindowDelta": 0
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b0p9-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-zero-current-clamped",
+      "expectedMode": "dcm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.9,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.4993449781579701
+      },
+      "netlistSha256": "c12c3ea08069a72809f48da73704a9ae3ee7c283d7f5ec5589bcf34401950f57",
+      "simulation": {
+        "dutyCommand": 0.26725026108956856,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.499339,
+        "inductorRms": 0.589762,
+        "highSideRms": 0.314876,
+        "lowSideRms": 0.476882,
+        "inputCapRms": 0.2818953940453799,
+        "inputCapRmsGatedEstimate": 0.2851981287606602,
+        "outputCapRms": 0.3138053687119078,
+        "deadTimeCurrentAverage": 0.02054810101032,
+        "lowDeadTimeCurrentAverage": 0.0205481,
+        "highDeadTimeCurrentAverage": 1.01032e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0205481,
+        "highDeadTimeCurrentAverageSigned": -1.01032e-9,
+        "lowDeadTimeCurrentRms": 0.145673,
+        "highDeadTimeCurrentRms": 1.01034e-9,
+        "peakCurrent": 1.05447,
+        "valleyCurrent": -1.00349e-9,
+        "valleyCurrentRaw": -1.00349e-9,
+        "duties": {
+          "highSide": 0.26725026108956856,
+          "lowSide": 0.6693497389104337,
+          "deadTime": 0.02000000000000002,
+          "zeroCurrent": 0.04339999999999776
+        },
+        "segmentDurations": {
+          "highSide": 2.6725026108956855e-7,
+          "lowSide": 6.693497389104337e-7,
+          "deadTime": 2.000000000000002e-8,
+          "zeroCurrent": 4.3399999999997755e-8
+        },
+        "losses": {
+          "highSideConduction": 0.0003767582024288,
+          "lowSideConduction": 0.0008641824793111999,
+          "inductorCopperTotal": 0.00695638433288,
+          "inputCapEsr": 0.00039732506592,
+          "outputCapEsr": 0.000492369047162082,
+          "deadTimeConduction": 0.03082215151548
+        },
+        "aggregateStaticLoss": 0.039909170643182085,
+        "efficiencyStatic": 0.976353590621532,
+        "convergence": {
+          "currentWindowDelta": 0
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b0p99-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-zero-current-clamped",
+      "expectedMode": "dcm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.99,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.549279475973767
+      },
+      "netlistSha256": "877a8288649284ca33cdf5928dad357c5facb336c786b2d799a3c129e4106f10",
+      "simulation": {
+        "dutyCommand": 0.28025601065865435,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.549277,
+        "inductorRms": 0.633579,
+        "highSideRms": 0.338113,
+        "lowSideRms": 0.513498,
+        "inputCapRms": 0.30088426858179207,
+        "inputCapRmsGatedEstimate": 0.30103691407098976,
+        "outputCapRms": 0.3157758801982569,
+        "deadTimeCurrentAverage": 0.0218450010102,
+        "lowDeadTimeCurrentAverage": 0.021845,
+        "highDeadTimeCurrentAverage": 1.0102e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.021845,
+        "highDeadTimeCurrentAverageSigned": -1.0102e-9,
+        "lowDeadTimeCurrentRms": 0.152918,
+        "highDeadTimeCurrentRms": 1.01021e-9,
+        "peakCurrent": 1.10569,
+        "valleyCurrent": -1.0054e-9,
+        "valleyCurrentRaw": -1.0054e-9,
+        "duties": {
+          "highSide": 0.28025601065865435,
+          "lowSide": 0.6797439893413457,
+          "deadTime": 0.036100000000000805,
+          "zeroCurrent": 0.0038999999999992344
+        },
+        "segmentDurations": {
+          "highSide": 2.8025601065865433e-7,
+          "lowSide": 6.797439893413457e-7,
+          "deadTime": 3.6100000000000806e-8,
+          "zeroCurrent": 3.899999999999234e-9
+        },
+        "losses": {
+          "highSideConduction": 0.0004344175229222,
+          "lowSideConduction": 0.0010019847448152,
+          "inductorCopperTotal": 0.00802844698482,
+          "inputCapEsr": 0.0004526567154,
+          "outputCapEsr": 0.0004985720325749195,
+          "deadTimeConduction": 0.0327675015153
+        },
+        "aggregateStaticLoss": 0.04318357951583232,
+        "efficiencyStatic": 0.9767305510377082,
+        "convergence": {
+          "currentWindowDelta": 0
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b1p01-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 1.01,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.5603760310439442
+      },
+      "netlistSha256": "ea7892f7a8e264c8e53d1a49f605e82f4fc2f74dd9ec3f4fd89b71f660aa2ad5",
+      "simulation": {
+        "dutyCommand": 0.2810158133886148,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.560463,
+        "inductorRms": 0.643036,
+        "highSideRms": 0.342587,
+        "lowSideRms": 0.521777,
+        "inputCapRms": 0.3045245181869598,
+        "inputCapRmsGatedEstimate": 0.3042492829529514,
+        "outputCapRms": 0.3153949922358257,
+        "deadTimeCurrentAverage": 0.02232120101019,
+        "lowDeadTimeCurrentAverage": 0.0223212,
+        "highDeadTimeCurrentAverage": 1.01019e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0223212,
+        "highDeadTimeCurrentAverageSigned": -1.01019e-9,
+        "lowDeadTimeCurrentRms": 0.154399,
+        "highDeadTimeCurrentRms": 1.0102e-9,
+        "peakCurrent": 1.11595,
+        "valleyCurrent": 0.0049760000000000915,
+        "valleyCurrentRaw": 0.00580419,
+        "duties": {
+          "highSide": 0.2810158133886148,
+          "lowSide": 0.6789841866113852,
+          "deadTime": 0.04,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.810158133886148e-7,
+          "lowSide": 6.789841866113851e-7,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.0004459902397621999,
+          "lowSideConduction": 0.0010345547033702002,
+          "inductorCopperTotal": 0.008269905945920001,
+          "inputCapEsr": 0.00046367591088500006,
+          "outputCapEsr": 0.0004973700056371827,
+          "deadTimeConduction": 0.033481801515285
+        },
+        "aggregateStaticLoss": 0.04419329832085958,
+        "efficiencyStatic": 0.9766597126517607,
+        "convergence": {
+          "currentWindowDelta": 0.00020200000000003548
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b1p1-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 1.1,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.6103105288597412
+      },
+      "netlistSha256": "8a83ec9a71d6c798fa7bd4f8e69dfb21e09cc443e1996fc027ba6e30e61427b3",
+      "simulation": {
+        "dutyCommand": 0.28111421763897704,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.610167,
+        "inductorRms": 0.686822,
+        "highSideRms": 0.365785,
+        "lowSideRms": 0.55832,
+        "inputCapRms": 0.3233258822906079,
+        "inputCapRmsGatedEstimate": 0.3230533115683395,
+        "outputCapRms": 0.3150325666450106,
+        "deadTimeCurrentAverage": 0.02429940101019,
+        "lowDeadTimeCurrentAverage": 0.0242994,
+        "highDeadTimeCurrentAverage": 1.01019e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0242994,
+        "highDeadTimeCurrentAverageSigned": -1.01019e-9,
+        "lowDeadTimeCurrentRms": 0.161744,
+        "highDeadTimeCurrentRms": 1.0102e-9,
+        "peakCurrent": 1.16574,
+        "valleyCurrent": 0.05459400000000003,
+        "valleyCurrentRaw": 0.0554234,
+        "duties": {
+          "highSide": 0.28111421763897704,
+          "lowSide": 0.6788857823610229,
+          "deadTime": 0.04,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.8111421763897704e-7,
+          "lowSide": 6.788857823610229e-7,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.0005084349316550001,
+          "lowSideConduction": 0.0011845406451200002,
+          "inductorCopperTotal": 0.009434489193680002,
+          "inputCapEsr": 0.0005226981307950001,
+          "outputCapEsr": 0.0004962275902347153,
+          "deadTimeConduction": 0.036449101515285
+        },
+        "aggregateStaticLoss": 0.048595492006769714,
+        "efficiencyStatic": 0.9764399228082319,
+        "convergence": {
+          "currentWindowDelta": 0.00012500000000004174
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b0p99-td5ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-zero-current-clamped",
+      "expectedMode": "dcm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.99,
+      "modelBoundaryA": 0.547511025424566,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 5,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.5420359151703203
+      },
+      "netlistSha256": "9d9ef06decc13f0aaed2d3283a25eb4b98a937cd6f645f1e4343cde854cff0be",
+      "simulation": {
+        "dutyCommand": 0.27653267909294554,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.542039,
+        "inductorRms": 0.627077,
+        "highSideRms": 0.331404,
+        "lowSideRms": 0.526862,
+        "inputCapRms": 0.295450245990759,
+        "inputCapRmsGatedEstimate": 0.29556962990338675,
+        "outputCapRms": 0.31531354330962896,
+        "deadTimeCurrentAverage": 0.0053209510102,
+        "lowDeadTimeCurrentAverage": 0.00532095,
+        "highDeadTimeCurrentAverage": 1.0102e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.00532095,
+        "highDeadTimeCurrentAverageSigned": -1.0102e-9,
+        "lowDeadTimeCurrentRms": 0.0759952,
+        "highDeadTimeCurrentRms": 1.01021e-9,
+        "peakCurrent": 1.09103,
+        "valleyCurrent": -1.00565e-9,
+        "valleyCurrentRaw": -1.00565e-9,
+        "duties": {
+          "highSide": 0.27653267909294554,
+          "lowSide": 0.7134673209070544,
+          "deadTime": 0.006200000000000943,
+          "zeroCurrent": 0.003799999999999015
+        },
+        "segmentDurations": {
+          "highSide": 2.7653267909294554e-7,
+          "lowSide": 7.134673209070544e-7,
+          "deadTime": 6.200000000000942e-9,
+          "zeroCurrent": 3.799999999999015e-9
+        },
+        "losses": {
+          "highSideConduction": 0.00041734872262079995,
+          "lowSideConduction": 0.0010548175547672003,
+          "inductorCopperTotal": 0.00786451127858,
+          "inputCapEsr": 0.0004364542392799999,
+          "outputCapEsr": 0.0004971131529723663,
+          "deadTimeConduction": 0.0079814265153
+        },
+        "aggregateStaticLoss": 0.018251671463520365,
+        "efficiencyStatic": 0.9898992957664061,
+        "convergence": {
+          "currentWindowDelta": 0
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b1p01-td5ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 1.01,
+      "modelBoundaryA": 0.547511025424566,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 5,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.5529861356788116
+      },
+      "netlistSha256": "29cfa23082dc767e97f4eb34f696f30c7b3e4848618358b5c7c377bfd58d1423",
+      "simulation": {
+        "dutyCommand": 0.2772290379161251,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.55274,
+        "inductorRms": 0.636068,
+        "highSideRms": 0.335617,
+        "lowSideRms": 0.534813,
+        "inputCapRms": 0.2988773344634885,
+        "inputCapRmsGatedEstimate": 0.29855771835110284,
+        "outputCapRms": 0.3143069111092133,
+        "deadTimeCurrentAverage": 0.00542109101019,
+        "lowDeadTimeCurrentAverage": 0.00542109,
+        "highDeadTimeCurrentAverage": 1.01019e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.00542109,
+        "highDeadTimeCurrentAverageSigned": -1.01019e-9,
+        "lowDeadTimeCurrentRms": 0.0766772,
+        "highDeadTimeCurrentRms": 1.0102e-9,
+        "peakCurrent": 1.10074,
+        "valleyCurrent": 0.0047399999999999665,
+        "valleyCurrentRaw": 0.00559921,
+        "duties": {
+          "highSide": 0.2772290379161251,
+          "lowSide": 0.7127709620838749,
+          "deadTime": 0.01,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.7722903791612506e-7,
+          "lowSide": 7.127709620838749e-7,
+          "deadTime": 1e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.00042802732861819997,
+          "lowSideConduction": 0.0010868947908822,
+          "inductorCopperTotal": 0.00809165001248,
+          "inputCapEsr": 0.0004466383052799999,
+          "outputCapEsr": 0.0004939441718550747,
+          "deadTimeConduction": 0.008131636515285
+        },
+        "aggregateStaticLoss": 0.018678791124400476,
+        "efficiencyStatic": 0.9898679379590042,
+        "convergence": {
+          "currentWindowDelta": 0.00011300000000002974
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b0p99-td60ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-zero-current-clamped",
+      "expectedMode": "dcm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.99,
+      "modelBoundaryA": 0.574372328193597,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 60,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.568628604911661
+      },
+      "netlistSha256": "fac8aeb3ec5dfb9ca77d73dba6a278e94c4296bc21124e4481b6510664410556",
+      "simulation": {
+        "dutyCommand": 0.2901975210604616,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.568627,
+        "inductorRms": 0.652366,
+        "highSideRms": 0.356242,
+        "lowSideRms": 0.478071,
+        "inputCapRms": 0.3154772265869598,
+        "inputCapRmsGatedEstimate": 0.3157190848510585,
+        "outputCapRms": 0.3197544489639169,
+        "deadTimeCurrentAverage": 0.06800310101019999,
+        "lowDeadTimeCurrentAverage": 0.0680031,
+        "highDeadTimeCurrentAverage": 1.0102e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0680031,
+        "highDeadTimeCurrentAverageSigned": -1.0102e-9,
+        "lowDeadTimeCurrentRms": 0.264732,
+        "highDeadTimeCurrentRms": 1.01021e-9,
+        "peakCurrent": 1.14483,
+        "valleyCurrent": -1.00573e-9,
+        "valleyCurrentRaw": -1.00573e-9,
+        "duties": {
+          "highSide": 0.2901975210604616,
+          "lowSide": 0.5898024789395383,
+          "deadTime": 0.11569999999999997,
+          "zeroCurrent": 0.004300000000000112
+        },
+        "segmentDurations": {
+          "highSide": 2.901975210604616e-7,
+          "lowSide": 5.898024789395383e-7,
+          "deadTime": 1.1569999999999997e-7,
+          "zeroCurrent": 4.300000000000111e-9
+        },
+        "losses": {
+          "highSideConduction": 0.00048225177774320003,
+          "lowSideConduction": 0.0008684971479558,
+          "inductorCopperTotal": 0.008511627959120001,
+          "inputCapEsr": 0.0004976294024749999,
+          "outputCapEsr": 0.0005112145381610907,
+          "deadTimeConduction": 0.10200465151529998
+        },
+        "aggregateStaticLoss": 0.11287587234075508,
+        "efficiencyStatic": 0.9432599305787053,
+        "convergence": {
+          "currentWindowDelta": 0
+        }
+      }
+    },
+    {
+      "id": "12v-3.3v-b1p01-td60ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 1.01,
+      "modelBoundaryA": 0.574372328193597,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 60,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.5801160514755329
+      },
+      "netlistSha256": "ba31086663e4745e86d968a785b713b8d6fe4e7c8fdc072cfe92fca577b4fdbf",
+      "simulation": {
+        "dutyCommand": 0.29111020854526204,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.58009,
+        "inductorRms": 0.662161,
+        "highSideRms": 0.360952,
+        "lowSideRms": 0.486361,
+        "inputCapRms": 0.31928264037369775,
+        "inputCapRmsGatedEstimate": 0.31900888255759907,
+        "outputCapRms": 0.3192531233072542,
+        "deadTimeCurrentAverage": 0.06952240101019,
+        "lowDeadTimeCurrentAverage": 0.0695224,
+        "highDeadTimeCurrentAverage": 1.01019e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0695224,
+        "highDeadTimeCurrentAverageSigned": -1.01019e-9,
+        "lowDeadTimeCurrentRms": 0.267553,
+        "highDeadTimeCurrentRms": 1.0102e-9,
+        "peakCurrent": 1.15541,
+        "valleyCurrent": 0.004769999999999941,
+        "valleyCurrentRaw": 0.00554667,
+        "duties": {
+          "highSide": 0.29111020854526204,
+          "lowSide": 0.588889791454738,
+          "deadTime": 0.12000000000000002,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.9111020854526203e-7,
+          "lowSide": 5.888897914547379e-7,
+          "deadTime": 1.2000000000000002e-7,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.0004950881159552,
+          "lowSideConduction": 0.0008988786848198,
+          "inductorCopperTotal": 0.00876914379842,
+          "inputCapEsr": 0.00050970702222,
+          "outputCapEsr": 0.0005096127837071843,
+          "deadTimeConduction": 0.104283601515285
+        },
+        "aggregateStaticLoss": 0.11546603192040718,
+        "efficiencyStatic": 0.9431159500935272,
+        "convergence": {
+          "currentWindowDelta": 0.00010699999999996823
+        }
+      }
+    },
+    {
+      "id": "12v-3p3v-2a-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": null,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 2
+      },
+      "netlistSha256": "168e8b6f0b420eaf642d735dada052b07e41fead13be9a4aba128eeb8a949341",
+      "simulation": {
+        "dutyCommand": 0.2838619876302083,
+        "voutAverage": 3.3,
+        "inductorAverage": 2.00015,
+        "inductorRms": 2.02516,
+        "highSideRms": 1.0799,
+        "lowSideRms": 1.66254,
+        "inputCapRms": 0.9185642072517304,
+        "inputCapRmsGatedEstimate": 0.9186258748339882,
+        "outputCapRms": 0.31823423071693635,
+        "deadTimeCurrentAverage": 0.07962010101016,
+        "lowDeadTimeCurrentAverage": 0.0796201,
+        "highDeadTimeCurrentAverage": 1.01016e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0796201,
+        "highDeadTimeCurrentAverageSigned": -1.01016e-9,
+        "lowDeadTimeCurrentRms": 0.41321,
+        "highDeadTimeCurrentRms": 1.01017e-9,
+        "peakCurrent": 2.55905,
+        "valleyCurrent": 1.4412500000000001,
+        "valleyCurrentRaw": 1.44207,
+        "duties": {
+          "highSide": 0.2838619876302083,
+          "lowSide": 0.6761380123697917,
+          "deadTime": 0.04,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.838619876302083e-7,
+          "lowSide": 6.761380123697916e-7,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.004431499238000001,
+          "lowSideConduction": 0.01050334915608,
+          "inductorCopperTotal": 0.082025460512,
+          "inputCapEsr": 0.00421880101422,
+          "outputCapEsr": 0.0005063651280000014,
+          "deadTimeConduction": 0.11943015151524
+        },
+        "aggregateStaticLoss": 0.22111562656354,
+        "efficiencyStatic": 0.9675836565938793,
+        "convergence": {
+          "currentWindowDelta": 0.00021000000000004349
+        }
+      }
+    },
+    {
+      "id": "12v-3p3v-3a-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": null,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 3
+      },
+      "netlistSha256": "ac70b83afc5e006990889e3c3ca20d5b7dc23eb1dbf5e630564a86e7424f8b73",
+      "simulation": {
+        "dutyCommand": 0.2858357060546875,
+        "voutAverage": 3.3,
+        "inductorAverage": 2.99996,
+        "inductorRms": 3.01683,
+        "highSideRms": 1.61376,
+        "lowSideRms": 2.4752,
+        "inputCapRms": 1.3669715406295042,
+        "inputCapRmsGatedEstimate": 1.3670782274244457,
+        "outputCapRms": 0.31821886949079636,
+        "deadTimeCurrentAverage": 0.11941200101014,
+        "lowDeadTimeCurrentAverage": 0.119412,
+        "highDeadTimeCurrentAverage": 1.01014e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.119412,
+        "highDeadTimeCurrentAverageSigned": -1.01014e-9,
+        "lowDeadTimeCurrentRms": 0.608139,
+        "highDeadTimeCurrentRms": 1.01015e-9,
+        "peakCurrent": 3.56117,
+        "valleyCurrent": 2.43875,
+        "valleyCurrentRaw": 2.43957,
+        "duties": {
+          "highSide": 0.2858357060546875,
+          "lowSide": 0.6741642939453125,
+          "deadTime": 0.04,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.858357060546875e-7,
+          "lowSide": 6.741642939453125e-7,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.009896041082880001,
+          "lowSideConduction": 0.023281137152,
+          "inductorCopperTotal": 0.182025264978,
+          "inputCapEsr": 0.009343055964455001,
+          "outputCapEsr": 0.0005063162445000024,
+          "deadTimeConduction": 0.17911800151521
+        },
+        "aggregateStaticLoss": 0.404169816937045,
+        "efficiencyStatic": 0.9607760912215646,
+        "convergence": {
+          "currentWindowDelta": 0.0001500000000000945
+        }
+      }
+    },
+    {
+      "id": "48v-12v-b0p99-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-zero-current-clamped",
+      "expectedMode": "dcm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.99,
+      "modelBoundaryA": 0.7522173149564231,
+      "inputs": {
+        "vin": 48,
+        "vout": 12,
+        "ioutMax": 5,
+        "fsw": 400,
+        "inductance": 15,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 48,
+        "loadA": 0.7446951418068588
+      },
+      "netlistSha256": "698ab529e5b6fba7eb36f1367a297b78dacfc01cab9ee24e98d4f4c075141257",
+      "simulation": {
+        "dutyCommand": 0.24975715888706096,
+        "voutAverage": 12,
+        "inductorAverage": 0.744691,
+        "inductorRms": 0.86177,
+        "highSideRms": 0.432183,
+        "lowSideRms": 0.733619,
+        "inputCapRms": 0.3929029880263065,
+        "inputCapRmsGatedEstimate": 0.39011379198543655,
+        "outputCapRms": 0.4336780818409693,
+        "deadTimeCurrentAverage": 0.01186270103754,
+        "lowDeadTimeCurrentAverage": 0.0118627,
+        "highDeadTimeCurrentAverage": 1.03754e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0118627,
+        "highDeadTimeCurrentAverageSigned": -1.03754e-9,
+        "lowDeadTimeCurrentRms": 0.132816,
+        "highDeadTimeCurrentRms": 1.03774e-9,
+        "peakCurrent": 1.4976,
+        "valleyCurrent": -1.01381e-9,
+        "valleyCurrentRaw": -1.01381e-9,
+        "duties": {
+          "highSide": 0.24975715888706096,
+          "lowSide": 0.7342428411129391,
+          "deadTime": 0.011439999999997386,
+          "zeroCurrent": 0.004560000000002545
+        },
+        "segmentDurations": {
+          "highSide": 6.243928972176525e-7,
+          "lowSide": 0.000001835607102782348,
+          "deadTime": 2.8599999999993467e-8,
+          "zeroCurrent": 1.1400000000006362e-8
+        },
+        "losses": {
+          "highSideConduction": 0.0007097721528582,
+          "lowSideConduction": 0.0020451479812118004,
+          "inductorCopperTotal": 0.014852950658000002,
+          "inputCapEsr": 0.0007718637899999999,
+          "outputCapEsr": 0.0009403833933463123,
+          "deadTimeConduction": 0.01779405155631
+        },
+        "aggregateStaticLoss": 0.03711416953172632,
+        "efficiencyStatic": 0.9958640048979586,
+        "convergence": {
+          "currentWindowDelta": 0.0000010000000000287557
+        }
+      }
+    },
+    {
+      "id": "48v-12v-b1p01-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 1.01,
+      "modelBoundaryA": 0.7522173149564231,
+      "inputs": {
+        "vin": 48,
+        "vout": 12,
+        "ioutMax": 5,
+        "fsw": 400,
+        "inductance": 15,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 48,
+        "loadA": 0.7597394881059873
+      },
+      "netlistSha256": "63f1c81f6f5b8f23a73a53849c8b1952e18aa58cd27b5293ec6bc31ffb9733b5",
+      "simulation": {
+        "dutyCommand": 0.25066822229491764,
+        "voutAverage": 12,
+        "inductorAverage": 0.759878,
+        "inductorRms": 0.874822,
+        "highSideRms": 0.438443,
+        "lowSideRms": 0.745183,
+        "inputCapRms": 0.39813682728052174,
+        "inputCapRmsGatedEstimate": 0.3949226513923374,
+        "outputCapRms": 0.43371585386800454,
+        "deadTimeCurrentAverage": 0.011857601037479999,
+        "lowDeadTimeCurrentAverage": 0.0118576,
+        "highDeadTimeCurrentAverage": 1.03748e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0118576,
+        "highDeadTimeCurrentAverageSigned": -1.03748e-9,
+        "lowDeadTimeCurrentRms": 0.132798,
+        "highDeadTimeCurrentRms": 1.03769e-9,
+        "peakCurrent": 1.51245,
+        "valleyCurrent": 0.007306000000000035,
+        "valleyCurrentRaw": 0.0077821,
+        "duties": {
+          "highSide": 0.25066822229491764,
+          "lowSide": 0.7333317777050823,
+          "deadTime": 0.016,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 6.266705557372942e-7,
+          "lowSide": 0.000001833329444262706,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.0007304826041462002,
+          "lowSideConduction": 0.0021101312732582003,
+          "inductorCopperTotal": 0.01530627063368,
+          "inputCapEsr": 0.000792564666185,
+          "outputCapEsr": 0.0009405472094822613,
+          "deadTimeConduction": 0.017786401556219997
+        },
+        "aggregateStaticLoss": 0.037666397942971656,
+        "efficiencyStatic": 0.9958854954052428,
+        "convergence": {
+          "currentWindowDelta": 0.00024000000000001798
+        }
+      }
+    },
+    {
+      "id": "48v-12v-5a-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "auto-dcm",
+      "comparisonPolicy": {
+        "hardGated": "all comparable waveform and static terms",
+        "characterizationOnly": []
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": null,
+      "modelBoundaryA": 0.7522173149564231,
+      "inputs": {
+        "vin": 48,
+        "vout": 12,
+        "ioutMax": 5,
+        "fsw": 400,
+        "inductance": 15,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 48,
+        "loadA": 5
+      },
+      "netlistSha256": "b7deacb7655f0d79b97e9076e503f90564126bd562a0febd7109511a5d486ecd",
+      "simulation": {
+        "dutyCommand": 0.25276836555989585,
+        "voutAverage": 12,
+        "inductorAverage": 5.0005,
+        "inductorRms": 5.01946,
+        "highSideRms": 2.52447,
+        "lowSideRms": 4.29184,
+        "inputCapRms": 2.1856038750880726,
+        "inputCapRmsGatedEstimate": 2.185326660983312,
+        "outputCapRms": 0.44156391564528436,
+        "deadTimeCurrentAverage": 0.0780071010374,
+        "lowDeadTimeCurrentAverage": 0.0780071,
+        "highDeadTimeCurrentAverage": 1.0374e-9,
+        "lowDeadTimeCurrentAverageSigned": 0.0780071,
+        "highDeadTimeCurrentAverageSigned": -1.0374e-9,
+        "lowDeadTimeCurrentRms": 0.631531,
+        "highDeadTimeCurrentRms": 1.03761e-9,
+        "peakCurrent": 5.7573,
+        "valleyCurrent": 4.2437,
+        "valleyCurrentRaw": 4.24417,
+        "duties": {
+          "highSide": 0.25276836555989585,
+          "lowSide": 0.7312316344401042,
+          "deadTime": 0.016,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 6.319209138997397e-7,
+          "lowSide": 0.0000018280790861002606,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.02421720536742,
+          "lowSideConduction": 0.06999558422527999,
+          "inductorCopperTotal": 0.5038995738319999,
+          "inputCapEsr": 0.023884321493999997,
+          "outputCapEsr": 0.000974893457999979,
+          "deadTimeConduction": 0.11701065155609999
+        },
+        "aggregateStaticLoss": 0.7399822299327998,
+        "efficiencyStatic": 0.9878172135920031,
+        "convergence": {
+          "currentWindowDelta": 0.0003699999999993153
+        }
+      }
+    },
+    {
+      "id": "12v-3p3v-forced-negative-b0p5-td20ns",
+      "evidenceClass": "independent-switched-topology",
+      "method": "switched-buck-synchronous",
+      "expectedMode": "ccm",
+      "controlMode": "forced-ccm",
+      "comparisonPolicy": {
+        "hardGated": "waveform moments, dead/zero intervals, non-commutation static terms, aggregate static loss, and efficiency",
+        "characterizationOnly": [
+          "highSideDuty",
+          "lowSideDuty",
+          "deadTimeCurrentAverage",
+          "lowDeadTimeCurrentAverageSigned",
+          "highDeadTimeCurrentAverageSigned",
+          "lowDeadTimeCurrentRms",
+          "highDeadTimeCurrentRms",
+          "deadTimeConduction"
+        ],
+        "reason": "The analytical forced-CCM model is a first-order negative-current warning and does not resolve diode commutation waveforms."
+      },
+      "deviceTemplate": "epc2090",
+      "boundaryRatio": 0.5,
+      "modelBoundaryA": 0.5548277535088556,
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 0.2774138767544278
+      },
+      "netlistSha256": "962aa7d876ecfd5d2240aee9f9273f5a5e4d34be9dc0784b7d2231ea25b0e30a",
+      "simulation": {
+        "dutyCommand": 0.2555680525844782,
+        "voutAverage": 3.3,
+        "inductorAverage": 0.277978,
+        "inductorRms": 0.41999,
+        "highSideRms": 0.221838,
+        "lowSideRms": 0.336243,
+        "inputCapRms": 0.20960705992270393,
+        "inputCapRmsGatedEstimate": 0.21020360183155837,
+        "outputCapRms": 0.3153302095963518,
+        "deadTimeCurrentAverage": 0.02058455,
+        "lowDeadTimeCurrentAverage": 0.0161365,
+        "highDeadTimeCurrentAverage": 0.00444805,
+        "lowDeadTimeCurrentAverageSigned": 0.0161365,
+        "highDeadTimeCurrentAverageSigned": 0.00444805,
+        "lowDeadTimeCurrentRms": 0.114402,
+        "highDeadTimeCurrentRms": 0.0317603,
+        "peakCurrent": 0.833611,
+        "valleyCurrent": -0.277655,
+        "valleyCurrentRaw": -0.270682,
+        "duties": {
+          "highSide": 0.2555680525844782,
+          "lowSide": 0.7044319474155218,
+          "deadTime": 0.04,
+          "zeroCurrent": 0
+        },
+        "segmentDurations": {
+          "highSide": 2.555680525844782e-7,
+          "lowSide": 7.044319474155218e-7,
+          "deadTime": 4e-8,
+          "zeroCurrent": 0
+        },
+        "losses": {
+          "highSideConduction": 0.00018700597332720002,
+          "lowSideConduction": 0.00042962554918620004,
+          "inductorCopperTotal": 0.003527832002,
+          "inputCapEsr": 0.00021967559784719998,
+          "outputCapEsr": 0.0004971657054203956,
+          "deadTimeConduction": 0.030876825
+        },
+        "aggregateStaticLoss": 0.035738129827781,
+        "efficiencyStatic": 0.9624285298249654,
+        "convergence": {
+          "currentWindowDelta": 0.0021800000000000153
+        }
+      }
+    }
+  ],
+  "thresholdChecks": [
+    {
+      "id": "12v-3p3v-zero-current-onset",
+      "evidenceClass": "independent-switched-topology-threshold",
+      "method": "fixed-output-duty-search",
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12
+      },
+      "netlistSha256": "c2487227963aa7ed9018d69f818544a1331d66602def83cf87063e6580d9a1d5",
+      "simulation": {
+        "boundaryA": 0.554912,
+        "valleyA": 0.000218869,
+        "duty": 0.2810009765624999,
+        "currentWindowDelta": 0.0003549999999999942
+      }
+    },
+    {
+      "id": "3p3v-2a-dropout-onset",
+      "evidenceClass": "independent-switched-topology-threshold",
+      "method": "fixed-output-vin-search-at-maximum-duty",
+      "inputs": {
+        "vin": 12,
+        "vout": 3.3,
+        "ioutMax": 3,
+        "fsw": 1000,
+        "inductance": 2.2,
+        "deadTime": 20,
+        "dcr": 20,
+        "rac": 20,
+        "inductorAcManual": 0,
+        "inputEsr": 5,
+        "esr": 5,
+        "iq": 0,
+        "vBias": 12,
+        "loadA": 2
+      },
+      "netlistSha256": "1c819494f83f8f09e6290ce5312ce80d15d05724915fd9af14b99c810897e654",
+      "searchResolutionV": 0.000022886657714771275,
+      "simulation": {
+        "vinThreshold": 3.549141165924073,
+        "inductorAverage": 1.99995,
+        "currentWindowDelta": 0.000010000000000065512
+      }
+    }
+  ],
+  "analyticalIdentityChecks": [
+    {
+      "id": "ideal-dcm-triangle-moments",
+      "evidenceClass": "formula-integration-identity",
+      "method": "ideal-dcm-pwl-integration",
+      "netlistSha256": "b5f58c9832f1bc11a84e1c4a33f195b2c39743c41af2d85ab8c4ea6e1fc4ca52",
+      "expected": {
+        "currentAverage": 0.05,
+        "currentRms": 0.10484475013988112,
+        "peakCurrent": 0.32977264895682296
+      },
+      "simulation": {
+        "currentAverage": 0.0500315,
+        "currentRms": 0.104845,
+        "peakCurrent": 0.329773
+      }
+    },
+    {
+      "id": "textbook-transition-phase-energy",
+      "evidenceClass": "formula-integration-identity",
+      "method": "textbook-phase-pwl-integration",
+      "netlistSha256": "cf3fc96c0c3b54eedd1cd20a643db1fbc88342c61b21e5bf83d44076c9b8c727",
+      "expected": {
+        "energyJ": 7.850666666666667e-8
+      },
+      "simulation": {
+        "energyJ": 7.851e-8
+      }
+    }
+  ]
+}

@@ -1,0 +1,993 @@
+{
+  "schemaVersion": 2,
+  "evidenceClass": "vendor-model-characterization",
+  "label": "Official EPC LTspice model executed in native LTspice",
+  "characterizationOnly": true,
+  "source": {
+    "lockId": "epc2090-ltspice-v1.104",
+    "publisher": "Efficient Power Conversion Corporation",
+    "archiveSha256": "4ee090c07d4f184d160fdba634aa568c35092aa14035c847932468ccc14305f8",
+    "modelSha256": "36f8cafc0b80db8c7bfbffd21a15890306891319c37938aa276aa738fa521ef8",
+    "modelVersion": "1.104",
+    "retrievalDate": "2026-07-10",
+    "redistribution": false,
+    "datasheet": {
+      "url": "https://epc-co.com/epc/documents/datasheets/EPC2090_datasheet.pdf",
+      "documentId": "EPC2090 eGaN FET Datasheet",
+      "revision": "Revised December 19, 2024",
+      "publicationDate": "2024-12-19"
+    },
+    "publishedConditionContracts": {
+      "rdsOn": [
+        {
+          "id": "rds-on-vgs5-id16a-tj25c",
+          "sourceLocation": {
+            "pdfPage": 1,
+            "section": "Static Characteristics"
+          },
+          "conditions": {
+            "junctionTemperatureC": 25,
+            "gateSourceVoltageV": 5,
+            "drainCurrentA": 16
+          },
+          "published": {
+            "typicalOhm": 0.0038,
+            "maximumOhm": 0.0052
+          },
+          "acceptance": {
+            "typicalRelativeLimit": 0.1,
+            "requireAtOrBelowPublishedMaximum": true
+          }
+        }
+      ],
+      "sourceDrainForwardVoltage": {
+        "id": "vsd-vgs0-is0p5a-tj25c",
+        "sourceLocation": {
+          "pdfPage": 1,
+          "section": "Static Characteristics"
+        },
+        "conditions": {
+          "junctionTemperatureC": 25,
+          "gateSourceVoltageV": 0,
+          "reverseCurrentA": 0.5
+        },
+        "published": {
+          "typicalV": 1.5
+        },
+        "acceptance": {
+          "typicalRelativeLimit": 0.15
+        },
+        "qualification": "Defined by design; not subject to production test."
+      },
+      "totalGateCharge": {
+        "id": "qg-vds50-id16a-vgs5-tj25c",
+        "sourceLocation": {
+          "pdfPage": 2,
+          "section": "Dynamic Characteristics"
+        },
+        "conditions": {
+          "junctionTemperatureC": 25,
+          "drainSupplyV": 50,
+          "drainCurrentA": 16,
+          "gateVoltageRangeV": [
+            0,
+            5
+          ]
+        },
+        "published": {
+          "typicalC": 7.3e-9,
+          "maximumC": 9.3e-9
+        },
+        "acceptance": {
+          "typicalRelativeLimit": 0.2,
+          "requireAtOrBelowPublishedMaximum": true
+        },
+        "qualification": "Defined by design; not subject to production test."
+      },
+      "partitionedGateCharge": {
+        "id": "qgs-qgd-vds50-id16a-vgs5-tj25c",
+        "sourceLocation": {
+          "pdfPage": 2,
+          "section": "Dynamic Characteristics"
+        },
+        "conditions": {
+          "junctionTemperatureC": 25,
+          "drainSupplyV": 50,
+          "drainCurrentA": 16,
+          "gateVoltageRangeV": [
+            0,
+            5
+          ]
+        },
+        "published": {
+          "totalGateChargeC": 7.3e-9,
+          "totalGateChargeMaximumC": 9.3e-9,
+          "gateSourceChargeC": 2.8e-9,
+          "gateDrainChargeC": 7e-10,
+          "gateChargeAtThresholdC": 2.1e-9
+        },
+        "acceptance": {
+          "typicalRelativeLimit": 0.25
+        },
+        "qualification": "Defined by design; not subject to production test."
+      },
+      "outputCharge": {
+        "id": "qoss-vds50-vgs0-tj25c",
+        "sourceLocation": {
+          "pdfPage": 2,
+          "section": "Dynamic Characteristics"
+        },
+        "conditions": {
+          "junctionTemperatureC": 25,
+          "gateSourceVoltageV": 0,
+          "drainSourceVoltageRangeV": [
+            0,
+            50
+          ]
+        },
+        "published": {
+          "typicalC": 2.7e-8,
+          "maximumC": 3.5e-8
+        },
+        "acceptance": {
+          "typicalRelativeLimit": 0.2,
+          "requireAtOrBelowPublishedMaximum": true
+        },
+        "qualification": "Defined by design; not subject to production test."
+      },
+      "outputEnergy": {
+        "id": "eoss-cosser-vds0to50-vgs0-tj25c",
+        "sourceLocation": {
+          "pdfPage": 2,
+          "section": "Dynamic Characteristics, COSS(ER) Note 1"
+        },
+        "conditions": {
+          "junctionTemperatureC": 25,
+          "gateSourceVoltageV": 0,
+          "drainSourceVoltageRangeV": [
+            0,
+            50
+          ]
+        },
+        "published": {
+          "energyEquivalentCapacitanceF": 4.41e-10,
+          "derivedStoredEnergyJ": 5.5125e-7
+        },
+        "derivation": "0.5 * COSS(ER) * VDS^2",
+        "acceptance": {
+          "typicalRelativeLimit": 0.2
+        },
+        "qualification": "Defined by design; not subject to production test."
+      },
+      "reverseRecovery": {
+        "id": "qrr-majority-carrier-not-applicable",
+        "sourceLocation": {
+          "pdfPage": 2,
+          "section": "Dynamic Characteristics, QRR"
+        },
+        "applicability": "not-applicable",
+        "published": {
+          "chargeC": 0
+        },
+        "reason": "EPC specifies a majority-carrier reverse path and zero QRR; a silicon-style minority-carrier recovery fixture is not applicable."
+      }
+    },
+    "subcircuits": {
+      "primary": {
+        "name": "EPC2090",
+        "pins": [
+          "gatein",
+          "drainin",
+          "sourcein"
+        ]
+      },
+      "fallback": null
+    }
+  },
+  "adapter": {
+    "kind": "comment-known-header-line",
+    "revision": 1,
+    "adaptedSha256": "5776f0761c620270d143c1ba0cae20202a7872a92f794516b6fe5844e0feae7a"
+  },
+  "simulator": {
+    "name": "LTspice",
+    "version": "17.0.38",
+    "args": [
+      "-b"
+    ]
+  },
+  "requiredDirectives": [],
+  "characterization": {
+    "staticChecks": {
+      "status": "published-condition-compared",
+      "method": "Force the published drain current and divide the steady-state drain-source voltage by measured current.",
+      "sampleWindowS": [
+        7e-8,
+        1.2e-7
+      ],
+      "cases": {
+        "rds-on-vgs5-id16a-tj25c": {
+          "contract": {
+            "id": "rds-on-vgs5-id16a-tj25c",
+            "sourceLocation": {
+              "pdfPage": 1,
+              "section": "Static Characteristics"
+            },
+            "conditions": {
+              "junctionTemperatureC": 25,
+              "gateSourceVoltageV": 5,
+              "drainCurrentA": 16
+            },
+            "published": {
+              "typicalOhm": 0.0038,
+              "maximumOhm": 0.0052
+            },
+            "acceptance": {
+              "typicalRelativeLimit": 0.1,
+              "requireAtOrBelowPublishedMaximum": true
+            }
+          },
+          "fixture": "forced-current-static-on-state",
+          "netlistSha256": "02ce46b4da8e06f76a81fe13c205bb8d9ff89773d82b4155671ef2ba3ee533db",
+          "measuredDrainSourceVoltageV": 0.0606969,
+          "measuredDrainCurrentA": 16,
+          "measuredRdsOnOhm": 0.00379355625,
+          "convergence": {
+            "baselineMaxStepS": 1e-9,
+            "refinedMaxStepS": 5e-10,
+            "repeat": {
+              "netlistSha256": "962e073024cc7e9f610dfe4ecad998f4c0c0d17c12dd45e4a691325049a6d403",
+              "measuredDrainSourceVoltageV": 0.0606969,
+              "measuredDrainCurrentA": 16,
+              "measuredRdsOnOhm": 0.00379355625
+            },
+            "refined": {
+              "netlistSha256": "843fbfc7a8bf89aa2810824530a185012affc2377ac297d51fbfb0d22d44263d",
+              "measuredDrainSourceVoltageV": 0.0606969,
+              "measuredDrainCurrentA": 16,
+              "measuredRdsOnOhm": 0.00379355625
+            },
+            "repeatRelativeDelta": 0,
+            "halfStepRelativeDelta": 0
+          },
+          "comparison": {
+            "measured": 0.00379355625,
+            "publishedTypical": 0.0038,
+            "publishedMaximum": 0.0052,
+            "typicalRelativeDelta": 0.001695723684210556,
+            "typicalRelativeLimit": 0.1,
+            "atOrBelowPublishedMaximum": true,
+            "passed": true
+          }
+        }
+      },
+      "allComparisonsPassed": true
+    },
+    "terminalChecks": {
+      "status": "published-condition-and-reviewed-characterization",
+      "reverseConduction": {
+        "status": "published-condition-compared",
+        "contract": {
+          "id": "vsd-vgs0-is0p5a-tj25c",
+          "sourceLocation": {
+            "pdfPage": 1,
+            "section": "Static Characteristics"
+          },
+          "conditions": {
+            "junctionTemperatureC": 25,
+            "gateSourceVoltageV": 0,
+            "reverseCurrentA": 0.5
+          },
+          "published": {
+            "typicalV": 1.5
+          },
+          "acceptance": {
+            "typicalRelativeLimit": 0.15
+          },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "netlistSha256": "4b3fcfc163b06991a36c8f672dd29fcc9633d5a41edec13f979811ca20b9f963",
+        "sourceDrainVoltageV": 1.89968,
+        "measuredReverseCurrentA": 0.5,
+        "convergence": {
+          "baselineMaxStepS": 1e-9,
+          "refinedMaxStepS": 5e-10,
+          "repeat": {
+            "netlistSha256": "f406d4c96fe7b2bb6d3cfef656cd126905408f11c37ca217312e781179e44d83",
+            "sourceDrainVoltageV": 1.89968,
+            "measuredReverseCurrentA": 0.5
+          },
+          "refined": {
+            "netlistSha256": "365ebfef4c61ac2e890b37651daab653ef7aa2a67f8d37f87cac962981018cbc",
+            "sourceDrainVoltageV": 1.89968,
+            "measuredReverseCurrentA": 0.5
+          },
+          "repeatRelativeDelta": 0,
+          "halfStepRelativeDelta": 0
+        },
+        "comparison": {
+          "measured": 1.89968,
+          "publishedTypical": 1.5,
+          "publishedMaximum": null,
+          "typicalRelativeDelta": 0.2664533333333334,
+          "typicalRelativeLimit": 0.15,
+          "atOrBelowPublishedMaximum": null,
+          "passed": false
+        }
+      },
+      "outputCharge": {
+        "status": "published-condition-compared",
+        "contract": {
+          "id": "qoss-vds50-vgs0-tj25c",
+          "sourceLocation": {
+            "pdfPage": 2,
+            "section": "Dynamic Characteristics"
+          },
+          "conditions": {
+            "junctionTemperatureC": 25,
+            "gateSourceVoltageV": 0,
+            "drainSourceVoltageRangeV": [
+              0,
+              50
+            ]
+          },
+          "published": {
+            "typicalC": 2.7e-8,
+            "maximumC": 3.5e-8
+          },
+          "acceptance": {
+            "typicalRelativeLimit": 0.2,
+            "requireAtOrBelowPublishedMaximum": true
+          },
+          "qualification": "Defined by design; not subject to production test."
+        },
+        "rampDurationS": 0.000001,
+        "netlistSha256": "4d937b703069e342654bfb08e7d4172ff52b743acf8420c33e111302e4ec1900",
+        "outputChargeC": 2.70123e-8,
+        "outputEnergyJ": 5.53319e-7,
+        "finalDrainSourceVoltageV": 50,
+        "convergence": {
+          "baselineMaxStepS": 1e-9,
+          "refinedMaxStepS": 5e-10,
+          "repeat": {
+            "netlistSha256": "2645ee815a3e4ee02f5b8d75ff51d9a6343416879ff0e5d5f83673bd69d35d2b",
+            "outputChargeC": 2.70123e-8,
+            "outputEnergyJ": 5.53319e-7,
+            "finalDrainSourceVoltageV": 50
+          },
+          "refined": {
+            "netlistSha256": "e249483dd67366510c6bf496008f1608d08f50ec9a64e86582b7051aecafbd3c",
+            "outputChargeC": 2.70122e-8,
+            "outputEnergyJ": 5.53317e-7,
+            "finalDrainSourceVoltageV": 50
+          },
+          "repeatRelativeDeltas": {
+            "outputChargeC": 0,
+            "outputEnergyJ": 0
+          },
+          "halfStepRelativeDeltas": {
+            "outputChargeC": 0.0000037020309341256875,
+            "outputEnergyJ": 0.0000036145645262107045
+          }
+        },
+        "chargeComparison": {
+          "measured": 2.70123e-8,
+          "publishedTypical": 2.7e-8,
+          "publishedMaximum": 3.5e-8,
+          "typicalRelativeDelta": 0.0004555555555555574,
+          "typicalRelativeLimit": 0.2,
+          "atOrBelowPublishedMaximum": true,
+          "passed": true
+        },
+        "energyComparison": {
+          "contract": {
+            "id": "eoss-cosser-vds0to50-vgs0-tj25c",
+            "sourceLocation": {
+              "pdfPage": 2,
+              "section": "Dynamic Characteristics, COSS(ER) Note 1"
+            },
+            "conditions": {
+              "junctionTemperatureC": 25,
+              "gateSourceVoltageV": 0,
+              "drainSourceVoltageRangeV": [
+                0,
+                50
+              ]
+            },
+            "published": {
+              "energyEquivalentCapacitanceF": 4.41e-10,
+              "derivedStoredEnergyJ": 5.5125e-7
+            },
+            "derivation": "0.5 * COSS(ER) * VDS^2",
+            "acceptance": {
+              "typicalRelativeLimit": 0.2
+            },
+            "qualification": "Defined by design; not subject to production test."
+          },
+          "measured": 5.53319e-7,
+          "publishedTypical": 5.5125e-7,
+          "publishedMaximum": null,
+          "typicalRelativeDelta": 0.0037532879818592967,
+          "typicalRelativeLimit": 0.2,
+          "atOrBelowPublishedMaximum": null,
+          "passed": true
+        }
+      },
+      "gateCharge": {
+        "fixture": "constant-gate-current-clamped-drain",
+        "fixtureNote": "Total QG uses the published VDS, ID, VGS and temperature. Gate current is constant through the target crossing, then tapers to zero over a 20 mV clamp margin; final VGS is asserted below both the selected tolerance and absolute maximum. QGS/QGD are 99%-to-1% drain-transition extraction proxies; the datasheet does not publish those extraction thresholds, so they are not condition-equivalent badge evidence.",
+        "total": {
+          "status": "published-condition-compared-half-step-unstable",
+          "contract": {
+            "id": "qg-vds50-id16a-vgs5-tj25c",
+            "sourceLocation": {
+              "pdfPage": 2,
+              "section": "Dynamic Characteristics"
+            },
+            "conditions": {
+              "junctionTemperatureC": 25,
+              "drainSupplyV": 50,
+              "drainCurrentA": 16,
+              "gateVoltageRangeV": [
+                0,
+                5
+              ]
+            },
+            "published": {
+              "typicalC": 7.3e-9,
+              "maximumC": 9.3e-9
+            },
+            "acceptance": {
+              "typicalRelativeLimit": 0.2,
+              "requireAtOrBelowPublishedMaximum": true
+            },
+            "qualification": "Defined by design; not subject to production test."
+          },
+          "convergenceLadder": {
+            "coarseMaxStepS": 1e-9,
+            "acceptedBaselineMaxStepS": 5e-10,
+            "refinedMaxStepS": 2.5e-10,
+            "coarse": {
+              "netlistSha256": "87551d1f36a2d2d03a3e364bcec8ac14014e7f2ffe615dac7e036cada2aee020",
+              "measurements": {
+                "gate_target_time": 7.17576e-7,
+                "drain_fall_start_time": 2.22961e-7,
+                "drain_fall_end_time": 3.36408e-7,
+                "drain_current_avg": 16,
+                "gate_voltage_final": 5.01964,
+                "drain_voltage_final": 0.0605235
+              },
+              "gateCurrentA": 0.01,
+              "chargeStartS": 5e-8,
+              "gateClampMarginV": 0.02,
+              "gateAbsoluteMaximumV": 6,
+              "finalGateVoltageLimitV": 5.75,
+              "totalGateChargeC": 6.675759999999999e-9,
+              "gateSourceChargeProxyC": 1.7296100000000002e-9,
+              "gateDrainChargeProxyC": 1.1344699999999997e-9
+            },
+            "coarseToBaselineRelativeDeltas": {
+              "totalGateChargeC": 0.10437514371785447,
+              "gateSourceChargeProxyC": 0.00891035778954354,
+              "gateDrainChargeProxyC": 0.009767295707278119
+            },
+            "coarseToBaselineMaxRelativeDelta": 0.10437514371785447
+          },
+          "baseline": {
+            "netlistSha256": "ea44f3ab8b6b90b04cecb09d86cda327f23a0029a09588cc2cbf593b98f5d823",
+            "measurements": {
+              "gate_target_time": 6.54483e-7,
+              "drain_fall_start_time": 2.24516e-7,
+              "drain_fall_end_time": 3.39082e-7,
+              "drain_current_avg": 16,
+              "gate_voltage_final": 5.01964,
+              "drain_voltage_final": 0.0605235
+            },
+            "gateCurrentA": 0.01,
+            "chargeStartS": 5e-8,
+            "gateClampMarginV": 0.02,
+            "gateAbsoluteMaximumV": 6,
+            "finalGateVoltageLimitV": 5.75,
+            "totalGateChargeC": 6.044830000000001e-9,
+            "gateSourceChargeProxyC": 1.74516e-9,
+            "gateDrainChargeProxyC": 1.14566e-9
+          },
+          "repeatMaxRelativeDelta": 0,
+          "halfStep": {
+            "status": "completed",
+            "maxStepS": 2.5e-10,
+            "refined": {
+              "netlistSha256": "be5d7ac903fac59ba4d70cae952e7dd5fbf7505e625d3948fab05e270003ca85",
+              "measurements": {
+                "gate_target_time": 5.85128e-7,
+                "drain_fall_start_time": 2.25353e-7,
+                "drain_fall_end_time": 3.40436e-7,
+                "drain_current_avg": 16,
+                "gate_voltage_final": 5.01964,
+                "drain_voltage_final": 0.0605235
+              },
+              "gateCurrentA": 0.01,
+              "chargeStartS": 5e-8,
+              "gateClampMarginV": 0.02,
+              "gateAbsoluteMaximumV": 6,
+              "finalGateVoltageLimitV": 5.75,
+              "totalGateChargeC": 5.351280000000001e-9,
+              "gateSourceChargeProxyC": 1.75353e-9,
+              "gateDrainChargeProxyC": 1.15083e-9
+            },
+            "relativeDeltas": {
+              "totalGateChargeC": 0.12960450583785557,
+              "gateSourceChargeProxyC": 0.004773228858360019,
+              "gateDrainChargeProxyC": 0.004492409825951788
+            },
+            "maxRelativeDelta": 0.12960450583785557
+          },
+          "comparison": {
+            "measured": 6.044830000000001e-9,
+            "publishedTypical": 7.3e-9,
+            "publishedMaximum": 9.3e-9,
+            "typicalRelativeDelta": 0.17194109589041084,
+            "typicalRelativeLimit": 0.2,
+            "atOrBelowPublishedMaximum": true,
+            "passed": true
+          }
+        },
+        "partitioned": {
+          "status": "attempted-proxy-not-published-equivalent",
+          "contract": {
+            "id": "qgs-qgd-vds50-id16a-vgs5-tj25c",
+            "sourceLocation": {
+              "pdfPage": 2,
+              "section": "Dynamic Characteristics"
+            },
+            "conditions": {
+              "junctionTemperatureC": 25,
+              "drainSupplyV": 50,
+              "drainCurrentA": 16,
+              "gateVoltageRangeV": [
+                0,
+                5
+              ]
+            },
+            "published": {
+              "totalGateChargeC": 7.3e-9,
+              "totalGateChargeMaximumC": 9.3e-9,
+              "gateSourceChargeC": 2.8e-9,
+              "gateDrainChargeC": 7e-10,
+              "gateChargeAtThresholdC": 2.1e-9
+            },
+            "acceptance": {
+              "typicalRelativeLimit": 0.25
+            },
+            "qualification": "Defined by design; not subject to production test."
+          },
+          "convergenceLadder": {
+            "coarseMaxStepS": 1e-9,
+            "acceptedBaselineMaxStepS": 5e-10,
+            "refinedMaxStepS": 2.5e-10,
+            "coarse": {
+              "netlistSha256": "2aaea84b900d32d427e2a3c599329156d91182ffe44f1655978558c8137c26a3",
+              "measurements": {
+                "gate_target_time": 7.17576e-7,
+                "drain_fall_start_time": 2.22961e-7,
+                "drain_fall_end_time": 3.36408e-7,
+                "drain_current_avg": 16,
+                "gate_voltage_final": 5.01964,
+                "drain_voltage_final": 0.0605235
+              },
+              "gateCurrentA": 0.01,
+              "chargeStartS": 5e-8,
+              "gateClampMarginV": 0.02,
+              "gateAbsoluteMaximumV": 6,
+              "finalGateVoltageLimitV": 5.75,
+              "totalGateChargeC": 6.675759999999999e-9,
+              "gateSourceChargeProxyC": 1.7296100000000002e-9,
+              "gateDrainChargeProxyC": 1.1344699999999997e-9
+            },
+            "coarseToBaselineRelativeDeltas": {
+              "totalGateChargeC": 0.10437514371785447,
+              "gateSourceChargeProxyC": 0.00891035778954354,
+              "gateDrainChargeProxyC": 0.009767295707278119
+            },
+            "coarseToBaselineMaxRelativeDelta": 0.10437514371785447
+          },
+          "baseline": {
+            "netlistSha256": "eea9a9075723313fda33f89d6060323f44c0302e813c8cabb4f40738426de159",
+            "measurements": {
+              "gate_target_time": 6.54483e-7,
+              "drain_fall_start_time": 2.24516e-7,
+              "drain_fall_end_time": 3.39082e-7,
+              "drain_current_avg": 16,
+              "gate_voltage_final": 5.01964,
+              "drain_voltage_final": 0.0605235
+            },
+            "gateCurrentA": 0.01,
+            "chargeStartS": 5e-8,
+            "gateClampMarginV": 0.02,
+            "gateAbsoluteMaximumV": 6,
+            "finalGateVoltageLimitV": 5.75,
+            "totalGateChargeC": 6.044830000000001e-9,
+            "gateSourceChargeProxyC": 1.74516e-9,
+            "gateDrainChargeProxyC": 1.14566e-9
+          },
+          "repeatMaxRelativeDelta": 0,
+          "halfStep": {
+            "status": "completed",
+            "maxStepS": 2.5e-10,
+            "refined": {
+              "netlistSha256": "c579bb2e41a402c3578187eaa4c03866b05baee73976efc6875f82ac04f01114",
+              "measurements": {
+                "gate_target_time": 5.85128e-7,
+                "drain_fall_start_time": 2.25353e-7,
+                "drain_fall_end_time": 3.40436e-7,
+                "drain_current_avg": 16,
+                "gate_voltage_final": 5.01964,
+                "drain_voltage_final": 0.0605235
+              },
+              "gateCurrentA": 0.01,
+              "chargeStartS": 5e-8,
+              "gateClampMarginV": 0.02,
+              "gateAbsoluteMaximumV": 6,
+              "finalGateVoltageLimitV": 5.75,
+              "totalGateChargeC": 5.351280000000001e-9,
+              "gateSourceChargeProxyC": 1.75353e-9,
+              "gateDrainChargeProxyC": 1.15083e-9
+            },
+            "relativeDeltas": {
+              "totalGateChargeC": 0.12960450583785557,
+              "gateSourceChargeProxyC": 0.004773228858360019,
+              "gateDrainChargeProxyC": 0.004492409825951788
+            },
+            "maxRelativeDelta": 0.12960450583785557
+          },
+          "comparisons": {
+            "totalGateCharge": {
+              "measured": 6.044830000000001e-9,
+              "publishedTypical": 7.3e-9,
+              "publishedMaximum": 9.3e-9,
+              "typicalRelativeDelta": 0.17194109589041084,
+              "typicalRelativeLimit": 0.25,
+              "atOrBelowPublishedMaximum": true,
+              "passed": true
+            },
+            "gateSourceChargeProxy": {
+              "measured": 1.74516e-9,
+              "publishedTypical": 2.8e-9,
+              "publishedMaximum": null,
+              "typicalRelativeDelta": 0.3767285714285714,
+              "typicalRelativeLimit": 0.25,
+              "atOrBelowPublishedMaximum": null,
+              "passed": false
+            },
+            "gateDrainChargeProxy": {
+              "measured": 1.14566e-9,
+              "publishedTypical": 7e-10,
+              "publishedMaximum": null,
+              "typicalRelativeDelta": 0.6366571428571429,
+              "typicalRelativeLimit": 0.25,
+              "atOrBelowPublishedMaximum": null,
+              "passed": false
+            }
+          },
+          "badgeAccepted": false,
+          "reason": "The bounded fixture is reproducible, but its 99%/1% drain-transition thresholds are project-defined proxies rather than the vendor's unpublished QGS/QGD extraction procedure."
+        }
+      },
+      "reverseRecovery": {
+        "status": "not-applicable",
+        "contract": {
+          "id": "qrr-majority-carrier-not-applicable",
+          "sourceLocation": {
+            "pdfPage": 2,
+            "section": "Dynamic Characteristics, QRR"
+          },
+          "applicability": "not-applicable",
+          "published": {
+            "chargeC": 0
+          },
+          "reason": "EPC specifies a majority-carrier reverse path and zero QRR; a silicon-style minority-carrier recovery fixture is not applicable."
+        },
+        "reason": "EPC specifies a majority-carrier reverse path and zero QRR; a silicon-style minority-carrier recovery fixture is not applicable.",
+        "simulationAttempted": false
+      }
+    },
+    "switching": {
+      "fixture": "single-device-resistive-switching",
+      "testConditions": {
+        "temperatureC": 25,
+        "supplyV": 12,
+        "loadResistanceOhm": 1.2,
+        "gateLowV": 0,
+        "gateHighV": 5,
+        "gateDelayS": 1e-7,
+        "gateRiseTimeS": 2e-9,
+        "gateFallTimeS": 2e-9,
+        "gateOnTimeS": 8e-7,
+        "periodS": 0.000002,
+        "simulationStopS": 0.0000015,
+        "baselineMaxStepS": 1e-9,
+        "refinedMaxStepS": 5e-10
+      },
+      "externalGateResistanceOhm": 2,
+      "gateEdgeTimeS": 2e-9,
+      "netlistSha256": "7aa3aa9989fedc39577f3b53e872d6f34dc8c0c93c7437bbabd6a8a6187674f0",
+      "baseline": {
+        "id_avg": 5.34653,
+        "id_on_early": 9.96878,
+        "id_on_late": 9.96878,
+        "id_rms": 7.29709,
+        "id_peak": 9.96884,
+        "vds_min": 0.0373169,
+        "vds_max": 12.0222,
+        "input_avg": 5.34653,
+        "device_energy": 3.85783e-7,
+        "turn_on_window_energy": 4.86848e-8,
+        "turn_off_window_energy": 7.56537e-8,
+        "kcl_rms": 4.74965e-16
+      },
+      "edgeWindows": {
+        "status": "reviewed-characterization-no-published-counterpart",
+        "turnOnWindowS": [
+          8e-8,
+          1.8e-7
+        ],
+        "turnOffWindowS": [
+          8.8e-7,
+          9.8e-7
+        ],
+        "turnOnDrainTerminalEnergyJ": 4.86848e-8,
+        "turnOffDrainTerminalEnergyJ": 7.56537e-8,
+        "turnOnHalfStepRelativeDelta": 0.008397644667403987,
+        "turnOffHalfStepRelativeDelta": 0.003186889735729879,
+        "note": "Window energies include drain-terminal conduction and commutation energy; no vendor EON/EOFF scalar exists at this fixture, so no universal edge-accuracy claim is made."
+      },
+      "repeatMaxRelativeDelta": 0,
+      "halfStepMaxRelativeDelta": 0.00044564780868245317,
+      "steadyWindowRelativeDelta": 0,
+      "kclResidualRelative": 6.508964532436903e-17,
+      "energyResidualRelative": 0.00006459597180061142
+    },
+    "fullBuck": {
+      "status": "characterized-bounded-primary",
+      "modelContract": {
+        "primaryCharacterizationSubcircuit": "EPC2090",
+        "fullBuckExecutionSubcircuit": "EPC2090",
+        "executionModelLevel": "primary-vendor-model",
+        "usesFallback": false
+      },
+      "testConditions": {
+        "temperatureC": 25,
+        "inputVoltageV": 12,
+        "outputClampVoltageV": 3.3,
+        "initialInductorCurrentA": 2,
+        "switchingFrequencyHz": 1000000,
+        "inductanceH": 0.0000022,
+        "inductorDcrOhm": 0.02,
+        "deadTimeS": 2e-8,
+        "gateDriveV": 5,
+        "gateEdgeTimeS": 2e-9,
+        "baselineMaxStepS": 1e-9,
+        "refinedMaxStepS": 5e-10
+      },
+      "solvedDuty": 0.27953125,
+      "netlistSha256": "07c7233cab65707513697a4456630ede2d9581f9a49315f37242df1edc3a2827",
+      "baseline": {
+        "il_prev": 2.56256,
+        "il_avg": 2.56255,
+        "il_rms": 2.58221,
+        "il_peak": 3.11642,
+        "il_valley": 2.00189,
+        "hs_rms": 1.48604,
+        "ls_rms": 2.24103,
+        "input_avg": 0.743855,
+        "output_avg": 2.56255,
+        "switch_min": -2.17262,
+        "switch_max": 11.9925,
+        "hs_energy": 3.62364e-7,
+        "ls_energy": 2.97273e-7,
+        "dead_after_high_energy": 7.63339e-8,
+        "dead_before_high_energy": 7.99084e-8,
+        "kcl_rms": 3.32199e-12
+      },
+      "analyticalCounterparts": {
+        "idealVoltSecondDuty": {
+          "analyticalDuty": 0.27499999999999997,
+          "measuredSolvedDuty": 0.27953125,
+          "relativeDelta": 0.01621017328116281,
+          "note": "The ideal counterpart omits device drops, dead-time commutation and inductor DCR."
+        },
+        "onIntervalInductorRipple": {
+          "analyticalRippleA": 1.105419034090909,
+          "measuredPeakToValleyRippleA": 1.1145300000000002,
+          "relativeDelta": 0.00817471571791816,
+          "note": "The analytical counterpart uses (VIN-VOUT)·tON/L at the solved duty and omits DCR and nonlinear switching intervals."
+        }
+      },
+      "commandedDeadWindows": {
+        "status": "reviewed-characterization-no-published-counterpart",
+        "definition": "Drain-terminal energy integrated over the two nominal 20 ns gate-command dead windows in one steady cycle.",
+        "signConvention": "Signed drain-terminal energy: positive means net energy absorbed by the two device drain terminals; negative means net energy returned to the fixture and must not be read as dissipated loss.",
+        "afterHighSideEnergyJ": 7.63339e-8,
+        "beforeHighSideEnergyJ": 7.99084e-8,
+        "afterHighSideHalfStepRelativeDelta": 0.000003930101828804139,
+        "beforeHighSideHalfStepRelativeDelta": 0
+      },
+      "convergenceMeasures": [
+        "il_avg",
+        "il_rms",
+        "il_peak",
+        "il_valley",
+        "hs_rms",
+        "ls_rms",
+        "input_avg",
+        "output_avg",
+        "hs_energy",
+        "ls_energy"
+      ],
+      "repeatMaxRelativeDelta": 0,
+      "halfStepMaxRelativeDelta": 0.0000055193120728033925,
+      "edgeExtrema": {
+        "comparisonStatus": "diagnostic-only-timestep-sensitive",
+        "baseline": {
+          "minimumV": -2.17262,
+          "maximumV": 11.9925
+        },
+        "halfStep": {
+          "minimumV": -2.17252,
+          "maximumV": 11.9925
+        },
+        "halfStepMaxRelativeDelta": 0.000046027377083986626
+      },
+      "currentWindowRelativeDelta": 0.000003902362880749844,
+      "kclResidualRelative": 1.2864910290022888e-12,
+      "energyResidualRelative": 0.0007472704489899669
+    }
+  },
+  "reviewedCharacterization": {
+    "fullBuck": {
+      "status": "characterized-bounded-primary",
+      "reportPath": "characterization.fullBuck"
+    },
+    "edgeEnergy": {
+      "status": "reviewed-characterization-no-published-counterpart",
+      "reportPath": "characterization.switching.edgeWindows"
+    },
+    "deadTime": {
+      "status": "reviewed-characterization-no-published-counterpart",
+      "reportPath": "characterization.fullBuck.commandedDeadWindows"
+    },
+    "recovery": {
+      "status": "not-applicable",
+      "reportPath": "characterization.terminalChecks.reverseRecovery"
+    },
+    "outputEnergy": {
+      "status": "published-condition-compared",
+      "reportPath": "characterization.terminalChecks.outputCharge.energyComparison"
+    }
+  },
+  "coverage": {
+    "rdsOn": {
+      "status": "published-condition-compared",
+      "reportPath": "characterization.staticChecks",
+      "comparisonPassed": true
+    },
+    "reverseConductionVsd": {
+      "status": "published-condition-compared",
+      "reportPath": "characterization.terminalChecks.reverseConduction",
+      "comparisonPassed": false
+    },
+    "totalGateCharge": {
+      "status": "published-condition-compared-half-step-unstable",
+      "reportPath": "characterization.terminalChecks.gateCharge.total",
+      "comparisonPassed": true
+    },
+    "partitionedGateChargeQgsQgd": {
+      "status": "attempted-proxy-not-published-equivalent",
+      "reportPath": "characterization.terminalChecks.gateCharge.partitioned",
+      "reason": "The bounded fixture is reproducible, but its 99%/1% drain-transition thresholds are project-defined proxies rather than the vendor's unpublished QGS/QGD extraction procedure."
+    },
+    "outputChargeQoss": {
+      "status": "published-condition-compared",
+      "reportPath": "characterization.terminalChecks.outputCharge",
+      "comparisonPassed": true
+    },
+    "outputEnergyEoss": {
+      "status": "published-condition-compared",
+      "reportPath": "characterization.terminalChecks.outputCharge.energyComparison",
+      "comparisonPassed": true
+    },
+    "reverseRecoveryQrr": {
+      "status": "not-applicable",
+      "reportPath": "characterization.terminalChecks.reverseRecovery",
+      "reason": "EPC specifies a majority-carrier reverse path and zero QRR; a silicon-style minority-carrier recovery fixture is not applicable."
+    },
+    "separateTurnOnTurnOffEnergy": {
+      "status": "reviewed-characterization-no-published-counterpart",
+      "reportPath": "characterization.switching.edgeWindows",
+      "reason": "Window energies include drain-terminal conduction and commutation energy; no vendor EON/EOFF scalar exists at this fixture, so no universal edge-accuracy claim is made."
+    },
+    "deadTimeRecovery": {
+      "status": "reviewed-characterization-no-published-counterpart",
+      "reportPath": "characterization.fullBuck.commandedDeadWindows",
+      "reason": "The vendor datasheets do not publish dead-window energy for this 12 V to 3.3 V fixture."
+    },
+    "fullBuckVendorModel": {
+      "status": "characterized-bounded-primary",
+      "reportPath": "characterization.fullBuck",
+      "reason": "The bounded full-buck check executes the locked EPC primary model; it remains characterization rather than product sign-off."
+    }
+  },
+  "coverageComplete": false,
+  "badgeEligible": false,
+  "verificationGate": {
+    "passed": true,
+    "excludedReleaseOnlyQualityGates": [
+      "totalGateChargeHalfStepPassed",
+      "partitionedGateChargeHalfStepPassed"
+    ],
+    "note": "Native verify attests the byte-stable characterization and accepted core quality gates. Gate-charge half-step stability remains a stricter release/badge condition so an honest unsupported report can still be reproduced and committed."
+  },
+  "releaseGate": {
+    "gate": "strict-vendor-cross-check-badge",
+    "passed": false,
+    "strictRequiredCoverage": [
+      "rdsOn",
+      "reverseConductionVsd",
+      "totalGateCharge",
+      "partitionedGateChargeQgsQgd",
+      "outputChargeQoss",
+      "outputEnergyEoss",
+      "reverseRecoveryQrr",
+      "separateTurnOnTurnOffEnergy",
+      "deadTimeRecovery",
+      "fullBuckVendorModel"
+    ],
+    "unsupportedRequiredCoverage": [
+      "totalGateCharge",
+      "partitionedGateChargeQgsQgd"
+    ],
+    "failedPublishedComparisons": [
+      "reverseConductionVsd"
+    ],
+    "qualityPassed": false,
+    "note": "This gate is release-only. Ordinary committed/native verification preserves honest unsupported evidence; release badge publication requires complete strict coverage and every published-condition policy to pass."
+  },
+  "limitations": [
+    "Vendor-model switching is a bounded single-device resistive characterization; independent switched-topology fixtures carry the buck waveform and static-loss gates.",
+    "The constant-current QGS/QGD values use project-defined 99%/1% drain-transition proxies because the datasheet extraction thresholds are unpublished; they are not badge evidence.",
+    "Published-condition comparison policy failed for reverseConductionVsd; the strict badge remains blocked."
+  ],
+  "qualityGates": {
+    "repeatRelativeLimit": 0.005,
+    "halfStepRelativeLimit": 0.02,
+    "steadyWindowRelativeLimit": 0.005,
+    "kclResidualRelativeLimit": 0.02,
+    "energyResidualRelativeLimit": 0.02,
+    "rdsOnRepeatPassed": true,
+    "rdsOnHalfStepPassed": true,
+    "reverseConductionRepeatPassed": true,
+    "reverseConductionHalfStepPassed": true,
+    "outputChargeEnergyRepeatPassed": true,
+    "outputChargeEnergyHalfStepPassed": true,
+    "repeatPassed": true,
+    "halfStepPassed": true,
+    "steadyWindowPassed": true,
+    "kclPassed": true,
+    "energyPassed": true,
+    "totalGateChargeRepeatPassed": true,
+    "totalGateChargeHalfStepPassed": false,
+    "partitionedGateChargeRepeatPassed": true,
+    "partitionedGateChargeHalfStepPassed": false,
+    "terminalDiagnosticsPassed": true,
+    "fullBuckRepeatPassed": true,
+    "fullBuckHalfStepPassed": true,
+    "fullBuckSteadyPassed": true,
+    "fullBuckKclPassed": true,
+    "fullBuckEnergyPassed": true,
+    "finitePassed": true
+  },
+  "review": {
+    "status": "reviewed-characterization",
+    "note": "The LTspice model is a local characterization cross-check, not redistribution, universal edge-energy accuracy, or product sign-off."
+  }
+}

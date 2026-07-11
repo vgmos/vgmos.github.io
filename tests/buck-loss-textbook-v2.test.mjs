@@ -72,7 +72,25 @@ describe("buck loss v2 textbook vectors", () => {
     assert.ok(result.waveform.duties.zeroCurrent > 0.5);
     withinHalfPercent(result.losses.deadTimeConduction, expectedDeadTimeLoss, "DCM dead-time loss");
     assert.match(BUCK_LOSS_TERM_METADATA_V2.deadTimeConduction.source.equation, /4\.35/);
-    assert.equal(BUCK_LOSS_TERM_METADATA_V2.deadTimeConduction.source.pdfPage, 207);
+    assert.deepEqual(BUCK_LOSS_TERM_METADATA_V2.deadTimeConduction.source.references, [
+      { equation: "4.33", printedPage: 193, pdfPage: 207 },
+      { equation: "4.35", printedPage: 194, pdfPage: 208 }
+    ]);
+  });
+
+  it("reproduces the closing-edge overlap in Example 9 / Eq. 4.39", () => {
+    const current = 0.47;
+    const switchSwing = 4.8;
+    const currentRise = 240e-12;
+    const voltageFall = 1.6e-9;
+    const switchingFrequency = 1e6;
+    const overlap = current * switchSwing * switchingFrequency * (currentRise / 3 + voltageFall / 2);
+    assert.ok(Math.abs(overlap - 2e-3) / 2e-3 < 0.01, `${overlap} does not reproduce the example's rounded 2.0 mW`);
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.formula, "VSW · ION · fSW · (tI/3 + tV/2)");
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.equation, "4.39");
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.printedPage, 197);
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.pdfPage, 211);
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.relation, "direct");
   });
 
   it("exposes equation provenance for every atomic term", () => {
@@ -83,6 +101,11 @@ describe("buck loss v2 textbook vectors", () => {
       assert.ok(metadata.family);
       assert.ok(metadata.formula);
       assert.ok(metadata.source.title);
+      assert.ok(["direct", "adapted"].includes(metadata.source.relation));
     }
+    assert.equal(result.equationProvenance.reverseRecovery.source.relation, "adapted");
+    assert.equal(result.equationProvenance.nodeEnergy.source.relation, "adapted");
+    assert.equal(result.equationProvenance.highSideConduction.source.title, "Switched Inductor Power IC Design");
+    assert.equal(result.equationProvenance.highSideConduction.source.chapter, 4);
   });
 });

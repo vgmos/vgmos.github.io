@@ -1,9 +1,21 @@
-const source = (equation, printedPage, pdfPage, note) => Object.freeze({
-  title: "Switched Inductor Power IC Design, Chapter 4",
+const source = (equation, printedPage, pdfPage, note, relation = "direct") => Object.freeze({
+  title: "Switched Inductor Power IC Design",
+  chapter: 4,
   equation,
   printedPage,
   pdfPage,
-  note
+  note,
+  relation
+});
+
+const effectiveTransitionSource = Object.freeze({
+  title: "Disclosed effective-overlap approximation",
+  chapter: null,
+  equation: null,
+  printedPage: null,
+  pdfPage: null,
+  note: "Uses a triangular overlap approximation with an explicitly entered or assumed effective time.",
+  relation: "adapted"
 });
 
 export const BUCK_LOSS_FAMILIES_V2 = Object.freeze([
@@ -46,7 +58,7 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
     label: "Inductor characterized core residual",
     family: "magnetics",
     formula: "Characterized or entered residual beyond RMS copper",
-    source: Object.freeze({ title: "Inductor characterization", equation: null, printedPage: null, pdfPage: null, note: "Catalog residual is added once; missing data makes the result a subtotal." })
+    source: Object.freeze({ title: "Inductor characterization", chapter: null, equation: null, printedPage: null, pdfPage: null, note: "Catalog residual is added once; missing or out-of-domain data makes the result a subtotal.", relation: "direct" })
   }),
   inputCapEsr: Object.freeze({
     label: "Input-capacitor ESR",
@@ -76,13 +88,19 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
     label: "Reverse-path dead time",
     family: "deadTimeRecovery",
     formula: "VSD · ∫dead |iL| dt / TSW",
-    source: source("4.33, 4.35", 193, 207, "Exact interval integration covers CCM and the single material DCM dead-time interval.")
+    source: Object.freeze({
+      ...source("4.33, 4.35", 193, 207, "Exact interval integration covers CCM and the single material DCM dead-time interval."),
+      references: Object.freeze([
+        Object.freeze({ equation: "4.33", printedPage: 193, pdfPage: 207 }),
+        Object.freeze({ equation: "4.35", printedPage: 194, pdfPage: 208 })
+      ])
+    })
   }),
   reverseRecovery: Object.freeze({
     label: "Reverse recovery",
     family: "deadTimeRecovery",
     formula: "VSW · QRR(IO) · fSW",
-    source: source("4.57", 207, 221, "Silicon QRR is scaled from its disclosed reference current; GaN suppresses this term.")
+    source: source("4.57", 207, 221, "Adapted to a buck hard-switch event: silicon QRR is scaled from its disclosed reference current; GaN suppresses this term.", "adapted")
   }),
   gateDriveHigh: Object.freeze({
     label: "High-side gate drive",
@@ -100,7 +118,7 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
     label: "Switch-node EOSS",
     family: "nodeEnergy",
     formula: "(EOSS,HS + EOSS,LS) · fSW",
-    source: source("4.72–4.73", 222, 236, "Characterized energy is not extrapolated beyond its declared voltage domain.")
+    source: source("4.72–4.73", 222, 236, "Adapted from topology-specific switch-node energy balance; characterized energy is not extrapolated beyond its declared voltage domain.", "adapted")
   }),
   controllerBias: Object.freeze({
     label: "Controller bias",
@@ -109,6 +127,24 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
     source: source(null, 236, 250, "Quiescent controller power is explicitly separated from switching-frequency terms.")
   })
 });
+
+export function resolveBuckLossTermMetadataV2(timingMode, transition = null) {
+  const effective = transition?.method === "effective-override" || (!transition?.method && timingMode === "effective");
+  if (!effective) return BUCK_LOSS_TERM_METADATA_V2;
+  return Object.freeze({
+    ...BUCK_LOSS_TERM_METADATA_V2,
+    turnOnOverlap: Object.freeze({
+      ...BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap,
+      formula: "½ · VSW · ION · tEFF,ON · fSW",
+      source: effectiveTransitionSource
+    }),
+    turnOffOverlap: Object.freeze({
+      ...BUCK_LOSS_TERM_METADATA_V2.turnOffOverlap,
+      formula: "½ · VSW · IOFF · tEFF,OFF · fSW",
+      source: effectiveTransitionSource
+    })
+  });
+}
 
 export const BUCK_LOSS_ADVISORY_METADATA_V2 = Object.freeze({
   fetAreaOptimum: Object.freeze({

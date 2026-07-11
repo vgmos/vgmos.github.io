@@ -1,5 +1,5 @@
-import { BUCK_LOSS_MODEL_VERSION, validateBuckLossInputsV2 } from "./buck-loss-schema-v2.js";
-import { BUCK_LOSS_ADVISORY_METADATA_V2, BUCK_LOSS_TERM_METADATA_V2 } from "./buck-loss-equations-v2.js";
+import { BUCK_LOSS_MODEL_REVISION, BUCK_LOSS_MODEL_VERSION, validateBuckLossInputsV2 } from "./buck-loss-schema-v2.js";
+import { BUCK_LOSS_ADVISORY_METADATA_V2, resolveBuckLossTermMetadataV2 } from "./buck-loss-equations-v2.js";
 
 const EPSILON = 1e-12;
 const ACTIVE_PATH_V2 = Object.freeze({
@@ -85,10 +85,17 @@ function waveformMoments(segments, period, iout) {
   };
 }
 
-function invalidWaveform(errors, mode = "invalid") {
+function invalidWaveform(errors, mode = "invalid", failure = null) {
+  const structuredFailure = failure
+    ? {
+        code: failure.code,
+        values: Object.freeze(Object.fromEntries(Object.entries(failure).filter(([key]) => key !== "code")))
+      }
+    : null;
   return {
     valid: false,
     errors,
+    failure: structuredFailure,
     mode,
     segments: [],
     duties: { highSide: null, lowSide: null, deadTime: null, zeroCurrent: null },
@@ -103,21 +110,55 @@ function invalidWaveform(errors, mode = "invalid") {
 function ccmWaveform(inputs, iout) {
   const period = 1 / inputs.fsw;
   const dead = inputs.deadTime;
-  if (!(dead >= 0) || 2 * dead >= period) return invalidWaveform(["dead-time-infeasible"], "ccm");
+  const deadFraction = dead / period;
+  if (!(dead >= 0) || 2 * dead >= period) {
+    return invalidWaveform(["dead-time-infeasible"], "ccm", {
+      code: "dead-time-infeasible",
+      period,
+      deadFraction,
+      availableSwitchFraction: 1 - 2 * deadFraction
+    });
+  }
 
   const rInductor = inputs.dcr;
   const highVoltage = inputs.vin - inputs.vout - iout * (inputs.rdsHigh + rInductor);
   const lowVoltage = -inputs.vout - iout * (inputs.rdsLow + rInductor);
   const deadVoltage = -inputs.vout - inputs.diodeVf - iout * rInductor;
-  const deadFraction = dead / period;
-  if (!(highVoltage > 0)) return invalidWaveform(["dropout"], "ccm");
+  if (!(highVoltage > 0)) {
+    return invalidWaveform(["dropout"], "ccm", {
+      code: "dropout",
+      period,
+      highVoltage,
+      deadFraction,
+      availableSwitchFraction: 1 - 2 * deadFraction
+    });
+  }
   const denominator = highVoltage - lowVoltage;
-  if (!(denominator > 0)) return invalidWaveform(["dropout"], "ccm");
+  if (!(denominator > 0)) {
+    return invalidWaveform(["dropout"], "ccm", {
+      code: "dropout",
+      period,
+      highVoltage,
+      lowVoltage,
+      deadFraction,
+      availableSwitchFraction: 1 - 2 * deadFraction
+    });
+  }
 
   const highFraction = -(lowVoltage + 2 * deadFraction * (deadVoltage - lowVoltage)) / denominator;
   const lowFraction = 1 - highFraction - 2 * deadFraction;
   if (!(highFraction > 0 && highFraction < 1) || lowFraction < -1e-10) {
-    return invalidWaveform([lowFraction < 0 ? "low-side-window-negative" : "duty-infeasible"], "ccm");
+    const code = lowFraction < 0 ? "low-side-window-negative" : "duty-infeasible";
+    return invalidWaveform([code], "ccm", {
+      code,
+      period,
+      deadFraction,
+      requiredHighFraction: highFraction,
+      availableSwitchFraction: 1 - 2 * deadFraction,
+      lowFraction,
+      highVoltage,
+      lowVoltage
+    });
   }
 
   const tHigh = highFraction * period;
@@ -140,7 +181,14 @@ function ccmWaveform(inputs, iout) {
     current = next;
   }
   if (Math.abs(current) > Math.max(1e-9, Math.abs(iout) * 1e-7)) {
-    return invalidWaveform(["volt-second-solve"], "ccm");
+    return invalidWaveform(["volt-second-solve"], "ccm", {
+      code: "volt-second-solve",
+      period,
+      residualCurrent: current,
+      deadFraction,
+      requiredHighFraction: highFraction,
+      availableSwitchFraction: 1 - 2 * deadFraction
+    });
   }
 
   const valley = iout - relativeArea / period;
@@ -177,36 +225,59 @@ function ccmWaveform(inputs, iout) {
 
 function dcmCandidate(inputs, highFraction) {
   const period = 1 / inputs.fsw;
+  const dead = inputs.deadTime;
   const tHigh = highFraction * period;
+  const commandedLowWindow = period - tHigh - 2 * dead;
+  if (commandedLowWindow < -EPSILON) return { feasible: false, average: Infinity };
   const highNumerator = (inputs.vin - inputs.vout) * tHigh;
   const highDenominator = inputs.inductance + 0.5 * (inputs.rdsHigh + inputs.dcr) * tHigh;
   const peak = highDenominator > 0 ? highNumerator / highDenominator : 0;
   if (!(peak >= 0 && finite(peak))) return null;
 
-  const deadRate = (inputs.vout + inputs.diodeVf + 0.5 * peak * inputs.dcr) / inputs.inductance;
-  const timeToZeroInDead = deadRate > 0 ? peak / deadRate : Infinity;
-  const tDead = Math.min(inputs.deadTime, timeToZeroInDead);
-  const afterDead = Math.max(0, peak - deadRate * tDead);
-  const lowRate = (inputs.vout + 0.5 * afterDead * (inputs.rdsLow + inputs.dcr)) / inputs.inductance;
-  const tLow = afterDead > 0 && lowRate > 0 ? afterDead / lowRate : 0;
-  const activeTime = tHigh + tDead + tLow;
-  if (activeTime > period + 1e-12) return { feasible: false, average: Infinity };
+  const leadingDeadRate = (inputs.vout + inputs.diodeVf + 0.5 * peak * inputs.dcr) / inputs.inductance;
+  const timeToZeroInLeadingDead = leadingDeadRate > 0 ? peak / leadingDeadRate : Infinity;
+  const tLeadingDead = Math.min(dead, timeToZeroInLeadingDead);
+  const afterLeadingDead = Math.max(0, peak - leadingDeadRate * tLeadingDead);
+  const lowRate = (inputs.vout + 0.5 * afterLeadingDead * (inputs.rdsLow + inputs.dcr)) / inputs.inductance;
+  const timeToZeroInLow = afterLeadingDead > 0 && lowRate > 0 ? afterLeadingDead / lowRate : 0;
+  const tLow = Math.min(Math.max(0, commandedLowWindow), timeToZeroInLow);
+  const afterLow = Math.max(0, afterLeadingDead - lowRate * tLow);
+  const trailingDeadRate = (inputs.vout + inputs.diodeVf + 0.5 * afterLow * inputs.dcr) / inputs.inductance;
+  const timeToZeroInTrailingDead = afterLow > 0 && trailingDeadRate > 0 ? afterLow / trailingDeadRate : 0;
+  const tTrailingDead = Math.min(dead, timeToZeroInTrailingDead);
+  const afterTrailingDead = Math.max(0, afterLow - trailingDeadRate * tTrailingDead);
+  if (afterTrailingDead > Math.max(1e-9, peak * 1e-7)) return { feasible: false, average: Infinity };
+
+  const activeTime = tHigh + tLeadingDead + tLow + tTrailingDead;
+  if (activeTime > period + EPSILON) return { feasible: false, average: Infinity };
 
   const zeroTime = Math.max(0, period - activeTime);
   const segments = [
     makeSegment("high-side", tHigh, 0, peak, { sourceConnected: true, slope: tHigh > 0 ? peak / tHigh : 0 }),
-    makeSegment("dead-time", tDead, peak, afterDead, { sourceConnected: false, slope: -deadRate }),
-    makeSegment("low-side", tLow, afterDead, 0, { sourceConnected: false, slope: -lowRate }),
+    makeSegment("dead-time", tLeadingDead, peak, afterLeadingDead, { sourceConnected: false, slope: -leadingDeadRate }),
+    makeSegment("low-side", tLow, afterLeadingDead, afterLow, { sourceConnected: false, slope: -lowRate }),
+    makeSegment("dead-time", tTrailingDead, afterLow, 0, { sourceConnected: false, slope: -trailingDeadRate }),
     makeSegment("zero-current", zeroTime, 0, 0, { sourceConnected: false, slope: 0 })
   ].filter((segment) => segment.duration > EPSILON || segment.state === "zero-current");
   const average = sumSegments(segments, "currentIntegral") / period;
-  return { feasible: true, average, segments, peak, tHigh, tDead, tLow, zeroTime, period };
+  return {
+    feasible: true,
+    average,
+    segments,
+    peak,
+    tHigh,
+    tLeadingDead,
+    tLow,
+    tTrailingDead,
+    zeroTime,
+    period
+  };
 }
 
 function maximumDcmCandidate(inputs) {
   const period = 1 / inputs.fsw;
   let low = 0;
-  let high = Math.max(0, 1 - inputs.deadTime / period);
+  let high = Math.max(0, 1 - 2 * inputs.deadTime / period);
   let best = dcmCandidate(inputs, low);
   for (let iteration = 0; iteration < 52; iteration += 1) {
     const mid = (low + high) / 2;
@@ -241,7 +312,12 @@ function dcmWaveform(inputs, iout) {
 
   const maximum = maximumDcmCandidate(inputs);
   if (!maximum?.feasible || iout > maximum.average * (1 + 1e-8)) {
-    return invalidWaveform(["dcm-load-above-boundary"], "dcm");
+    return invalidWaveform(["dcm-load-above-boundary"], "dcm", {
+      code: "dcm-load-above-boundary",
+      period,
+      requestedCurrent: iout,
+      boundaryCurrent: maximum?.average ?? null
+    });
   }
   let low = 0;
   let high = maximum.tHigh / period;
@@ -258,7 +334,12 @@ function dcmWaveform(inputs, iout) {
   const midpointCandidate = dcmCandidate(inputs, (low + high) / 2);
   const finalCandidate = midpointCandidate?.feasible ? midpointCandidate : best;
   if (!finalCandidate?.feasible || Math.abs(finalCandidate.average - iout) > Math.max(1e-9, iout * 1e-6)) {
-    return invalidWaveform(["dcm-load-solve"], "dcm");
+    return invalidWaveform(["dcm-load-solve"], "dcm", {
+      code: "dcm-load-solve",
+      period,
+      requestedCurrent: iout,
+      solvedCurrent: finalCandidate?.average ?? null
+    });
   }
   const { segments, peak } = finalCandidate;
   return {
@@ -270,7 +351,7 @@ function dcmWaveform(inputs, iout) {
     duties: {
       highSide: finalCandidate.tHigh / period,
       lowSide: finalCandidate.tLow / period,
-      deadTime: finalCandidate.tDead / period,
+      deadTime: (finalCandidate.tLeadingDead + finalCandidate.tTrailingDead) / period,
       zeroCurrent: finalCandidate.zeroTime / period
     },
     moments: waveformMoments(segments, period, iout),
@@ -369,32 +450,43 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   const technology = context.technology ?? "gan";
   const controlMode = context.controlMode ?? "auto-dcm";
   const timingMode = context.timingMode ?? (finite(inputs.effectiveTurnOn) ? "effective" : "derived");
+  const parameterCorner = context.parameterCorner ?? "typical-25c";
+  const catalogKind = context.catalogKind ?? null;
   const waveform = computeBuckWaveformV2(inputs, iout, { controlMode, ccmBoundary: context.ccmBoundary });
   const ccmBoundary = finite(context.ccmBoundary)
     ? context.ccmBoundary
     : waveform.valid ? findCcmBoundaryV2(inputs) : null;
   const losses = emptyLosses();
   const omitted = [];
+  const coverageGaps = [];
+  const addGap = (term, code, scope = "whole-term", extra = {}) => {
+    omitted.push(code);
+    coverageGaps.push({ term, code, scope, ...extra });
+  };
   const warnings = [...waveform.errors];
   if (!waveform.valid) {
     return {
       valid: false,
       modelVersion: BUCK_LOSS_MODEL_VERSION,
+      modelRevision: BUCK_LOSS_MODEL_REVISION,
       technology,
+      catalogKind,
       deviceTemplate: context.deviceTemplate ?? null,
-      parameterCorner: "typical-25c",
+      parameterCorner,
       controlMode,
       timingMode,
       iout,
       errors: waveform.errors,
+      failure: waveform.failure,
       warnings,
       availability: "subtotal",
       omitted,
+      coverageGaps,
       waveform: { ...waveform, ccmBoundary },
       losses,
       groupedLosses: groupLosses(losses),
       provenance: context.provenance ?? {},
-      equationProvenance: BUCK_LOSS_TERM_METADATA_V2,
+      equationProvenance: resolveBuckLossTermMetadataV2(timingMode),
       pOut: null,
       pLoss: null,
       pInEstimated: null,
@@ -410,7 +502,11 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   losses.inductorAcCopper = Math.max(0, moments.iLrms2 - iout * iout) * inputs.rac;
   if (finite(context.inductorAcLossW)) losses.inductorCoreResidual = context.inductorAcLossW;
   else if (finite(inputs.inductorAcManual)) losses.inductorCoreResidual = inputs.inductorAcManual;
-  else omitted.push("inductorCoreResidual");
+  if (context.inductorCatalogOutOfDomain) {
+    addGap("inductorCoreResidual", "inductorCoreResidualDcmWaveform", "catalog-component");
+  } else if (!finite(losses.inductorCoreResidual)) {
+    addGap("inductorCoreResidual", "inductorCoreResidualMissingData");
+  }
 
   losses.inputCapEsr = moments.inputCapRms2 * inputs.inputEsr;
   losses.outputCapEsr = moments.outputCapRms2 * inputs.esr;
@@ -420,9 +516,9 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   const turnOnCurrent = currentAtTransition(waveform, "turn-on");
   const turnOffCurrent = currentAtTransition(waveform, "turn-off");
   if (waveform.mode === "zero-load-unmodeled") {
-    omitted.push("zeroLoadControlBehavior");
+    addGap("switchingTransitions", "zeroLoadControlBehavior");
   } else if (!transition.available) {
-    omitted.push("switchingTransitions");
+    addGap("switchingTransitions", "switchingTransitionsMissingData", "whole-term", { missingFields: transition.missing ?? [] });
   } else if (transition.method === "effective-override") {
     losses.turnOnOverlap = 0.5 * vSwing * turnOnCurrent * transition.effectiveTurnOn * inputs.fsw;
     losses.turnOffOverlap = 0.5 * vSwing * turnOffCurrent * transition.effectiveTurnOff * inputs.fsw;
@@ -438,21 +534,32 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
     const scaledQrr = inputs.qrrRef * turnOnCurrent / inputs.qrrRefCurrent;
     losses.reverseRecovery = waveform.mode === "dcm" ? 0 : vSwing * scaledQrr * inputs.fsw;
   } else {
-    omitted.push("reverseRecovery");
+    addGap("reverseRecovery", "reverseRecoveryMissingData");
   }
 
   const switchingActive = waveform.mode !== "zero-load-unmodeled";
   losses.gateDriveHigh = switchingActive && finite(inputs.qgHigh) ? inputs.qgHigh * inputs.vDrive * inputs.fsw : switchingActive ? null : 0;
   losses.gateDriveLow = switchingActive && finite(inputs.qgLow) ? inputs.qgLow * inputs.vDrive * inputs.fsw : switchingActive ? null : 0;
-  if (switchingActive && (!finite(losses.gateDriveHigh) || !finite(losses.gateDriveLow))) omitted.push("gateDrive");
+  if (switchingActive && (!finite(losses.gateDriveHigh) || !finite(losses.gateDriveLow))) {
+    addGap("gateDrive", "gateDriveMissingData");
+  }
 
-  const eossInDomain = finite(inputs.eossMaxVoltage) && inputs.vin <= inputs.eossMaxVoltage + EPSILON;
   if (!switchingActive) {
     losses.nodeEnergy = 0;
-  } else if (finite(inputs.cossErHigh) && finite(inputs.cossErLow) && eossInDomain) {
+  } else if (waveform.mode === "dcm") {
+    addGap("nodeEnergy", "nodeEnergyDcmCommutationUnmodeled");
+  } else if (!finite(inputs.cossErHigh) || !finite(inputs.cossErLow) || !finite(inputs.eossMaxVoltage)) {
+    addGap("nodeEnergy", "nodeEnergyMissingData", "whole-term", {
+      missingFields: [
+        !finite(inputs.cossErHigh) ? "cossErHigh" : null,
+        !finite(inputs.cossErLow) ? "cossErLow" : null,
+        !finite(inputs.eossMaxVoltage) ? "eossMaxVoltage" : null
+      ].filter(Boolean)
+    });
+  } else if (inputs.vin <= inputs.eossMaxVoltage + EPSILON) {
     losses.nodeEnergy = 0.5 * (inputs.cossErHigh + inputs.cossErLow) * inputs.vin * inputs.vin * inputs.fsw;
   } else {
-    omitted.push(eossInDomain ? "nodeEnergy" : "nodeEnergyOutsideVoltageDomain");
+    addGap("nodeEnergy", "nodeEnergyOutsideVoltageDomain");
   }
   losses.controllerBias = inputs.vBias * inputs.iq;
 
@@ -463,6 +570,7 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   const efficiency = pOut > 0 ? pOut / pInEstimated : null;
   if (waveform.mode === "dcm") warnings.push("dcm");
   if (waveform.mode === "zero-load-unmodeled") warnings.push("zero-load-controller-dependent");
+  if (controlMode === "forced-ccm" && waveform.iValley < -EPSILON) warnings.push("negative-current-commutation-approximate");
   if (inputs.inductorIsat !== null && waveform.iPeak > inputs.inductorIsat) warnings.push("isat");
   if (pOut > 0 && pLoss > pOut) warnings.push("high-loss");
   const gateLoss = (losses.gateDriveHigh ?? 0) + (losses.gateDriveLow ?? 0);
@@ -478,18 +586,22 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   return {
     valid: true,
     modelVersion: BUCK_LOSS_MODEL_VERSION,
+    modelRevision: BUCK_LOSS_MODEL_REVISION,
     technology,
+    catalogKind,
     deviceTemplate: context.deviceTemplate ?? null,
-    parameterCorner: "typical-25c",
+    parameterCorner,
     controlMode,
     timingMode,
     iout,
     errors: [],
+    failure: null,
     warnings: [...new Set(warnings)],
-    availability: omitted.length ? "subtotal" : "total",
+    availability: coverageGaps.length ? "subtotal" : "total",
     omitted: [...new Set(omitted)],
+    coverageGaps,
     provenance: context.provenance ?? {},
-    equationProvenance: BUCK_LOSS_TERM_METADATA_V2,
+    equationProvenance: resolveBuckLossTermMetadataV2(timingMode, transition),
     waveform: {
       ...waveform,
       ccmBoundary
@@ -544,6 +656,7 @@ export function computeBuckLossSweepV2(inputs, context = {}, options = {}) {
   );
   return {
     modelVersion: BUCK_LOSS_MODEL_VERSION,
+    modelRevision: BUCK_LOSS_MODEL_REVISION,
     points: values,
     annotations: buildBuckLossSweepAnnotationsV2(values, ccmBoundary, peakEfficiencyPoint)
   };
@@ -567,6 +680,57 @@ function balancePair(points, leftKey, rightKey) {
   };
 }
 
+const LOSS_SCALING_KEYS = Object.freeze(["fixedLike", "currentLike", "currentSquaredLike", "unclassified"]);
+
+function dominantScaling(point) {
+  const scaling = point.insights?.lossScaling;
+  if (!scaling) return null;
+  const total = LOSS_SCALING_KEYS.reduce((sum, key) => sum + Math.max(0, scaling[key] || 0), 0);
+  if (!(total > 0)) return { kind: "unclassified", share: 1 };
+  const kind = LOSS_SCALING_KEYS.reduce(
+    (best, key) => (scaling[key] || 0) > (scaling[best] || 0) ? key : best,
+    LOSS_SCALING_KEYS[0]
+  );
+  return { kind, share: Math.max(0, scaling[kind] || 0) / total };
+}
+
+function dominanceRegions(points) {
+  const samples = points
+    .filter((point) => point.valid && finite(point.iout))
+    .map((point) => ({ point, dominant: dominantScaling(point) }))
+    .filter((sample) => sample.dominant);
+  if (!samples.length) return [];
+  const regions = [];
+  let start = samples[0].point.iout;
+  let kind = samples[0].dominant.kind;
+  let shares = [samples[0].dominant.share];
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1];
+    const current = samples[index];
+    if (current.dominant.kind === kind) {
+      shares.push(current.dominant.share);
+      continue;
+    }
+    const boundary = (previous.point.iout + current.point.iout) / 2;
+    regions.push({
+      kind,
+      startIout: start,
+      endIout: boundary,
+      averageShare: shares.reduce((sum, share) => sum + share, 0) / shares.length
+    });
+    start = boundary;
+    kind = current.dominant.kind;
+    shares = [current.dominant.share];
+  }
+  regions.push({
+    kind,
+    startIout: start,
+    endIout: samples.at(-1).point.iout,
+    averageShare: shares.reduce((sum, share) => sum + share, 0) / shares.length
+  });
+  return regions;
+}
+
 export function buildBuckLossSweepAnnotationsV2(points, ccmBoundary, peakEfficiencyPoint = null) {
   const peak = peakEfficiencyPoint ?? points.reduce(
     (best, point) => finite(point.efficiency) && (!best || point.efficiency > best.efficiency) ? point : best,
@@ -580,6 +744,7 @@ export function buildBuckLossSweepAnnotationsV2(points, ccmBoundary, peakEfficie
       currentLikeToCurrentSquared: balancePair(points, "currentLike", "currentSquaredLike"),
       fixedToCurrentSquared: balancePair(points, "fixedLike", "currentSquaredLike")
     },
+    dominanceRegions: dominanceRegions(points),
     fetSizingAdvisory: peak && finite(peak.insights?.fetAreaOptimumScale) ? {
       iout: peak.iout,
       scale: peak.insights.fetAreaOptimumScale,

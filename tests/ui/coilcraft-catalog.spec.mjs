@@ -115,7 +115,7 @@ test.describe("Coilcraft inductor catalog", () => {
     await page.locator("[data-blx-catalog-part]").selectOption("XGL6060-332");
     await expect(page.locator("[data-blx-catalog-meta]")).toContainText("AC/core residual unavailable");
     await expect(page.locator("[data-blx-result-badges]")).toContainText("Subtotal");
-    await expect(page.locator("[data-blx-warnings]")).toContainText("inductor core residual");
+    await expect(page.locator("[data-blx-warnings]")).toContainText(/inductor (?:AC\/)?core residual/);
 
     await page.locator("#blx-v2-inductorAcManual").fill("25");
     await page.locator("#blx-v2-inductorAcManual").press("Tab");
