@@ -253,32 +253,29 @@ function advancedMarkup(group) {
 function prepareMarkup(root) {
   root.dataset.blxModel = "2";
   root.dataset.blxRevision = BUCK_LOSS_MODEL_REVISION;
-  const eyebrow = root.querySelector(".blx-eyebrow");
-  const dek = root.querySelector(".blx-dek");
-  if (eyebrow) eyebrow.textContent = `Interactive tool · Analytical loss model v${BUCK_LOSS_MODEL_REVISION}`;
-  if (dek) dek.textContent = "Trace conduction, switching, magnetics, and control loss through CCM and diode-emulation DCM.";
+  setText(root, "[data-blx-model-label]", `· analytical loss model v${BUCK_LOSS_MODEL_REVISION}`);
 
   const sticky = root.querySelector(".blx-input-sticky");
   if (sticky) sticky.innerHTML = `<div class="blx-rail-heading"><h2>Operating point</h2><button class="blx-reset" type="button" data-blx-reset>Reset</button></div>
     <div class="blx-presets" data-blx-presets role="group" aria-label="Operating-point presets"></div>
     <p class="blx-prompt" data-blx-prompt></p>
-    <div class="blx-device-note blx-v2-device-note"><div><strong data-blx-device-label>Choose a device</strong><br><span data-blx-device-summary></span> <a data-blx-device-source hidden target="_blank" rel="noopener noreferrer">Official datasheet ↗</a> <a data-blx-device-model-source hidden target="_blank" rel="noopener noreferrer">Simulator model ↗</a> <a data-blx-device-model-guide hidden target="_blank" rel="noopener noreferrer">Model guide ↗</a><p class="blx-v2-device-model-note" data-blx-device-model-note hidden></p><ul class="blx-v2-device-notes" data-blx-device-notes></ul><details class="blx-v2-device-conditions" data-blx-device-conditions hidden><summary>Parameter conditions</summary><ul data-blx-device-condition-list></ul></details></div><button type="button" data-blx-change-device>Change device</button></div>
+    <div class="blx-device-note blx-v2-device-note"><div><strong data-blx-device-label>Choose a device</strong><br><span data-blx-device-summary></span> <a data-blx-device-source hidden target="_blank" rel="noopener noreferrer">Official datasheet ↗</a> <a data-blx-device-model-source hidden target="_blank" rel="noopener noreferrer">Simulator model ↗</a> <a data-blx-device-model-guide hidden target="_blank" rel="noopener noreferrer">Model guide ↗</a><p class="blx-v2-device-condition-summary" data-blx-device-condition-summary></p><details class="blx-v2-device-conditions" data-blx-device-conditions hidden><summary>Conditions &amp; notes</summary><p class="blx-v2-device-model-note" data-blx-device-model-note hidden></p><ul class="blx-v2-device-notes" data-blx-device-notes></ul><ul data-blx-device-condition-list></ul></details></div><button type="button" data-blx-change-device>Change device</button></div>
     <section class="blx-controls" aria-label="Primary buck inputs">${PRIMARY_KEYS.map((key) => fieldMarkup(key, { slider: true })).join("")}</section>
     <div class="blx-current-control"><div class="blx-current-head"><label for="blx-v2-current-range">Load current</label><output data-blx-out="current">—</output></div><input id="blx-v2-current-range" class="blx-current-range" data-blx-cursor-input data-blx-cursor-rail type="range" min="0" max="1000" step="1" role="slider" tabindex="0" aria-label="Selected load current"><div class="blx-current-ticks" aria-hidden="true"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>I<sub>MAX</sub></span></div></div>
     <section class="blx-advanced" aria-label="Advanced assumptions">${ADVANCED_GROUPS.map(advancedMarkup).join("")}</section>`;
 
   const point = root.querySelector('[data-blx-view-panel="point"]');
   if (point) point.innerHTML = `<div class="blx-primary-result">
-      <div><p class="blx-efficiency-value"><span data-blx-out="efficiency">—</span><small data-blx-efficiency-label>efficiency</small></p><p class="blx-current-caption">at <span data-blx-out="current-caption">—</span> · <span data-blx-out="regime">—</span></p></div>
-      <div class="blx-summary-metrics"><div class="blx-summary-metric"><strong data-blx-out="pout">—</strong><span>output</span></div><div class="blx-summary-metric"><strong data-blx-out="loss">—</strong><span data-blx-loss-label>modeled loss</span></div><div class="blx-summary-metric"><strong data-blx-out="pin">—</strong><span data-blx-input-label>estimated input</span></div></div>
+      <div><p class="blx-efficiency-value"><span data-blx-out="efficiency">—</span><button type="button" class="blx-term-trigger" data-blx-coverage-trigger data-blx-efficiency-label>efficiency</button></p><p class="blx-current-caption">at <span data-blx-out="current-caption">—</span> · <span data-blx-out="regime">—</span> · <button type="button" class="blx-term-trigger" data-blx-coverage-trigger data-blx-availability-label>Total</button></p></div>
+      <div class="blx-summary-metrics"><div class="blx-summary-metric"><strong data-blx-out="pout">—</strong><span>output</span></div><div class="blx-summary-metric"><strong data-blx-out="loss">—</strong><span data-blx-loss-label>modeled loss</span></div><div class="blx-summary-metric"><strong data-blx-out="pin">—</strong><button type="button" class="blx-term-trigger blx-metric-label" data-blx-coverage-trigger data-blx-input-label>estimated input</button></div></div>
     </div>
     <div class="blx-v2-badges" data-blx-result-badges></div>
-    <section class="blx-section blx-v2-failure" data-blx-model-failure hidden><div class="blx-failure-copy"><h2 data-blx-failure-title>This point cannot regulate</h2><p data-blx-failure-explanation></p><p data-blx-failure-recovery></p></div><p class="blx-failure-equation" data-blx-failure-equation></p><p>Results resume as soon as the operating point is feasible.</p><div class="blx-actions"><button type="button" data-blx-copy>Copy state</button></div></section>
+    <section class="blx-section blx-v2-failure" data-blx-model-failure hidden><div class="blx-failure-copy"><h2 data-blx-failure-title>This point cannot regulate</h2><p data-blx-failure-explanation></p><p data-blx-failure-recovery></p></div><p class="blx-failure-equation" data-blx-failure-equation></p><p>Results resume as soon as the operating point is feasible.</p><div class="blx-actions"><button type="button" data-blx-fix-output hidden>Fix output voltage</button><button type="button" data-blx-reset-invalid hidden>Reset operating point</button><button type="button" data-blx-copy>Copy link</button></div></section>
     <section class="blx-section blx-waveform-section" data-blx-valid-only aria-label="Mode intervals"><div class="blx-section-heading"><h2>Conduction intervals</h2><button type="button" class="blx-section-total blx-boundary-button" data-blx-boundary-copy>—</button></div><div data-blx-waveform-diagram></div></section>
-    <section class="blx-section" data-blx-valid-only aria-label="Ranked loss budget"><div class="blx-section-heading"><h2>Loss budget · ranked</h2><span class="blx-section-total" data-blx-out="loss-total">—</span></div><ol class="blx-breakdown-list blx-v2-family-list" data-blx-family-list></ol></section>
+    <section class="blx-section" data-blx-valid-only aria-label="Ranked loss budget"><div class="blx-section-heading"><h2>Loss budget · ranked</h2><button type="button" class="blx-section-total blx-term-trigger" data-blx-coverage-trigger data-blx-out="loss-total">—</button></div><p class="blx-v2-subtotal-copy" data-blx-subtotal-copy hidden></p><ol class="blx-breakdown-list blx-v2-family-list" data-blx-family-list></ol></section>
     <section class="blx-section blx-v2-power-balance" data-blx-valid-only aria-label="Power balance"><div class="blx-section-heading"><h2>Power balance</h2><span class="blx-section-total" data-blx-power-copy>Output + analytical losses</span></div><div class="blx-power-balance" data-blx-power-balance></div><div class="blx-operating-metrics" data-blx-operating-metrics></div></section>
     <section class="blx-section blx-v2-reference" data-blx-valid-only data-blx-reference-card hidden></section>
-    <div class="blx-section" data-blx-valid-only><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy state</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div><div class="blx-warnings" data-blx-warnings></div><p class="blx-sentence" data-blx-insight></p></div>`;
+    <div class="blx-section" data-blx-valid-only><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy link</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div><div class="blx-warnings" data-blx-warnings></div><p class="blx-sentence" data-blx-insight></p></div>`;
 
   const load = root.querySelector('[data-blx-view-panel="load"]');
   if (load) load.innerHTML = `<div class="blx-result-heading"><h2>Performance across load</h2><p>Peak efficiency, the CCM/DCM boundary, and the selected point stay linked.</p></div>
@@ -286,7 +283,9 @@ function prepareMarkup(root) {
     <div class="blx-chart-block"><p class="blx-chart-title">Loss families <span data-blx-across-loss>—</span></p><div class="blx-plot" data-blx-loss-plot aria-label="Loss-family power versus load current"></div><div class="blx-v2-series-controls" data-blx-series-controls aria-label="Loss series controls"></div></div>
     <p class="blx-v2-reference-key" data-blx-reference-key hidden></p>
     <section class="blx-loss-character" aria-label="Dominant loss character across load"><h3>Loss character</h3><div class="blx-loss-character-track" data-blx-loss-character></div><p data-blx-causal-insight></p></section>
-    <div class="blx-section"><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy state</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div></div>`;
+    <div class="blx-section"><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy link</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div></div>`;
+
+  root.insertAdjacentHTML("beforeend", `<div class="blx-coverage-popover" data-blx-coverage-popover role="dialog" aria-modal="false" aria-labelledby="blx-coverage-title" hidden><button type="button" class="blx-coverage-close" data-blx-coverage-close aria-label="Close coverage explanation">×</button><h2 id="blx-coverage-title">Why this is a ceiling, not an estimate</h2><p data-blx-coverage-copy></p></div>`);
 
   const caveat = root.querySelector(".blx-top-caveat");
   if (caveat) caveat.textContent = "This is an analytical intuition model at a disclosed 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.";
@@ -305,7 +304,7 @@ function chooserCard(template, preloaded) {
   const kind = template.catalogKind === "manufacturer"
     ? `${template.manufacturer || "Manufacturer"}-sourced · ${template.cornerLabel || template.cornerId}`
     : "Rounded teaching baseline · not a vendor part";
-  return `<button type="button" class="blx-device-choice" data-blx-device-choice="${template.id}"><span><strong>${escapeHtml(template.label)}</strong>${preloaded ? '<em>Preloaded example</em>' : ""}</span><small>${escapeHtml(metrics || "Partial analytical coverage")}</small><span class="blx-device-choice-kind">${escapeHtml(kind)}</span></button>`;
+  return `<button type="button" class="blx-device-choice" data-blx-device-choice="${template.id}"><span><strong>${escapeHtml(template.label)}</strong></span><small>${escapeHtml(metrics || "Partial analytical coverage")}</small><span class="blx-device-choice-kind">${escapeHtml(kind)}</span>${preloaded ? '<em>Continue with the preloaded example →</em>' : ""}</button>`;
 }
 
 function chooserGroup(kind, templates, selectedId) {
@@ -327,7 +326,7 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
   const preloaded = options.recommendedId || (vin <= 18 ? "epc2090" : recommendedSiliconTemplateV2(vin));
   const manufacturer = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.catalogKind === "manufacturer");
   const teaching = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.catalogKind !== "manufacturer");
-  dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><p class="blx-eyebrow">Model v${BUCK_LOSS_MODEL_REVISION} · disclosed 25 °C corners</p><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2><p>${escapeHtml(options.message || "Device data changes recovery, transition timing, and switch-node energy. Choose an example explicitly; this is a model input, not a part recommendation.")}</p><p class="blx-device-context">Teaching context · one symmetric switch pair in a synchronous buck; verify voltage margin, gate drive, thermals, and layout for a real design.</p></div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
+    dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><p class="blx-eyebrow">Model v${BUCK_LOSS_MODEL_REVISION} · disclosed 25 °C corners</p><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2><p>${escapeHtml(options.message || "Device data drives recovery, transition timing, and switch-node energy — so the model asks you to pick explicitly. This is a model input, not a part recommendation.")}</p><p class="blx-device-context">Teaching context · one symmetric switch pair in a synchronous buck; verify voltage margin, gate drive, thermals, and layout for a real design.</p></div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
   return new Promise((resolve) => {
     let settled = false;
     const finish = async (value) => {
@@ -531,6 +530,10 @@ function renderDevice(root, state) {
     : "teaching baseline";
   const summary = `${template.voltageClass} V ${template.technology === "gan" ? "GaN" : "silicon"} · ${sourceKind} · ${template.cornerLabel || template.cornerId}`;
   setText(root, "[data-blx-device-summary]", summary);
+  const conditionSummary = template.id === "infineon-bsc010n04ls6-4v5"
+    ? "Values mix datasheet corners: RDS(on)/QG at VGS 4.5 V; QGD and plateau use the 10 V test; QGS2 is inferred."
+    : `Values use the ${template.cornerLabel || template.cornerId} corner; detailed conditions and notes are disclosed below.`;
+  setText(root, "[data-blx-device-condition-summary]", conditionSummary);
   const sourceLink = root.querySelector("[data-blx-device-source]");
   if (sourceLink) {
     sourceLink.hidden = !template.source.url;
@@ -619,12 +622,14 @@ function renderDevice(root, state) {
 function renderBadges(root, point, template = null) {
   const holder = root.querySelector("[data-blx-result-badges]");
   if (!holder) return;
+  if (point.valid) {
+    holder.replaceChildren();
+    return;
+  }
   const labels = [
     `Model v${point.modelRevision || BUCK_LOSS_MODEL_REVISION}`,
-    point.technology === "gan" ? "GaN" : "Silicon",
-    point.valid ? compactMode(point.waveform.mode) : `Out of regulation · ${point.failure?.code || "infeasible"}`,
-    template?.cornerLabel || point.parameterCorner || "disclosed-25c",
-    point.valid ? (point.availability === "total" ? "Total" : "Subtotal") : "No result"
+    `Out of regulation · ${point.failure?.code || "infeasible"}`,
+    "No result"
   ];
   holder.replaceChildren(...labels.map((label, index) => {
     const span = document.createElement("span");
@@ -725,6 +730,119 @@ function omittedAtomicTermCount(point) {
   );
 }
 
+function totalAtomicTermCount() {
+  return BUCK_LOSS_FAMILIES_V2.reduce((count, family) => count + family.terms.length, 0);
+}
+
+function coverageExplanation(point) {
+  const omitted = omittedAtomicTermCount(point);
+  const total = totalAtomicTermCount();
+  const reasons = [...new Set(point.coverageGaps.map((gap) => GAP_COPY[gap.code] || gap.code))];
+  const reasonCopy = reasons.length ? ` Omitted here: ${reasons.join("; ")}.` : "";
+  return `${formatPower(point.pLoss)} counts ${total - omitted} of ${total} analytical loss terms.${reasonCopy} Missing terms are never counted as zero, so true efficiency is at or below ${formatPercent(point.efficiency)} and true input power is at or above ${formatPower(point.pInEstimated)}.`;
+}
+
+function setCoverageTriggerState(root, enabled) {
+  root.querySelectorAll("[data-blx-coverage-trigger]").forEach((trigger) => {
+    if (trigger.tagName === "BUTTON") trigger.disabled = !enabled;
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.setAttribute("aria-expanded", "false");
+  });
+}
+
+function initializeCoveragePopover(root, state) {
+  const popover = root.querySelector("[data-blx-coverage-popover]");
+  if (!popover) return;
+  let activeTrigger = null;
+  let openTimer = 0;
+  let closeTimer = 0;
+  let suppressFocusOpen = false;
+  const close = ({ restoreFocus = false } = {}) => {
+    clearTimeout(openTimer);
+    clearTimeout(closeTimer);
+    popover.hidden = true;
+    const returnTarget = activeTrigger;
+    if (returnTarget) returnTarget.setAttribute("aria-expanded", "false");
+    activeTrigger = null;
+    if (restoreFocus && returnTarget) {
+      suppressFocusOpen = true;
+      returnTarget.focus();
+      queueMicrotask(() => { suppressFocusOpen = false; });
+    }
+  };
+  const position = (trigger) => {
+    const rect = trigger.getBoundingClientRect();
+    const width = Math.min(420, window.innerWidth - 24);
+    const left = clamp(rect.left + rect.width / 2 - width / 2, 12, window.innerWidth - width - 12);
+    const below = rect.bottom + 10;
+    popover.style.width = `${width}px`;
+    popover.style.left = `${left}px`;
+    popover.style.top = `${Math.min(below, window.innerHeight - popover.offsetHeight - 12)}px`;
+  };
+  const open = (trigger) => {
+    if (!state.point?.valid || state.point.availability !== "subtotal") return;
+    if (activeTrigger && activeTrigger !== trigger) activeTrigger.setAttribute("aria-expanded", "false");
+    activeTrigger = trigger;
+    setText(popover, "[data-blx-coverage-copy]", coverageExplanation(state.point));
+    popover.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    position(trigger);
+  };
+  root.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-blx-coverage-trigger]");
+    if (!trigger || trigger.disabled) return;
+    event.preventDefault();
+    event.stopPropagation();
+    open(trigger);
+  });
+  root.addEventListener("keydown", (event) => {
+    const trigger = event.target.closest("[data-blx-coverage-trigger]");
+    if (trigger && trigger.tagName !== "BUTTON" && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      open(trigger);
+    }
+    if (event.key === "Escape" && !popover.hidden) {
+      event.preventDefault();
+      close({ restoreFocus: true });
+    }
+  });
+  root.addEventListener("focusin", (event) => {
+    if (suppressFocusOpen) return;
+    const trigger = event.target.closest("[data-blx-coverage-trigger]");
+    if (trigger && !trigger.disabled) open(trigger);
+  });
+  root.addEventListener("focusout", (event) => {
+    window.setTimeout(() => {
+      const focused = document.activeElement;
+      if (!popover.hidden && !popover.contains(focused) && !focused?.closest?.("[data-blx-coverage-trigger]")) close();
+    }, 0);
+  });
+  root.addEventListener("pointerover", (event) => {
+    const trigger = event.target.closest("[data-blx-coverage-trigger]");
+    if (!trigger || trigger.disabled) return;
+    clearTimeout(closeTimer);
+    openTimer = window.setTimeout(() => open(trigger), 150);
+  });
+  root.addEventListener("pointerout", (event) => {
+    if (!event.target.closest("[data-blx-coverage-trigger], [data-blx-coverage-popover]")) return;
+    clearTimeout(openTimer);
+    closeTimer = window.setTimeout(() => close(), 200);
+  });
+  popover.addEventListener("pointerenter", () => clearTimeout(closeTimer));
+  popover.addEventListener("pointerleave", () => { closeTimer = window.setTimeout(() => close(), 200); });
+  popover.querySelector("[data-blx-coverage-close]")?.addEventListener("click", () => close({ restoreFocus: true }));
+  document.addEventListener("pointerdown", (event) => {
+    if (!popover.hidden && !popover.contains(event.target) && !event.target.closest("[data-blx-coverage-trigger]")) close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !popover.hidden) {
+      event.preventDefault();
+      close({ restoreFocus: true });
+    }
+  });
+  window.addEventListener("resize", () => { if (!popover.hidden && activeTrigger) position(activeTrigger); });
+}
+
 function renderFamilyList(root, state, point) {
   const holder = root.querySelector("[data-blx-family-list]");
   if (!holder) return;
@@ -772,6 +890,16 @@ function renderFamilyList(root, state, point) {
     dot.style.background = `var(${FAMILY_STYLE[family.id].color})`;
     amount.textContent = available ? formatPower(value) : "—";
     amount.setAttribute("aria-label", available ? formatPower(value) : "Not available");
+    if (available) {
+      amount.removeAttribute("data-blx-coverage-trigger");
+      amount.removeAttribute("role");
+      amount.removeAttribute("tabindex");
+    } else {
+      amount.dataset.blxCoverageTrigger = "";
+      amount.setAttribute("role", "button");
+      amount.setAttribute("tabindex", "0");
+      amount.setAttribute("aria-haspopup", "dialog");
+    }
     item.dataset.blxAvailability = available ? "known" : "unavailable";
     bar.style.setProperty("--blx-family-width", `${available ? 100 * value / maximum : 0}%`);
     bar.style.setProperty("--blx-family-color", `var(${FAMILY_STYLE[family.id].color})`);
@@ -831,7 +959,9 @@ function renderPowerBalance(root, point) {
     ["Inductor RMS", formatCurrent(Math.sqrt(point.waveform.moments.iLrms2))],
     ["Coverage", point.availability === "total" ? "All terms modeled" : `${omittedTerms} term${omittedTerms === 1 ? "" : "s"} omitted`]
   ];
-  metrics.innerHTML = entries.map(([label, value]) => `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
+  metrics.innerHTML = entries.map(([label, value]) => label === "Coverage"
+    ? `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><button type="button" class="blx-term-trigger blx-coverage-metric" data-blx-coverage-trigger>${escapeHtml(value)}</button></div>`
+    : `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 
 function renderWarningsAndInsight(root, state, point) {
@@ -839,10 +969,6 @@ function renderWarningsAndInsight(root, state, point) {
   const messages = [];
   if (point.waveform.mode === "dcm") messages.push({ copy: "Fixed-frequency diode-emulation DCM: low-side conduction stops at zero current." });
   if (point.waveform.mode === "zero-load-unmodeled") messages.push({ copy: "Efficiency is undefined at zero load; PFM, burst, and minimum-on-time behavior depend on the controller." });
-  if (point.availability === "subtotal") {
-    const gaps = [...new Set(point.coverageGaps.map((gap) => GAP_COPY[gap.code] || gap.code))];
-    messages.push({ copy: `Known-loss subtotal: ${gaps.join("; ")}. Missing terms are not treated as zero.` });
-  }
   if (point.warnings.includes("isat")) messages.push({ copy: "Peak current exceeds the selected inductor saturation rating.", strong: true });
   if (state.template.voltageClass < state.rawInputs.vin) messages.push({ copy: `${state.template.label} is below the entered VIN voltage class; choose an appropriate device before design work.`, strong: true });
   if (point.warnings.includes("negative-current-commutation-approximate")) messages.push({ copy: "Approximate commutation: forced CCM has negative valley current. ZVS, signed dead-time paths, QRR, turn-on overlap, and EOSS are only first-order estimates in this reverse-current region.", strong: true });
@@ -853,9 +979,9 @@ function renderWarningsAndInsight(root, state, point) {
   const advisory = point.insights.fetAreaOptimumScale;
   const insight = finite(advisory)
     ? advisory > 1.08
-      ? `The channel-resistance versus gate-charge advisory favors about ${displayNumber(advisory, 2)}× more FET area at this point. EOSS and QRR are deliberately excluded.`
+      ? `Conduction dominates at this point: the RDS(on)·QG balance favors roughly ${displayNumber(advisory, 1)}× more switch area. Larger switches would trade extra gate-drive loss for lower channel loss. (Advisory excludes EOSS and QRR.)`
       : advisory < 0.92
-        ? `The channel-resistance versus gate-charge advisory favors about ${displayNumber(1 / advisory, 2)}× less FET area at this point. EOSS and QRR are deliberately excluded.`
+        ? `Gate drive dominates at this point: the RDS(on)·QG balance favors roughly ${displayNumber(1 / advisory, 1)}× smaller switches. A lower-QG pair would trade a little conduction loss for much less drive loss. (Advisory excludes EOSS and QRR.)`
         : "Channel conduction and gate-drive loss are close to the textbook FET-area balance at this point."
     : "FET-area balance is unavailable until both channel and gate-drive loss are present.";
   setText(root, "[data-blx-insight]", insight);
@@ -1029,7 +1155,7 @@ function renderSeriesControls(root, state) {
     const pin = document.createElement("button");
     pin.type = "button";
     pin.setAttribute("aria-pressed", slot.pinned ? "true" : "false");
-    pin.textContent = slot.pinned ? "Pinned" : "Auto";
+    pin.textContent = slot.pinned ? "Pinned" : "Series · Auto";
     pin.addEventListener("click", () => {
       slot.pinned = !slot.pinned;
       renderLossChart(root, state);
@@ -1160,7 +1286,10 @@ function renderReference(root, state) {
     : null;
   const lossDelta = state.point.pLoss - reference.point.pLoss;
   card.hidden = false;
-  card.innerHTML = `<div class="blx-section-heading"><h2>Held reference</h2><span class="blx-section-total">${escapeHtml(reference.label)}</span></div><div class="blx-v2-reference-sides"><div><span>Reference</span><strong>${formatPercent(reference.point.efficiency)} · ${formatPower(reference.point.pLoss)}</strong><small>v${reference.modelRevision} · ${reference.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(reference.mode)} · ${reference.corner} · ${reference.point.availability}</small></div><div><span>Current</span><strong>${formatPercent(state.point.efficiency)} · ${formatPower(state.point.pLoss)}</strong><small>v${BUCK_LOSS_MODEL_REVISION} · ${state.template.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(state.point.waveform.mode)} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}</small></div></div><p>${finite(efficiencyDelta) ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} percentage points` : "Efficiency delta suppressed unless both results have total coverage"} · ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} known loss</p>`;
+  const deltaCopy = finite(efficiencyDelta)
+    ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} percentage points · known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference.`
+    : `Known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference. Efficiency deltas stay hidden while either run has omitted terms — subtotals cannot be subtracted honestly.`;
+  card.innerHTML = `<div class="blx-section-heading"><h2>Held reference</h2><span class="blx-section-total">${escapeHtml(reference.label)}</span></div><div class="blx-v2-reference-sides"><div><span>Reference</span><strong>${formatPercent(reference.point.efficiency)} · ${formatPower(reference.point.pLoss)}</strong><small>v${reference.modelRevision} · ${reference.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(reference.mode)} · ${reference.corner} · ${reference.point.availability}</small></div><div><span>Current</span><strong>${formatPercent(state.point.efficiency)} · ${formatPower(state.point.pLoss)}</strong><small>v${BUCK_LOSS_MODEL_REVISION} · ${state.template.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(state.point.waveform.mode)} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}</small></div></div><p>${deltaCopy}</p>`;
   if (key) {
     key.hidden = false;
     key.textContent = `Solid: ${state.template.label} · ${state.controlMode} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}. Dashed: ${reference.label} · ${reference.controlMode} · ${reference.corner} · ${reference.point.availability}.`;
@@ -1183,6 +1312,8 @@ function clearResultContent(root) {
   setText(root, "[data-blx-loss-label]", "loss");
   setText(root, "[data-blx-input-label]", "input");
   setText(root, "[data-blx-efficiency-label]", "efficiency");
+  setText(root, "[data-blx-availability-label]", "No result");
+  setCoverageTriggerState(root, false);
   setText(root, '[data-blx-out="sheet-efficiency"]', "—");
   setText(root, '[data-blx-out="sheet-loss"]', "—");
   root.querySelector("[data-blx-result-badges]")?.replaceChildren();
@@ -1220,10 +1351,20 @@ function renderInvalid(root, state) {
   root.querySelectorAll("[data-blx-view-panel]").forEach((panel) => { panel.hidden = panel.dataset.blxViewPanel !== "point"; });
   state.view = "point";
   const failure = root.querySelector("[data-blx-model-failure]");
-  if (failure) failure.hidden = true;
+  if (failure) failure.hidden = false;
   setText(root, '[data-blx-out="regime"]', "Invalid inputs");
-  const warnings = root.querySelector("[data-blx-warnings]");
-  if (warnings) warnings.innerHTML = '<p class="blx-note">Correct the highlighted input values to evaluate this operating point.</p>';
+  const voutInvalid = state.validation.errors.includes("vout-lt-vin");
+  setText(root, "[data-blx-failure-title]", voutInvalid ? "No result — the output must stay below the input." : "No result — check the highlighted inputs.");
+  setText(root, "[data-blx-failure-explanation]", voutInvalid
+    ? `VOUT is ${displayNumber(state.rawInputs.vout, 3)} V but VIN is ${displayNumber(state.rawInputs.vin, 3)} V; a buck converter can only step down.`
+    : "One or more inputs sit outside the model's declared range.");
+  setText(root, "[data-blx-failure-recovery]", voutInvalid
+    ? "Fix the output voltage or reset the operating point."
+    : "Correct the highlighted values or reset the operating point.");
+  setText(root, "[data-blx-failure-equation]", voutInvalid ? "VOUT < VIN is required for buck regulation" : "No valid operating point");
+  root.querySelector("[data-blx-fix-output]")?.toggleAttribute("hidden", !voutInvalid);
+  root.querySelector("[data-blx-reset-invalid]")?.removeAttribute("hidden");
+  root.dataset.blxMode = "invalid";
   state.point = null;
   state.sweep = null;
 }
@@ -1303,6 +1444,8 @@ function renderModelFailure(root, state, point) {
   const panel = root.querySelector("[data-blx-model-failure]");
   const copy = failurePresentation(point);
   if (panel) panel.hidden = false;
+  root.querySelector("[data-blx-fix-output]")?.setAttribute("hidden", "");
+  root.querySelector("[data-blx-reset-invalid]")?.setAttribute("hidden", "");
   setText(root, "[data-blx-failure-title]", copy.title);
   setText(root, "[data-blx-failure-explanation]", copy.explanation);
   setText(root, "[data-blx-failure-recovery]", copy.recovery);
@@ -1341,7 +1484,7 @@ function render(root, state, options = {}) {
   setText(root, '[data-blx-out="current"]', formatCurrent(cursor));
   setText(root, '[data-blx-out="mobile-current"]', formatCurrent(cursor));
   setText(root, '[data-blx-out="current-caption"]', formatCurrent(cursor));
-  const contextSummary = `${displayNumber(state.rawInputs.vin, 3)} V → ${displayNumber(state.rawInputs.vout, 3)} V · ${formatCurrent(cursor)} · ${displayNumber(state.rawInputs.fsw / 1000, 3)} MHz`;
+  const contextSummary = `${displayNumber(state.rawInputs.vin, 3)} V → ${displayNumber(state.rawInputs.vout, 3)} V · ${formatCurrent(cursor)} · ${displayNumber(state.rawInputs.fsw / 1000, 3)} MHz · ${state.template.partNumber || state.template.label}`;
   setText(root, "[data-blx-mobile-summary]", contextSummary);
   if (!state.validation.valid) {
     renderInvalid(root, state);
@@ -1374,8 +1517,9 @@ function render(root, state, options = {}) {
   setText(root, '[data-blx-out="regime"]', compactMode(point.waveform.mode));
   setText(root, '[data-blx-out="loss-total"]', point.availability === "total" ? `Total · ${formatPower(point.pLoss)}` : `Subtotal · ${formatPower(point.pLoss)}`);
   setText(root, "[data-blx-loss-label]", point.availability === "total" ? "total loss" : "known loss");
-  setText(root, "[data-blx-input-label]", point.availability === "total" ? "estimated input" : "known-input floor");
+  setText(root, "[data-blx-input-label]", point.availability === "total" ? "estimated input" : "input · floor");
   setText(root, "[data-blx-efficiency-label]", point.availability === "total" ? "efficiency" : "known-loss ceiling");
+  setText(root, "[data-blx-availability-label]", point.availability === "total" ? "Total" : "Subtotal");
   setText(root, "[data-blx-efficiency-chart-label]", point.availability === "total" ? "Efficiency" : "Known-loss efficiency ceiling");
   setText(root, "[data-blx-power-copy]", point.availability === "total" ? "Output + analytical losses" : "Output + known analytical losses");
   setText(root, '[data-blx-out="sheet-efficiency"]', formatPercent(point.efficiency));
@@ -1384,6 +1528,15 @@ function render(root, state, options = {}) {
   renderWaveformDiagram(root, point);
   renderFamilyList(root, state, point);
   renderPowerBalance(root, point);
+  const omittedTerms = omittedAtomicTermCount(point);
+  const subtotalCopy = root.querySelector("[data-blx-subtotal-copy]");
+  if (subtotalCopy) {
+    subtotalCopy.hidden = point.availability !== "subtotal";
+    subtotalCopy.innerHTML = point.availability === "subtotal"
+      ? `Subtotal — ${omittedTerms} of ${totalAtomicTermCount()} loss terms lack data here and are never counted as zero. <button type="button" class="blx-term-trigger" data-blx-coverage-trigger>Why →</button>`
+      : "";
+  }
+  setCoverageTriggerState(root, point.availability === "subtotal");
   renderWarningsAndInsight(root, state, point);
   renderReference(root, state);
   if (state.view === "load") {
@@ -1624,16 +1777,16 @@ function initializeTabs(root, state) {
     const tabList = root.querySelector(".blx-view-tabs");
     if (tabList) tabList.dataset.activeView = view;
     state.view = view;
-    if (previous && next && previous !== next) {
-      const animated = await animatePanelSwap(root.querySelector("[data-blx-view-panels]"), previous, next, nextIndex >= previousIndex ? 1 : -1);
-      if (!animated) panels.forEach((panel) => { panel.hidden = panel !== next; });
-    } else panels.forEach((panel) => { panel.hidden = panel !== next; });
     if (view === "load" && state.point) {
       renderEfficiencyChart(root, state);
       renderLossChart(root, state);
       renderLossCharacter(root, state);
       state.referenceReveal = false;
     }
+    if (previous && next && previous !== next) {
+      const animated = await animatePanelSwap(root.querySelector("[data-blx-view-panels]"), previous, next, nextIndex >= previousIndex ? 1 : -1);
+      if (!animated) panels.forEach((panel) => { panel.hidden = panel !== next; });
+    } else panels.forEach((panel) => { panel.hidden = panel !== next; });
     if (focus) tabs[nextIndex]?.focus();
   };
   tabs.forEach((tab, index) => {
@@ -1821,8 +1974,7 @@ async function initializeCatalog(root, state) {
   }
 }
 
-function initializeActions(root, state) {
-  root.querySelector("[data-blx-reset]")?.addEventListener("click", () => {
+function resetOperatingPoint(root, state) {
     const preset = getBuckLossPresetV2(DEFAULT_BUCK_LOSS_PRESET_V2);
     const base = { ...rawDefaultsV2(), ...preset.rawInputs };
     state.rawInputs = cloneRaw(applyBuckLossDeviceTemplateV2(base, state.deviceId).rawInputs);
@@ -1837,6 +1989,17 @@ function initializeActions(root, state) {
     invalidateSweep(state);
     if (state.catalog) applyCatalogPart(root, state, state.selectedPart, { render: false });
     render(root, state, { immediateUrl: true });
+}
+
+function initializeActions(root, state) {
+  root.querySelector("[data-blx-reset]")?.addEventListener("click", () => resetOperatingPoint(root, state));
+  root.querySelector("[data-blx-reset-invalid]")?.addEventListener("click", () => resetOperatingPoint(root, state));
+  root.querySelector("[data-blx-fix-output]")?.addEventListener("click", () => {
+    const input = root.querySelector('[data-blx-v2-input="vout"]');
+    if (matchMedia("(max-width: 700px)").matches) {
+      root.querySelector("[data-blx-input-open]")?.click();
+      window.setTimeout(() => input?.focus(), 340);
+    } else input?.focus();
   });
   root.querySelector("[data-blx-change-device]")?.addEventListener("click", () => changeDevice(root, state));
   root.querySelectorAll("[data-blx-reference]").forEach((button) => button.addEventListener("click", () => {
@@ -1928,6 +2091,7 @@ export async function initBuckLossExplorerV2(root) {
   initializeTabs(root, state);
   initializeInputSheet(root);
   initializeActions(root, state);
+  initializeCoveragePopover(root, state);
   render(root, state, { immediateUrl: true });
   await initializeCatalog(root, state);
   root.dataset.blxStatus = "ready";

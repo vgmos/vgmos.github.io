@@ -53,6 +53,7 @@ export async function animateDialog(dialog, opening) {
 
 export async function animatePanelSwap(container, fromPanel, toPanel, direction = 1) {
   if (!fromPanel || !toPanel || fromPanel === toPanel || !canAnimate(container)) return false;
+  if (globalThis.matchMedia?.("(max-width: 700px)").matches) return false;
   const fromHeight = fromPanel.getBoundingClientRect().height;
   toPanel.hidden = false;
   toPanel.style.position = "absolute";

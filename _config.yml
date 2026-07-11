@@ -43,6 +43,8 @@ exclude:
   - claude-coilcraft-implementation-prompt.md
   - CLAUDE_LIVE_REVIEW.md
   - CLAUDE_LIVE_REVIEW_PROMPT.md
+  - CLAUDE_FABLE_FRONTEND_FEEDBACK_FOR_CODEX.md
+  - CLAUDE_FABLE_FRONTEND_FEEDBACK_PROMPT.md
   - tests/
   - .cache/
 
