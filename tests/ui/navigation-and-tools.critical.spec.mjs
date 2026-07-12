@@ -325,6 +325,33 @@ test.describe("Buck Converter Loss Tool", () => {
     expect(mismatchBody).toContain("Device: epc2090");
     expect(mismatchBody).toContain("Coverage: total");
 
+    const waveform = page.locator("[data-blx-waveform-diagram]");
+    await expect(waveform.locator('[data-blx-waveform-trace="switch-node"]')).toHaveCount(1);
+    await expect(waveform.locator('[data-blx-waveform-trace="inductor-current"]')).toHaveCount(1);
+    await expect(waveform.locator('[data-blx-waveform-trace="gate-high"]')).toHaveCount(1);
+    await expect(waveform.locator('[data-blx-waveform-trace="gate-low"]')).toHaveCount(1);
+    await expect(waveform.locator("[data-blx-dead-time-band]")).toHaveCount(2);
+    await expect(page.locator(".blx-waveform-note")).toContainText("probe uses exact timing");
+    await expect(page.locator(".blx-waveform-note")).toContainText("excluded from the loss total");
+    const waveformProbe = page.locator("[data-blx-waveform-probe]");
+    const waveformReadout = page.locator("[data-blx-waveform-readout]");
+    const waveformReadoutBefore = await waveformReadout.textContent();
+    await waveformProbe.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(waveformReadout).not.toHaveText(waveformReadoutBefore || "");
+    await expect(waveformProbe).toHaveAttribute("aria-valuetext", /VSW ≈ .* · iL/);
+
+    const familyGrid = await page.locator("[data-blx-family-list]").evaluate((list) => {
+      const rows = [...list.querySelectorAll("[data-blx-family]")].slice(0, 2);
+      return {
+        columns: getComputedStyle(list).gridTemplateColumns.split(" ").length,
+        firstTop: Math.round(rows[0].getBoundingClientRect().top),
+        secondTop: Math.round(rows[1].getBoundingClientRect().top)
+      };
+    });
+    expect(familyGrid.columns).toBe(2);
+    expect(familyGrid.firstTop).toBe(familyGrid.secondTop);
+
     await page.locator('[data-blx-preset="48v-to-12v-bus"]').click();
     await expect(page.locator("#blx-v2-vin")).toHaveValue("48");
     await expect(page).toHaveURL(/m=2/);
@@ -349,6 +376,12 @@ test.describe("Buck Converter Loss Tool", () => {
 
     const conduction = page.locator('[data-blx-family="mosfetConduction"]');
     await conduction.locator("summary").click();
+    await expect(conduction).toHaveClass(/is-open/);
+    const expandedWidths = await conduction.evaluate((row) => ({
+      row: Math.round(row.getBoundingClientRect().width),
+      list: Math.round(row.parentElement.getBoundingClientRect().width)
+    }));
+    expect(expandedWidths.row).toBe(expandedWidths.list);
     await expect(conduction).toContainText("Eq. 4.21");
     await expect(conduction).toContainText("printed p. 182");
     await expect(conduction).toContainText("PDF p. 196");
