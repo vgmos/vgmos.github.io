@@ -109,7 +109,7 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
     family: "deadTimeRecovery",
     formula: "Σedges [VSD,0 · ∫ |iL| dt + RSD · ∫ iL² dt] / TSW",
     source: Object.freeze({
-      ...source("4.33, 4.35", 193, 207, "Exact interval integration covers CCM and the single material DCM dead-time interval."),
+      ...source("4.33, 4.35", 193, 207, "Exact interval integration covers CCM and the single material DCM dead-time interval. The entered reverse-path voltage is held constant across each window, a conservative first-order approximation."),
       references: Object.freeze([
         Object.freeze({ equation: "4.33", printedPage: 193, pdfPage: 207 }),
         Object.freeze({ equation: "4.35", printedPage: 194, pdfPage: 208 })
@@ -119,8 +119,8 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
   reverseRecovery: Object.freeze({
     label: "Reverse recovery",
     family: "deadTimeRecovery",
-    formula: "VSW · QRR(IO) · fSW",
-    source: source("4.57", 207, 221, "Adapted to a buck hard-switch event: silicon QRR is scaled from its disclosed reference current; GaN suppresses this term.", "adapted")
+    formula: "VSW · QRR(IO) · [1 − e^(−tdlh/τF)] · fSW",
+    source: source("4.57", 207, 221, "Adapted to a buck hard-switch event: silicon recovered charge is limited by the diffusion charge established during the LS→HS dead time, with τF = QRR,ref / Iref; buildup follows Eq. 4.49–4.50 and §4.5.3C. GaN suppresses this term.", "adapted")
   }),
   gateDriveHigh: Object.freeze({
     label: "High-side gate drive",

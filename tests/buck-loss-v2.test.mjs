@@ -100,6 +100,13 @@ describe("buck loss v2 contracts", () => {
     assert.equal(epc.values.effectiveTurnOff, 2);
     assert.equal(epc.provenance.qgs2High, "inferred-qgs-minus-qgth");
     assert.match(epc.source.url, /EPC2090_datasheet\.pdf/);
+    assert.equal(epc.parameterConditions.rdsHigh.maximum, 5.2);
+    assert.equal(epc.parameterConditions.qgHigh.maximum, 9.3);
+    assert.match(epc.parameterConditions.qgHigh.conditions, /VDS = 50 V, ID = 16 A/);
+    assert.equal(epc.parameterConditions.cossErHigh.statistic, "energy-equivalent");
+    assert.match(epc.parameterConditions.cossErHigh.conditions, /0 to 50 V/);
+    assert.equal(epc.parameterConditions.effectiveTurnOn.statistic, "illustrative assumption");
+    assert.ok(epc.notes.some((note) => /no shipped EON\/EOFF surface/i.test(note)));
 
     const infineon = getBuckLossDeviceTemplateV2("infineon-bsc010n04ls6-4v5");
     assert.equal(infineon.label, "Infineon BSC010N04LS6 pair");
@@ -204,7 +211,7 @@ describe("buck loss v2 contracts", () => {
     const point = computeBuckLossPointV2(inputs, 2, context);
     assert.equal(point.modelVersion, 2);
     assert.equal(point.modelRevision, BUCK_LOSS_MODEL_REVISION);
-    assert.equal(point.modelRevision, "2.2");
+    assert.equal(point.modelRevision, "2.3");
     assert.equal(point.technology, "gan");
     assert.equal(point.catalogKind, "manufacturer");
     assert.equal(point.deviceTemplate, "epc2090");
@@ -240,7 +247,7 @@ describe("buck loss v2 contracts", () => {
 
     const sweep = computeBuckLossSweepV2(inputs, context, { points: 180 });
     assert.equal(sweep.modelVersion, 2);
-    assert.equal(sweep.modelRevision, "2.2");
+    assert.equal(sweep.modelRevision, "2.3");
     assert.equal(sweep.points.length, 180);
     assert.ok(sweep.annotations.peakEfficiency);
     assert.ok(Number.isFinite(sweep.annotations.ccmBoundary));
@@ -431,7 +438,7 @@ describe("buck loss v2 accounting", () => {
     assert.ok(point.losses.outputCapEsr > 0);
   });
 
-  it("suppresses QRR for GaN and scales it for silicon", () => {
+  it("limits silicon QRR by LS-to-HS dead-time diffusion buildup", () => {
     const gan = setup("epc2090");
     const si = setup("silicon-60v");
     const ganPoint = computeBuckLossPointV2(gan.inputs, 2, gan.context);
@@ -440,14 +447,43 @@ describe("buck loss v2 accounting", () => {
     assert.equal(ganPoint.losses.reverseRecovery, 0);
     assert.ok(siPoint1.losses.reverseRecovery > 0);
     assert.ok(siPoint2.losses.reverseRecovery > siPoint1.losses.reverseRecovery);
+    const tauF = si.inputs.qrrRef / si.inputs.qrrRefCurrent;
+    const buildUp = -Math.expm1(-si.inputs.deadTimeLowToHigh / tauF);
     rel(
       siPoint2.losses.reverseRecovery,
       (si.inputs.vin + si.inputs.diodeVf)
         * si.inputs.qrrRef
         * siPoint2.waveform.iValley
         / si.inputs.qrrRefCurrent
+        * buildUp
         * si.inputs.fsw
     );
+
+    const highToLowOnlyInputs = { ...si.inputs, deadTimeHighToLow: 2e-9, deadTimeLowToHigh: 0 };
+    const lowToHighOnlyInputs = { ...si.inputs, deadTimeHighToLow: 0, deadTimeLowToHigh: 2e-9 };
+    const highToLowOnly = computeBuckLossPointV2(highToLowOnlyInputs, 2, si.context);
+    const lowToHighOnly = computeBuckLossPointV2(lowToHighOnlyInputs, 2, si.context);
+    assert.equal(highToLowOnly.losses.reverseRecovery, 0);
+    assert.ok(lowToHighOnly.losses.reverseRecovery > 0);
+
+    const zeroQrr = computeBuckLossPointV2({ ...si.inputs, qrrRef: 0, deadTimeLowToHigh: 0 }, 2, si.context);
+    assert.equal(zeroQrr.losses.reverseRecovery, 0);
+    assert.ok(Number.isFinite(zeroQrr.pLoss));
+
+    const dcm = computeBuckLossPointV2(si.inputs, 0.05, si.context);
+    assert.equal(dcm.waveform.mode, "dcm");
+    assert.equal(dcm.losses.reverseRecovery, 0);
+
+    const atTau = computeBuckLossPointV2({ ...si.inputs, deadTimeLowToHigh: tauF }, 2, si.context);
+    const atTenTau = computeBuckLossPointV2({ ...si.inputs, deadTimeLowToHigh: 10 * tauF }, 2, si.context);
+    assert.ok(atTau.losses.reverseRecovery > 0);
+    assert.ok(atTenTau.losses.reverseRecovery > atTau.losses.reverseRecovery);
+    const asymptotic = (si.inputs.vin + si.inputs.diodeVf)
+      * si.inputs.qrrRef
+      * atTenTau.waveform.iValley
+      / si.inputs.qrrRefCurrent
+      * si.inputs.fsw;
+    rel(atTenTau.losses.reverseRecovery, asymptotic, 1e-4);
   });
 
   it("warns specifically when forced CCM enters the negative-current commutation domain", () => {
@@ -807,7 +843,7 @@ describe("buck loss v2 accounting", () => {
     assert.ok(dropoutWaveform.failure.values.highVoltage <= 0);
     assert.ok(Number.isFinite(dropoutWaveform.failure.values.availableSwitchFraction));
     assert.equal(invalidPoint.modelVersion, 2);
-    assert.equal(invalidPoint.modelRevision, "2.2");
+    assert.equal(invalidPoint.modelRevision, "2.3");
     assert.equal(invalidPoint.deviceTemplate, "silicon-30v");
     assert.equal(invalidPoint.parameterCorner, "synthetic-typical-25c");
     assert.equal(invalidPoint.failure.code, "dropout");

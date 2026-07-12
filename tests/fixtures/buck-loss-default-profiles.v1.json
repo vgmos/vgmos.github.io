@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "modelRevision": "2.3",
+  "profiles": [
+    {
+      "presetId": "12v-to-3v3-pol",
+      "deviceId": "epc2090",
+      "compatible": true,
+      "cursorA": 2,
+      "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.32667625879399387, "efficiency": 0.9528379490265261, "dominantFamily": "gateDrive", "omitted": [] }
+    },
+    {
+      "presetId": "12v-to-3v3-pol",
+      "deviceId": "infineon-bsc010n04ls6-4v5",
+      "compatible": true,
+      "cursorA": 2,
+      "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.4311608099789176, "efficiency": 0.9386785736194518, "dominantFamily": "gateDrive", "omitted": ["switchingTransitionsMissingData", "nodeEnergyMissingData"] }
+    },
+    {
+      "presetId": "12v-to-3v3-pol",
+      "deviceId": "vishay-si7860dp-tps40071evm",
+      "compatible": true,
+      "cursorA": 2,
+      "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.7113287694346361, "efficiency": 0.9027086878641841, "dominantFamily": "switchingTransitions", "omitted": ["nodeEnergyMissingData"] }
+    },
+    {
+      "presetId": "12v-to-3v3-pol",
+      "deviceId": "silicon-30v",
+      "compatible": true,
+      "cursorA": 2,
+      "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.6249898079162762, "efficiency": 0.913496098329234, "dominantFamily": "gateDrive", "omitted": [] }
+    },
+    {
+      "presetId": "12v-to-3v3-pol",
+      "deviceId": "silicon-60v",
+      "compatible": true,
+      "cursorA": 2,
+      "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.9148214840287028, "efficiency": 0.8782643758107922, "dominantFamily": "switchingTransitions", "omitted": [] }
+    },
+    {
+      "presetId": "12v-to-3v3-pol",
+      "deviceId": "silicon-100v",
+      "compatible": true,
+      "cursorA": 2,
+      "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.510100354698328, "efficiency": 0.8138000408560295, "dominantFamily": "switchingTransitions", "omitted": [] }
+    },
+    {
+      "presetId": "5v-to-1v8-core",
+      "deviceId": "epc2090",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.37467838524384545, "efficiency": 0.9351170125419853, "dominantFamily": "gateDrive", "omitted": [] }
+    },
+    {
+      "presetId": "5v-to-1v8-core",
+      "deviceId": "infineon-bsc010n04ls6-4v5",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.607882290453837, "efficiency": 0.8988192076566272, "dominantFamily": "gateDrive", "omitted": ["switchingTransitionsMissingData", "nodeEnergyMissingData"] }
+    },
+    {
+      "presetId": "5v-to-1v8-core",
+      "deviceId": "vishay-si7860dp-tps40071evm",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.8854270481530507, "efficiency": 0.8591301686632049, "dominantFamily": "switchingTransitions", "omitted": ["nodeEnergyMissingData"] }
+    },
+    {
+      "presetId": "5v-to-1v8-core",
+      "deviceId": "silicon-30v",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.6954681789715463, "efficiency": 0.8859040587939074, "dominantFamily": "gateDrive", "omitted": [] }
+    },
+    {
+      "presetId": "5v-to-1v8-core",
+      "deviceId": "silicon-60v",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.0992621092913342, "efficiency": 0.8308635517684644, "dominantFamily": "gateDrive", "omitted": [] }
+    },
+    {
+      "presetId": "5v-to-1v8-core",
+      "deviceId": "silicon-100v",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.85064358599533, "efficiency": 0.7447614733718451, "dominantFamily": "switchingTransitions", "omitted": [] }
+    },
+    {
+      "presetId": "48v-to-12v-bus",
+      "deviceId": "epc2090",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.044776532680284, "efficiency": 0.9717969271117455, "dominantFamily": "nodeEnergy", "omitted": ["inductorCoreResidualMissingData"] }
+    },
+    {
+      "presetId": "48v-to-12v-bus",
+      "deviceId": "infineon-bsc010n04ls6-4v5",
+      "compatible": false,
+      "cursorA": 3,
+      "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.6666538977195112, "efficiency": 0.9818185237306049, "dominantFamily": "magnetics", "omitted": ["inductorCoreResidualMissingData", "switchingTransitionsMissingData", "nodeEnergyMissingData"] }
+    },
+    {
+      "presetId": "48v-to-12v-bus",
+      "deviceId": "vishay-si7860dp-tps40071evm",
+      "compatible": false,
+      "cursorA": 3,
+      "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.4657404969260779, "efficiency": 0.9608778452664951, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData", "nodeEnergyMissingData"] }
+    },
+    {
+      "presetId": "48v-to-12v-bus",
+      "deviceId": "silicon-30v",
+      "compatible": false,
+      "cursorA": 3,
+      "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.9963814242102319, "efficiency": 0.9730681384002002, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData", "nodeEnergyOutsideVoltageDomain"] }
+    },
+    {
+      "presetId": "48v-to-12v-bus",
+      "deviceId": "silicon-60v",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 2.0397236434642303, "efficiency": 0.9463791150907932, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData"] }
+    },
+    {
+      "presetId": "48v-to-12v-bus",
+      "deviceId": "silicon-100v",
+      "compatible": true,
+      "cursorA": 3,
+      "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 3.0377749327078387, "efficiency": 0.9221837069878017, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData"] }
+    }
+  ]
+}

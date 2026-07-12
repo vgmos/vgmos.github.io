@@ -29,7 +29,7 @@ test.describe("Buck loss switching-edge viewer", () => {
   test("calculated ringing responds to explicit parasitics without changing loss or URL state", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
-    await expect.poll(() => new URL(page.url()).searchParams.get("rdc")).toBe("4.3");
+    await expect.poll(() => new URL(page.url()).searchParams.get("rdc")).toBeNull();
     const url = page.url();
     const loss = await page.locator('[data-blx-out="loss"]').textContent();
     const ringing = page.locator('[data-blx-waveform-trace="switch-node-ringing"]');
