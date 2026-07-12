@@ -7,8 +7,8 @@ export const BUCK_LOSS_PRESETS_V2 = Object.freeze([
     cursor: 2,
     inductorPart: "XGL6060-222",
     dcrMode: "typ",
-    prompt: "A 12 V point-of-load example with a characterized 2.2 µH inductor.",
-    rawInputs: Object.freeze({ vin: 12, vout: 3.3, ioutMax: 3, fsw: 1000, inductance: 2.2, deadTime: 20, dcr: 20, rac: null, inputEsr: 5, esr: 5, iq: 2, vBias: null, inductorAcManual: null, inductorIsat: null })
+    prompt: "A 12 Vᵢₙ point-of-load example with a Coilcraft 2.2 µH inductor.",
+    rawInputs: Object.freeze({ vin: 12, vout: 3.3, ioutMax: 3, fsw: 1000, inductance: 2.2, deadTime: 2, dcr: 20, rac: null, inputEsr: 5, esr: 5, iq: 2, vBias: null, inductorAcManual: null, inductorIsat: null })
   }),
   Object.freeze({
     id: "5v-to-1v8-core",
@@ -17,7 +17,7 @@ export const BUCK_LOSS_PRESETS_V2 = Object.freeze([
     inductorPart: "XEL4030-471",
     dcrMode: "typ",
     prompt: "A high-current core rail with a characterized 0.47 µH inductor.",
-    rawInputs: Object.freeze({ vin: 5, vout: 1.8, ioutMax: 5, fsw: 1500, inductance: 0.47, deadTime: 10, dcr: 8, rac: null, inputEsr: 3, esr: 3, iq: 3, vBias: null, inductorAcManual: null, inductorIsat: null })
+    rawInputs: Object.freeze({ vin: 5, vout: 1.8, ioutMax: 5, fsw: 1500, inductance: 0.47, deadTime: 2, dcr: 8, rac: null, inputEsr: 3, esr: 3, iq: 3, vBias: null, inductorAcManual: null, inductorIsat: null })
   }),
   Object.freeze({
     id: "48v-to-12v-bus",
@@ -26,7 +26,7 @@ export const BUCK_LOSS_PRESETS_V2 = Object.freeze([
     inductorPart: "XGL6060-153",
     dcrMode: "typ",
     prompt: "A 48 V bus converter where hard-switch energy and recovery become more visible.",
-    rawInputs: Object.freeze({ vin: 48, vout: 12, ioutMax: 5, fsw: 400, inductance: 15, deadTime: 30, dcr: 15, rac: null, inputEsr: 10, esr: 10, iq: 3, vBias: null, inductorAcManual: null, inductorIsat: null })
+    rawInputs: Object.freeze({ vin: 48, vout: 12, ioutMax: 5, fsw: 400, inductance: 15, deadTime: 3, dcr: 15, rac: null, inputEsr: 10, esr: 10, iq: 3, vBias: null, inductorAcManual: null, inductorIsat: null })
   })
 ]);
 

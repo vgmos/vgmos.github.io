@@ -26,7 +26,7 @@ export const BUCK_LOSS_SCHEMA_V2 = Object.freeze({
   gateResistanceOffLow: field({ url: "rgoffl", group: "drive", timingMode: "derived", label: "Low-side turn-off gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
   effectiveTurnOn: field({ url: "teon", group: "drive", timingMode: "effective", label: "Effective turn-on overlap", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
   effectiveTurnOff: field({ url: "teoff", group: "drive", timingMode: "effective", label: "Effective turn-off overlap", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
-  deadTime: field({ url: "td", group: "timing", label: "Dead time per edge", unit: "ns", scale: 1e-9, min: 0, max: 500, default: 20 }),
+  deadTime: field({ url: "td", group: "timing", label: "Dead time per edge", unit: "ns", scale: 1e-9, min: 0, max: 500, default: 2 }),
   diodeVf: field({ url: "vsd", group: "timing", label: "Reverse-path voltage", unit: "V", scale: 1, min: 0, max: 5, default: null }),
   qrrRef: field({ url: "qrr", group: "timing", technology: "silicon", label: "QRR at reference current", unit: "nC", scale: 1e-9, min: 0, max: 1000, default: 0 }),
   qrrRefCurrent: field({ url: "qrri", group: "timing", technology: "silicon", label: "QRR reference current", unit: "A", scale: 1, min: 0.01, max: 200, default: 10 }),

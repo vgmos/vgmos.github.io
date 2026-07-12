@@ -17,7 +17,7 @@ function legacyBanner(root) {
   banner = document.createElement("section");
   banner.className = "blx-legacy-banner";
   banner.dataset.blxLegacyBanner = "";
-  banner.innerHTML = `<div><p class="blx-eyebrow">Legacy model v1 · Read-only</p><h2>This shared link uses the original forced-CCM model</h2><p>Its result is preserved exactly. Import compatible operating-point and passive inputs into v2 to add device choice, nonideal duty, diode-emulation DCM, and equation provenance.</p></div><button type="button" data-blx-import-v2>Import into v2</button>`;
+  banner.innerHTML = `<div><p class="blx-eyebrow">Earlier shared calculation · Read-only</p><h2>This link uses the original forced-CCM calculation</h2><p>Its result is preserved exactly. Update compatible operating-point and passive inputs to add device choice, nonideal duty, diode-emulation DCM, and equation provenance.</p></div><button type="button" data-blx-import-v2>Update calculation</button>`;
   root.querySelector(".blx-workspace")?.before(banner);
   return banner;
 }
@@ -52,8 +52,8 @@ async function importLegacyIntoV2(root) {
   ]);
   const legacy = parseBuckLossUrl(window.location.search);
   const deviceId = await requestBuckLossDeviceV2(root, {
-    title: "Choose a v2 device template",
-    message: "The legacy link did not identify device technology. Compatible inputs will be retained and v2 will disclose the changed result.",
+    title: "Choose a switch-pair model",
+    message: "The earlier link did not identify device technology. Compatible inputs will be retained and the changed result will be disclosed.",
     vin: legacy.rawInputs.vin,
     allowCancel: true
   });
@@ -107,15 +107,15 @@ async function initLegacy(root) {
   initV1(root);
   root.dataset.blxLegacy = "true";
   const eyebrow = root.querySelector(".blx-eyebrow");
-  if (eyebrow) eyebrow.textContent = "Interactive tool · Legacy loss model v1";
+  if (eyebrow) eyebrow.textContent = "Interactive tool · Archived calculation";
   const deviceNote = root.querySelector(".blx-device-note");
-  if (deviceNote) deviceNote.innerHTML = '<strong>Legacy v1 assumptions</strong><br>This preserved result uses the original EPC2090-anchored switch defaults from the shared link.';
+  if (deviceNote) deviceNote.innerHTML = '<strong>Archived assumptions</strong><br>This preserved result uses the original EPC2090-anchored switch defaults from the shared link.';
   const caveat = root.querySelector(".blx-top-caveat");
-  if (caveat) caveat.textContent = "Legacy v1 is preserved for shared-link fidelity. Import into v2 for device-aware CCM/DCM analysis and current equation provenance.";
+  if (caveat) caveat.textContent = "This archived calculation is preserved for shared-link fidelity. Update it for device-aware CCM/DCM analysis and current equation provenance.";
   const equations = root.querySelector(".blx-equations");
-  if (equations) equations.innerHTML = '<h2>Legacy v1 equations</h2><p>This read-only viewer preserves the original ideal-duty, forced-CCM loss kernel used by the shared link. Import the operating point into v2 for nonideal duty, diode-emulation DCM, and term-level textbook provenance.</p>';
+  if (equations) equations.innerHTML = '<h2>Archived equations</h2><p>This read-only viewer preserves the original ideal-duty, forced-CCM loss kernel used by the shared link. Update the operating point for nonideal duty, diode-emulation DCM, and term-level textbook provenance.</p>';
   const caveats = root.querySelector(".blx-caveats");
-  if (caveats) caveats.innerHTML = '<h2>Legacy scope</h2><p>V1 is retained only for result fidelity. Its controls are locked and its model assumptions are not being extended.</p>';
+  if (caveats) caveats.innerHTML = '<h2>Archived scope</h2><p>This calculation is retained only for result fidelity. Its controls are locked and its assumptions are not being extended.</p>';
   legacyBanner(root).querySelector("[data-blx-import-v2]")?.addEventListener("click", () => importLegacyIntoV2(root));
   lockLegacyControls(root);
 }
