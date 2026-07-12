@@ -29,6 +29,20 @@ const INFINEON_SOURCE = source(
   }
 );
 
+const VISHAY_TI_EVM_SOURCE = source(
+  "manufacturer-measured-typical",
+  "Si7860DP values combine the TI TPS40071EVM design value with Vishay measured 25 °C model-characterization data. Gate-transition and recovery inputs are disclosed first-order adaptations; unsupported COSS(ER) remains unset.",
+  "https://www.vishay.com/docs/70903/70903.pdf",
+  {
+    documentId: "Vishay Si7860DP SPICE Device Model · Document 70903",
+    documentRevision: "Rev. B · 20-Feb-2006",
+    manufacturer: "Vishay Siliconix",
+    benchmarkUrl: "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf",
+    benchmarkDocumentId: "TI SLUU180B · TPS40071EVM-001 User's Guide",
+    benchmarkDocumentRevision: "Rev. B · February 2022"
+  }
+);
+
 const TEACHING_SOURCE = source(
   "synthetic-teaching-fixture",
   "Rounded, deterministic illustrative values. This is not a vendor part or selection recommendation.",
@@ -90,7 +104,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     cornerId: "mixed-datasheet-25c",
     cornerLabel: "Mixed datasheet typical · 25 °C",
     voltageClass: 100,
-    timingMode: "effective",
+    timingMode: "auto",
     source: EPC_SOURCE,
     modelSource: Object.freeze({
       publisher: "Efficient Power Conversion Corporation",
@@ -104,7 +118,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     notes: Object.freeze([
       "QGS2 is inferred as QGS − QG(TH).",
       "COSS(ER) is characterized over 0–50 V; EOSS is omitted above that domain.",
-      "3 ns turn-on and 2 ns turn-off values are illustrative effective crossover intervals, not datasheet switching times."
+      "Automatic transition selection tries a condition-matched energy table, then complete gate-charge timing, then the 3 ns / 2 ns illustrative effective-time fallback."
     ]),
     provenanceOverrides: {
       qgs2High: "inferred-qgs-minus-qgth",
@@ -139,7 +153,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     cornerId: "mixed-datasheet-25c-vgs4v5",
     cornerLabel: "Mixed datasheet typical · 25 °C · VGS 4.5 V",
     voltageClass: 40,
-    timingMode: "effective",
+    timingMode: "auto",
     source: INFINEON_SOURCE,
     modelSource: Object.freeze({
       publisher: "Infineon Technologies AG",
@@ -216,6 +230,92 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       effectiveTurnOff: null
     }
   }),
+  makeTemplate({
+    id: "vishay-si7860dp-tps40071evm",
+    label: "Vishay Si7860DP pair · TI TPS40071EVM",
+    technology: "silicon",
+    catalogKind: "manufacturer",
+    manufacturer: "Vishay Siliconix",
+    partNumber: "Si7860DP",
+    cornerId: "mixed-published-25c-vgs8",
+    cornerLabel: "Mixed published typical · 25 °C · nominal 8 V drive",
+    voltageClass: 30,
+    timingMode: "auto",
+    source: VISHAY_TI_EVM_SOURCE,
+    conditions: Object.freeze({
+      rdsHigh: "TI SLUU180B section 3.2 uses 8.0 mΩ for both positions; Vishay measured 6.6 mΩ at VGS = 10 V and 9.0 mΩ at VGS = 4.5 V.",
+      qgHigh: "VDS = 15 V, VGS = 4.5 V, ID = 16 A; 13 nC measured typical.",
+      qgs2High: "Inferred 2.5 nC post-threshold portion of the published 5 nC QGS curve.",
+      qgdHigh: "VDS = 15 V, VGS = 4.5 V, ID = 16 A; 4 nC measured typical.",
+      plateauHigh: "Approximately 3.0 V from the published measured gate-charge curve.",
+      gateResistanceOnHigh: "Equivalent high-side source path from 48 ns into 2200 pF: t/(2.2C) = 9.92 Ω.",
+      gateResistanceOffHigh: "Equivalent high-side sink path from 36 ns into 2200 pF: t/(2.2C) = 7.44 Ω.",
+      diodeVf: "IS = 3 A, VGS = 0 V; 0.70 V measured typical.",
+      qrrRef: "First-order triangular estimate 0.5 × IF × trr = 60 nC from IF = 3 A and measured trr = 40 ns."
+    }),
+    parameterConditions: Object.freeze({
+      rdsHigh: Object.freeze({ statistic: "EVM design value", conditions: "VGS-dependent mixed condition; TI SLUU180B section 3.2" }),
+      rdsLow: Object.freeze({ statistic: "EVM design value", conditions: "VGS-dependent mixed condition; TI SLUU180B section 3.2" }),
+      qgHigh: Object.freeze({ statistic: "measured typical", conditions: "VDS = 15 V, VGS = 4.5 V, ID = 16 A, TJ = 25 °C" }),
+      qgLow: Object.freeze({ statistic: "measured typical", conditions: "VDS = 15 V, VGS = 4.5 V, ID = 16 A, TJ = 25 °C" }),
+      qgs2High: Object.freeze({ statistic: "inferred", conditions: "Post-threshold portion of the 5 nC measured QGS curve" }),
+      qgs2Low: Object.freeze({ statistic: "inferred", conditions: "Post-threshold portion of the 5 nC measured QGS curve" }),
+      qgdHigh: Object.freeze({ statistic: "measured typical", conditions: "VDS = 15 V, VGS = 4.5 V, ID = 16 A, TJ = 25 °C" }),
+      qgdLow: Object.freeze({ statistic: "measured typical", conditions: "VDS = 15 V, VGS = 4.5 V, ID = 16 A, TJ = 25 °C" }),
+      plateauHigh: Object.freeze({ statistic: "curve readout", conditions: "Vishay Document 70903 measured gate-charge curve, TJ = 25 °C" }),
+      plateauLow: Object.freeze({ statistic: "curve readout", conditions: "Vishay Document 70903 measured gate-charge curve, TJ = 25 °C" }),
+      qrrRef: Object.freeze({ statistic: "inferred", conditions: "0.5 × 3 A × 40 ns triangular recovery approximation, TJ = 25 °C" }),
+      qrrRefCurrent: Object.freeze({ statistic: "reference condition", conditions: "IF = 3 A for the published trr measurement" }),
+      vDrive: Object.freeze({ statistic: "controller typical", conditions: "TPS40071 DBP nominally regulates to 8 V for VDD above 10 V" })
+    }),
+    notes: Object.freeze([
+      "This template exists to reproduce the published TI TPS40071EVM benchmark, not to recommend an obsolete MOSFET.",
+      "The 8 mΩ channel value is the EVM design value. The benchmark overrides it to Vishay's measured 9 mΩ value for the 5 V input trace, where gate drive is about 4.5 V.",
+      "QGS2, plateau, equivalent driver-path resistance, and QRR are disclosed adaptations because compatible scalar values are not published.",
+      "Energy-equivalent COSS(ER) is unavailable and remains unset, so switch-node energy is omitted and calculated efficiency is a ceiling."
+    ]),
+    provenanceOverrides: {
+      rdsHigh: "ti-evm-design-value",
+      rdsLow: "ti-evm-design-value",
+      qgHigh: "vendor-model-measured",
+      qgLow: "vendor-model-measured",
+      qgs2High: "inferred-gate-charge-curve",
+      qgs2Low: "inferred-gate-charge-curve",
+      qgdHigh: "vendor-model-measured",
+      qgdLow: "vendor-model-measured",
+      plateauHigh: "inferred-gate-charge-curve",
+      plateauLow: "inferred-gate-charge-curve",
+      gateResistanceOnHigh: "inferred-controller-driver-time",
+      gateResistanceOffHigh: "inferred-controller-driver-time",
+      gateResistanceOnLow: "inferred-controller-driver-time",
+      gateResistanceOffLow: "inferred-controller-driver-time",
+      qrrRef: "inferred-triangular-trr",
+      qrrRefCurrent: "vendor-model-test-condition",
+      vDrive: "controller-datasheet-typical",
+      cossErHigh: "missing",
+      cossErLow: "missing",
+      eossMaxVoltage: "missing"
+    },
+    values: {
+      ...symmetric({
+        rds: 8,
+        qg: 13,
+        qgs2: 2.5,
+        qgd: 4,
+        plateau: 3,
+        rgOn: 9.92,
+        rgOff: 7.44,
+        cossEr: null,
+        eossMaxVoltage: null,
+        diodeVf: 0.7,
+        qrrRef: 60,
+        qrrRefCurrent: 3,
+        vDrive: 8
+      }),
+      effectiveTurnOn: null,
+      effectiveTurnOff: null
+    }
+  }),
   ...[
     { id: "silicon-30v", label: "Silicon · 30 V", voltageClass: 30, rds: 5, qg: 20, qgs2: 4, qgd: 5, plateau: 2.5, cossEr: 800, qrrRef: 30, diodeVf: 0.8, rg: 2 },
     { id: "silicon-60v", label: "Silicon · 60 V", voltageClass: 60, rds: 10, qg: 30, qgs2: 6, qgd: 8, plateau: 3, cossEr: 500, qrrRef: 60, diodeVf: 0.85, rg: 3 },
@@ -230,7 +330,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     cornerId: "synthetic-typical-25c",
     cornerLabel: "Synthetic typical · 25 °C",
     voltageClass: item.voltageClass,
-    timingMode: "derived",
+    timingMode: "auto",
     source: TEACHING_SOURCE,
     notes: Object.freeze([
       "All values are synthetic and fixed at 25 °C for reproducible teaching examples.",

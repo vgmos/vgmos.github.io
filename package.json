@@ -22,6 +22,8 @@
     "data:buck-loss:spice:vendor:regenerate": "node scripts/buck-loss/spice/vendor-models.mjs regenerate --id infineon-bsc010n04ls6-280225 && node scripts/buck-loss/spice/vendor-models.mjs regenerate --id epc2090-ltspice-v1.104",
     "data:buck-loss:spice:vendor:verify": "node scripts/buck-loss/spice/vendor-models.mjs verify --id infineon-bsc010n04ls6-280225 && node scripts/buck-loss/spice/vendor-models.mjs verify --id epc2090-ltspice-v1.104",
     "data:buck-loss:spice:vendor:release-check": "node scripts/buck-loss/spice/vendor-models.mjs release-check --id infineon-bsc010n04ls6-280225 && node scripts/buck-loss/spice/vendor-models.mjs release-check --id epc2090-ltspice-v1.104",
+    "data:buck-loss:benchmark:write": "node scripts/buck-loss/benchmark-ti-tps40071.mjs --write",
+    "data:buck-loss:benchmark:verify": "node scripts/buck-loss/benchmark-ti-tps40071.mjs --check",
     "test:spice:committed": "node --test tests/buck-loss-spice-golden.test.mjs tests/buck-loss-vendor-model.test.mjs",
     "test:spice": "npm run data:buck-loss:spice:verify && npm run data:buck-loss:spice:vendor:verify && npm run test:spice:committed",
     "test:spice:release": "npm run test:spice && npm run data:buck-loss:spice:vendor:release-check",

@@ -1,5 +1,5 @@
 export const BUCK_LOSS_MODEL_VERSION = 2;
-export const BUCK_LOSS_MODEL_REVISION = "2.1";
+export const BUCK_LOSS_MODEL_REVISION = "2.2";
 
 const field = (config) => Object.freeze(config);
 
@@ -26,8 +26,11 @@ export const BUCK_LOSS_SCHEMA_V2 = Object.freeze({
   gateResistanceOffLow: field({ url: "rgoffl", group: "drive", timingMode: "derived", label: "Low-side turn-off gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
   effectiveTurnOn: field({ url: "teon", group: "drive", timingMode: "effective", label: "Effective turn-on overlap", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
   effectiveTurnOff: field({ url: "teoff", group: "drive", timingMode: "effective", label: "Effective turn-off overlap", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
-  deadTime: field({ url: "td", group: "timing", label: "Dead time per edge", unit: "ns", scale: 1e-9, min: 0, max: 500, default: 2 }),
+  deadTime: field({ url: "td", group: "timing", label: "Fallback dead time per edge", unit: "ns", scale: 1e-9, min: 0, max: 500, default: 2 }),
+  deadTimeHighToLow: field({ url: "tdhl", group: "timing", label: "HS→LS effective dead time", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
+  deadTimeLowToHigh: field({ url: "tdlh", group: "timing", label: "LS→HS effective dead time", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
   diodeVf: field({ url: "vsd", group: "timing", label: "Reverse-path voltage", unit: "V", scale: 1, min: 0, max: 5, default: null }),
+  reversePathResistance: field({ url: "rsd", group: "timing", label: "Reverse-path slope resistance", unit: "mΩ", scale: 1e-3, min: 0, max: 1000, default: 0 }),
   qrrRef: field({ url: "qrr", group: "timing", technology: "silicon", label: "QRR at reference current", unit: "nC", scale: 1e-9, min: 0, max: 1000, default: 0 }),
   qrrRefCurrent: field({ url: "qrri", group: "timing", technology: "silicon", label: "QRR reference current", unit: "A", scale: 1, min: 0.01, max: 200, default: 10 }),
 
@@ -50,7 +53,7 @@ export const BUCK_LOSS_SCHEMA_V2 = Object.freeze({
 export const BUCK_LOSS_ENUMS_V2 = Object.freeze({
   technology: Object.freeze(["gan", "silicon"]),
   controlMode: Object.freeze(["auto-dcm", "forced-ccm"]),
-  timingMode: Object.freeze(["derived", "effective"])
+  timingMode: Object.freeze(["auto", "derived", "effective"])
 });
 
 export const BUCK_LOSS_GROUPS_V2 = Object.freeze([
@@ -99,6 +102,10 @@ export function normalizeBuckLossInputsV2(raw = {}) {
   if (provenance.vBias === "missing") provenance.vBias = "inferred-from-vin";
   normalized.rac = normalized.rac ?? normalized.dcr;
   if (provenance.rac === "missing") provenance.rac = "inferred-rac-equals-rdc";
+  normalized.deadTimeHighToLow = normalized.deadTimeHighToLow ?? normalized.deadTime;
+  if (provenance.deadTimeHighToLow === "missing") provenance.deadTimeHighToLow = "inferred-from-dead-time";
+  normalized.deadTimeLowToHigh = normalized.deadTimeLowToHigh ?? normalized.deadTime;
+  if (provenance.deadTimeLowToHigh === "missing") provenance.deadTimeLowToHigh = "inferred-from-dead-time";
   return { inputs: normalized, provenance };
 }
 

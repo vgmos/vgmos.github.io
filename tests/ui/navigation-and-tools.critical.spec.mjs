@@ -198,8 +198,9 @@ test.describe("Buck Converter Loss Tool", () => {
     const chooserGroups = chooser.locator(".blx-device-choice-group");
     await expect(chooserGroups).toHaveCount(2);
     await expect(chooserGroups.nth(0).getByRole("heading", { level: 3 })).toHaveText("Manufacturer-sourced");
-    await expect(chooserGroups.nth(0).locator("[data-blx-device-choice]")).toHaveCount(2);
+    await expect(chooserGroups.nth(0).locator("[data-blx-device-choice]")).toHaveCount(3);
     await expect(chooserGroups.nth(0)).toContainText("Infineon BSC010N04LS6 pair");
+    await expect(chooserGroups.nth(0)).toContainText("Vishay Si7860DP pair · TI TPS40071EVM");
     await expect(chooserGroups.nth(1).getByRole("heading", { level: 3 })).toHaveText("Example FETs");
     await expect(chooserGroups.nth(1).locator("[data-blx-device-choice]")).toHaveCount(3);
     const epc = page.locator('[data-blx-device-choice="epc2090"]');
@@ -294,6 +295,27 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("never counted as zero");
   });
 
+  test("touch coverage popovers stay pinned until their close button is tapped", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=infineon-bsc010n04ls6-4v5&control=auto-dcm&timing=effective&i=2", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    const trigger = page.locator("[data-blx-efficiency-label]");
+    const coverage = page.locator("[data-blx-coverage-popover]");
+    await trigger.dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true });
+    await trigger.dispatchEvent("click", { detail: 1 });
+    await trigger.dispatchEvent("pointerup", { pointerType: "touch", isPrimary: true });
+    await trigger.dispatchEvent("pointerout", { pointerType: "touch", isPrimary: true });
+    await trigger.dispatchEvent("focusout");
+    await page.waitForTimeout(250);
+
+    await expect(coverage).toBeVisible();
+    await page.locator("main").dispatchEvent("pointerdown", { pointerType: "touch", isPrimary: true });
+    await expect(coverage).toBeVisible();
+    await coverage.locator("[data-blx-coverage-close]").click();
+    await expect(coverage).toBeHidden();
+  });
+
   test("presets, keyboard cursor, equation details, URL state, copy, and related navigation work", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -302,10 +324,14 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(root).toHaveAttribute("aria-busy", "false");
     await expect(page.locator("[data-blx-catalog]")).toHaveAttribute("data-catalog-state", "ready");
     await expect(root).toHaveAttribute("data-blx-model", "2");
-    await expect(root).toHaveAttribute("data-blx-revision", "2.1");
+    await expect(root).toHaveAttribute("data-blx-revision", "2.2");
     await expect(page.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
-    await expect(page.locator(".blx-operating-metric")).toHaveCount(6);
+    await expect(page.locator("[data-blx-operating-metrics] .blx-operating-metric")).toHaveCount(6);
+    await expect(page.locator("[data-blx-confidence-metrics] .blx-operating-metric")).toHaveCount(4);
+    await expect(page.locator("[data-blx-confidence-metrics]")).toContainText("Effective-time fallback · low");
+    await expect(page.locator("[data-blx-confidence-copy]")).toContainText("engineering bounds, not a statistical confidence interval");
+    await expect(page.locator("[data-blx-timing-mode]")).toHaveValue("auto");
     await expect(page.locator("[data-blx-availability-label]")).toHaveText("Total");
     await expect(page.locator("[data-blx-model-label]")).toHaveCount(0);
     await expect(page.locator("[data-blx-device-summary]")).toContainText("Mixed datasheet typical · 25 °C");
@@ -318,6 +344,19 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-presets] button")).toHaveCount(3);
     await expect(page.locator("[data-blx-try]")).toHaveCount(0);
     await expect(page.locator(".blx-page")).not.toContainText("Light-load sensitive");
+    const timingGroup = page.locator('[data-blx-v2-group="timing"]');
+    await timingGroup.locator("summary").click();
+    await expect(page.locator("#blx-v2-deadTimeHighToLow")).toHaveValue("");
+    await expect(page.locator("#blx-v2-deadTimeLowToHigh")).toHaveValue("");
+    const lossBeforeEdgeEdit = await page.locator('[data-blx-out="loss"]').textContent();
+    await page.locator("#blx-v2-deadTimeHighToLow").fill("7");
+    await page.locator("#blx-v2-deadTimeHighToLow").press("Tab");
+    await expect.poll(() => new URL(page.url()).searchParams.get("tdhl")).toBe("7");
+    await expect(page.locator('[data-blx-out="loss"]')).not.toHaveText(lossBeforeEdgeEdit || "");
+    await expect(page.locator("[data-blx-confidence-metrics]")).toContainText("LS full-zvs · HS hard-switching");
+    await page.locator("#blx-v2-deadTimeHighToLow").fill("");
+    await page.locator("#blx-v2-deadTimeHighToLow").press("Tab");
+    await expect.poll(() => new URL(page.url()).searchParams.has("tdhl")).toBe(false);
     const mismatch = page.locator('[data-blx-view-panel="point"] [data-blx-report-mismatch]');
     await expect(mismatch).toHaveAttribute("href", /github\.com\/vgmos\/vgmos\.github\.io\/issues\/new/);
     const mismatchBody = await mismatch.getAttribute("href").then((href) => new URL(href).searchParams.get("body"));
@@ -552,7 +591,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await page.locator("#blx-v2-deadTime").press("Tab");
     await expect(root).toHaveAttribute("data-blx-mode", "infeasible");
     await expect(failure).toContainText("Dead time consumes the switching period");
-    await expect(failure.locator("[data-blx-failure-equation]")).toContainText("2tDEAD / TSW = 1");
+    await expect(failure.locator("[data-blx-failure-equation]")).toContainText("(tDEAD,HS→LS + tDEAD,LS→HS) / TSW = 1");
     await expect(page.locator("[data-blx-family]")).toHaveCount(0);
 
     await page.locator("#blx-v2-deadTime").fill("2");

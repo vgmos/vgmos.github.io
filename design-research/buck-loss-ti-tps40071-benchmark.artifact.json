@@ -1,0 +1,1829 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "TI TPS40071EVM Buck-Loss Benchmark",
+    "description": "Measured-versus-calculated efficiency and known power loss for a discrete synchronous buck converter.",
+    "generatedAt": "2026-07-11T12:00:00Z",
+    "cards": [
+      {
+        "id": "efficiency_mae",
+        "dataset": "overall_summary",
+        "sourceId": "benchmark_calculation",
+        "description": "Mean absolute efficiency error across all 27 nominal-lane points from 2 A through 10 A.",
+        "metrics": [
+          {
+            "label": "Efficiency MAE",
+            "field": "efficiencyMaePp",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "worst_efficiency_error",
+        "dataset": "overall_summary",
+        "sourceId": "benchmark_calculation",
+        "description": "Largest absolute nominal-lane efficiency error; the strict threshold is 1.5 percentage points.",
+        "metrics": [
+          {
+            "label": "Worst error",
+            "field": "efficiencyWorstAbsPp",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "median_loss_error",
+        "dataset": "overall_summary",
+        "sourceId": "benchmark_calculation",
+        "description": "Median absolute relative error between the modeled known-loss subtotal and measured total loss.",
+        "metrics": [
+          {
+            "label": "Median loss error",
+            "field": "medianAbsLossErrorPct",
+            "format": "number"
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "efficiency_12v",
+        "title": "12 V input efficiency across load",
+        "subtitle": "TI measured total efficiency versus nominal and hot-RDS(on) calculator ceilings, 3.3 V output and 300 kHz.",
+        "type": "line",
+        "dataset": "curve_12v_efficiency",
+        "sourceId": "benchmark_calculation",
+        "xAxisTitle": "Output current (A)",
+        "yAxisTitle": "Efficiency (%)",
+        "unit": "%",
+        "encodings": {
+          "x": {
+            "field": "loadA",
+            "type": "quantitative",
+            "label": "Output current"
+          },
+          "y": {
+            "field": "value",
+            "type": "quantitative",
+            "label": "Efficiency"
+          },
+          "color": {
+            "field": "series",
+            "type": "nominal",
+            "label": "Series"
+          },
+          "tooltip": [
+            {
+              "field": "vinV",
+              "type": "quantitative",
+              "label": "Input voltage"
+            },
+            {
+              "field": "measuredLossW",
+              "type": "quantitative",
+              "label": "Measured loss"
+            }
+          ]
+        }
+      },
+      {
+        "id": "loss_12v",
+        "title": "12 V input power loss across load",
+        "subtitle": "Measured board total versus modeled known-loss subtotal; the calculator traces are not complete total-loss estimates.",
+        "type": "line",
+        "dataset": "curve_12v_loss",
+        "sourceId": "benchmark_calculation",
+        "xAxisTitle": "Output current (A)",
+        "yAxisTitle": "Power loss (W)",
+        "unit": "W",
+        "encodings": {
+          "x": {
+            "field": "loadA",
+            "type": "quantitative",
+            "label": "Output current"
+          },
+          "y": {
+            "field": "value",
+            "type": "quantitative",
+            "label": "Power loss"
+          },
+          "color": {
+            "field": "series",
+            "type": "nominal",
+            "label": "Series"
+          },
+          "tooltip": [
+            {
+              "field": "measuredEfficiencyPct",
+              "type": "quantitative",
+              "label": "Measured efficiency"
+            }
+          ]
+        }
+      },
+      {
+        "id": "nominal_error",
+        "title": "Nominal efficiency error by input voltage",
+        "subtitle": "Calculated efficiency minus TI measured efficiency; positive values overstate efficiency.",
+        "type": "line",
+        "dataset": "nominal_error",
+        "sourceId": "benchmark_calculation",
+        "xAxisTitle": "Output current (A)",
+        "yAxisTitle": "Efficiency error (percentage points)",
+        "unit": "pp",
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0,
+            "label": "No error"
+          }
+        ],
+        "encodings": {
+          "x": {
+            "field": "loadA",
+            "type": "quantitative",
+            "label": "Output current"
+          },
+          "y": {
+            "field": "efficiencyErrorPp",
+            "type": "quantitative",
+            "label": "Efficiency error"
+          },
+          "color": {
+            "field": "series",
+            "type": "nominal",
+            "label": "Input voltage"
+          },
+          "tooltip": [
+            {
+              "field": "measuredEfficiencyPct",
+              "type": "quantitative",
+              "label": "Measured efficiency"
+            },
+            {
+              "field": "calculatedEfficiencyPct",
+              "type": "quantitative",
+              "label": "Calculated efficiency"
+            },
+            {
+              "field": "measuredLossW",
+              "type": "quantitative",
+              "label": "Measured loss"
+            },
+            {
+              "field": "calculatedKnownLossW",
+              "type": "quantitative",
+              "label": "Known-loss subtotal"
+            }
+          ]
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "trace_summary",
+        "title": "Accuracy metrics by input voltage and temperature lane",
+        "subtitle": "Nine load points per trace, 2-10 A; only the 25 °C nominal lane controls acceptance.",
+        "dataset": "trace_summary",
+        "sourceId": "benchmark_calculation",
+        "density": "comfortable",
+        "defaultSort": {
+          "field": "vinV",
+          "direction": "asc"
+        },
+        "columns": [
+          {
+            "field": "lane",
+            "label": "Lane",
+            "type": "text"
+          },
+          {
+            "field": "vinV",
+            "label": "VIN",
+            "format": "number",
+            "unit": "V"
+          },
+          {
+            "field": "efficiencyMaePp",
+            "label": "Efficiency MAE",
+            "format": "number",
+            "unit": "pp"
+          },
+          {
+            "field": "worstEfficiencyErrorPp",
+            "label": "Worst error",
+            "format": "number",
+            "unit": "pp"
+          },
+          {
+            "field": "medianAbsLossErrorPct",
+            "label": "Median |loss error|",
+            "format": "number",
+            "unit": "%"
+          },
+          {
+            "field": "result",
+            "label": "Strict result",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "nominal_point_detail",
+        "title": "Nominal point-by-point comparison",
+        "subtitle": "TI total efficiency/loss and calculator known-loss ceiling/subtotal at the same operating points.",
+        "dataset": "nominal_point_detail",
+        "sourceId": "benchmark_calculation",
+        "density": "compact",
+        "defaultSort": {
+          "field": "vinV",
+          "direction": "asc"
+        },
+        "columns": [
+          {
+            "field": "vinV",
+            "label": "VIN",
+            "format": "number",
+            "unit": "V"
+          },
+          {
+            "field": "loadA",
+            "label": "Load",
+            "format": "number",
+            "unit": "A"
+          },
+          {
+            "field": "measuredEfficiencyPct",
+            "label": "TI efficiency",
+            "format": "number",
+            "unit": "%"
+          },
+          {
+            "field": "calculatedEfficiencyPct",
+            "label": "Calculated ceiling",
+            "format": "number",
+            "unit": "%"
+          },
+          {
+            "field": "measuredLossW",
+            "label": "TI total loss",
+            "format": "number",
+            "unit": "W"
+          },
+          {
+            "field": "calculatedKnownLossW",
+            "label": "Known-loss subtotal",
+            "format": "number",
+            "unit": "W"
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "benchmark_calculation",
+        "label": "TI curve extraction and buck-loss v2.2 calculation",
+        "path": "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json",
+        "href": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf",
+        "query": {
+          "engine": "sqlite",
+          "language": "sql",
+          "sql": "WITH benchmark_points(lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct, measured_loss_w, calculated_known_loss_w) AS (\n  VALUES\n    ('nominal-25c', 5, 2, 96.8742, 97.145, 0.212959, 0.193966),\n    ('nominal-25c', 5, 3, 97, 96.7647, 0.306186, 0.331007),\n    ('nominal-25c', 5, 4, 97.1071, 96.4103, 0.393239, 0.491485),\n    ('nominal-25c', 5, 5, 97, 96.0677, 0.510309, 0.675396),\n    ('nominal-25c', 5, 6, 96.8398, 95.732, 0.646139, 0.882735),\n    ('nominal-25c', 5, 7, 96.6044, 95.4013, 0.811954, 1.113496),\n    ('nominal-25c', 5, 8, 96.3043, 95.0746, 1.013106, 1.367675),\n    ('nominal-25c', 5, 9, 95.7988, 94.7512, 1.302476, 1.645265),\n    ('nominal-25c', 5, 10, 95.2646, 94.4307, 1.64036, 1.946262),\n    ('nominal-25c', 8, 2, 93.5985, 96.8947, 0.451395, 0.211516),\n    ('nominal-25c', 8, 3, 94.7056, 96.5814, 0.553447, 0.350416),\n    ('nominal-25c', 8, 4, 95.5995, 96.2632, 0.607604, 0.512402),\n    ('nominal-25c', 8, 5, 95.9695, 95.9532, 0.692962, 0.695879),\n    ('nominal-25c', 8, 6, 96.0344, 95.6483, 0.817612, 0.900848),\n    ('nominal-25c', 8, 7, 95.9695, 95.3469, 0.970147, 1.127311),\n    ('nominal-25c', 8, 8, 95.7683, 95.0486, 1.166533, 1.375267),\n    ('nominal-25c', 8, 9, 95.5345, 94.7528, 1.388246, 1.644719),\n    ('nominal-25c', 8, 10, 95.3001, 94.4593, 1.627456, 1.935668),\n    ('nominal-25c', 12, 2, 91, 95.926, 0.652747, 0.2803),\n    ('nominal-25c', 12, 3, 92.3589, 96.0331, 0.819054, 0.408943),\n    ('nominal-25c', 12, 4, 93.5052, 95.5968, 0.916862, 0.607995),\n    ('nominal-25c', 12, 5, 94.0643, 95.2191, 1.041193, 0.828457),\n    ('nominal-25c', 12, 6, 94.2886, 94.8715, 1.199357, 1.07033),\n    ('nominal-25c', 12, 7, 94.2886, 94.5419, 1.39925, 1.333617),\n    ('nominal-25c', 12, 8, 94.1657, 94.2241, 1.635686, 1.61832),\n    ('nominal-25c', 12, 9, 93.9676, 93.9147, 1.906639, 1.924441),\n    ('nominal-25c', 12, 10, 93.7683, 93.6118, 2.19313, 2.251983),\n    ('hot-rds-bound', 5, 2, 96.8742, 96.9725, 0.212959, 0.206056),\n    ('hot-rds-bound', 5, 3, 97, 96.523, 0.306186, 0.356626),\n    ('hot-rds-bound', 5, 4, 97.1071, 96.0976, 0.393239, 0.536032),\n    ('hot-rds-bound', 5, 5, 97, 95.684, 0.510309, 0.744266),\n    ('hot-rds-bound', 5, 6, 96.8398, 95.2779, 0.646139, 0.981324),\n    ('hot-rds-bound', 5, 7, 96.6044, 94.8774, 0.811954, 1.247198),\n    ('hot-rds-bound', 5, 8, 96.3043, 94.4818, 1.013106, 1.541882),\n    ('hot-rds-bound', 5, 9, 95.7988, 94.0905, 1.302476, 1.865369),\n    ('hot-rds-bound', 5, 10, 95.2646, 93.703, 1.64036, 2.217651),\n    ('hot-rds-bound', 8, 2, 93.5985, 96.7115, 0.451395, 0.224424),\n    ('hot-rds-bound', 8, 3, 94.7056, 96.3479, 0.553447, 0.375261),\n    ('hot-rds-bound', 8, 4, 95.5995, 95.9718, 0.607604, 0.554044),\n    ('hot-rds-bound', 8, 5, 95.9695, 95.6016, 0.692962, 0.759118),\n    ('hot-rds-bound', 8, 6, 96.0344, 95.2359, 0.817612, 0.990487),\n    ('hot-rds-bound', 8, 7, 95.9695, 94.8737, 0.970147, 1.24815),\n    ('hot-rds-bound', 8, 8, 95.7683, 94.5149, 1.166533, 1.53211),\n    ('hot-rds-bound', 8, 9, 95.5345, 94.1591, 1.388246, 1.842368),\n    ('hot-rds-bound', 8, 10, 95.3001, 93.8062, 1.627456, 2.178924),\n    ('hot-rds-bound', 12, 2, 91, 95.7212, 0.652747, 0.295022),\n    ('hot-rds-bound', 12, 3, 92.3589, 95.7871, 0.819054, 0.435417),\n    ('hot-rds-bound', 12, 4, 93.5052, 95.2983, 0.916862, 0.651241),\n    ('hot-rds-bound', 12, 5, 94.0643, 94.8642, 1.041193, 0.893278),\n    ('hot-rds-bound', 12, 6, 94.2886, 94.4588, 1.199357, 1.161528),\n    ('hot-rds-bound', 12, 7, 94.2886, 94.0707, 1.39925, 1.455997),\n    ('hot-rds-bound', 12, 8, 94.1657, 93.6945, 1.635686, 1.776685),\n    ('hot-rds-bound', 12, 9, 93.9676, 93.327, 1.906639, 2.123596),\n    ('hot-rds-bound', 12, 10, 93.7683, 92.9663, 2.19313, 2.496733)\n)\nSELECT\n  lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct,\n  calculated_efficiency_pct - measured_efficiency_pct AS efficiency_error_pp,\n  measured_loss_w, calculated_known_loss_w,\n  calculated_known_loss_w - measured_loss_w AS loss_error_w,\n  100.0 * (calculated_known_loss_w - measured_loss_w) / measured_loss_w AS loss_error_pct\nFROM benchmark_points\nORDER BY lane_id, vin_v, load_a;",
+          "description": "Reconciles the reviewed point records produced by the committed Node model run and derives report error fields.",
+          "executed_at": "2026-07-11T12:00:00Z",
+          "tables_used": [
+            "benchmark_points (inline reviewed records generated from tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json)"
+          ],
+          "filters": [
+            "VOUT = 3.3 V",
+            "IOUT = 2-10 A inclusive",
+            "VIN in {5 V, 8 V, 12 V}",
+            "Primary acceptance lane = nominal-25c"
+          ],
+          "metric_definitions": [
+            "Measured loss = VOUT × IOUT × (1 / measured efficiency - 1)",
+            "Efficiency error = calculated known-loss efficiency ceiling - TI measured total efficiency, in percentage points",
+            "Loss error percent = (calculated known-loss subtotal - measured total loss) / measured total loss × 100",
+            "Strict pass requires every VIN trace and the combined primary lane to satisfy all three committed thresholds",
+            "Mechanism validation accepts only direct measured or instrument-derived family-loss evidence; modeled decompositions are ineligible"
+          ]
+        }
+      },
+      {
+        "id": "ti_evm_guide",
+        "label": "Texas Instruments SLUU180B",
+        "path": "SLUU180B",
+        "href": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf"
+      },
+      {
+        "id": "vishay_si7860dp",
+        "label": "Vishay Siliconix 70903",
+        "path": "70903",
+        "href": "https://www.vishay.com/docs/70903/70903.pdf"
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# TI TPS40071EVM Buck-Loss Benchmark"
+      },
+      {
+        "id": "technical_summary",
+        "type": "markdown",
+        "sourceId": "benchmark_calculation",
+        "body": "## The strict hardware benchmark fails, but the mismatch is strongly load-dependent\n\n- **Result: FAIL.** The nominal model fails the locked ≤1.0 pp MAE, ≤1.5 pp worst-error, and ≤20% median-loss-error policy when every input-voltage trace must pass.\n- Across all 27 nominal points, efficiency MAE is **1.10 pp**, worst-case error is **4.93 pp**, and median absolute loss error is **18.6%**.\n- At 12 V and 10 A, the model is close: 93.61% calculated versus 93.77% measured, with +2.7% known-loss error. At 2 A it overstates efficiency by 4.93 pp.\n- The comparison validates the calculator as an auditable loss subtotal, not yet as a strict full-board efficiency predictor.\n- Mechanism validation is **not-evaluable**: TI Figure 5-3 supplies total efficiency only, not direct conduction, transition, dead-time, magnetic, or gate-drive loss measurements."
+      },
+      {
+        "id": "headline_metrics",
+        "type": "metric-strip",
+        "cardIds": [
+          "efficiency_mae",
+          "worst_efficiency_error",
+          "median_loss_error"
+        ]
+      },
+      {
+        "id": "finding_12v_efficiency",
+        "type": "markdown",
+        "sourceId": "benchmark_calculation",
+        "body": "## The 12 V trace converges at high load but misses fixed loss at low load\n\nAt 10 A the nominal prediction is within 0.16 pp of TI. At 2 A, the calculated 95.93% ceiling is 4.93 pp above the measured curve. The widening low-load gap is consistent with omitted fixed or weakly current-dependent terms, but the published curve alone cannot identify their individual causes."
+      },
+      {
+        "id": "efficiency_12v_chart",
+        "type": "chart",
+        "chartId": "efficiency_12v"
+      },
+      {
+        "id": "finding_12v_loss",
+        "type": "markdown",
+        "sourceId": "benchmark_calculation",
+        "body": "## Measured total loss exposes what the known-loss subtotal cannot cover\n\nAt 2 A, TI's inferred total loss is 0.653 W versus 0.280 W modeled. By 10 A the values converge to 2.193 W measured and 2.252 W modeled. The hot-RDS(on) lane is a sensitivity bound, not a fitted correction."
+      },
+      {
+        "id": "loss_12v_chart",
+        "type": "chart",
+        "chartId": "loss_12v"
+      },
+      {
+        "id": "finding_cross_vin",
+        "type": "markdown",
+        "sourceId": "benchmark_calculation",
+        "body": "## The residual changes sign with input voltage, so one fitted offset would be misleading\n\nThe 8 V trace is nearly exact at 5 A (-0.02 pp) but overstates efficiency at low load. The 5 V trace instead becomes pessimistic through mid/high load; at 8 A its error is -1.23 pp. This pattern points to condition-dependent gate drive, transition, and resistance assumptions rather than a single missing constant loss."
+      },
+      {
+        "id": "nominal_error_chart",
+        "type": "chart",
+        "chartId": "nominal_error"
+      },
+      {
+        "id": "scope_definitions",
+        "type": "markdown",
+        "body": "## Scope and metric definitions\n\nThe benchmark uses TI Figure 5-3 at 3.3 V output, 300 kHz, and 2-10 A for 5 V, 8 V, and 12 V input. Published curve efficiency is converted to measured total loss as `VOUT × IOUT × (1 / η - 1)`. Calculator loss is the sum of known modeled terms; because `COSS(ER)` and inductor AC/core loss are unavailable, calculated efficiency is a known-loss ceiling. Error is calculated minus measured, in percentage points for efficiency and percent of measured total loss for power loss."
+      },
+      {
+        "id": "trace_summary_table",
+        "type": "table",
+        "tableId": "trace_summary"
+      },
+      {
+        "id": "methodology",
+        "type": "markdown",
+        "body": "## Method: published vectors, disclosed adaptations, no curve fitting\n\nThe 27 measurements come from the vector centerlines embedded in TI Figure 5-3, calibrated against every integer axis gridline. The fixture retains the source document hash and a ±0.1 pp publication/readout uncertainty. The symmetric Si7860DP pair uses TI's 8 mΩ design value, Vishay measured charge/diode data, derived gate-path timing, and a disclosed triangular recovery-charge proxy. The 5 V case uses Vishay's measured 9 mΩ value at 4.5 V gate drive. The second lane changes only both MOSFET resistances by TI's documented 1.3 temperature factor. No parameter is fitted to measured efficiency."
+      },
+      {
+        "id": "nominal_detail_table",
+        "type": "table",
+        "tableId": "nominal_point_detail"
+      },
+      {
+        "id": "limitations",
+        "type": "markdown",
+        "body": "## Limitations and robustness checks\n\nBoth model lanes remain subtotals because switch-node energy and magnetic AC/core loss are unavailable. Adaptive dead time, the populated 2.2 nF switch-node snubber, PCB/package resistance, ringing, bootstrap loss, and DBP linear-regulator overhead are outside coverage. The source figure supplies typical curves but no raw instrument readings, board temperature, laboratory uncertainty, or per-mechanism calorimetry/waveform energy. Consequently, total-loss residuals may diagnose load/voltage shape but cannot validate the modeled family decomposition. Data-quality checks confirm 27 unique in-axis points and reproduce TI's stated 96% 8 V result within the ±0.1 pp readout band. The 1.3×-RDS(on) lane tests thermal sensitivity without pretending to solve junction temperature."
+      },
+      {
+        "id": "next_steps",
+        "type": "markdown",
+        "body": "## Recommended next steps\n\n1. Add an explicit controller gate-regulator loss term so `Qg × VIN × fSW` can be reconciled with the present `Qg × VDRIVE × fSW` device term.\n2. Add source-qualified `EOSS` or `COSS(ER)` and characterize the DXM1306-1R6 AC/core loss before tightening low-load acceptance.\n3. Re-run the locked fixture after each model change; improve the strict result without adding a tuned residual or weakening the published thresholds."
+      },
+      {
+        "id": "further_questions",
+        "type": "markdown",
+        "body": "## Further questions\n\nWould raw TI bench readings, board temperatures, or the original DXM1306-1R6 characterization change the low-load attribution? Can a second discrete ADI or MPS reference design reproduce the same residual shape, or is it specific to TPS40071 predictive gate drive?"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-07-11T12:00:00Z",
+    "status": "ready",
+    "datasets": {
+      "overall_summary": [
+        {
+          "result": "FAIL",
+          "efficiencyMaePp": 1.1004,
+          "efficiencyWorstAbsPp": 4.926,
+          "medianAbsLossErrorPct": 18.6485,
+          "pointCount": 27
+        }
+      ],
+      "curve_12v_efficiency": [
+        {
+          "loadA": 2,
+          "series": "TI measured",
+          "value": 91,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 0.652747
+        },
+        {
+          "loadA": 2,
+          "series": "25 °C ceiling",
+          "value": 95.926,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 0.652747
+        },
+        {
+          "loadA": 3,
+          "series": "TI measured",
+          "value": 92.3589,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 0.819054
+        },
+        {
+          "loadA": 3,
+          "series": "25 °C ceiling",
+          "value": 96.0331,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 0.819054
+        },
+        {
+          "loadA": 4,
+          "series": "TI measured",
+          "value": 93.5052,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 0.916862
+        },
+        {
+          "loadA": 4,
+          "series": "25 °C ceiling",
+          "value": 95.5968,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 0.916862
+        },
+        {
+          "loadA": 5,
+          "series": "TI measured",
+          "value": 94.0643,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 1.041193
+        },
+        {
+          "loadA": 5,
+          "series": "25 °C ceiling",
+          "value": 95.2191,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 1.041193
+        },
+        {
+          "loadA": 6,
+          "series": "TI measured",
+          "value": 94.2886,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 1.199357
+        },
+        {
+          "loadA": 6,
+          "series": "25 °C ceiling",
+          "value": 94.8715,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 1.199357
+        },
+        {
+          "loadA": 7,
+          "series": "TI measured",
+          "value": 94.2886,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 1.39925
+        },
+        {
+          "loadA": 7,
+          "series": "25 °C ceiling",
+          "value": 94.5419,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 1.39925
+        },
+        {
+          "loadA": 8,
+          "series": "TI measured",
+          "value": 94.1657,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 1.635686
+        },
+        {
+          "loadA": 8,
+          "series": "25 °C ceiling",
+          "value": 94.2241,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 1.635686
+        },
+        {
+          "loadA": 9,
+          "series": "TI measured",
+          "value": 93.9676,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 1.906639
+        },
+        {
+          "loadA": 9,
+          "series": "25 °C ceiling",
+          "value": 93.9147,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 1.906639
+        },
+        {
+          "loadA": 10,
+          "series": "TI measured",
+          "value": 93.7683,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredLossW": 2.19313
+        },
+        {
+          "loadA": 10,
+          "series": "25 °C ceiling",
+          "value": 93.6118,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredLossW": 2.19313
+        },
+        {
+          "loadA": 2,
+          "series": "1.3× RDS ceiling",
+          "value": 95.7212,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 0.652747
+        },
+        {
+          "loadA": 3,
+          "series": "1.3× RDS ceiling",
+          "value": 95.7871,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 0.819054
+        },
+        {
+          "loadA": 4,
+          "series": "1.3× RDS ceiling",
+          "value": 95.2983,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 0.916862
+        },
+        {
+          "loadA": 5,
+          "series": "1.3× RDS ceiling",
+          "value": 94.8642,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 1.041193
+        },
+        {
+          "loadA": 6,
+          "series": "1.3× RDS ceiling",
+          "value": 94.4588,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 1.199357
+        },
+        {
+          "loadA": 7,
+          "series": "1.3× RDS ceiling",
+          "value": 94.0707,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 1.39925
+        },
+        {
+          "loadA": 8,
+          "series": "1.3× RDS ceiling",
+          "value": 93.6945,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 1.635686
+        },
+        {
+          "loadA": 9,
+          "series": "1.3× RDS ceiling",
+          "value": 93.327,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 1.906639
+        },
+        {
+          "loadA": 10,
+          "series": "1.3× RDS ceiling",
+          "value": 92.9663,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredLossW": 2.19313
+        }
+      ],
+      "curve_12v_loss": [
+        {
+          "loadA": 2,
+          "series": "TI total",
+          "value": 0.652747,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 91
+        },
+        {
+          "loadA": 2,
+          "series": "25 °C subtotal",
+          "value": 0.2803,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 91
+        },
+        {
+          "loadA": 3,
+          "series": "TI total",
+          "value": 0.819054,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 92.3589
+        },
+        {
+          "loadA": 3,
+          "series": "25 °C subtotal",
+          "value": 0.408943,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 92.3589
+        },
+        {
+          "loadA": 4,
+          "series": "TI total",
+          "value": 0.916862,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 93.5052
+        },
+        {
+          "loadA": 4,
+          "series": "25 °C subtotal",
+          "value": 0.607995,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 93.5052
+        },
+        {
+          "loadA": 5,
+          "series": "TI total",
+          "value": 1.041193,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 94.0643
+        },
+        {
+          "loadA": 5,
+          "series": "25 °C subtotal",
+          "value": 0.828457,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 94.0643
+        },
+        {
+          "loadA": 6,
+          "series": "TI total",
+          "value": 1.199357,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 94.2886
+        },
+        {
+          "loadA": 6,
+          "series": "25 °C subtotal",
+          "value": 1.07033,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 94.2886
+        },
+        {
+          "loadA": 7,
+          "series": "TI total",
+          "value": 1.39925,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 94.2886
+        },
+        {
+          "loadA": 7,
+          "series": "25 °C subtotal",
+          "value": 1.333617,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 94.2886
+        },
+        {
+          "loadA": 8,
+          "series": "TI total",
+          "value": 1.635686,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 94.1657
+        },
+        {
+          "loadA": 8,
+          "series": "25 °C subtotal",
+          "value": 1.61832,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 94.1657
+        },
+        {
+          "loadA": 9,
+          "series": "TI total",
+          "value": 1.906639,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 93.9676
+        },
+        {
+          "loadA": 9,
+          "series": "25 °C subtotal",
+          "value": 1.924441,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 93.9676
+        },
+        {
+          "loadA": 10,
+          "series": "TI total",
+          "value": 2.19313,
+          "vinV": 12,
+          "laneId": "measured",
+          "measuredEfficiencyPct": 93.7683
+        },
+        {
+          "loadA": 10,
+          "series": "25 °C subtotal",
+          "value": 2.251983,
+          "vinV": 12,
+          "laneId": "nominal-25c",
+          "measuredEfficiencyPct": 93.7683
+        },
+        {
+          "loadA": 2,
+          "series": "1.3× RDS subtotal",
+          "value": 0.295022,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 91
+        },
+        {
+          "loadA": 3,
+          "series": "1.3× RDS subtotal",
+          "value": 0.435417,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 92.3589
+        },
+        {
+          "loadA": 4,
+          "series": "1.3× RDS subtotal",
+          "value": 0.651241,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 93.5052
+        },
+        {
+          "loadA": 5,
+          "series": "1.3× RDS subtotal",
+          "value": 0.893278,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 94.0643
+        },
+        {
+          "loadA": 6,
+          "series": "1.3× RDS subtotal",
+          "value": 1.161528,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 94.2886
+        },
+        {
+          "loadA": 7,
+          "series": "1.3× RDS subtotal",
+          "value": 1.455997,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 94.2886
+        },
+        {
+          "loadA": 8,
+          "series": "1.3× RDS subtotal",
+          "value": 1.776685,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 94.1657
+        },
+        {
+          "loadA": 9,
+          "series": "1.3× RDS subtotal",
+          "value": 2.123596,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 93.9676
+        },
+        {
+          "loadA": 10,
+          "series": "1.3× RDS subtotal",
+          "value": 2.496733,
+          "vinV": 12,
+          "laneId": "hot-rds-bound",
+          "measuredEfficiencyPct": 93.7683
+        }
+      ],
+      "nominal_error": [
+        {
+          "loadA": 2,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": 0.2708,
+          "measuredEfficiencyPct": 96.8742,
+          "calculatedEfficiencyPct": 97.145,
+          "measuredLossW": 0.212959,
+          "calculatedKnownLossW": 0.193966
+        },
+        {
+          "loadA": 3,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -0.2353,
+          "measuredEfficiencyPct": 97,
+          "calculatedEfficiencyPct": 96.7647,
+          "measuredLossW": 0.306186,
+          "calculatedKnownLossW": 0.331007
+        },
+        {
+          "loadA": 4,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -0.6968,
+          "measuredEfficiencyPct": 97.1071,
+          "calculatedEfficiencyPct": 96.4103,
+          "measuredLossW": 0.393239,
+          "calculatedKnownLossW": 0.491485
+        },
+        {
+          "loadA": 5,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -0.9323,
+          "measuredEfficiencyPct": 97,
+          "calculatedEfficiencyPct": 96.0677,
+          "measuredLossW": 0.510309,
+          "calculatedKnownLossW": 0.675396
+        },
+        {
+          "loadA": 6,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -1.1078,
+          "measuredEfficiencyPct": 96.8398,
+          "calculatedEfficiencyPct": 95.732,
+          "measuredLossW": 0.646139,
+          "calculatedKnownLossW": 0.882735
+        },
+        {
+          "loadA": 7,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -1.2031,
+          "measuredEfficiencyPct": 96.6044,
+          "calculatedEfficiencyPct": 95.4013,
+          "measuredLossW": 0.811954,
+          "calculatedKnownLossW": 1.113496
+        },
+        {
+          "loadA": 8,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -1.2297,
+          "measuredEfficiencyPct": 96.3043,
+          "calculatedEfficiencyPct": 95.0746,
+          "measuredLossW": 1.013106,
+          "calculatedKnownLossW": 1.367675
+        },
+        {
+          "loadA": 9,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -1.0476,
+          "measuredEfficiencyPct": 95.7988,
+          "calculatedEfficiencyPct": 94.7512,
+          "measuredLossW": 1.302476,
+          "calculatedKnownLossW": 1.645265
+        },
+        {
+          "loadA": 10,
+          "series": "VIN = 5 V",
+          "vinV": 5,
+          "efficiencyErrorPp": -0.8339,
+          "measuredEfficiencyPct": 95.2646,
+          "calculatedEfficiencyPct": 94.4307,
+          "measuredLossW": 1.64036,
+          "calculatedKnownLossW": 1.946262
+        },
+        {
+          "loadA": 2,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": 3.2962,
+          "measuredEfficiencyPct": 93.5985,
+          "calculatedEfficiencyPct": 96.8947,
+          "measuredLossW": 0.451395,
+          "calculatedKnownLossW": 0.211516
+        },
+        {
+          "loadA": 3,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": 1.8758,
+          "measuredEfficiencyPct": 94.7056,
+          "calculatedEfficiencyPct": 96.5814,
+          "measuredLossW": 0.553447,
+          "calculatedKnownLossW": 0.350416
+        },
+        {
+          "loadA": 4,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": 0.6637,
+          "measuredEfficiencyPct": 95.5995,
+          "calculatedEfficiencyPct": 96.2632,
+          "measuredLossW": 0.607604,
+          "calculatedKnownLossW": 0.512402
+        },
+        {
+          "loadA": 5,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": -0.0163,
+          "measuredEfficiencyPct": 95.9695,
+          "calculatedEfficiencyPct": 95.9532,
+          "measuredLossW": 0.692962,
+          "calculatedKnownLossW": 0.695879
+        },
+        {
+          "loadA": 6,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": -0.3861,
+          "measuredEfficiencyPct": 96.0344,
+          "calculatedEfficiencyPct": 95.6483,
+          "measuredLossW": 0.817612,
+          "calculatedKnownLossW": 0.900848
+        },
+        {
+          "loadA": 7,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": -0.6226,
+          "measuredEfficiencyPct": 95.9695,
+          "calculatedEfficiencyPct": 95.3469,
+          "measuredLossW": 0.970147,
+          "calculatedKnownLossW": 1.127311
+        },
+        {
+          "loadA": 8,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": -0.7197,
+          "measuredEfficiencyPct": 95.7683,
+          "calculatedEfficiencyPct": 95.0486,
+          "measuredLossW": 1.166533,
+          "calculatedKnownLossW": 1.375267
+        },
+        {
+          "loadA": 9,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": -0.7817,
+          "measuredEfficiencyPct": 95.5345,
+          "calculatedEfficiencyPct": 94.7528,
+          "measuredLossW": 1.388246,
+          "calculatedKnownLossW": 1.644719
+        },
+        {
+          "loadA": 10,
+          "series": "VIN = 8 V",
+          "vinV": 8,
+          "efficiencyErrorPp": -0.8408,
+          "measuredEfficiencyPct": 95.3001,
+          "calculatedEfficiencyPct": 94.4593,
+          "measuredLossW": 1.627456,
+          "calculatedKnownLossW": 1.935668
+        },
+        {
+          "loadA": 2,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 4.926,
+          "measuredEfficiencyPct": 91,
+          "calculatedEfficiencyPct": 95.926,
+          "measuredLossW": 0.652747,
+          "calculatedKnownLossW": 0.2803
+        },
+        {
+          "loadA": 3,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 3.6742,
+          "measuredEfficiencyPct": 92.3589,
+          "calculatedEfficiencyPct": 96.0331,
+          "measuredLossW": 0.819054,
+          "calculatedKnownLossW": 0.408943
+        },
+        {
+          "loadA": 4,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 2.0916,
+          "measuredEfficiencyPct": 93.5052,
+          "calculatedEfficiencyPct": 95.5968,
+          "measuredLossW": 0.916862,
+          "calculatedKnownLossW": 0.607995
+        },
+        {
+          "loadA": 5,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 1.1548,
+          "measuredEfficiencyPct": 94.0643,
+          "calculatedEfficiencyPct": 95.2191,
+          "measuredLossW": 1.041193,
+          "calculatedKnownLossW": 0.828457
+        },
+        {
+          "loadA": 6,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 0.5829,
+          "measuredEfficiencyPct": 94.2886,
+          "calculatedEfficiencyPct": 94.8715,
+          "measuredLossW": 1.199357,
+          "calculatedKnownLossW": 1.07033
+        },
+        {
+          "loadA": 7,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 0.2533,
+          "measuredEfficiencyPct": 94.2886,
+          "calculatedEfficiencyPct": 94.5419,
+          "measuredLossW": 1.39925,
+          "calculatedKnownLossW": 1.333617
+        },
+        {
+          "loadA": 8,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": 0.0584,
+          "measuredEfficiencyPct": 94.1657,
+          "calculatedEfficiencyPct": 94.2241,
+          "measuredLossW": 1.635686,
+          "calculatedKnownLossW": 1.61832
+        },
+        {
+          "loadA": 9,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": -0.0529,
+          "measuredEfficiencyPct": 93.9676,
+          "calculatedEfficiencyPct": 93.9147,
+          "measuredLossW": 1.906639,
+          "calculatedKnownLossW": 1.924441
+        },
+        {
+          "loadA": 10,
+          "series": "VIN = 12 V",
+          "vinV": 12,
+          "efficiencyErrorPp": -0.1565,
+          "measuredEfficiencyPct": 93.7683,
+          "calculatedEfficiencyPct": 93.6118,
+          "measuredLossW": 2.19313,
+          "calculatedKnownLossW": 2.251983
+        }
+      ],
+      "trace_summary": [
+        {
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "points": 9,
+          "efficiencyMaePp": 0.8397,
+          "worstEfficiencyErrorPp": 1.2297,
+          "signedBiasPp": -0.7795,
+          "curveShapeMaePp": 0.3727,
+          "medianAbsLossErrorPct": 26.3183,
+          "result": "FAIL"
+        },
+        {
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "points": 9,
+          "efficiencyMaePp": 1.0225,
+          "worstEfficiencyErrorPp": 3.2962,
+          "signedBiasPp": 0.2743,
+          "curveShapeMaePp": 1.114,
+          "medianAbsLossErrorPct": 17.8936,
+          "result": "FAIL"
+        },
+        {
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "points": 9,
+          "efficiencyMaePp": 1.439,
+          "worstEfficiencyErrorPp": 4.926,
+          "signedBiasPp": 1.3924,
+          "curveShapeMaePp": 1.4477,
+          "medianAbsLossErrorPct": 10.758,
+          "result": "FAIL"
+        },
+        {
+          "laneId": "hot-rds-bound",
+          "lane": "1.3× RDS(on) hot sensitivity",
+          "vinV": 5,
+          "points": 9,
+          "efficiencyMaePp": 1.2536,
+          "worstEfficiencyErrorPp": 1.8225,
+          "signedBiasPp": -1.2317,
+          "curveShapeMaePp": 0.5127,
+          "medianAbsLossErrorPct": 43.2171,
+          "result": "FAIL"
+        },
+        {
+          "laneId": "hot-rds-bound",
+          "lane": "1.3× RDS(on) hot sensitivity",
+          "vinV": 8,
+          "points": 9,
+          "efficiencyMaePp": 1.2792,
+          "worstEfficiencyErrorPp": 3.113,
+          "signedBiasPp": -0.1397,
+          "curveShapeMaePp": 1.2326,
+          "medianAbsLossErrorPct": 31.3388,
+          "result": "FAIL"
+        },
+        {
+          "laneId": "hot-rds-bound",
+          "lane": "1.3× RDS(on) hot sensitivity",
+          "vinV": 12,
+          "points": 9,
+          "efficiencyMaePp": 1.4494,
+          "worstEfficiencyErrorPp": 4.7212,
+          "signedBiasPp": 0.9757,
+          "curveShapeMaePp": 1.559,
+          "medianAbsLossErrorPct": 13.8434,
+          "result": "FAIL"
+        }
+      ],
+      "nominal_point_detail": [
+        {
+          "id": "vin-5v-nominal-25c-2a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 2,
+          "measuredEfficiencyPct": 96.8742,
+          "calculatedEfficiencyPct": 97.145,
+          "efficiencyErrorPp": 0.2708,
+          "measuredLossW": 0.212959,
+          "calculatedKnownLossW": 0.193966,
+          "lossErrorW": -0.018994,
+          "lossErrorPct": -8.9189,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.3219,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-3a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 3,
+          "measuredEfficiencyPct": 97,
+          "calculatedEfficiencyPct": 96.7647,
+          "efficiencyErrorPp": -0.2353,
+          "measuredLossW": 0.306186,
+          "calculatedKnownLossW": 0.331007,
+          "lossErrorW": 0.024821,
+          "lossErrorPct": 8.1065,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.314,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-4a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 4,
+          "measuredEfficiencyPct": 97.1071,
+          "calculatedEfficiencyPct": 96.4103,
+          "efficiencyErrorPp": -0.6968,
+          "measuredLossW": 0.393239,
+          "calculatedKnownLossW": 0.491485,
+          "lossErrorW": 0.098246,
+          "lossErrorPct": 24.9838,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.306,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-5a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 5,
+          "measuredEfficiencyPct": 97,
+          "calculatedEfficiencyPct": 96.0677,
+          "efficiencyErrorPp": -0.9323,
+          "measuredLossW": 0.510309,
+          "calculatedKnownLossW": 0.675396,
+          "lossErrorW": 0.165087,
+          "lossErrorPct": 32.3503,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.2978,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-6a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 6,
+          "measuredEfficiencyPct": 96.8398,
+          "calculatedEfficiencyPct": 95.732,
+          "efficiencyErrorPp": -1.1078,
+          "measuredLossW": 0.646139,
+          "calculatedKnownLossW": 0.882735,
+          "lossErrorW": 0.236596,
+          "lossErrorPct": 36.6169,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.2895,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-7a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 7,
+          "measuredEfficiencyPct": 96.6044,
+          "calculatedEfficiencyPct": 95.4013,
+          "efficiencyErrorPp": -1.2031,
+          "measuredLossW": 0.811954,
+          "calculatedKnownLossW": 1.113496,
+          "lossErrorW": 0.301542,
+          "lossErrorPct": 37.1378,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.2811,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-8a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 8,
+          "measuredEfficiencyPct": 96.3043,
+          "calculatedEfficiencyPct": 95.0746,
+          "efficiencyErrorPp": -1.2297,
+          "measuredLossW": 1.013106,
+          "calculatedKnownLossW": 1.367675,
+          "lossErrorW": 0.354569,
+          "lossErrorPct": 34.9982,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.2726,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-9a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 9,
+          "measuredEfficiencyPct": 95.7988,
+          "calculatedEfficiencyPct": 94.7512,
+          "efficiencyErrorPp": -1.0476,
+          "measuredLossW": 1.302476,
+          "calculatedKnownLossW": 1.645265,
+          "lossErrorW": 0.342789,
+          "lossErrorPct": 26.3183,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.264,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-5v-nominal-25c-10a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 5,
+          "voutV": 3.3,
+          "loadA": 10,
+          "measuredEfficiencyPct": 95.2646,
+          "calculatedEfficiencyPct": 94.4307,
+          "efficiencyErrorPp": -0.8339,
+          "measuredLossW": 1.64036,
+          "calculatedKnownLossW": 1.946262,
+          "lossErrorW": 0.305903,
+          "lossErrorPct": 18.6485,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 2.2553,
+          "rdsHighMohm": 9,
+          "gateDriveV": 4.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-2a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 2,
+          "measuredEfficiencyPct": 93.5985,
+          "calculatedEfficiencyPct": 96.8947,
+          "efficiencyErrorPp": 3.2962,
+          "measuredLossW": 0.451395,
+          "calculatedKnownLossW": 0.211516,
+          "lossErrorW": -0.239879,
+          "lossErrorPct": -53.1417,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0466,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-3a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 3,
+          "measuredEfficiencyPct": 94.7056,
+          "calculatedEfficiencyPct": 96.5814,
+          "efficiencyErrorPp": 1.8758,
+          "measuredLossW": 0.553447,
+          "calculatedKnownLossW": 0.350416,
+          "lossErrorW": -0.203031,
+          "lossErrorPct": -36.6848,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0503,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-4a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 4,
+          "measuredEfficiencyPct": 95.5995,
+          "calculatedEfficiencyPct": 96.2632,
+          "efficiencyErrorPp": 0.6637,
+          "measuredLossW": 0.607604,
+          "calculatedKnownLossW": 0.512402,
+          "lossErrorW": -0.095201,
+          "lossErrorPct": -15.6683,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0539,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-5a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 5,
+          "measuredEfficiencyPct": 95.9695,
+          "calculatedEfficiencyPct": 95.9532,
+          "efficiencyErrorPp": -0.0163,
+          "measuredLossW": 0.692962,
+          "calculatedKnownLossW": 0.695879,
+          "lossErrorW": 0.002917,
+          "lossErrorPct": 0.421,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0575,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-6a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 6,
+          "measuredEfficiencyPct": 96.0344,
+          "calculatedEfficiencyPct": 95.6483,
+          "efficiencyErrorPp": -0.3861,
+          "measuredLossW": 0.817612,
+          "calculatedKnownLossW": 0.900848,
+          "lossErrorW": 0.083236,
+          "lossErrorPct": 10.1804,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.061,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-7a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 7,
+          "measuredEfficiencyPct": 95.9695,
+          "calculatedEfficiencyPct": 95.3469,
+          "efficiencyErrorPp": -0.6226,
+          "measuredLossW": 0.970147,
+          "calculatedKnownLossW": 1.127311,
+          "lossErrorW": 0.157163,
+          "lossErrorPct": 16.1999,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0645,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-8a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 8,
+          "measuredEfficiencyPct": 95.7683,
+          "calculatedEfficiencyPct": 95.0486,
+          "efficiencyErrorPp": -0.7197,
+          "measuredLossW": 1.166533,
+          "calculatedKnownLossW": 1.375267,
+          "lossErrorW": 0.208734,
+          "lossErrorPct": 17.8936,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0679,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-9a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 9,
+          "measuredEfficiencyPct": 95.5345,
+          "calculatedEfficiencyPct": 94.7528,
+          "efficiencyErrorPp": -0.7817,
+          "measuredLossW": 1.388246,
+          "calculatedKnownLossW": 1.644719,
+          "lossErrorW": 0.256474,
+          "lossErrorPct": 18.4747,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0712,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-8v-nominal-25c-10a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 8,
+          "voutV": 3.3,
+          "loadA": 10,
+          "measuredEfficiencyPct": 95.3001,
+          "calculatedEfficiencyPct": 94.4593,
+          "efficiencyErrorPp": -0.8408,
+          "measuredLossW": 1.627456,
+          "calculatedKnownLossW": 1.935668,
+          "lossErrorW": 0.308212,
+          "lossErrorPct": 18.9383,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 4.0745,
+          "rdsHighMohm": 8,
+          "gateDriveV": 7.5
+        },
+        {
+          "id": "vin-12v-nominal-25c-2a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 2,
+          "measuredEfficiencyPct": 91,
+          "calculatedEfficiencyPct": 95.926,
+          "efficiencyErrorPp": 4.926,
+          "measuredLossW": 0.652747,
+          "calculatedKnownLossW": 0.2803,
+          "lossErrorW": -0.372447,
+          "lossErrorPct": -57.0584,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.004,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-3a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 3,
+          "measuredEfficiencyPct": 92.3589,
+          "calculatedEfficiencyPct": 96.0331,
+          "efficiencyErrorPp": 3.6742,
+          "measuredLossW": 0.819054,
+          "calculatedKnownLossW": 0.408943,
+          "lossErrorW": -0.410111,
+          "lossErrorPct": -50.0713,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0137,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-4a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 4,
+          "measuredEfficiencyPct": 93.5052,
+          "calculatedEfficiencyPct": 95.5968,
+          "efficiencyErrorPp": 2.0916,
+          "measuredLossW": 0.916862,
+          "calculatedKnownLossW": 0.607995,
+          "lossErrorW": -0.308867,
+          "lossErrorPct": -33.6874,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0234,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-5a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 5,
+          "measuredEfficiencyPct": 94.0643,
+          "calculatedEfficiencyPct": 95.2191,
+          "efficiencyErrorPp": 1.1548,
+          "measuredLossW": 1.041193,
+          "calculatedKnownLossW": 0.828457,
+          "lossErrorW": -0.212736,
+          "lossErrorPct": -20.4319,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0331,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-6a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 6,
+          "measuredEfficiencyPct": 94.2886,
+          "calculatedEfficiencyPct": 94.8715,
+          "efficiencyErrorPp": 0.5829,
+          "measuredLossW": 1.199357,
+          "calculatedKnownLossW": 1.07033,
+          "lossErrorW": -0.129027,
+          "lossErrorPct": -10.758,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0427,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-7a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 7,
+          "measuredEfficiencyPct": 94.2886,
+          "calculatedEfficiencyPct": 94.5419,
+          "efficiencyErrorPp": 0.2533,
+          "measuredLossW": 1.39925,
+          "calculatedKnownLossW": 1.333617,
+          "lossErrorW": -0.065633,
+          "lossErrorPct": -4.6906,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0523,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-8a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 8,
+          "measuredEfficiencyPct": 94.1657,
+          "calculatedEfficiencyPct": 94.2241,
+          "efficiencyErrorPp": 0.0584,
+          "measuredLossW": 1.635686,
+          "calculatedKnownLossW": 1.61832,
+          "lossErrorW": -0.017366,
+          "lossErrorPct": -1.0617,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0619,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-9a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 9,
+          "measuredEfficiencyPct": 93.9676,
+          "calculatedEfficiencyPct": 93.9147,
+          "efficiencyErrorPp": -0.0529,
+          "measuredLossW": 1.906639,
+          "calculatedKnownLossW": 1.924441,
+          "lossErrorW": 0.017802,
+          "lossErrorPct": 0.9337,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0714,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        },
+        {
+          "id": "vin-12v-nominal-25c-10a",
+          "laneId": "nominal-25c",
+          "lane": "25 °C nominal",
+          "vinV": 12,
+          "voutV": 3.3,
+          "loadA": 10,
+          "measuredEfficiencyPct": 93.7683,
+          "calculatedEfficiencyPct": 93.6118,
+          "efficiencyErrorPp": -0.1565,
+          "measuredLossW": 2.19313,
+          "calculatedKnownLossW": 2.251983,
+          "lossErrorW": 0.058853,
+          "lossErrorPct": 2.6835,
+          "availability": "subtotal",
+          "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
+          "waveformMode": "ccm",
+          "ripplePpA": 5.0809,
+          "rdsHighMohm": 8,
+          "gateDriveV": 8
+        }
+      ]
+    },
+    "accessIssues": []
+  },
+  "sources": [
+    {
+      "id": "benchmark_calculation",
+      "label": "TI curve extraction and buck-loss v2.2 calculation",
+      "path": "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json",
+      "href": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf",
+      "query": {
+        "engine": "sqlite",
+        "language": "sql",
+        "sql": "WITH benchmark_points(lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct, measured_loss_w, calculated_known_loss_w) AS (\n  VALUES\n    ('nominal-25c', 5, 2, 96.8742, 97.145, 0.212959, 0.193966),\n    ('nominal-25c', 5, 3, 97, 96.7647, 0.306186, 0.331007),\n    ('nominal-25c', 5, 4, 97.1071, 96.4103, 0.393239, 0.491485),\n    ('nominal-25c', 5, 5, 97, 96.0677, 0.510309, 0.675396),\n    ('nominal-25c', 5, 6, 96.8398, 95.732, 0.646139, 0.882735),\n    ('nominal-25c', 5, 7, 96.6044, 95.4013, 0.811954, 1.113496),\n    ('nominal-25c', 5, 8, 96.3043, 95.0746, 1.013106, 1.367675),\n    ('nominal-25c', 5, 9, 95.7988, 94.7512, 1.302476, 1.645265),\n    ('nominal-25c', 5, 10, 95.2646, 94.4307, 1.64036, 1.946262),\n    ('nominal-25c', 8, 2, 93.5985, 96.8947, 0.451395, 0.211516),\n    ('nominal-25c', 8, 3, 94.7056, 96.5814, 0.553447, 0.350416),\n    ('nominal-25c', 8, 4, 95.5995, 96.2632, 0.607604, 0.512402),\n    ('nominal-25c', 8, 5, 95.9695, 95.9532, 0.692962, 0.695879),\n    ('nominal-25c', 8, 6, 96.0344, 95.6483, 0.817612, 0.900848),\n    ('nominal-25c', 8, 7, 95.9695, 95.3469, 0.970147, 1.127311),\n    ('nominal-25c', 8, 8, 95.7683, 95.0486, 1.166533, 1.375267),\n    ('nominal-25c', 8, 9, 95.5345, 94.7528, 1.388246, 1.644719),\n    ('nominal-25c', 8, 10, 95.3001, 94.4593, 1.627456, 1.935668),\n    ('nominal-25c', 12, 2, 91, 95.926, 0.652747, 0.2803),\n    ('nominal-25c', 12, 3, 92.3589, 96.0331, 0.819054, 0.408943),\n    ('nominal-25c', 12, 4, 93.5052, 95.5968, 0.916862, 0.607995),\n    ('nominal-25c', 12, 5, 94.0643, 95.2191, 1.041193, 0.828457),\n    ('nominal-25c', 12, 6, 94.2886, 94.8715, 1.199357, 1.07033),\n    ('nominal-25c', 12, 7, 94.2886, 94.5419, 1.39925, 1.333617),\n    ('nominal-25c', 12, 8, 94.1657, 94.2241, 1.635686, 1.61832),\n    ('nominal-25c', 12, 9, 93.9676, 93.9147, 1.906639, 1.924441),\n    ('nominal-25c', 12, 10, 93.7683, 93.6118, 2.19313, 2.251983),\n    ('hot-rds-bound', 5, 2, 96.8742, 96.9725, 0.212959, 0.206056),\n    ('hot-rds-bound', 5, 3, 97, 96.523, 0.306186, 0.356626),\n    ('hot-rds-bound', 5, 4, 97.1071, 96.0976, 0.393239, 0.536032),\n    ('hot-rds-bound', 5, 5, 97, 95.684, 0.510309, 0.744266),\n    ('hot-rds-bound', 5, 6, 96.8398, 95.2779, 0.646139, 0.981324),\n    ('hot-rds-bound', 5, 7, 96.6044, 94.8774, 0.811954, 1.247198),\n    ('hot-rds-bound', 5, 8, 96.3043, 94.4818, 1.013106, 1.541882),\n    ('hot-rds-bound', 5, 9, 95.7988, 94.0905, 1.302476, 1.865369),\n    ('hot-rds-bound', 5, 10, 95.2646, 93.703, 1.64036, 2.217651),\n    ('hot-rds-bound', 8, 2, 93.5985, 96.7115, 0.451395, 0.224424),\n    ('hot-rds-bound', 8, 3, 94.7056, 96.3479, 0.553447, 0.375261),\n    ('hot-rds-bound', 8, 4, 95.5995, 95.9718, 0.607604, 0.554044),\n    ('hot-rds-bound', 8, 5, 95.9695, 95.6016, 0.692962, 0.759118),\n    ('hot-rds-bound', 8, 6, 96.0344, 95.2359, 0.817612, 0.990487),\n    ('hot-rds-bound', 8, 7, 95.9695, 94.8737, 0.970147, 1.24815),\n    ('hot-rds-bound', 8, 8, 95.7683, 94.5149, 1.166533, 1.53211),\n    ('hot-rds-bound', 8, 9, 95.5345, 94.1591, 1.388246, 1.842368),\n    ('hot-rds-bound', 8, 10, 95.3001, 93.8062, 1.627456, 2.178924),\n    ('hot-rds-bound', 12, 2, 91, 95.7212, 0.652747, 0.295022),\n    ('hot-rds-bound', 12, 3, 92.3589, 95.7871, 0.819054, 0.435417),\n    ('hot-rds-bound', 12, 4, 93.5052, 95.2983, 0.916862, 0.651241),\n    ('hot-rds-bound', 12, 5, 94.0643, 94.8642, 1.041193, 0.893278),\n    ('hot-rds-bound', 12, 6, 94.2886, 94.4588, 1.199357, 1.161528),\n    ('hot-rds-bound', 12, 7, 94.2886, 94.0707, 1.39925, 1.455997),\n    ('hot-rds-bound', 12, 8, 94.1657, 93.6945, 1.635686, 1.776685),\n    ('hot-rds-bound', 12, 9, 93.9676, 93.327, 1.906639, 2.123596),\n    ('hot-rds-bound', 12, 10, 93.7683, 92.9663, 2.19313, 2.496733)\n)\nSELECT\n  lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct,\n  calculated_efficiency_pct - measured_efficiency_pct AS efficiency_error_pp,\n  measured_loss_w, calculated_known_loss_w,\n  calculated_known_loss_w - measured_loss_w AS loss_error_w,\n  100.0 * (calculated_known_loss_w - measured_loss_w) / measured_loss_w AS loss_error_pct\nFROM benchmark_points\nORDER BY lane_id, vin_v, load_a;",
+        "description": "Reconciles the reviewed point records produced by the committed Node model run and derives report error fields.",
+        "executed_at": "2026-07-11T12:00:00Z",
+        "tables_used": [
+          "benchmark_points (inline reviewed records generated from tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json)"
+        ],
+        "filters": [
+          "VOUT = 3.3 V",
+          "IOUT = 2-10 A inclusive",
+          "VIN in {5 V, 8 V, 12 V}",
+          "Primary acceptance lane = nominal-25c"
+        ],
+        "metric_definitions": [
+          "Measured loss = VOUT × IOUT × (1 / measured efficiency - 1)",
+          "Efficiency error = calculated known-loss efficiency ceiling - TI measured total efficiency, in percentage points",
+          "Loss error percent = (calculated known-loss subtotal - measured total loss) / measured total loss × 100",
+          "Strict pass requires every VIN trace and the combined primary lane to satisfy all three committed thresholds",
+          "Mechanism validation accepts only direct measured or instrument-derived family-loss evidence; modeled decompositions are ineligible"
+        ]
+      }
+    },
+    {
+      "id": "ti_evm_guide",
+      "label": "Texas Instruments SLUU180B",
+      "path": "SLUU180B",
+      "href": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf"
+    },
+    {
+      "id": "vishay_si7860dp",
+      "label": "Vishay Siliconix 70903",
+      "path": "70903",
+      "href": "https://www.vishay.com/docs/70903/70903.pdf"
+    }
+  ]
+}

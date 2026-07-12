@@ -63,6 +63,10 @@ describe("buck loss v2 contracts", () => {
     const normalized = normalizeBuckLossInputsV2(applyBuckLossDeviceTemplateV2(rawDefaultsV2(), "epc2090").rawInputs);
     assert.equal(normalized.provenance.vBias, "inferred-from-vin");
     assert.equal(normalized.provenance.rac, "inferred-rac-equals-rdc");
+    assert.equal(inputs.deadTimeHighToLow, inputs.deadTime);
+    assert.equal(inputs.deadTimeLowToHigh, inputs.deadTime);
+    assert.equal(normalized.provenance.deadTimeHighToLow, "inferred-from-dead-time");
+    assert.equal(normalized.provenance.deadTimeLowToHigh, "inferred-from-dead-time");
     assert.deepEqual(validateBuckLossInputsV2(inputs), { valid: true, errors: [] });
   });
 
@@ -105,7 +109,7 @@ describe("buck loss v2 contracts", () => {
     assert.equal(infineon.partNumber, "BSC010N04LS6");
     assert.equal(infineon.cornerId, "mixed-datasheet-25c-vgs4v5");
     assert.equal(infineon.voltageClass, 40);
-    assert.equal(infineon.timingMode, "effective");
+    assert.equal(infineon.timingMode, "auto");
     assert.equal(infineon.values.rdsHigh, 1.1);
     assert.equal(infineon.values.rdsLow, 1.1);
     assert.equal(infineon.values.qgHigh, 32);
@@ -200,7 +204,7 @@ describe("buck loss v2 contracts", () => {
     const point = computeBuckLossPointV2(inputs, 2, context);
     assert.equal(point.modelVersion, 2);
     assert.equal(point.modelRevision, BUCK_LOSS_MODEL_REVISION);
-    assert.equal(point.modelRevision, "2.1");
+    assert.equal(point.modelRevision, "2.2");
     assert.equal(point.technology, "gan");
     assert.equal(point.catalogKind, "manufacturer");
     assert.equal(point.deviceTemplate, "epc2090");
@@ -227,10 +231,16 @@ describe("buck loss v2 contracts", () => {
     assert.ok(Number.isFinite(point.pLoss));
     assert.ok(Number.isFinite(point.pInEstimated));
     assert.ok(Number.isFinite(point.efficiency));
+    assert.equal(point.transition.method, "effective-fallback");
+    assert.equal(point.transition.selectedBy, "automatic-hierarchy");
+    assert.equal(point.uncertainty.status, "bounded-total");
+    assert.ok(point.uncertainty.lossW.low <= point.pLoss);
+    assert.ok(point.uncertainty.lossW.high >= point.pLoss);
+    assert.equal(point.commutation.accounting, "diagnostic-only-no-zvs-credit");
 
     const sweep = computeBuckLossSweepV2(inputs, context, { points: 180 });
     assert.equal(sweep.modelVersion, 2);
-    assert.equal(sweep.modelRevision, "2.1");
+    assert.equal(sweep.modelRevision, "2.2");
     assert.equal(sweep.points.length, 180);
     assert.ok(sweep.annotations.peakEfficiency);
     assert.ok(Number.isFinite(sweep.annotations.ccmBoundary));
@@ -320,6 +330,42 @@ describe("buck loss v2 waveform kernel", () => {
     }
     assert.ok(Math.abs(below.duties.highSide - above.duties.highSide) < 0.001);
     assert.ok(Math.abs(below.duties.deadTime - above.duties.deadTime) < 0.001);
+  });
+
+  it("models unequal effective dead-time edges and current-dependent reverse-path drop", () => {
+    const asymmetric = setup("epc2090", {
+      deadTime: 2,
+      deadTimeHighToLow: 7,
+      deadTimeLowToHigh: 1,
+      reversePathResistance: 100
+    });
+    const waveform = computeBuckWaveformV2(asymmetric.inputs, 2, { controlMode: "forced-ccm" });
+    const deadSegments = waveform.segments.filter((segment) => segment.state === "dead-time");
+    assert.deepEqual(deadSegments.map((segment) => segment.edge), ["high-to-low", "low-to-high"]);
+    rel(deadSegments[0].duration, 7e-9);
+    rel(deadSegments[1].duration, 1e-9);
+    rel(waveform.deadTimes.highToLow, 7e-9);
+    rel(waveform.deadTimes.lowToHigh, 1e-9);
+    assert.ok(waveform.moments.deadTimeByEdge.highToLow.currentAbsAverage > waveform.moments.deadTimeByEdge.lowToHigh.currentAbsAverage);
+
+    const point = computeBuckLossPointV2(asymmetric.inputs, 2, { ...asymmetric.context, controlMode: "forced-ccm" });
+    rel(
+      point.losses.deadTimeConduction,
+      point.deadTimeBreakdown.highToLow.powerW + point.deadTimeBreakdown.lowToHigh.powerW
+    );
+    assert.ok(point.deadTimeBreakdown.highToLow.slopeResistancePowerW > 0);
+    assert.equal(point.commutation.edges.highToLow.edge, "high-to-low");
+    assert.equal(point.commutation.edges.lowToHigh.edge, "low-to-high");
+    assert.equal(point.commutation.accounting, "diagnostic-only-no-zvs-credit");
+    assert.ok(point.losses.nodeEnergy > 0, "diagnostic ZVS support must not silently credit EOSS");
+
+    const constantDrop = setup("epc2090", {
+      deadTimeHighToLow: 7,
+      deadTimeLowToHigh: 1,
+      reversePathResistance: 0
+    });
+    const constantPoint = computeBuckLossPointV2(constantDrop.inputs, 2, { ...constantDrop.context, controlMode: "forced-ccm" });
+    assert.ok(point.losses.deadTimeConduction > constantPoint.losses.deadTimeConduction);
   });
 
   it("retains forced CCM only as an explicit comparison", () => {
@@ -420,6 +466,8 @@ describe("buck loss v2 accounting", () => {
   it("uses the disclosed hard-switch swing and transition coefficients", () => {
     const gan = setup("epc2090");
     const effective = computeBuckLossPointV2(gan.inputs, 2, gan.context);
+    assert.equal(effective.transition.method, "effective-fallback");
+    assert.equal(effective.transition.evidenceClass, "assumed");
     const ganSwing = gan.inputs.vin + gan.inputs.diodeVf;
     rel(
       effective.losses.turnOnOverlap,
@@ -436,6 +484,8 @@ describe("buck loss v2 accounting", () => {
 
     const silicon = setup("silicon-30v");
     const derived = computeBuckLossPointV2(silicon.inputs, 2, silicon.context);
+    assert.equal(derived.transition.method, "derived-gate-charge");
+    assert.equal(derived.transition.selectedBy, "automatic-hierarchy");
     const siSwing = silicon.inputs.vin + silicon.inputs.diodeVf;
     const gateCurrentOn = (silicon.inputs.vDrive - silicon.inputs.plateauHigh) / silicon.inputs.gateResistanceOnHigh;
     const gateCurrentOff = silicon.inputs.plateauHigh / silicon.inputs.gateResistanceOffHigh;
@@ -452,6 +502,81 @@ describe("buck loss v2 accounting", () => {
     const dcm = computeBuckLossPointV2(silicon.inputs, 0.05, silicon.context);
     assert.equal(dcm.waveform.mode, "dcm");
     assert.equal(dcm.losses.turnOnOverlap, 0);
+  });
+
+  it("prioritizes condition-matched switching-energy evidence and prevents double counting", () => {
+    const gan = setup("epc2090");
+    const surface = {
+      kind: "measured",
+      source: { id: "synthetic-energy-surface" },
+      conditions: {
+        temperatureC: 25,
+        gateResistanceOnOhm: gan.inputs.gateResistanceOnHigh,
+        gateResistanceOffOhm: gan.inputs.gateResistanceOffHigh
+      },
+      axes: { voltageV: [10, 14], currentA: [0, 4] },
+      turnOnEnergyJ: [[10e-9, 50e-9], [30e-9, 70e-9]],
+      turnOffEnergyJ: [[20e-9, 60e-9], [40e-9, 80e-9]],
+      includesNodeEnergy: true,
+      includesReverseRecovery: true
+    };
+    const point = computeBuckLossPointV2(gan.inputs, 2, {
+      ...gan.context,
+      junctionTemperatureC: 25,
+      switchingEnergySurface: surface
+    });
+    assert.equal(point.transition.method, "measured-energy-surface");
+    assert.equal(point.transition.evidenceClass, "measured");
+    assert.equal(point.transition.confidence, "high");
+    const expectedOnEnergy = 20e-9 + 40e-9 * point.waveform.iValley / 4;
+    const expectedOffEnergy = 30e-9 + 40e-9 * point.waveform.iPeak / 4;
+    rel(point.losses.turnOnOverlap, expectedOnEnergy * gan.inputs.fsw);
+    rel(point.losses.turnOffOverlap, expectedOffEnergy * gan.inputs.fsw);
+    assert.equal(point.losses.nodeEnergy, 0);
+    assert.equal(point.losses.reverseRecovery, 0);
+    assert.deepEqual(point.accounting.accountedElsewhere, {
+      reverseRecovery: "switchingTransitions",
+      nodeEnergy: "switchingTransitions"
+    });
+    assert.equal(point.equationProvenance.turnOnOverlap.formula, "EON(VIN, ION, conditions) · fSW");
+
+    const mismatch = computeBuckLossPointV2(gan.inputs, 2, {
+      ...gan.context,
+      junctionTemperatureC: 100,
+      switchingEnergySurface: surface
+    });
+    assert.equal(mismatch.transition.method, "effective-fallback");
+    assert.ok(mismatch.warnings.includes("switching-energy-surface-fallback"));
+    assert.equal(mismatch.transition.attempts[0].reason, "temperatureC-mismatch");
+    assert.ok(mismatch.losses.nodeEnergy > 0);
+  });
+
+  it("returns transparent engineering bounds and ranked sensitivity drivers", () => {
+    const gan = setup("epc2090");
+    const point = computeBuckLossPointV2(gan.inputs, 2, gan.context);
+    assert.equal(point.uncertainty.status, "bounded-total");
+    assert.equal(point.uncertainty.method, "evidence-weighted-family-envelope");
+    assert.ok(point.uncertainty.lossW.low < point.pLoss);
+    assert.ok(point.uncertainty.lossW.high > point.pLoss);
+    assert.ok(point.uncertainty.efficiency.low < point.efficiency);
+    assert.ok(point.uncertainty.efficiency.high > point.efficiency);
+    assert.equal(point.uncertainty.dominantSensitivity.family, "switchingTransitions");
+    assert.equal(point.uncertainty.dominantSensitivity.evidenceClass, "assumed");
+    const spans = point.uncertainty.contributors.map((contributor) => contributor.spanW);
+    assert.deepEqual(spans, [...spans].sort((left, right) => right - left));
+
+    const narrowed = computeBuckLossPointV2(gan.inputs, 2, {
+      ...gan.context,
+      uncertaintyProfile: { families: { switchingTransitions: 0.1 } }
+    });
+    const nominalTransition = point.uncertainty.contributors.find((entry) => entry.family === "switchingTransitions");
+    const narrowedTransition = narrowed.uncertainty.contributors.find((entry) => entry.family === "switchingTransitions");
+    assert.ok(narrowedTransition.spanW < nominalTransition.spanW);
+
+    const subtotalSetup = setup("infineon-bsc010n04ls6-4v5");
+    const subtotal = computeBuckLossPointV2(subtotalSetup.inputs, 2, subtotalSetup.context);
+    assert.equal(subtotal.uncertainty.status, "bounded-known-loss-only");
+    assert.ok(subtotal.uncertainty.caveats.some((caveat) => /omitted mechanisms/i.test(caveat)));
   });
 
   it("labels EOSS outside its characterized voltage domain as a subtotal", () => {
@@ -682,7 +807,7 @@ describe("buck loss v2 accounting", () => {
     assert.ok(dropoutWaveform.failure.values.highVoltage <= 0);
     assert.ok(Number.isFinite(dropoutWaveform.failure.values.availableSwitchFraction));
     assert.equal(invalidPoint.modelVersion, 2);
-    assert.equal(invalidPoint.modelRevision, "2.1");
+    assert.equal(invalidPoint.modelRevision, "2.2");
     assert.equal(invalidPoint.deviceTemplate, "silicon-30v");
     assert.equal(invalidPoint.parameterCorner, "synthetic-typical-25c");
     assert.equal(invalidPoint.failure.code, "dropout");

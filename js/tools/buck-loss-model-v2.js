@@ -73,6 +73,16 @@ function waveformMoments(segments, period, iout) {
       segment.duration
     );
   }
+  const deadTimeByEdge = Object.fromEntries(["high-to-low", "low-to-high"].map((edge) => {
+    const edgeSegments = segments.filter((segment) => segment.state === "dead-time" && segment.edge === edge);
+    return [edge === "high-to-low" ? "highToLow" : "lowToHigh", {
+      duration: sumSegments(edgeSegments, "duration"),
+      currentAbsIntegral: sumSegments(edgeSegments, "currentAbsIntegral"),
+      currentSquareIntegral: sumSegments(edgeSegments, "currentSquareIntegral"),
+      currentAbsAverage: sumSegments(edgeSegments, "currentAbsIntegral") / period,
+      currentSquareAverage: sumSegments(edgeSegments, "currentSquareIntegral") / period
+    }];
+  }));
   return {
     currentAverage: currentIntegral / period,
     iLrms2: currentSquareIntegral / period,
@@ -81,7 +91,9 @@ function waveformMoments(segments, period, iout) {
     outputCapRms2: outputCapSquareIntegral / period,
     highSideRms2: sumSegments(segments.filter((segment) => segment.state === "high-side"), "currentSquareIntegral") / period,
     lowSideRms2: sumSegments(segments.filter((segment) => segment.state === "low-side"), "currentSquareIntegral") / period,
-    deadTimeCurrentAverage: sumSegments(segments.filter((segment) => segment.state === "dead-time"), "currentAbsIntegral") / period
+    deadTimeCurrentAverage: sumSegments(segments.filter((segment) => segment.state === "dead-time"), "currentAbsIntegral") / period,
+    deadTimeCurrentSquareAverage: sumSegments(segments.filter((segment) => segment.state === "dead-time"), "currentSquareIntegral") / period,
+    deadTimeByEdge
   };
 }
 
@@ -99,6 +111,7 @@ function invalidWaveform(errors, mode = "invalid", failure = null) {
     mode,
     segments: [],
     duties: { highSide: null, lowSide: null, deadTime: null, zeroCurrent: null },
+    deadTimes: { highToLow: null, lowToHigh: null },
     moments: null,
     period: null,
     iPeak: null,
@@ -109,28 +122,35 @@ function invalidWaveform(errors, mode = "invalid", failure = null) {
 
 function ccmWaveform(inputs, iout) {
   const period = 1 / inputs.fsw;
-  const dead = inputs.deadTime;
-  const deadFraction = dead / period;
-  if (!(dead >= 0) || 2 * dead >= period) {
+  const deadHighToLow = inputs.deadTimeHighToLow;
+  const deadLowToHigh = inputs.deadTimeLowToHigh;
+  const totalDeadTime = deadHighToLow + deadLowToHigh;
+  const totalDeadFraction = totalDeadTime / period;
+  const deadFraction = totalDeadFraction / 2;
+  if (!(deadHighToLow >= 0 && deadLowToHigh >= 0) || totalDeadTime >= period) {
     return invalidWaveform(["dead-time-infeasible"], "ccm", {
       code: "dead-time-infeasible",
       period,
       deadFraction,
-      availableSwitchFraction: 1 - 2 * deadFraction
+      deadFractionTotal: totalDeadFraction,
+      deadTimeHighToLow: deadHighToLow,
+      deadTimeLowToHigh: deadLowToHigh,
+      availableSwitchFraction: 1 - totalDeadFraction
     });
   }
 
   const rInductor = inputs.dcr;
   const highVoltage = inputs.vin - inputs.vout - iout * (inputs.rdsHigh + rInductor);
   const lowVoltage = -inputs.vout - iout * (inputs.rdsLow + rInductor);
-  const deadVoltage = -inputs.vout - inputs.diodeVf - iout * rInductor;
+  const deadVoltage = -inputs.vout - inputs.diodeVf - iout * (rInductor + inputs.reversePathResistance);
   if (!(highVoltage > 0)) {
     return invalidWaveform(["dropout"], "ccm", {
       code: "dropout",
       period,
       highVoltage,
       deadFraction,
-      availableSwitchFraction: 1 - 2 * deadFraction
+      deadFractionTotal: totalDeadFraction,
+      availableSwitchFraction: 1 - totalDeadFraction
     });
   }
   const denominator = highVoltage - lowVoltage;
@@ -141,20 +161,22 @@ function ccmWaveform(inputs, iout) {
       highVoltage,
       lowVoltage,
       deadFraction,
-      availableSwitchFraction: 1 - 2 * deadFraction
+      deadFractionTotal: totalDeadFraction,
+      availableSwitchFraction: 1 - totalDeadFraction
     });
   }
 
-  const highFraction = -(lowVoltage + 2 * deadFraction * (deadVoltage - lowVoltage)) / denominator;
-  const lowFraction = 1 - highFraction - 2 * deadFraction;
+  const highFraction = -(lowVoltage + totalDeadFraction * (deadVoltage - lowVoltage)) / denominator;
+  const lowFraction = 1 - highFraction - totalDeadFraction;
   if (!(highFraction > 0 && highFraction < 1) || lowFraction < -1e-10) {
     const code = lowFraction < 0 ? "low-side-window-negative" : "duty-infeasible";
     return invalidWaveform([code], "ccm", {
       code,
       period,
       deadFraction,
+      deadFractionTotal: totalDeadFraction,
       requiredHighFraction: highFraction,
-      availableSwitchFraction: 1 - 2 * deadFraction,
+      availableSwitchFraction: 1 - totalDeadFraction,
       lowFraction,
       highVoltage,
       lowVoltage
@@ -168,9 +190,9 @@ function ccmWaveform(inputs, iout) {
   const slopeDead = deadVoltage / inputs.inductance;
   const relative = [
     { state: "high-side", duration: tHigh, slope: slopeHigh, sourceConnected: true },
-    { state: "dead-time", duration: dead, slope: slopeDead, sourceConnected: false },
+    { state: "dead-time", edge: "high-to-low", duration: deadHighToLow, slope: slopeDead, sourceConnected: false },
     { state: "low-side", duration: tLow, slope: slopeLow, sourceConnected: false },
-    { state: "dead-time", duration: dead, slope: slopeDead, sourceConnected: false }
+    { state: "dead-time", edge: "low-to-high", duration: deadLowToHigh, slope: slopeDead, sourceConnected: false }
   ];
 
   let current = 0;
@@ -186,8 +208,9 @@ function ccmWaveform(inputs, iout) {
       period,
       residualCurrent: current,
       deadFraction,
+      deadFractionTotal: totalDeadFraction,
       requiredHighFraction: highFraction,
-      availableSwitchFraction: 1 - 2 * deadFraction
+      availableSwitchFraction: 1 - totalDeadFraction
     });
   }
 
@@ -197,7 +220,8 @@ function ccmWaveform(inputs, iout) {
     const next = current + interval.slope * interval.duration;
     const segment = makeSegment(interval.state, interval.duration, current, next, {
       slope: interval.slope,
-      sourceConnected: interval.sourceConnected
+      sourceConnected: interval.sourceConnected,
+      ...(interval.edge ? { edge: interval.edge } : {})
     });
     current = next;
     return segment;
@@ -213,8 +237,12 @@ function ccmWaveform(inputs, iout) {
     duties: {
       highSide: highFraction,
       lowSide: Math.max(0, lowFraction),
-      deadTime: 2 * deadFraction,
+      deadTime: totalDeadFraction,
       zeroCurrent: 0
+    },
+    deadTimes: {
+      highToLow: deadHighToLow,
+      lowToHigh: deadLowToHigh
     },
     moments,
     iPeak: peak,
@@ -225,26 +253,27 @@ function ccmWaveform(inputs, iout) {
 
 function dcmCandidate(inputs, highFraction) {
   const period = 1 / inputs.fsw;
-  const dead = inputs.deadTime;
+  const deadHighToLow = inputs.deadTimeHighToLow;
+  const deadLowToHigh = inputs.deadTimeLowToHigh;
   const tHigh = highFraction * period;
-  const commandedLowWindow = period - tHigh - 2 * dead;
+  const commandedLowWindow = period - tHigh - deadHighToLow - deadLowToHigh;
   if (commandedLowWindow < -EPSILON) return { feasible: false, average: Infinity };
   const highNumerator = (inputs.vin - inputs.vout) * tHigh;
   const highDenominator = inputs.inductance + 0.5 * (inputs.rdsHigh + inputs.dcr) * tHigh;
   const peak = highDenominator > 0 ? highNumerator / highDenominator : 0;
   if (!(peak >= 0 && finite(peak))) return null;
 
-  const leadingDeadRate = (inputs.vout + inputs.diodeVf + 0.5 * peak * inputs.dcr) / inputs.inductance;
+  const leadingDeadRate = (inputs.vout + inputs.diodeVf + 0.5 * peak * (inputs.dcr + inputs.reversePathResistance)) / inputs.inductance;
   const timeToZeroInLeadingDead = leadingDeadRate > 0 ? peak / leadingDeadRate : Infinity;
-  const tLeadingDead = Math.min(dead, timeToZeroInLeadingDead);
+  const tLeadingDead = Math.min(deadHighToLow, timeToZeroInLeadingDead);
   const afterLeadingDead = Math.max(0, peak - leadingDeadRate * tLeadingDead);
   const lowRate = (inputs.vout + 0.5 * afterLeadingDead * (inputs.rdsLow + inputs.dcr)) / inputs.inductance;
   const timeToZeroInLow = afterLeadingDead > 0 && lowRate > 0 ? afterLeadingDead / lowRate : 0;
   const tLow = Math.min(Math.max(0, commandedLowWindow), timeToZeroInLow);
   const afterLow = Math.max(0, afterLeadingDead - lowRate * tLow);
-  const trailingDeadRate = (inputs.vout + inputs.diodeVf + 0.5 * afterLow * inputs.dcr) / inputs.inductance;
+  const trailingDeadRate = (inputs.vout + inputs.diodeVf + 0.5 * afterLow * (inputs.dcr + inputs.reversePathResistance)) / inputs.inductance;
   const timeToZeroInTrailingDead = afterLow > 0 && trailingDeadRate > 0 ? afterLow / trailingDeadRate : 0;
-  const tTrailingDead = Math.min(dead, timeToZeroInTrailingDead);
+  const tTrailingDead = Math.min(deadLowToHigh, timeToZeroInTrailingDead);
   const afterTrailingDead = Math.max(0, afterLow - trailingDeadRate * tTrailingDead);
   if (afterTrailingDead > Math.max(1e-9, peak * 1e-7)) return { feasible: false, average: Infinity };
 
@@ -254,9 +283,9 @@ function dcmCandidate(inputs, highFraction) {
   const zeroTime = Math.max(0, period - activeTime);
   const segments = [
     makeSegment("high-side", tHigh, 0, peak, { sourceConnected: true, slope: tHigh > 0 ? peak / tHigh : 0 }),
-    makeSegment("dead-time", tLeadingDead, peak, afterLeadingDead, { sourceConnected: false, slope: -leadingDeadRate }),
+    makeSegment("dead-time", tLeadingDead, peak, afterLeadingDead, { sourceConnected: false, slope: -leadingDeadRate, edge: "high-to-low" }),
     makeSegment("low-side", tLow, afterLeadingDead, afterLow, { sourceConnected: false, slope: -lowRate }),
-    makeSegment("dead-time", tTrailingDead, afterLow, 0, { sourceConnected: false, slope: -trailingDeadRate }),
+    makeSegment("dead-time", tTrailingDead, afterLow, 0, { sourceConnected: false, slope: -trailingDeadRate, edge: "low-to-high" }),
     makeSegment("zero-current", zeroTime, 0, 0, { sourceConnected: false, slope: 0 })
   ].filter((segment) => segment.duration > EPSILON || segment.state === "zero-current");
   const average = sumSegments(segments, "currentIntegral") / period;
@@ -277,7 +306,7 @@ function dcmCandidate(inputs, highFraction) {
 function maximumDcmCandidate(inputs) {
   const period = 1 / inputs.fsw;
   let low = 0;
-  let high = Math.max(0, 1 - 2 * inputs.deadTime / period);
+  let high = Math.max(0, 1 - (inputs.deadTimeHighToLow + inputs.deadTimeLowToHigh) / period);
   let best = dcmCandidate(inputs, low);
   for (let iteration = 0; iteration < 52; iteration += 1) {
     const mid = (low + high) / 2;
@@ -304,6 +333,7 @@ function dcmWaveform(inputs, iout) {
       segments,
       duties: { highSide: 0, lowSide: 0, deadTime: 0, zeroCurrent: 1 },
       moments: waveformMoments(segments, period, 0),
+      deadTimes: { highToLow: 0, lowToHigh: 0 },
       iPeak: 0,
       iValley: 0,
       ripplePp: 0
@@ -355,6 +385,10 @@ function dcmWaveform(inputs, iout) {
       zeroCurrent: finalCandidate.zeroTime / period
     },
     moments: waveformMoments(segments, period, iout),
+    deadTimes: {
+      highToLow: finalCandidate.tLeadingDead,
+      lowToHigh: finalCandidate.tTrailingDead
+    },
     iPeak: peak,
     iValley: 0,
     ripplePp: peak
@@ -382,31 +416,209 @@ export function findCcmBoundaryV2(inputs) {
   return maximum?.feasible ? maximum.average : null;
 }
 
-function transitionModel(inputs, timingMode) {
-  if (timingMode === "effective" && finite(inputs.effectiveTurnOn) && finite(inputs.effectiveTurnOff)) {
+function axisBracket(axis, value) {
+  if (!Array.isArray(axis) || !axis.length || axis.some((entry, index) => !finite(entry) || (index > 0 && entry <= axis[index - 1]))) {
+    return { available: false, reason: "invalid-axis" };
+  }
+  if (value < axis[0] - EPSILON || value > axis.at(-1) + EPSILON) {
+    return { available: false, reason: "outside-domain", domain: [axis[0], axis.at(-1)], value };
+  }
+  if (axis.length === 1) return { available: true, lower: 0, upper: 0, fraction: 0 };
+  for (let upper = 1; upper < axis.length; upper += 1) {
+    if (value > axis[upper] + EPSILON) continue;
+    const lower = upper - 1;
+    const span = axis[upper] - axis[lower];
+    return { available: true, lower, upper, fraction: clamp((value - axis[lower]) / span, 0, 1) };
+  }
+  const last = axis.length - 1;
+  return { available: true, lower: last, upper: last, fraction: 0 };
+}
+
+function bilinearSurfaceValue(matrix, voltageBracket, currentBracket, voltageCount, currentCount) {
+  if (!Array.isArray(matrix) || matrix.length !== voltageCount || matrix.some((row) => !Array.isArray(row) || row.length !== currentCount)) {
+    return { available: false, reason: "invalid-energy-matrix" };
+  }
+  const value = (vIndex, iIndex) => matrix[vIndex][iIndex];
+  const corners = [
+    value(voltageBracket.lower, currentBracket.lower),
+    value(voltageBracket.lower, currentBracket.upper),
+    value(voltageBracket.upper, currentBracket.lower),
+    value(voltageBracket.upper, currentBracket.upper)
+  ];
+  if (corners.some((entry) => !finite(entry) || entry < 0)) return { available: false, reason: "invalid-energy-value" };
+  const lowVoltage = corners[0] + (corners[1] - corners[0]) * currentBracket.fraction;
+  const highVoltage = corners[2] + (corners[3] - corners[2]) * currentBracket.fraction;
+  return {
+    available: true,
+    value: lowVoltage + (highVoltage - lowVoltage) * voltageBracket.fraction
+  };
+}
+
+function switchingSurfaceConditionCheck(surface, inputs, context) {
+  const conditions = surface.conditions || {};
+  const tolerance = surface.conditionTolerance || {};
+  const checks = [
+    ["temperatureC", context.junctionTemperatureC, tolerance.temperatureC ?? 0.5],
+    ["gateResistanceOnOhm", inputs.gateResistanceOnHigh, tolerance.gateResistanceOnOhm ?? 1e-6],
+    ["gateResistanceOffOhm", inputs.gateResistanceOffHigh, tolerance.gateResistanceOffOhm ?? 1e-6]
+  ];
+  for (const [key, actual, allowed] of checks) {
+    if (!finite(conditions[key])) continue;
+    if (!finite(actual)) return { available: false, reason: `${key}-missing`, expected: conditions[key], actual: null };
+    if (Math.abs(actual - conditions[key]) > allowed) {
+      return { available: false, reason: `${key}-mismatch`, expected: conditions[key], actual, tolerance: allowed };
+    }
+  }
+  return { available: true, conditions };
+}
+
+function switchingEnergySurfaceCandidate(inputs, context, currents) {
+  const surface = context.switchingEnergySurface;
+  if (!surface) return { available: false, candidate: "switching-energy-surface", reason: "not-configured" };
+  if (!["measured", "vendor-spice"].includes(surface.kind)) {
+    return { available: false, candidate: "switching-energy-surface", reason: "unsupported-evidence-kind" };
+  }
+  const conditionCheck = switchingSurfaceConditionCheck(surface, inputs, context);
+  if (!conditionCheck.available) return { ...conditionCheck, available: false, candidate: "switching-energy-surface" };
+  const voltageAxis = surface.axes?.voltageV;
+  const currentAxis = surface.axes?.currentA;
+  const voltageBracket = axisBracket(voltageAxis, inputs.vin);
+  if (!voltageBracket.available) {
+    return { ...voltageBracket, available: false, candidate: "switching-energy-surface", axis: "voltageV" };
+  }
+  const turnOnCurrentBracket = axisBracket(currentAxis, currents.turnOnCurrent);
+  if (!turnOnCurrentBracket.available) {
+    return { ...turnOnCurrentBracket, available: false, candidate: "switching-energy-surface", axis: "turnOnCurrentA" };
+  }
+  const turnOffCurrentBracket = axisBracket(currentAxis, currents.turnOffCurrent);
+  if (!turnOffCurrentBracket.available) {
+    return { ...turnOffCurrentBracket, available: false, candidate: "switching-energy-surface", axis: "turnOffCurrentA" };
+  }
+  const turnOn = bilinearSurfaceValue(
+    surface.turnOnEnergyJ,
+    voltageBracket,
+    turnOnCurrentBracket,
+    voltageAxis.length,
+    currentAxis.length
+  );
+  const turnOff = bilinearSurfaceValue(
+    surface.turnOffEnergyJ,
+    voltageBracket,
+    turnOffCurrentBracket,
+    voltageAxis.length,
+    currentAxis.length
+  );
+  if (!turnOn.available || !turnOff.available) {
     return {
-      available: true,
-      method: "effective-override",
-      effectiveTurnOn: inputs.effectiveTurnOn,
-      effectiveTurnOff: inputs.effectiveTurnOff
+      available: false,
+      candidate: "switching-energy-surface",
+      reason: turnOn.reason ?? turnOff.reason
     };
   }
+  const measured = surface.kind === "measured";
+  return {
+    available: true,
+    candidate: "switching-energy-surface",
+    method: measured ? "measured-energy-surface" : "vendor-spice-energy-surface",
+    evidenceClass: measured ? "measured" : "vendor-model",
+    confidence: measured ? "high" : "medium",
+    turnOnEnergyJ: turnOn.value,
+    turnOffEnergyJ: turnOff.value,
+    source: surface.source ?? null,
+    conditions: conditionCheck.conditions,
+    domain: {
+      voltageV: [voltageAxis[0], voltageAxis.at(-1)],
+      currentA: [currentAxis[0], currentAxis.at(-1)]
+    },
+    accounting: {
+      includesNodeEnergy: surface.includesNodeEnergy === true,
+      includesReverseRecovery: surface.includesReverseRecovery === true
+    }
+  };
+}
+
+function derivedTransitionCandidate(inputs) {
   const required = ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "gateResistanceOffHigh"];
   if (required.some((key) => !finite(inputs[key]))) {
-    return { available: false, method: null, missing: required.filter((key) => !finite(inputs[key])) };
+    return { available: false, candidate: "derived-gate-charge", reason: "missing-data", missing: required.filter((key) => !finite(inputs[key])) };
   }
   const gateCurrentOn = (inputs.vDrive - inputs.plateauHigh) / inputs.gateResistanceOnHigh;
   const gateCurrentOff = inputs.plateauHigh / inputs.gateResistanceOffHigh;
   if (!(gateCurrentOn > 0 && gateCurrentOff > 0)) {
-    return { available: false, method: null, missing: ["gate-drive-headroom"] };
+    return { available: false, candidate: "derived-gate-charge", reason: "gate-drive-headroom", missing: ["gate-drive-headroom"] };
   }
   return {
     available: true,
+    candidate: "derived-gate-charge",
     method: "derived-gate-charge",
+    evidenceClass: "analytical",
+    confidence: "medium-low",
     currentRise: inputs.qgs2High / gateCurrentOn,
     voltageFall: inputs.qgdHigh / gateCurrentOn,
     voltageRise: inputs.qgdHigh / gateCurrentOff,
-    currentFall: inputs.qgs2High / gateCurrentOff
+    currentFall: inputs.qgs2High / gateCurrentOff,
+    accounting: { includesNodeEnergy: false, includesReverseRecovery: false }
+  };
+}
+
+function effectiveTransitionCandidate(inputs, fallback) {
+  if (!finite(inputs.effectiveTurnOn) || !finite(inputs.effectiveTurnOff)) {
+    return {
+      available: false,
+      candidate: "effective-overlap",
+      reason: "missing-data",
+      missing: [
+        !finite(inputs.effectiveTurnOn) ? "effectiveTurnOn" : null,
+        !finite(inputs.effectiveTurnOff) ? "effectiveTurnOff" : null
+      ].filter(Boolean)
+    };
+  }
+  return {
+    available: true,
+    candidate: "effective-overlap",
+    method: fallback ? "effective-fallback" : "effective-override",
+    evidenceClass: "assumed",
+    confidence: "low",
+    effectiveTurnOn: inputs.effectiveTurnOn,
+    effectiveTurnOff: inputs.effectiveTurnOff,
+    accounting: { includesNodeEnergy: false, includesReverseRecovery: false }
+  };
+}
+
+function transitionModel(inputs, timingMode, context, currents) {
+  const mode = ["auto", "derived", "effective"].includes(timingMode) ? timingMode : "auto";
+  const candidates = mode === "auto"
+    ? [
+        () => switchingEnergySurfaceCandidate(inputs, context, currents),
+        () => derivedTransitionCandidate(inputs),
+        () => effectiveTransitionCandidate(inputs, true)
+      ]
+    : mode === "derived"
+      ? [() => derivedTransitionCandidate(inputs)]
+      : [() => effectiveTransitionCandidate(inputs, false)];
+  const attempts = [];
+  for (const candidate of candidates) {
+    const result = candidate();
+    attempts.push(Object.freeze(Object.fromEntries(Object.entries(result).filter(([key]) => ![
+      "turnOnEnergyJ", "turnOffEnergyJ", "currentRise", "voltageFall", "voltageRise", "currentFall",
+      "effectiveTurnOn", "effectiveTurnOff"
+    ].includes(key)))));
+    if (result.available) {
+      return {
+        ...result,
+        selectedBy: mode === "auto" ? "automatic-hierarchy" : "explicit-mode",
+        attempts
+      };
+    }
+  }
+  return {
+    available: false,
+    method: null,
+    evidenceClass: "unavailable",
+    confidence: "unavailable",
+    selectedBy: mode === "auto" ? "automatic-hierarchy" : "explicit-mode",
+    missing: [...new Set(attempts.flatMap((attempt) => attempt.missing ?? []))],
+    attempts
   };
 }
 
@@ -446,10 +658,139 @@ function currentAtTransition(waveform, kind) {
   return Math.max(0, waveform.iPeak);
 }
 
+const UNCERTAINTY_PARAMETERS_V2 = Object.freeze({
+  mosfetConduction: Object.freeze(["rdsHigh", "rdsLow"]),
+  magnetics: Object.freeze(["dcr", "rac", "inductorAcManual"]),
+  capacitors: Object.freeze(["inputEsr", "esr"]),
+  switchingTransitions: Object.freeze(["switchingEnergySurface", "qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "gateResistanceOffHigh", "effectiveTurnOn", "effectiveTurnOff"]),
+  deadTimeRecovery: Object.freeze(["deadTimeHighToLow", "deadTimeLowToHigh", "diodeVf", "reversePathResistance", "qrrRef"]),
+  gateDrive: Object.freeze(["qgHigh", "qgLow", "vDrive"]),
+  nodeEnergy: Object.freeze(["cossErHigh", "cossErLow"]),
+  controllerBias: Object.freeze(["iq", "vBias"])
+});
+
+export const DEFAULT_BUCK_LOSS_UNCERTAINTY_V2 = Object.freeze({
+  mosfetConduction: 0.2,
+  magnetics: 0.35,
+  capacitors: 0.3,
+  deadTimeRecovery: 0.4,
+  gateDrive: 0.15,
+  nodeEnergy: 0.3,
+  controllerBias: 0.2
+});
+
+function switchingTransitionUncertainty(transition) {
+  if (transition?.evidenceClass === "measured") return 0.12;
+  if (transition?.evidenceClass === "vendor-model") return 0.22;
+  if (transition?.method === "derived-gate-charge") return 0.4;
+  if (["effective-fallback", "effective-override"].includes(transition?.method)) return 0.65;
+  return 1;
+}
+
+function familyEvidence(family, transition) {
+  if (family === "switchingTransitions") return transition?.evidenceClass ?? "unavailable";
+  if (family === "deadTimeRecovery") return "first-order-commutation";
+  if (family === "nodeEnergy") return "energy-equivalent-capacitance";
+  if (family === "mosfetConduction") return "waveform-and-input-parameters";
+  if (family === "magnetics") return "mixed-input-and-characterization";
+  return "input-parameter";
+}
+
+function buildUncertainty(groupedLosses, pOut, pLoss, availability, transition, context) {
+  const overrides = context.uncertaintyProfile?.families ?? context.uncertaintyProfile ?? {};
+  const relatives = {
+    ...DEFAULT_BUCK_LOSS_UNCERTAINTY_V2,
+    switchingTransitions: switchingTransitionUncertainty(transition),
+    ...overrides
+  };
+  const contributors = Object.entries(groupedLosses).map(([family, nominalW]) => {
+    const relative = clamp(finite(relatives[family]) ? relatives[family] : 0.5, 0, 2);
+    const lowW = Math.max(0, nominalW * (1 - relative));
+    const highW = nominalW * (1 + relative);
+    return {
+      family,
+      parameters: UNCERTAINTY_PARAMETERS_V2[family] ?? [],
+      evidenceClass: familyEvidence(family, transition),
+      relativeBound: relative,
+      nominalW,
+      lowW,
+      highW,
+      spanW: highW - lowW
+    };
+  }).sort((left, right) => right.spanW - left.spanW);
+  const lowLossW = contributors.reduce((sum, contributor) => sum + contributor.lowW, 0);
+  const highLossW = contributors.reduce((sum, contributor) => sum + contributor.highW, 0);
+  const efficiencyLow = pOut > 0 ? pOut / (pOut + highLossW) : null;
+  const efficiencyHigh = pOut > 0 ? pOut / (pOut + lowLossW) : null;
+  return {
+    status: availability === "total" ? "bounded-total" : "bounded-known-loss-only",
+    method: "evidence-weighted-family-envelope",
+    confidence: availability === "subtotal" || transition?.confidence === "low" ? "low" : "medium",
+    lossW: { low: lowLossW, nominal: pLoss, high: highLossW },
+    efficiency: { low: efficiencyLow, nominal: pOut > 0 ? pOut / (pOut + pLoss) : null, high: efficiencyHigh },
+    dominantSensitivity: contributors.find((contributor) => contributor.spanW > 0) ?? null,
+    contributors,
+    caveats: [
+      "Engineering bounds, not a statistical confidence interval.",
+      "Family bounds are varied independently and then combined conservatively.",
+      ...(availability === "subtotal" ? ["The interval covers modeled losses only; omitted mechanisms remain outside the bound."] : [])
+    ]
+  };
+}
+
+function commutationDiagnostics(inputs, waveform, deadTimeBreakdown) {
+  const nodeDataAvailable = finite(inputs.cossErHigh) && finite(inputs.cossErLow) &&
+    finite(inputs.eossMaxVoltage) && inputs.vin <= inputs.eossMaxVoltage + EPSILON;
+  const capacitance = nodeDataAvailable ? inputs.cossErHigh + inputs.cossErLow : null;
+  const requiredNodeEnergyJ = nodeDataAvailable ? 0.5 * capacitance * inputs.vin * inputs.vin : null;
+  const requiredChargeC = nodeDataAvailable ? capacitance * inputs.vin : null;
+  const configurations = [
+    { key: "highToLow", edge: "high-to-low", turnOnDevice: "low-side", supportingSign: 1 },
+    { key: "lowToHigh", edge: "low-to-high", turnOnDevice: "high-side", supportingSign: -1 }
+  ];
+  const edges = Object.fromEntries(configurations.map((configuration) => {
+    const segment = waveform.segments.find((entry) => entry.state === "dead-time" && entry.edge === configuration.edge);
+    const edgeCurrentA = segment?.iStart ?? (configuration.key === "highToLow" ? waveform.iPeak : waveform.iValley);
+    const durationS = segment?.duration ?? 0;
+    const supportingCurrentA = Math.max(0, configuration.supportingSign * edgeCurrentA);
+    const availableInductorEnergyJ = 0.5 * inputs.inductance * supportingCurrentA * supportingCurrentA;
+    const availableCommutationChargeC = supportingCurrentA * durationS;
+    const energyFraction = requiredNodeEnergyJ > 0 ? availableInductorEnergyJ / requiredNodeEnergyJ : null;
+    const chargeFraction = requiredChargeC > 0 ? availableCommutationChargeC / requiredChargeC : null;
+    const zvsFraction = nodeDataAvailable ? clamp(Math.min(energyFraction, chargeFraction), 0, 1) : null;
+    const classification = waveform.mode === "zero-load-unmodeled" || (waveform.mode === "dcm" && configuration.key === "lowToHigh")
+      ? "unresolved-dcm"
+      : !nodeDataAvailable ? "unresolved-missing-node-data"
+        : zvsFraction >= 0.95 ? "full-zvs"
+          : zvsFraction > 0.05 ? "partial-zvs"
+            : "hard-switching";
+    return [configuration.key, {
+      edge: configuration.edge,
+      turnOnDevice: configuration.turnOnDevice,
+      durationS,
+      edgeCurrentA,
+      supportingCurrentA,
+      reversePathLossW: deadTimeBreakdown[configuration.key]?.powerW ?? 0,
+      requiredNodeEnergyJ,
+      availableInductorEnergyJ,
+      requiredChargeC,
+      availableCommutationChargeC,
+      zvsFraction,
+      classification
+    }];
+  }));
+  return {
+    method: "energy-and-charge-availability-diagnostic",
+    accounting: "diagnostic-only-no-zvs-credit",
+    edges,
+    caveat: "COSS(ER) is an energy-equivalent scalar; the charge check is a first-order proxy and does not replace a nonlinear commutation simulation."
+  };
+}
+
 export function computeBuckLossPointV2(inputs, iout, context = {}) {
   const technology = context.technology ?? "gan";
   const controlMode = context.controlMode ?? "auto-dcm";
-  const timingMode = context.timingMode ?? (finite(inputs.effectiveTurnOn) ? "effective" : "derived");
+  const timingMode = context.timingMode ?? "auto";
   const parameterCorner = context.parameterCorner ?? "typical-25c";
   const catalogKind = context.catalogKind ?? null;
   const waveform = computeBuckWaveformV2(inputs, iout, { controlMode, ccmBoundary: context.ccmBoundary });
@@ -487,6 +828,11 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
       groupedLosses: groupLosses(losses),
       provenance: context.provenance ?? {},
       equationProvenance: resolveBuckLossTermMetadataV2(timingMode),
+      transition: null,
+      deadTimeBreakdown: null,
+      commutation: null,
+      accounting: { accountedElsewhere: {} },
+      uncertainty: { status: "unavailable", method: null, confidence: "unavailable" },
       pOut: null,
       pLoss: null,
       pInEstimated: null,
@@ -511,15 +857,19 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   losses.inputCapEsr = moments.inputCapRms2 * inputs.inputEsr;
   losses.outputCapEsr = moments.outputCapRms2 * inputs.esr;
 
-  const transition = transitionModel(inputs, timingMode);
   const vSwing = inputs.vin + inputs.diodeVf;
   const turnOnCurrent = currentAtTransition(waveform, "turn-on");
   const turnOffCurrent = currentAtTransition(waveform, "turn-off");
+  const transition = transitionModel(inputs, timingMode, context, { turnOnCurrent, turnOffCurrent });
+  const accountedElsewhere = {};
   if (waveform.mode === "zero-load-unmodeled") {
     addGap("switchingTransitions", "zeroLoadControlBehavior");
   } else if (!transition.available) {
     addGap("switchingTransitions", "switchingTransitionsMissingData", "whole-term", { missingFields: transition.missing ?? [] });
-  } else if (transition.method === "effective-override") {
+  } else if (["measured-energy-surface", "vendor-spice-energy-surface"].includes(transition.method)) {
+    losses.turnOnOverlap = transition.turnOnEnergyJ * inputs.fsw;
+    losses.turnOffOverlap = transition.turnOffEnergyJ * inputs.fsw;
+  } else if (["effective-override", "effective-fallback"].includes(transition.method)) {
     losses.turnOnOverlap = 0.5 * vSwing * turnOnCurrent * transition.effectiveTurnOn * inputs.fsw;
     losses.turnOffOverlap = 0.5 * vSwing * turnOffCurrent * transition.effectiveTurnOff * inputs.fsw;
   } else {
@@ -527,8 +877,19 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
     losses.turnOffOverlap = vSwing * turnOffCurrent * inputs.fsw * (transition.voltageRise / 2 + transition.currentFall / 3);
   }
 
-  losses.deadTimeConduction = inputs.diodeVf * moments.deadTimeCurrentAverage;
-  if (technology === "gan") {
+  const deadTimeBreakdown = Object.fromEntries(Object.entries(moments.deadTimeByEdge).map(([edge, edgeMoments]) => [edge, {
+    durationS: edgeMoments.duration,
+    averageAbsCurrentA: edgeMoments.currentAbsAverage,
+    rmsCurrentA: Math.sqrt(Math.max(0, edgeMoments.currentSquareAverage)),
+    voltageDropPowerW: inputs.diodeVf * edgeMoments.currentAbsAverage,
+    slopeResistancePowerW: inputs.reversePathResistance * edgeMoments.currentSquareAverage,
+    powerW: inputs.diodeVf * edgeMoments.currentAbsAverage + inputs.reversePathResistance * edgeMoments.currentSquareAverage
+  }]));
+  losses.deadTimeConduction = Object.values(deadTimeBreakdown).reduce((sum, edge) => sum + edge.powerW, 0);
+  if (transition.accounting?.includesReverseRecovery) {
+    losses.reverseRecovery = 0;
+    accountedElsewhere.reverseRecovery = "switchingTransitions";
+  } else if (technology === "gan") {
     losses.reverseRecovery = 0;
   } else if (finite(inputs.qrrRef) && finite(inputs.qrrRefCurrent) && inputs.qrrRefCurrent > 0) {
     const scaledQrr = inputs.qrrRef * turnOnCurrent / inputs.qrrRefCurrent;
@@ -544,7 +905,10 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
     addGap("gateDrive", "gateDriveMissingData");
   }
 
-  if (!switchingActive) {
+  if (transition.accounting?.includesNodeEnergy && switchingActive) {
+    losses.nodeEnergy = 0;
+    accountedElsewhere.nodeEnergy = "switchingTransitions";
+  } else if (!switchingActive) {
     losses.nodeEnergy = 0;
   } else if (waveform.mode === "dcm") {
     addGap("nodeEnergy", "nodeEnergyDcmCommutationUnmodeled");
@@ -568,9 +932,15 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   const pLoss = sumKnown(losses);
   const pInEstimated = pOut + pLoss;
   const efficiency = pOut > 0 ? pOut / pInEstimated : null;
+  const availability = coverageGaps.length ? "subtotal" : "total";
+  const uncertainty = buildUncertainty(groupedLosses, pOut, pLoss, availability, transition, context);
+  const commutation = commutationDiagnostics(inputs, waveform, deadTimeBreakdown);
   if (waveform.mode === "dcm") warnings.push("dcm");
   if (waveform.mode === "zero-load-unmodeled") warnings.push("zero-load-controller-dependent");
   if (controlMode === "forced-ccm" && waveform.iValley < -EPSILON) warnings.push("negative-current-commutation-approximate");
+  if (context.switchingEnergySurface && transition.method && !transition.method.includes("energy-surface")) {
+    warnings.push("switching-energy-surface-fallback");
+  }
   if (inputs.inductorIsat !== null && waveform.iPeak > inputs.inductorIsat) warnings.push("isat");
   if (pOut > 0 && pLoss > pOut) warnings.push("high-loss");
   const gateLoss = (losses.gateDriveHigh ?? 0) + (losses.gateDriveLow ?? 0);
@@ -597,7 +967,7 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
     errors: [],
     failure: null,
     warnings: [...new Set(warnings)],
-    availability: coverageGaps.length ? "subtotal" : "total",
+    availability,
     omitted: [...new Set(omitted)],
     coverageGaps,
     provenance: context.provenance ?? {},
@@ -607,6 +977,13 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
       ccmBoundary
     },
     transition,
+    deadTimeBreakdown,
+    commutation,
+    accounting: {
+      transition: transition.accounting ?? { includesNodeEnergy: false, includesReverseRecovery: false },
+      accountedElsewhere
+    },
+    uncertainty,
     losses,
     groupedLosses,
     pOut,
