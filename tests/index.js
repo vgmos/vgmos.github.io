@@ -10,3 +10,4 @@ import "./buck-loss-url-v2.test.mjs";
 import "./buck-loss-spice-golden.test.mjs";
 import "./buck-loss-vendor-model.test.mjs";
 import "./buck-loss-textbook-v2.test.mjs";
+import "./buck-loss-ti-benchmark.test.mjs";

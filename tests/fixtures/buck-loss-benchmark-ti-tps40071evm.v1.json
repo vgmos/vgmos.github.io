@@ -1,0 +1,759 @@
+{
+  "schemaVersion": 1,
+  "id": "ti-tps40071evm-001-3v3-v1",
+  "title": "TI TPS40071EVM-001 measured 3.3 V efficiency benchmark",
+  "model": {
+    "version": 2,
+    "revision": "2.2"
+  },
+  "deviceTemplateId": "vishay-si7860dp-tps40071evm",
+  "sources": {
+    "measurement": {
+      "publisher": "Texas Instruments",
+      "documentId": "SLUU180B",
+      "title": "TPS40071 Buck Controller Evaluation Module User's Guide",
+      "revision": "Rev. B · February 2022",
+      "url": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf",
+      "sha256": "6794afce28a68ff27637ae7e48bf92fe263d75b35cf832e338137f524a6a5780",
+      "locations": [
+        "Section 3.1, pages 3-4: 1.6 µH output filter and ripple-current calculation",
+        "Section 3.2, page 4: symmetric Si7860DP selection and 8 mΩ / <30 nC design values",
+        "Figure 5-3, page 8: measured 3.3 V efficiency curves",
+        "Table 7-1, page 14: Si7860DP pair and DXM1306-1R6 BOM"
+      ]
+    },
+    "controller": {
+      "publisher": "Texas Instruments",
+      "documentId": "SLUS582J",
+      "title": "TPS40070/TPS40071 Data Sheet",
+      "revision": "Rev. J · April 2009",
+      "url": "https://www.ti.com/lit/ds/symlink/tps40070.pdf",
+      "sha256": "08fca6e3ba3a924ca46754fafa0b93847ddfcb3e31889680c6dde9a13cc07c25"
+    },
+    "mosfet": {
+      "publisher": "Vishay Siliconix",
+      "documentId": "70903",
+      "title": "SPICE Device Model Si7860DP",
+      "revision": "Rev. B · 20-Feb-2006",
+      "url": "https://www.vishay.com/docs/70903/70903.pdf",
+      "sha256": "087934b62a3d79ef0c405e342102d466ecfe9e77d3de1b45b373bbaa16bba715"
+    }
+  },
+  "measurement": {
+    "figure": "Figure 5-3 · Efficiency vs Output Current (VOUT = 3.3 V)",
+    "method": "Vector-path centerline extraction with piecewise axis-grid calibration; no raster tracing",
+    "publishedCurveUncertaintyPp": 0.1,
+    "axes": {
+      "ioutA": [
+        0,
+        15
+      ],
+      "efficiencyPercent": [
+        90,
+        98
+      ]
+    },
+    "sampleLoadsA": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "statedEfficiencyCheck": {
+      "vin": 8,
+      "vout": 3.3,
+      "efficiencyPercent": 96,
+      "source": "SLUU180B introduction: 96% efficient with VIN = 8 V and VOUT = 3.3 V"
+    },
+    "mechanismMeasurements": [],
+    "notes": [
+      "The published figure does not report raw instrument readings or measurement uncertainty.",
+      "The ±0.1 percentage-point value represents curve publication/readout uncertainty, not laboratory uncertainty.",
+      "Measured total loss is derived as VOUT × IOUT × (1 / efficiency - 1).",
+      "Figure 5-3 contains no direct per-mechanism loss measurements, so the benchmark cannot validate the modeled family decomposition."
+    ]
+  },
+  "board": {
+    "controller": "TPS40071PWP",
+    "mosfetHigh": "Vishay Si7860DP",
+    "mosfetLow": "Vishay Si7860DP",
+    "inductor": "COEV DXM1306-1R6",
+    "controlMode": "forced-ccm",
+    "rawInputs": {
+      "vin": 12,
+      "vout": 3.3,
+      "ioutMax": 10,
+      "fsw": 300,
+      "inductance": 1.6,
+      "deadTime": 0,
+      "dcr": 2.5,
+      "rac": 2.5,
+      "inductorAcManual": null,
+      "inductorIsat": null,
+      "inputEsr": 1,
+      "esr": 1,
+      "iq": 2.5,
+      "vBias": null
+    },
+    "assumptions": [
+      "Zero fixed dead time is a lower-bound representation of the TPS40071 predictive adaptive gate drive.",
+      "One milliohm input/output effective ESR is inside the guide's stated 1-3 mΩ ceramic range but is not a BOM-characterized bank value.",
+      "Inductor ripple RAC is set equal to DCR; uncharacterized magnetic AC/core residual remains omitted.",
+      "Controller DBP gate drive is approximated as 4.5 V, 7.5 V, and 8 V at 5 V, 8 V, and 12 V input respectively.",
+      "Bootstrap loss, snubber loss, PCB/package resistance, ringing, and the DBP linear-regulator gate-energy overhead remain outside model coverage."
+    ]
+  },
+  "traces": [
+    {
+      "id": "vin-5v",
+      "vin": 5,
+      "rawInputOverrides": {
+        "vin": 5,
+        "vDrive": 4.5,
+        "rdsHigh": 9,
+        "rdsLow": 9
+      },
+      "provenanceOverrides": {
+        "vDrive": "controller-low-dropout-estimate",
+        "rdsHigh": "vendor-model-measured-vgs4v5",
+        "rdsLow": "vendor-model-measured-vgs4v5"
+      },
+      "points": [
+        {
+          "iout": 2,
+          "efficiencyPercent": 96.8742
+        },
+        {
+          "iout": 3,
+          "efficiencyPercent": 97
+        },
+        {
+          "iout": 4,
+          "efficiencyPercent": 97.1071
+        },
+        {
+          "iout": 5,
+          "efficiencyPercent": 97
+        },
+        {
+          "iout": 6,
+          "efficiencyPercent": 96.8398
+        },
+        {
+          "iout": 7,
+          "efficiencyPercent": 96.6044
+        },
+        {
+          "iout": 8,
+          "efficiencyPercent": 96.3043
+        },
+        {
+          "iout": 9,
+          "efficiencyPercent": 95.7988
+        },
+        {
+          "iout": 10,
+          "efficiencyPercent": 95.2646
+        }
+      ]
+    },
+    {
+      "id": "vin-8v",
+      "vin": 8,
+      "rawInputOverrides": {
+        "vin": 8,
+        "vDrive": 7.5
+      },
+      "provenanceOverrides": {
+        "vDrive": "controller-low-dropout-estimate"
+      },
+      "points": [
+        {
+          "iout": 2,
+          "efficiencyPercent": 93.5985
+        },
+        {
+          "iout": 3,
+          "efficiencyPercent": 94.7056
+        },
+        {
+          "iout": 4,
+          "efficiencyPercent": 95.5995
+        },
+        {
+          "iout": 5,
+          "efficiencyPercent": 95.9695
+        },
+        {
+          "iout": 6,
+          "efficiencyPercent": 96.0344
+        },
+        {
+          "iout": 7,
+          "efficiencyPercent": 95.9695
+        },
+        {
+          "iout": 8,
+          "efficiencyPercent": 95.7683
+        },
+        {
+          "iout": 9,
+          "efficiencyPercent": 95.5345
+        },
+        {
+          "iout": 10,
+          "efficiencyPercent": 95.3001
+        }
+      ]
+    },
+    {
+      "id": "vin-12v",
+      "vin": 12,
+      "rawInputOverrides": {
+        "vin": 12,
+        "vDrive": 8
+      },
+      "provenanceOverrides": {
+        "vDrive": "controller-datasheet-typical"
+      },
+      "points": [
+        {
+          "iout": 2,
+          "efficiencyPercent": 91
+        },
+        {
+          "iout": 3,
+          "efficiencyPercent": 92.3589
+        },
+        {
+          "iout": 4,
+          "efficiencyPercent": 93.5052
+        },
+        {
+          "iout": 5,
+          "efficiencyPercent": 94.0643
+        },
+        {
+          "iout": 6,
+          "efficiencyPercent": 94.2886
+        },
+        {
+          "iout": 7,
+          "efficiencyPercent": 94.2886
+        },
+        {
+          "iout": 8,
+          "efficiencyPercent": 94.1657
+        },
+        {
+          "iout": 9,
+          "efficiencyPercent": 93.9676
+        },
+        {
+          "iout": 10,
+          "efficiencyPercent": 93.7683
+        }
+      ]
+    }
+  ],
+  "lanes": [
+    {
+      "id": "nominal-25c",
+      "label": "25 °C nominal",
+      "rdsMultiplier": 1,
+      "provenance": "published-25c"
+    },
+    {
+      "id": "hot-rds-bound",
+      "label": "1.3× RDS(on) hot sensitivity",
+      "rdsMultiplier": 1.3,
+      "provenance": "ti-evm-temperature-factor"
+    }
+  ],
+  "acceptance": {
+    "primaryLaneId": "nominal-25c",
+    "minLoadA": 2,
+    "maxLoadA": 10,
+    "maxEfficiencyMaePp": 1,
+    "maxEfficiencyWorstAbsPp": 1.5,
+    "maxMedianAbsLossErrorPercent": 20,
+    "policy": "Every VIN trace and the combined primary lane must pass all three thresholds. The hot lane is sensitivity-only."
+  },
+  "coverage": {
+    "requiredOmissions": [
+      "inductorCoreResidualMissingData",
+      "nodeEnergyMissingData"
+    ],
+    "benchmarkOnlyOmissions": [
+      "adaptive dead-time residual",
+      "switch-node snubber",
+      "PCB and connector resistance",
+      "bootstrap and DBP regulator overhead",
+      "temperature iteration"
+    ]
+  },
+  "expected": {
+    "modelRevision": "2.2",
+    "dataQuality": {
+      "rowCount": 27,
+      "uniqueKeyCount": 27,
+      "duplicateKeyCount": 0,
+      "invalidRowCount": 0,
+      "outOfAxesRowCount": 0,
+      "incompleteTraces": [],
+      "statedEfficiencyCheckDeltaPp": 0.0344,
+      "mechanismMeasurementCount": 0,
+      "directMechanismMeasurementCount": 0,
+      "ineligibleMechanismEvidenceCount": 0,
+      "invalidMechanismRowCount": 0,
+      "duplicateMechanismKeyCount": 0,
+      "mechanismReady": false,
+      "ready": true
+    },
+    "acceptanceStatus": "fail",
+    "mechanismValidation": {
+      "status": "not-evaluable",
+      "pass": null,
+      "reason": "no-direct-mechanism-measurements",
+      "directMeasurementCount": 0,
+      "comparisonCount": 0,
+      "excludedMeasurementCount": 0,
+      "families": []
+    },
+    "lanes": [
+      {
+        "id": "nominal-25c",
+        "acceptanceEvaluated": true,
+        "pass": false,
+        "overall": {
+          "pointCount": 27,
+          "efficiencyMaePp": 1.100409,
+          "efficiencyWorstAbsPp": 4.926047,
+          "efficiencySignedBiasPp": 0.295728,
+          "curveShapeMaePp": 1.177744,
+          "medianAbsLossErrorPercent": 18.648525,
+          "checks": {
+            "efficiencyMae": false,
+            "efficiencyWorst": false,
+            "medianLossError": true
+          },
+          "pass": false
+        },
+        "traces": [
+          {
+            "traceId": "vin-5v",
+            "vin": 5,
+            "pointCount": 9,
+            "efficiencyMaePp": 0.839714,
+            "efficiencyWorstAbsPp": 1.22972,
+            "efficiencySignedBiasPp": -0.779529,
+            "curveShapeMaePp": 0.372728,
+            "medianAbsLossErrorPercent": 26.318281,
+            "checks": {
+              "efficiencyMae": true,
+              "efficiencyWorst": true,
+              "medianLossError": false
+            },
+            "pass": false
+          },
+          {
+            "traceId": "vin-8v",
+            "vin": 8,
+            "pointCount": 9,
+            "efficiencyMaePp": 1.022549,
+            "efficiencyWorstAbsPp": 3.296228,
+            "efficiencySignedBiasPp": 0.274293,
+            "curveShapeMaePp": 1.11398,
+            "medianAbsLossErrorPercent": 17.893557,
+            "checks": {
+              "efficiencyMae": false,
+              "efficiencyWorst": false,
+              "medianLossError": true
+            },
+            "pass": false
+          },
+          {
+            "traceId": "vin-12v",
+            "vin": 12,
+            "pointCount": 9,
+            "efficiencyMaePp": 1.438963,
+            "efficiencyWorstAbsPp": 4.926047,
+            "efficiencySignedBiasPp": 1.39242,
+            "curveShapeMaePp": 1.44769,
+            "medianAbsLossErrorPercent": 10.758036,
+            "checks": {
+              "efficiencyMae": false,
+              "efficiencyWorst": false,
+              "medianLossError": true
+            },
+            "pass": false
+          }
+        ]
+      },
+      {
+        "id": "hot-rds-bound",
+        "acceptanceEvaluated": false,
+        "pass": false,
+        "overall": {
+          "pointCount": 27,
+          "efficiencyMaePp": 1.32737,
+          "efficiencyWorstAbsPp": 4.721229,
+          "efficiencySignedBiasPp": -0.131926,
+          "curveShapeMaePp": 1.283395,
+          "medianAbsLossErrorPercent": 31.338776,
+          "checks": {
+            "efficiencyMae": false,
+            "efficiencyWorst": false,
+            "medianLossError": false
+          },
+          "pass": false
+        },
+        "traces": [
+          {
+            "traceId": "vin-5v",
+            "vin": 5,
+            "pointCount": 9,
+            "efficiencyMaePp": 1.253566,
+            "efficiencyWorstAbsPp": 1.822475,
+            "efficiencySignedBiasPp": -1.23173,
+            "curveShapeMaePp": 0.512654,
+            "medianAbsLossErrorPercent": 43.217115,
+            "checks": {
+              "efficiencyMae": false,
+              "efficiencyWorst": false,
+              "medianLossError": false
+            },
+            "pass": false
+          },
+          {
+            "traceId": "vin-8v",
+            "vin": 8,
+            "pointCount": 9,
+            "efficiencyMaePp": 1.279165,
+            "efficiencyWorstAbsPp": 3.112956,
+            "efficiencySignedBiasPp": -0.139711,
+            "curveShapeMaePp": 1.232595,
+            "medianAbsLossErrorPercent": 31.338776,
+            "checks": {
+              "efficiencyMae": false,
+              "efficiencyWorst": false,
+              "medianLossError": false
+            },
+            "pass": false
+          },
+          {
+            "traceId": "vin-12v",
+            "vin": 12,
+            "pointCount": 9,
+            "efficiencyMaePp": 1.449379,
+            "efficiencyWorstAbsPp": 4.721229,
+            "efficiencySignedBiasPp": 0.975662,
+            "curveShapeMaePp": 1.559023,
+            "medianAbsLossErrorPercent": 13.84335,
+            "checks": {
+              "efficiencyMae": false,
+              "efficiencyWorst": false,
+              "medianLossError": true
+            },
+            "pass": false
+          }
+        ]
+      }
+    ],
+    "checkpoints": [
+      {
+        "laneId": "nominal-25c",
+        "vin": 5,
+        "iout": 2,
+        "measuredEfficiencyPercent": 96.8742,
+        "predictedEfficiencyPercent": 97.145029,
+        "measuredLossW": 0.212959,
+        "predictedKnownLossW": 0.193966,
+        "efficiencyErrorPp": 0.270829,
+        "lossErrorPercent": -8.918934,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 5,
+        "iout": 6,
+        "measuredEfficiencyPercent": 96.8398,
+        "predictedEfficiencyPercent": 95.732021,
+        "measuredLossW": 0.646139,
+        "predictedKnownLossW": 0.882735,
+        "efficiencyErrorPp": -1.107779,
+        "lossErrorPercent": 36.616874,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 5,
+        "iout": 10,
+        "measuredEfficiencyPercent": 95.2646,
+        "predictedEfficiencyPercent": 94.430699,
+        "measuredLossW": 1.64036,
+        "predictedKnownLossW": 1.946262,
+        "efficiencyErrorPp": -0.833901,
+        "lossErrorPercent": 18.648525,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 8,
+        "iout": 2,
+        "measuredEfficiencyPercent": 93.5985,
+        "predictedEfficiencyPercent": 96.894728,
+        "measuredLossW": 0.451395,
+        "predictedKnownLossW": 0.211516,
+        "efficiencyErrorPp": 3.296228,
+        "lossErrorPercent": -53.141685,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 8,
+        "iout": 6,
+        "measuredEfficiencyPercent": 96.0344,
+        "predictedEfficiencyPercent": 95.648254,
+        "measuredLossW": 0.817612,
+        "predictedKnownLossW": 0.900848,
+        "efficiencyErrorPp": -0.386146,
+        "lossErrorPercent": 10.180425,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 8,
+        "iout": 10,
+        "measuredEfficiencyPercent": 95.3001,
+        "predictedEfficiencyPercent": 94.459337,
+        "measuredLossW": 1.627456,
+        "predictedKnownLossW": 1.935668,
+        "efficiencyErrorPp": -0.840763,
+        "lossErrorPercent": 18.938256,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 12,
+        "iout": 2,
+        "measuredEfficiencyPercent": 91,
+        "predictedEfficiencyPercent": 95.926047,
+        "measuredLossW": 0.652747,
+        "predictedKnownLossW": 0.2803,
+        "efficiencyErrorPp": 4.926047,
+        "lossErrorPercent": -57.058384,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 12,
+        "iout": 6,
+        "measuredEfficiencyPercent": 94.2886,
+        "predictedEfficiencyPercent": 94.871523,
+        "measuredLossW": 1.199357,
+        "predictedKnownLossW": 1.07033,
+        "efficiencyErrorPp": 0.582923,
+        "lossErrorPercent": -10.758036,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "nominal-25c",
+        "vin": 12,
+        "iout": 10,
+        "measuredEfficiencyPercent": 93.7683,
+        "predictedEfficiencyPercent": 93.611756,
+        "measuredLossW": 2.19313,
+        "predictedKnownLossW": 2.251983,
+        "efficiencyErrorPp": -0.156544,
+        "lossErrorPercent": 2.683495,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 5,
+        "iout": 2,
+        "measuredEfficiencyPercent": 96.8742,
+        "predictedEfficiencyPercent": 96.972463,
+        "measuredLossW": 0.212959,
+        "predictedKnownLossW": 0.206056,
+        "efficiencyErrorPp": 0.098263,
+        "lossErrorPercent": -3.241761,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 5,
+        "iout": 6,
+        "measuredEfficiencyPercent": 96.8398,
+        "predictedEfficiencyPercent": 95.277856,
+        "measuredLossW": 0.646139,
+        "predictedKnownLossW": 0.981324,
+        "efficiencyErrorPp": -1.561944,
+        "lossErrorPercent": 51.875112,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 5,
+        "iout": 10,
+        "measuredEfficiencyPercent": 95.2646,
+        "predictedEfficiencyPercent": 93.703013,
+        "measuredLossW": 1.64036,
+        "predictedKnownLossW": 2.217651,
+        "efficiencyErrorPp": -1.561587,
+        "lossErrorPercent": 35.192972,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 8,
+        "iout": 2,
+        "measuredEfficiencyPercent": 93.5985,
+        "predictedEfficiencyPercent": 96.711456,
+        "measuredLossW": 0.451395,
+        "predictedKnownLossW": 0.224424,
+        "efficiencyErrorPp": 3.112956,
+        "lossErrorPercent": -50.28209,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 8,
+        "iout": 6,
+        "measuredEfficiencyPercent": 96.0344,
+        "predictedEfficiencyPercent": 95.235865,
+        "measuredLossW": 0.817612,
+        "predictedKnownLossW": 0.990487,
+        "efficiencyErrorPp": -0.798535,
+        "lossErrorPercent": 21.14386,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 8,
+        "iout": 10,
+        "measuredEfficiencyPercent": 95.3001,
+        "predictedEfficiencyPercent": 93.806167,
+        "measuredLossW": 1.627456,
+        "predictedKnownLossW": 2.178924,
+        "efficiencyErrorPp": -1.493933,
+        "lossErrorPercent": 33.885288,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 12,
+        "iout": 2,
+        "measuredEfficiencyPercent": 91,
+        "predictedEfficiencyPercent": 95.721229,
+        "measuredLossW": 0.652747,
+        "predictedKnownLossW": 0.295022,
+        "efficiencyErrorPp": 4.721229,
+        "lossErrorPercent": -54.802992,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 12,
+        "iout": 6,
+        "measuredEfficiencyPercent": 94.2886,
+        "predictedEfficiencyPercent": 94.458761,
+        "measuredLossW": 1.199357,
+        "predictedKnownLossW": 1.161528,
+        "efficiencyErrorPp": 0.170161,
+        "lossErrorPercent": -3.154089,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      },
+      {
+        "laneId": "hot-rds-bound",
+        "vin": 12,
+        "iout": 10,
+        "measuredEfficiencyPercent": 93.7683,
+        "predictedEfficiencyPercent": 92.966302,
+        "measuredLossW": 2.19313,
+        "predictedKnownLossW": 2.496733,
+        "efficiencyErrorPp": -0.801998,
+        "lossErrorPercent": 13.84335,
+        "availability": "subtotal",
+        "omitted": [
+          "inductorCoreResidualMissingData",
+          "nodeEnergyMissingData"
+        ]
+      }
+    ]
+  }
+}
