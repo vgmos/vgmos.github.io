@@ -107,7 +107,7 @@ test("repeated navigation tears down tool animation and global listeners", async
   // Warm both code paths so cached documents, modules, and one-time allocations are
   // represented in the baseline before leak detection begins.
   await roundTrip(page, "Buck Converter Tool", "/tools/buck-converter/");
-  await roundTrip(page, "Buck Converter Loss Explorer", "/tools/buck-losses/");
+  await roundTrip(page, "Buck Converter Loss Tool", "/tools/buck-losses/");
 
   const cdp = await context.newCDPSession(page);
   await cdp.send("HeapProfiler.enable");
@@ -118,7 +118,7 @@ test("repeated navigation tears down tool animation and global listeners", async
     await roundTrip(page, "Buck Converter Tool", "/tools/buck-converter/");
   }
   for (let iteration = 0; iteration < 10; iteration += 1) {
-    await roundTrip(page, "Buck Converter Loss Explorer", "/tools/buck-losses/");
+    await roundTrip(page, "Buck Converter Loss Tool", "/tools/buck-losses/");
   }
 
   await page.waitForTimeout(750);

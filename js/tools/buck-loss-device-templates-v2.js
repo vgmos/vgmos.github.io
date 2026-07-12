@@ -2,7 +2,7 @@ const source = (kind, detail, url = null, metadata = {}) => Object.freeze({ kind
 
 const EPC_SOURCE = source(
   "datasheet-typical",
-  "EPC2090, 25 °C typical unless noted; effective transition time remains a disclosed teaching assumption.",
+  "EPC2090, 25 °C typical unless noted; effective transition time remains a disclosed illustrative assumption.",
   "https://epc-co.com/epc/documents/datasheets/EPC2090_datasheet.pdf",
   { documentId: "EPC2090 datasheet", manufacturer: "EPC" }
 );
@@ -31,7 +31,7 @@ const INFINEON_SOURCE = source(
 
 const TEACHING_SOURCE = source(
   "synthetic-teaching-fixture",
-  "Rounded, deterministic teaching values. This is not a vendor part or selection recommendation.",
+  "Rounded, deterministic illustrative values. This is not a vendor part or selection recommendation.",
   null,
   { documentId: "Synthetic teaching fixture" }
 );
@@ -104,7 +104,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     notes: Object.freeze([
       "QGS2 is inferred as QGS − QG(TH).",
       "COSS(ER) is characterized over 0–50 V; EOSS is omitted above that domain.",
-      "7.5 ns turn-on and turn-off effective overlaps are teaching assumptions, not datasheet switching times."
+      "3 ns turn-on and 2 ns turn-off values are illustrative effective crossover intervals, not datasheet switching times."
     ]),
     provenanceOverrides: {
       qgs2High: "inferred-qgs-minus-qgth",
@@ -125,8 +125,8 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
         diodeVf: 1.5,
         qrrRef: 0
       }),
-      effectiveTurnOn: 7.5,
-      effectiveTurnOff: 7.5
+      effectiveTurnOn: 3,
+      effectiveTurnOff: 2
     }
   }),
   makeTemplate({
@@ -217,9 +217,9 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     }
   }),
   ...[
-    { id: "silicon-30v", label: "Silicon teaching · 30 V", voltageClass: 30, rds: 5, qg: 20, qgs2: 4, qgd: 5, plateau: 2.5, cossEr: 800, qrrRef: 30, diodeVf: 0.8, rg: 2 },
-    { id: "silicon-60v", label: "Silicon teaching · 60 V", voltageClass: 60, rds: 10, qg: 30, qgs2: 6, qgd: 8, plateau: 3, cossEr: 500, qrrRef: 60, diodeVf: 0.85, rg: 3 },
-    { id: "silicon-100v", label: "Silicon teaching · 100 V", voltageClass: 100, rds: 20, qg: 45, qgs2: 9, qgd: 12, plateau: 3.5, cossEr: 350, qrrRef: 100, diodeVf: 0.9, rg: 4 }
+    { id: "silicon-30v", label: "Silicon · 30 V", voltageClass: 30, rds: 5, qg: 20, qgs2: 4, qgd: 5, plateau: 2.5, cossEr: 800, qrrRef: 30, diodeVf: 0.8, rg: 2 },
+    { id: "silicon-60v", label: "Silicon · 60 V", voltageClass: 60, rds: 10, qg: 30, qgs2: 6, qgd: 8, plateau: 3, cossEr: 500, qrrRef: 60, diodeVf: 0.85, rg: 3 },
+    { id: "silicon-100v", label: "Silicon · 100 V", voltageClass: 100, rds: 20, qg: 45, qgs2: 9, qgd: 12, plateau: 3.5, cossEr: 350, qrrRef: 100, diodeVf: 0.9, rg: 4 }
   ].map((item) => makeTemplate({
     id: item.id,
     label: item.label,

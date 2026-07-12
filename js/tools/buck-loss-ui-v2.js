@@ -62,6 +62,17 @@ const FAMILY_STYLE = Object.freeze({
   controllerBias: { color: "--blx-bias", short: "Controller" }
 });
 
+const FAMILY_INTUITION = Object.freeze({
+  mosfetConduction: "Inductor current heats each switch while its channel is on. Because this loss follows current squared, it rises quickly with load and with RDS(on).",
+  magnetics: "The winding turns RMS current into copper heat. Ripple current also works the winding and core back and forth at the switching frequency.",
+  capacitors: "The capacitors store and return energy, but ripple current still circulates through their ESR and leaves a little heat behind each cycle.",
+  switchingTransitions: "During an edge, current is already flowing while voltage still remains across the switch. That brief overlap spends energy twice per cycle and repeats at fSW.",
+  deadTimeRecovery: "During dead time neither channel carries the inductor current, so it is forced through the reverse path. The next turn-on may also have to remove stored recovery charge.",
+  gateDrive: "Every cycle the driver fills and empties both MOSFET gates. That charge is discarded each cycle, so this loss scales with QG, drive voltage, and fSW.",
+  nodeEnergy: "The switch node charges and discharges the devices’ output capacitance every cycle. Unless that stored electric-field energy is recovered, it becomes heat.",
+  controllerBias: "The controller draws standing current even when the load is light, creating a nearly fixed loss floor that matters most near no load."
+});
+
 const TERM_PARAMETERS = Object.freeze({
   highSideConduction: ["rdsHigh"],
   lowSideConduction: ["rdsLow"],
@@ -89,7 +100,7 @@ const PROVENANCE_LABELS = Object.freeze({
   "datasheet-typical": "datasheet",
   "datasheet-test-condition": "datasheet test condition",
   "datasheet-plus-test-condition": "datasheet + test condition",
-  "synthetic-teaching-fixture": "teaching fixture",
+  "synthetic-teaching-fixture": "illustrative fixture",
   "inferred-qgs-minus-qgth": "inferred",
   "inferred-effective-overlap": "assumption",
   "inferred-from-vin": "inferred from VIN",
@@ -216,13 +227,16 @@ function fieldMarkup(key, options = {}) {
       <span class="blx-entry"><input id="${id}" data-blx-v2-input="${key}" type="number" inputmode="decimal" min="${config.min}" max="${config.max}" step="${stepFor(config)}"${config.optional ? ' placeholder="blank"' : ""}><span class="blx-unit">${escapeHtml(config.unit)}</span></span>
     </div>
     ${options.slider ? `<input data-blx-v2-range="${key}" type="range" min="0" max="1000" step="1" aria-label="${escapeHtml(config.label)} slider">` : ""}
+    ${options.catalog ? catalogMarkup() : ""}
     <p class="blx-field-message" data-blx-v2-message="${key}" hidden></p>
     <p class="blx-v2-provenance" data-blx-v2-provenance="${key}"></p>
   </div>`;
 }
 
 function catalogMarkup() {
-  return `<div class="blx-catalog" data-blx-catalog data-catalog-state="loading">
+  return `<div class="blx-catalog blx-catalog-compact" data-blx-catalog data-catalog-state="loading">
+    <p class="blx-catalog-heading">Or choose a characterized inductor</p>
+    <div class="blx-catalog-fields">
     <div class="blx-catalog-field">
       <label for="blx-v2-catalog-part">Coilcraft part</label>
       <div class="blx-select-wrap"><select id="blx-v2-catalog-part" data-blx-catalog-part><option value="">Generic / manual</option></select></div>
@@ -231,14 +245,14 @@ function catalogMarkup() {
       <label for="blx-v2-catalog-dcr">DCR corner</label>
       <div class="blx-select-wrap"><select id="blx-v2-catalog-dcr" data-blx-catalog-dcr disabled><option value="typ">Typical</option><option value="max">Maximum</option></select></div>
     </div>
+    </div>
     <p class="blx-catalog-meta" data-blx-catalog-meta hidden></p>
     <p class="blx-catalog-message" data-blx-catalog-message role="status" hidden></p>
-    <p class="blx-catalog-disclaimer">Coilcraft names and data identify the selected source only; this independent tool is not affiliated with or endorsed by Coilcraft. Characterized residuals use their typical-data basis, even when maximum DCR is selected for copper loss.</p>
+    <details class="blx-catalog-source-note"><summary>Source-data note</summary><p>Coilcraft names and data identify the selected source only; this independent tool is not affiliated with or endorsed by Coilcraft. Characterized residuals use their typical-data basis, even when maximum DCR is selected for copper loss.</p></details>
   </div>`;
 }
 
 function advancedMarkup(group) {
-  const special = group.catalog ? catalogMarkup() : "";
   const controls = group.modeControl === "timing"
     ? `<div class="blx-v2-select-row"><label for="blx-v2-timing-mode">Transition timing</label><select id="blx-v2-timing-mode" data-blx-timing-mode><option value="derived">Derived from gate charge</option><option value="effective">Effective-time override</option></select></div>`
     : group.modeControl === "control"
@@ -246,22 +260,21 @@ function advancedMarkup(group) {
       : "";
   return `<details data-blx-v2-group="${group.id}">
     <summary><span>${escapeHtml(group.label)}</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
-    <div class="blx-detail-panel"><div class="blx-detail-body">${controls}${special}<div class="blx-detail-grid">${group.keys.map((key) => fieldMarkup(key)).join("")}</div></div></div>
+    <div class="blx-detail-panel"><div class="blx-detail-body">${controls}<div class="blx-detail-grid">${group.keys.map((key) => fieldMarkup(key)).join("")}</div></div></div>
   </details>`;
 }
 
 function prepareMarkup(root) {
   root.dataset.blxModel = "2";
   root.dataset.blxRevision = BUCK_LOSS_MODEL_REVISION;
-  setText(root, "[data-blx-model-label]", `· analytical loss model v${BUCK_LOSS_MODEL_REVISION}`);
 
   const sticky = root.querySelector(".blx-input-sticky");
   if (sticky) sticky.innerHTML = `<div class="blx-rail-heading"><h2>Operating point</h2><button class="blx-reset" type="button" data-blx-reset>Reset</button></div>
     <div class="blx-presets" data-blx-presets role="group" aria-label="Operating-point presets"></div>
     <p class="blx-prompt" data-blx-prompt></p>
     <div class="blx-device-note blx-v2-device-note"><div><strong data-blx-device-label>Choose a device</strong><br><span data-blx-device-summary></span> <a data-blx-device-source hidden target="_blank" rel="noopener noreferrer">Official datasheet ↗</a> <a data-blx-device-model-source hidden target="_blank" rel="noopener noreferrer">Simulator model ↗</a> <a data-blx-device-model-guide hidden target="_blank" rel="noopener noreferrer">Model guide ↗</a><p class="blx-v2-device-condition-summary" data-blx-device-condition-summary></p><details class="blx-v2-device-conditions" data-blx-device-conditions hidden><summary>Conditions &amp; notes</summary><p class="blx-v2-device-model-note" data-blx-device-model-note hidden></p><ul class="blx-v2-device-notes" data-blx-device-notes></ul><ul data-blx-device-condition-list></ul></details></div><button type="button" data-blx-change-device>Change device</button></div>
-    <section class="blx-controls" aria-label="Primary buck inputs">${PRIMARY_KEYS.map((key) => fieldMarkup(key, { slider: true })).join("")}</section>
-    <div class="blx-current-control"><div class="blx-current-head"><label for="blx-v2-current-range">Load current</label><output data-blx-out="current">—</output></div><input id="blx-v2-current-range" class="blx-current-range" data-blx-cursor-input data-blx-cursor-rail type="range" min="0" max="1000" step="1" role="slider" tabindex="0" aria-label="Selected load current"><div class="blx-current-ticks" aria-hidden="true"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>I<sub>MAX</sub></span></div></div>
+    <section class="blx-controls" aria-label="Primary buck inputs">${PRIMARY_KEYS.map((key) => fieldMarkup(key, { slider: true, catalog: key === "inductance" })).join("")}</section>
+    <div class="blx-current-control"><div class="blx-current-head"><label for="blx-v2-current-range">Load current</label><output data-blx-out="current">—</output></div><input id="blx-v2-current-range" class="blx-current-range" data-blx-cursor-input data-blx-cursor-rail type="range" min="0" max="1000" step="1" role="slider" tabindex="0" aria-label="Selected load current"><div class="blx-current-ticks" role="group" aria-label="Load current shortcuts"><button type="button" data-blx-current-fraction="0" aria-label="Set load current to zero">0</button><button type="button" data-blx-current-fraction="0.25" aria-label="Set load current to 25 percent">25%</button><button type="button" data-blx-current-fraction="0.5" aria-label="Set load current to 50 percent">50%</button><button type="button" data-blx-current-fraction="0.75" aria-label="Set load current to 75 percent">75%</button><button type="button" data-blx-current-fraction="1" aria-label="Set load current to maximum">I<sub>MAX</sub></button></div></div>
     <section class="blx-advanced" aria-label="Advanced assumptions">${ADVANCED_GROUPS.map(advancedMarkup).join("")}</section>`;
 
   const point = root.querySelector('[data-blx-view-panel="point"]');
@@ -290,9 +303,9 @@ function prepareMarkup(root) {
   const caveat = root.querySelector(".blx-top-caveat");
   if (caveat) caveat.textContent = "This is an analytical intuition model at a disclosed 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.";
   const equations = root.querySelector(".blx-equations");
-  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>V2 solves regulated volt-second balance over explicit high-side, dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>CCM uses two dead-time windows and excludes both from low-side channel conduction. Diode-emulation DCM ends low-side conduction at zero current. Atomic rows disclose the executed formula, whether the source is direct or adapted, and their citation to Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4.</p><p>Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. Efficiency remains undefined at exactly zero load because burst, PFM, and minimum-on-time behavior are controller-dependent and out of scope.</p>`;
+  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>CCM uses two dead-time windows and excludes both from low-side channel conduction. Diode-emulation DCM ends low-side conduction at zero current. Atomic rows disclose the executed formula, whether the source is direct or adapted, and their citation to Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4.</p><p>Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. Efficiency remains undefined at exactly zero load because burst, PFM, and minimum-on-time behavior are controller-dependent and out of scope.</p>`;
   const caveats = root.querySelector(".blx-caveats");
-  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and teaching templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation and continuous-triangle catalog residuals are omitted. Transition timing is derived only from complete gate-path data or entered as an effective-time approximation.</li><li>Bootstrap, snubbers, PCB/package resistance, ringing, and full IC leakage remain outside scope.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
+  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation and continuous-triangle catalog residuals are omitted. Transition timing is derived only from complete gate-path data or entered as an effective-time approximation.</li><li>Bootstrap, snubbers, PCB/package resistance, ringing, and full IC leakage remain outside scope.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
 }
 
 function chooserCard(template, preloaded) {
@@ -301,15 +314,12 @@ function chooserCard(template, preloaded) {
     finite(template.values.qgHigh) ? `${displayNumber(template.values.qgHigh, 3)} nC QG` : null,
     finite(template.values.qrrRef) ? `${displayNumber(template.values.qrrRef, 3)} nC QRR` : null
   ].filter(Boolean).join(" · ");
-  const kind = template.catalogKind === "manufacturer"
-    ? `${template.manufacturer || "Manufacturer"}-sourced · ${template.cornerLabel || template.cornerId}`
-    : "Rounded teaching baseline · not a vendor part";
-  return `<button type="button" class="blx-device-choice" data-blx-device-choice="${template.id}"><span><strong>${escapeHtml(template.label)}</strong></span><small>${escapeHtml(metrics || "Partial analytical coverage")}</small><span class="blx-device-choice-kind">${escapeHtml(kind)}</span>${preloaded ? '<em>Continue with the preloaded example →</em>' : ""}</button>`;
+  return `<button type="button" class="blx-device-choice" data-blx-device-choice="${template.id}"><span><strong>${escapeHtml(template.label)}</strong></span><small>${escapeHtml(metrics || "Partial analytical coverage")}</small>${preloaded ? '<em>Continue with the preloaded example →</em>' : ""}</button>`;
 }
 
 function chooserGroup(kind, templates, selectedId) {
   if (!templates.length) return "";
-  const label = kind === "manufacturer" ? "Manufacturer-sourced" : "Teaching baselines";
+  const label = kind === "manufacturer" ? "Manufacturer-sourced" : "Example FETs";
   return `<section class="blx-device-choice-group"><h3>${label}</h3><div class="blx-device-choice-grid">${templates.map((template) => chooserCard(template, template.id === selectedId)).join("")}</div></section>`;
 }
 
@@ -326,7 +336,7 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
   const preloaded = options.recommendedId || (vin <= 18 ? "epc2090" : recommendedSiliconTemplateV2(vin));
   const manufacturer = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.catalogKind === "manufacturer");
   const teaching = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.catalogKind !== "manufacturer");
-    dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><p class="blx-eyebrow">Model v${BUCK_LOSS_MODEL_REVISION} · disclosed 25 °C corners</p><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2><p>${escapeHtml(options.message || "Device data drives recovery, transition timing, and switch-node energy — so the model asks you to pick explicitly. This is a model input, not a part recommendation.")}</p><p class="blx-device-context">Teaching context · one symmetric switch pair in a synchronous buck; verify voltage margin, gate drive, thermals, and layout for a real design.</p></div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
+    dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2></div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
   return new Promise((resolve) => {
     let settled = false;
     const finish = async (value) => {
@@ -415,7 +425,6 @@ function reportMismatchHref(state) {
   const gaps = point?.coverageGaps?.map((gap) => gap.code).join(", ") || "none";
   const body = [
     `Canonical state: ${canonicalHref(state)}`,
-    `Model revision: ${BUCK_LOSS_MODEL_REVISION}`,
     `Device: ${state.deviceId}`,
     `Operating point: ${formatCurrent(displayedCursor(state))}`,
     `Modes: ${point?.waveform?.mode || "unavailable"}; ${state.controlMode}; ${state.timingMode}`,
@@ -423,7 +432,7 @@ function reportMismatchHref(state) {
     `Coverage gaps / omissions: ${gaps}`
   ].join("\n");
   const query = new URLSearchParams({
-    title: `[Buck loss v${BUCK_LOSS_MODEL_REVISION}] Model mismatch`,
+    title: "Buck loss calculation mismatch",
     body
   });
   return `https://github.com/vgmos/vgmos.github.io/issues/new?${query}`;
@@ -489,6 +498,11 @@ function syncControls(root, state) {
     range.setAttribute("aria-valuenow", String(cursor));
     range.setAttribute("aria-valuetext", formatCurrent(cursor));
   });
+  root.querySelectorAll("[data-blx-current-fraction]").forEach((button) => {
+    const target = Number(button.dataset.blxCurrentFraction) * state.rawInputs.ioutMax;
+    const active = Math.abs(cursor - target) <= Math.max(state.rawInputs.ioutMax * 1e-4, 1e-9);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
   const timing = root.querySelector("[data-blx-timing-mode]");
   const control = root.querySelector("[data-blx-control-mode]");
   if (timing) timing.value = state.timingMode;
@@ -527,7 +541,7 @@ function renderDevice(root, state) {
   setText(root, "[data-blx-device-label]", template.label);
   const sourceKind = template.catalogKind === "manufacturer"
     ? `${template.manufacturer}-sourced`
-    : "teaching baseline";
+    : "example values";
   const summary = `${template.voltageClass} V ${template.technology === "gan" ? "GaN" : "silicon"} · ${sourceKind} · ${template.cornerLabel || template.cornerId}`;
   setText(root, "[data-blx-device-summary]", summary);
   const conditionSummary = template.id === "infineon-bsc010n04ls6-4v5"
@@ -567,7 +581,7 @@ function renderDevice(root, state) {
   if (modelNote) {
     const directives = modelMetadata?.requiredDirectives || template.source.model?.requiredDirectives || [];
     const copy = [
-      modelMetadata?.version ? `Model ${modelMetadata.version}` : null,
+      modelMetadata?.version ? `Vendor archive ${modelMetadata.version}` : null,
       directives.length ? `LTspice requires ${directives.join(", ")}` : null
     ].filter(Boolean).join(" · ");
     modelNote.hidden = !copy;
@@ -627,7 +641,6 @@ function renderBadges(root, point, template = null) {
     return;
   }
   const labels = [
-    `Model v${point.modelRevision || BUCK_LOSS_MODEL_REVISION}`,
     `Out of regulation · ${point.failure?.code || "infeasible"}`,
     "No result"
   ];
@@ -887,6 +900,7 @@ function renderFamilyList(root, state, point) {
     const body = item.querySelector(".blx-v2-atomic-list");
     rank.textContent = String(index + 1).padStart(2, "0");
     name.textContent = family.label;
+    name.title = FAMILY_INTUITION[family.id] || "";
     dot.style.background = `var(${FAMILY_STYLE[family.id].color})`;
     amount.textContent = available ? formatPower(value) : "—";
     amount.setAttribute("aria-label", available ? formatPower(value) : "Not available");
@@ -904,6 +918,10 @@ function renderFamilyList(root, state, point) {
     bar.style.setProperty("--blx-family-width", `${available ? 100 * value / maximum : 0}%`);
     bar.style.setProperty("--blx-family-color", `var(${FAMILY_STYLE[family.id].color})`);
     body.replaceChildren();
+    const intuition = document.createElement("p");
+    intuition.className = "blx-v2-family-intuition";
+    intuition.textContent = FAMILY_INTUITION[family.id] || "";
+    body.append(intuition);
     family.terms.forEach((key) => {
       const metadata = point.equationProvenance[key];
       const row = document.createElement("div");
@@ -989,8 +1007,8 @@ function renderWarningsAndInsight(root, state, point) {
 
 function chartFrame(holder, yMaximum, yTicks, yFormatter) {
   const width = Math.max(360, Math.round(holder.getBoundingClientRect().width || 720));
-  const height = 286;
-  const margin = { left: 58, right: 18, top: 18, bottom: 38 };
+  const height = 310;
+  const margin = { left: 62, right: 20, top: 20, bottom: 48 };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
   const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, "aria-hidden": "true" });
@@ -1006,10 +1024,13 @@ function chartFrame(holder, yMaximum, yTicks, yFormatter) {
   for (let index = 0; index <= 4; index += 1) {
     const fraction = index / 4;
     const x = margin.left + innerWidth * fraction;
-    const label = svgNode("text", { x, y: height - 12, "text-anchor": "middle", class: "blx-chart-axis-label" });
+    const label = svgNode("text", { x, y: height - 22, "text-anchor": "middle", class: "blx-chart-axis-label" });
     label.textContent = index === 4 ? "IMAX" : `${index * 25}%`;
     svg.append(label);
   }
+  const xLabel = svgNode("text", { x: margin.left + innerWidth / 2, y: height - 5, "text-anchor": "middle", class: "blx-chart-axis-title" });
+  xLabel.textContent = "Load current";
+  svg.append(xLabel);
   holder.blxChartScale = { left: margin.left / width, width: innerWidth / width };
   return { svg, width, height, margin, innerWidth, innerHeight };
 }
@@ -1059,6 +1080,17 @@ function addVerticalAnnotation(frame, fraction, label, className) {
   frame.svg.append(text);
 }
 
+function setSvgAttributes(node, attributes) {
+  Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+}
+
+function cursorOverlay(frame) {
+  const line = svgNode("line", { class: "blx-chart-cursor", "data-blx-chart-cursor-line": "" });
+  const label = svgNode("text", { class: "blx-chart-cursor-label", "data-blx-chart-cursor-label": "" });
+  frame.svg.append(line, label);
+  return { line, label };
+}
+
 function renderEfficiencyChart(root, state) {
   const holder = root.querySelector("[data-blx-efficiency-plot]");
   if (!holder || !state.sweep?.points?.length) return;
@@ -1096,15 +1128,34 @@ function renderEfficiencyChart(root, state) {
     label.textContent = `Peak ${formatPercent(annotations.peakEfficiency.efficiency)}`;
     frame.svg.append(label);
   }
-  addVerticalAnnotation(frame, displayedCursor(state) / state.inputs.ioutMax, "Selected", "blx-chart-cursor");
+  const overlay = cursorOverlay(frame);
+  const marker = svgNode("circle", { r: 5, class: "blx-chart-marker blx-chart-efficiency-marker", "data-blx-chart-marker": "efficiency" });
+  frame.svg.append(marker);
   holder.replaceChildren(frame.svg);
   holder.tabIndex = 0;
   holder.setAttribute("role", "slider");
   holder.setAttribute("aria-valuemin", "0");
   holder.setAttribute("aria-valuemax", String(state.inputs.ioutMax));
-  holder.setAttribute("aria-valuenow", String(displayedCursor(state)));
-  holder.setAttribute("aria-valuetext", `${formatCurrent(displayedCursor(state))}; ${formatPercent(state.point.efficiency)}`);
-  setText(root, "[data-blx-across-efficiency]", `${formatPercent(state.point.efficiency)} at ${formatCurrent(displayedCursor(state))}`);
+  holder.blxChartUpdate = (point, current) => {
+    const safeCurrent = quantizeCurrent(current, state.inputs.ioutMax);
+    const fraction = state.inputs.ioutMax > 0 ? safeCurrent / state.inputs.ioutMax : 0;
+    const markerX = x(safeCurrent);
+    const markerY = finite(point.efficiency) ? y(point.efficiency) : frame.margin.top;
+    const alignRight = fraction > 0.68;
+    setSvgAttributes(overlay.line, { x1: markerX, y1: frame.margin.top, x2: markerX, y2: frame.height - frame.margin.bottom });
+    setSvgAttributes(marker, { cx: markerX, cy: markerY });
+    marker.style.visibility = finite(point.efficiency) ? "visible" : "hidden";
+    setSvgAttributes(overlay.label, {
+      x: markerX + (alignRight ? -9 : 9),
+      y: finite(point.efficiency) ? Math.max(frame.margin.top + 13, markerY - 10) : frame.margin.top + 13,
+      "text-anchor": alignRight ? "end" : "start"
+    });
+    overlay.label.textContent = `${formatCurrent(safeCurrent)} · ${formatPercent(point.efficiency)}`;
+    holder.setAttribute("aria-valuenow", String(safeCurrent));
+    holder.setAttribute("aria-valuetext", `${formatCurrent(safeCurrent)}; ${formatPercent(point.efficiency)}`);
+    setText(root, "[data-blx-across-efficiency]", `${formatPercent(point.efficiency)} at ${formatCurrent(safeCurrent)}`);
+  };
+  holder.blxChartUpdate(state.point, displayedCursor(state));
 }
 
 function rankedFamilyKeys(point) {
@@ -1181,6 +1232,7 @@ function renderLossChart(root, state) {
   const frame = chartFrame(holder, maximum, scale.ticks, (value) => value < 1 ? `${displayNumber(value * 1e3, 0)}mW` : `${displayNumber(value, 2)}W`);
   const x = (value) => frame.margin.left + frame.innerWidth * value / state.inputs.ioutMax;
   const y = (value) => frame.margin.top + frame.innerHeight * (1 - clamp(value / maximum, 0, 1));
+  const markers = [];
   state.seriesSlots.forEach((slot, index) => {
     const path = svgNode("path", { class: "blx-chart-line blx-chart-family-line", stroke: `var(${FAMILY_STYLE[slot.key].color})`, "data-series": slot.key });
     frame.svg.append(path);
@@ -1198,18 +1250,45 @@ function renderLossChart(root, state) {
       referencePath.style.stroke = `var(${FAMILY_STYLE[slot.key].color})`;
       frame.svg.append(referencePath);
     }
+    const marker = svgNode("circle", {
+      r: 4.5,
+      class: "blx-chart-marker blx-chart-family-marker",
+      fill: `var(${FAMILY_STYLE[slot.key].color})`,
+      "data-blx-chart-marker": slot.key
+    });
+    frame.svg.append(marker);
+    markers.push({ marker, key: slot.key });
   });
   addVerticalAnnotation(frame, state.sweep.annotations.ccmBoundary / state.inputs.ioutMax, "Boundary", "blx-chart-boundary");
-  addVerticalAnnotation(frame, displayedCursor(state) / state.inputs.ioutMax, "Selected", "blx-chart-cursor");
+  const overlay = cursorOverlay(frame);
   holder.replaceChildren(frame.svg);
   holder.tabIndex = 0;
   holder.setAttribute("role", "slider");
   holder.setAttribute("aria-valuemin", "0");
   holder.setAttribute("aria-valuemax", String(state.inputs.ioutMax));
-  holder.setAttribute("aria-valuenow", String(displayedCursor(state)));
-  holder.setAttribute("aria-valuetext", `${formatCurrent(displayedCursor(state))}; ${formatPower(state.point.pLoss)} known loss`);
+  holder.blxChartUpdate = (point, current) => {
+    const safeCurrent = quantizeCurrent(current, state.inputs.ioutMax);
+    const fraction = state.inputs.ioutMax > 0 ? safeCurrent / state.inputs.ioutMax : 0;
+    const markerX = x(safeCurrent);
+    const alignRight = fraction > 0.68;
+    setSvgAttributes(overlay.line, { x1: markerX, y1: frame.margin.top, x2: markerX, y2: frame.height - frame.margin.bottom });
+    setSvgAttributes(overlay.label, {
+      x: markerX + (alignRight ? -9 : 9),
+      y: frame.margin.top + 13,
+      "text-anchor": alignRight ? "end" : "start"
+    });
+    overlay.label.textContent = `${formatCurrent(safeCurrent)} · ${formatPower(point.pLoss)}`;
+    markers.forEach(({ marker: pointMarker, key }) => {
+      const value = point.groupedLosses?.[key];
+      setSvgAttributes(pointMarker, { cx: markerX, cy: y(value || 0) });
+      pointMarker.style.visibility = finite(value) ? "visible" : "hidden";
+    });
+    holder.setAttribute("aria-valuenow", String(safeCurrent));
+    holder.setAttribute("aria-valuetext", `${formatCurrent(safeCurrent)}; ${formatPower(point.pLoss)} known loss`);
+    setText(root, "[data-blx-across-loss]", `${formatPower(point.pLoss)} at ${formatCurrent(safeCurrent)}`);
+  };
+  holder.blxChartUpdate(state.point, displayedCursor(state));
   renderSeriesControls(root, state);
-  setText(root, "[data-blx-across-loss]", `${formatPower(state.point.pLoss)} at ${formatCurrent(displayedCursor(state))}`);
 }
 
 function renderLossCharacter(root, state) {
@@ -1289,7 +1368,7 @@ function renderReference(root, state) {
   const deltaCopy = finite(efficiencyDelta)
     ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} percentage points · known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference.`
     : `Known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference. Efficiency deltas stay hidden while either run has omitted terms — subtotals cannot be subtracted honestly.`;
-  card.innerHTML = `<div class="blx-section-heading"><h2>Held reference</h2><span class="blx-section-total">${escapeHtml(reference.label)}</span></div><div class="blx-v2-reference-sides"><div><span>Reference</span><strong>${formatPercent(reference.point.efficiency)} · ${formatPower(reference.point.pLoss)}</strong><small>v${reference.modelRevision} · ${reference.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(reference.mode)} · ${reference.corner} · ${reference.point.availability}</small></div><div><span>Current</span><strong>${formatPercent(state.point.efficiency)} · ${formatPower(state.point.pLoss)}</strong><small>v${BUCK_LOSS_MODEL_REVISION} · ${state.template.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(state.point.waveform.mode)} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}</small></div></div><p>${deltaCopy}</p>`;
+  card.innerHTML = `<div class="blx-section-heading"><h2>Held reference</h2><span class="blx-section-total">${escapeHtml(reference.label)}</span></div><div class="blx-v2-reference-sides"><div><span>Reference</span><strong>${formatPercent(reference.point.efficiency)} · ${formatPower(reference.point.pLoss)}</strong><small>${reference.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(reference.mode)} · ${reference.corner} · ${reference.point.availability}</small></div><div><span>Current</span><strong>${formatPercent(state.point.efficiency)} · ${formatPower(state.point.pLoss)}</strong><small>${state.template.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(state.point.waveform.mode)} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}</small></div></div><p>${deltaCopy}</p>`;
   if (key) {
     key.hidden = false;
     key.textContent = `Solid: ${state.template.label} · ${state.controlMode} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}. Dashed: ${reference.label} · ${reference.controlMode} · ${reference.corner} · ${reference.point.availability}.`;
@@ -1464,7 +1543,7 @@ function renderImportDelta(root, state) {
     ? state.point.efficiency - old.efficiency
     : null;
   const lossDelta = finite(old?.pLoss) ? state.point.pLoss - old.pLoss : null;
-  banner.innerHTML = `<div><p class="blx-eyebrow">Imported from legacy v1</p><h2>V2 recalculated this point</h2><p>Legacy v1 remains unchanged and read-only. Compatible inputs were carried over; ${escapeHtml(state.template.label)} supplies the new device-physics fields.</p></div><div class="blx-import-delta-metrics"><span><small>Efficiency delta</small><strong>${finite(efficiencyDelta) ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} pp` : "—"}</strong></span><span><small>Loss delta</small><strong>${finite(lossDelta) ? `${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))}` : "—"}</strong></span></div>`;
+  banner.innerHTML = `<div><p class="blx-eyebrow">Updated shared calculation</p><h2>This point was recalculated</h2><p>The earlier result remains unchanged and read-only. Compatible inputs were carried over; ${escapeHtml(state.template.label)} supplies the additional device-physics fields.</p></div><div class="blx-import-delta-metrics"><span><small>Efficiency delta</small><strong>${finite(efficiencyDelta) ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} pp` : "—"}</strong></span><span><small>Loss delta</small><strong>${finite(lossDelta) ? `${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))}` : "—"}</strong></span></div>`;
   root.querySelector(".blx-workspace")?.before(banner);
   try { sessionStorage.removeItem(IMPORT_MEMORY_KEY); } catch {}
 }
@@ -1639,6 +1718,15 @@ function chartCursorFromPointer(holder, state, event) {
   return quantizeCurrent(fraction * state.rawInputs.ioutMax, state.rawInputs.ioutMax);
 }
 
+function updateChartPreview(root, state, current) {
+  const safeCurrent = quantizeCurrent(current, Number(state.rawInputs.ioutMax) || 0);
+  const point = evaluateStatePoint(state, safeCurrent);
+  if (!point?.valid) return;
+  root.querySelectorAll("[data-blx-efficiency-plot], [data-blx-loss-plot]").forEach((holder) => {
+    holder.blxChartUpdate?.(point, safeCurrent);
+  });
+}
+
 function initializeChartInteractions(root, state) {
   root.querySelectorAll("[data-blx-efficiency-plot], [data-blx-loss-plot]").forEach((holder) => {
     const preview = (event) => {
@@ -1649,7 +1737,7 @@ function initializeChartInteractions(root, state) {
       // hover preview. An active pointer capture still takes precedence below.
       if (state.chartPointerId === null && state.chartKeyboardMode) return;
       state.previewCursor = chartCursorFromPointer(holder, state, event);
-      scheduleRender(root, state, { updateUrl: false });
+      updateChartPreview(root, state, state.previewCursor);
     };
     holder.addEventListener("pointermove", preview);
     holder.addEventListener("pointerdown", (event) => {
@@ -1674,13 +1762,13 @@ function initializeChartInteractions(root, state) {
       if (state.chartPointerId !== event.pointerId) return;
       state.chartPointerId = null;
       state.previewCursor = null;
-      render(root, state, { updateUrl: false });
+      updateChartPreview(root, state, state.cursor);
     });
     holder.addEventListener("pointerleave", () => {
       if (state.chartPointerId !== null) return;
       if (!finite(state.previewCursor)) return;
       state.previewCursor = null;
-      scheduleRender(root, state, { updateUrl: false });
+      updateChartPreview(root, state, state.cursor);
     });
     holder.addEventListener("keydown", (event) => {
       const maximum = Number(state.rawInputs.ioutMax) || 0;
@@ -2016,6 +2104,12 @@ function initializeActions(root, state) {
     state.previewCursor = null;
     render(root, state, { immediateUrl: true });
   });
+  root.querySelectorAll("[data-blx-current-fraction]").forEach((button) => button.addEventListener("click", () => {
+    state.cursor = quantizeCurrent(Number(button.dataset.blxCurrentFraction) * state.rawInputs.ioutMax, state.rawInputs.ioutMax);
+    state.previewCursor = null;
+    state.chartKeyboardMode = false;
+    render(root, state, { immediateUrl: true });
+  }));
 }
 
 function readRememberedDevice() {

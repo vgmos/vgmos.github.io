@@ -77,7 +77,7 @@ describe("buck loss v2 contracts", () => {
     assert.equal(BUCK_LOSS_SCHEMA_V2.qrrRef.technology, "silicon");
   });
 
-  it("ships exact manufacturer and technology-aware teaching templates", () => {
+  it("ships exact manufacturer and technology-aware example templates", () => {
     const epc = getBuckLossDeviceTemplateV2("epc2090");
     assert.equal(epc.technology, "gan");
     assert.equal(epc.catalogKind, "manufacturer");
@@ -92,7 +92,8 @@ describe("buck loss v2 contracts", () => {
     assert.equal(epc.values.gateResistanceOnHigh, 0.4);
     assert.equal(epc.values.diodeVf, 1.5);
     assert.equal(epc.values.qrrRef, 0);
-    assert.equal(epc.values.effectiveTurnOn, 7.5);
+    assert.equal(epc.values.effectiveTurnOn, 3);
+    assert.equal(epc.values.effectiveTurnOff, 2);
     assert.equal(epc.provenance.qgs2High, "inferred-qgs-minus-qgth");
     assert.match(epc.source.url, /EPC2090_datasheet\.pdf/);
 

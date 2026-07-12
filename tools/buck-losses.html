@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Buck Converter Loss Explorer
-description: Textbook-grounded analytical buck loss model with nonideal CCM, diode-emulation DCM, GaN and silicon templates, equation provenance, and reviewed SPICE checks.
+title: Buck Converter Loss Tool
+description: Interactive first-order synchronous buck loss and efficiency model using EPC2090 GaN FET defaults — inspect a ranked operating-point loss budget or sweep performance across load.
 permalink: /tools/buck-losses/
 math: true
 stylesheets:
@@ -11,7 +11,7 @@ stylesheets:
 {% raw %}
 <article class="blx-page" id="buck-loss-explorer" data-blx-status="loading" aria-busy="true">
   <header class="blx-header">
-    <h1>Buck Converter Loss Explorer <small data-blx-model-label>· analytical loss model v2</small></h1>
+    <h1>Buck Converter Loss Tool</h1>
   </header>
 
   <section class="blx-workspace blx-shell" aria-label="Buck converter loss workspace">
@@ -33,7 +33,7 @@ stylesheets:
             <div class="blx-presets" data-blx-presets role="group" aria-label="Buck loss presets"></div>
             <p class="blx-prompt" data-blx-prompt></p>
 
-            <p class="blx-device-note"><strong>Explicit device choice</strong><br>V2 asks for GaN or a synthetic silicon teaching template before evaluating device-dependent losses.</p>
+            <p class="blx-device-note"><strong>Explicit device choice</strong><br>Choose a GaN or example silicon switch pair before evaluating device-dependent losses.</p>
 
             <section class="blx-controls" aria-label="Primary buck inputs">
               <div class="blx-field">
@@ -245,7 +245,7 @@ stylesheets:
 
   <section class="blx-equations post-content">
     <h2>Equations in the open</h2>
-    <p>V2 solves regulated volt-second balance over explicit high-side, dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p>
+    <p>The tool solves regulated volt-second balance over explicit high-side, dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p>
     <p>CCM uses two dead-time windows and excludes both from low-side channel conduction. Diode-emulation DCM ends low-side conduction at zero current. Atomic loss rows disclose their formula, Chapter 4 equation, printed page, PDF page, and parameter provenance.</p>
     <p>Input power is reconstructed as <code>POUT + PLOSS</code>; efficiency is undefined at exactly zero load because burst, PFM, and minimum-on-time behavior are controller-dependent and out of scope.</p>
   </section>
