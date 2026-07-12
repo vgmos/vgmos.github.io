@@ -246,6 +246,84 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page).toHaveURL(/device=silicon-60v/);
   });
 
+  test("incompatible preloaded devices require an explicit compatible replacement", async ({ page }) => {
+    await page.goto("/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=silicon-30v&i=2", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.locator('[data-blx-preset="48v-to-12v-bus"]').click();
+
+    const chooser = page.locator("[data-blx-device-dialog]");
+    await expect(chooser).toBeVisible();
+    await expect(chooser).toContainText("Choose a switch rated for 48 V");
+    await expect(chooser).toContainText("Silicon · 30 V is below this preset's input-voltage class");
+    await expect(chooser.locator('[data-blx-device-choice="epc2090"]')).toHaveCount(1);
+    await expect(chooser.locator('[data-blx-device-choice="silicon-60v"]')).toHaveCount(1);
+    await expect(chooser.locator('[data-blx-device-choice="silicon-100v"]')).toHaveCount(1);
+    await expect(chooser.locator('[data-blx-device-choice="silicon-30v"]')).toHaveCount(0);
+    await expect(chooser.locator('[data-blx-device-choice="infineon-bsc010n04ls6-4v5"]')).toHaveCount(0);
+    await expect(chooser.locator('[data-blx-device-choice="vishay-si7860dp-tps40071evm"]')).toHaveCount(0);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+    await expect(page).toHaveURL(/p=12v-to-3v3-pol/);
+
+    await chooser.locator("[data-blx-device-cancel]").click();
+    await expect(chooser).toBeHidden();
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+    await expect(page.locator("[data-blx-device-label]")).toHaveText("Silicon · 30 V");
+
+    await page.locator('[data-blx-preset="48v-to-12v-bus"]').click();
+    await chooser.locator('[data-blx-device-choice="silicon-60v"]').click();
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
+    await expect(page.locator("[data-blx-device-label]")).toHaveText("Silicon · 60 V");
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("48");
+    await expect(page.locator("#blx-v2-ioutMax")).toHaveValue("3.5");
+    await expect(page.locator("#blx-v2-dcr")).toHaveValue("28.2");
+    await expect(page.locator("#blx-v2-rac")).toHaveValue("28.2");
+    await expect(page.locator("#blx-v2-inductorIsat")).toHaveValue("4.4");
+    await expect(page).toHaveURL(/p=48v-to-12v-bus/);
+    await expect(page).toHaveURL(/device=silicon-60v/);
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("buck-loss-v2-device"))).toBe("silicon-60v");
+
+    await page.goto("/tools/buck-losses/?m=2&p=48v-to-12v-bus&device=silicon-30v&i=3", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await expect(page.locator("[data-blx-device-dialog]")).toHaveCount(0);
+    await expect(page.locator("[data-blx-warnings]")).toContainText("below the entered VIN voltage class");
+    await expect(page).toHaveURL(/device=silicon-30v/);
+
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => localStorage.setItem("buck-loss-v2-device", "silicon-30v"));
+    await page.goto("/tools/buck-losses/?m=2&p=48v-to-12v-bus&i=3", { waitUntil: "domcontentloaded" });
+    const rememberedChooser = page.locator("[data-blx-device-dialog]");
+    await expect(rememberedChooser).toBeVisible();
+    await expect(rememberedChooser).toContainText("Choose a switch rated for 48 V");
+    await expect(rememberedChooser.locator('[data-blx-device-choice="silicon-30v"]')).toHaveCount(0);
+  });
+
+  test("EPC startup conditions and catalog-failure fallbacks stay explicit", async ({ page }) => {
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await expect(page.locator('[data-blx-out="loss-total"]')).toHaveText("Total · 326.68 mW");
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("50 V / 16 A test conditions");
+    await expect(page.locator("[data-blx-device-notes]")).toContainText("No shipped EON/EOFF surface is loaded");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("illustrative effective-time fallback");
+    await expect(page.locator(".blx-equations")).toContainText("no shipped device template currently loads one");
+    const conditions = page.locator("[data-blx-device-conditions]");
+    await conditions.locator("summary").click();
+    await expect(conditions.locator("[data-blx-device-condition-list] li")).toHaveCount(11);
+    await expect(conditions).toContainText("High/low-side QG: 7.3 nC typical");
+    await expect(conditions).toContainText("maximum 9.3 nC");
+    await expect(conditions).toContainText("High/low-side COSS(ER): 441 pF energy-equivalent");
+    await expect(conditions).toContainText("Effective turn-on overlap: 3 ns illustrative assumption");
+
+    await page.route("**/assets/data/coilcraft-inductors.v1.json*", (route) => route.abort());
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await expect(page.locator("[data-blx-catalog]")).toHaveAttribute("data-catalog-state", "error");
+    await expect(page.locator("#blx-v2-dcr")).toHaveValue("4.3");
+    await expect(page.locator("#blx-v2-rac")).toHaveValue("4.3");
+    await expect(page.locator("#blx-v2-inductorIsat")).toHaveValue("12.1");
+    await expect(page.locator("[data-blx-availability-label]")).toHaveText("Subtotal");
+    await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("never counted as zero");
+  });
+
   test("Infineon source conditions and unavailable loss families stay explicit", async ({ page }) => {
     await page.goto("/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=infineon-bsc010n04ls6-4v5&control=auto-dcm&timing=effective&i=2", { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -258,7 +336,8 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-device-model-note]")).toContainText("Vendor archive 280225 · 28-Feb-2025");
     await expect(page.locator("[data-blx-device-model-note]")).toContainText("LTspice requires .options Thev_Induc=1");
     await expect(page.locator("[data-blx-device-notes] li")).toHaveCount(5);
-    await expect(page.locator("[data-blx-device-notes]")).toContainText("QRR scales linearly from its 10 A reference point");
+    await expect(page.locator("[data-blx-device-notes]")).toContainText("Asymptotic QRR scales linearly from its 10 A reference point");
+    await expect(page.locator("[data-blx-device-notes]")).toContainText("capped by diffusion buildup during LS→HS dead time");
     await expect(page.locator("[data-blx-device-notes]")).toContainText("QGD and QRR are defined by design");
     await expect(page.locator("[data-blx-device-summary]")).toContainText("Mixed datasheet typical · 25 °C · VGS 4.5 V");
     await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("QGS2 is inferred");
@@ -324,7 +403,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(root).toHaveAttribute("aria-busy", "false");
     await expect(page.locator("[data-blx-catalog]")).toHaveAttribute("data-catalog-state", "ready");
     await expect(root).toHaveAttribute("data-blx-model", "2");
-    await expect(root).toHaveAttribute("data-blx-revision", "2.2");
+    await expect(root).toHaveAttribute("data-blx-revision", "2.3");
     await expect(page.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
     await expect(page.locator("[data-blx-operating-metrics] .blx-operating-metric")).toHaveCount(6);

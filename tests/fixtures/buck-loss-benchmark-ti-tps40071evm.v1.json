@@ -4,7 +4,7 @@
   "title": "TI TPS40071EVM-001 measured 3.3 V efficiency benchmark",
   "model": {
     "version": 2,
-    "revision": "2.2"
+    "revision": "2.3"
   },
   "deviceTemplateId": "vishay-si7860dp-tps40071evm",
   "sources": {
@@ -298,7 +298,7 @@
     ]
   },
   "expected": {
-    "modelRevision": "2.2",
+    "modelRevision": "2.3",
     "dataQuality": {
       "rowCount": 27,
       "uniqueKeyCount": 27,
@@ -332,80 +332,11 @@
         "pass": false,
         "overall": {
           "pointCount": 27,
-          "efficiencyMaePp": 1.100409,
+          "efficiencyMaePp": 1.268214,
           "efficiencyWorstAbsPp": 4.926047,
-          "efficiencySignedBiasPp": 0.295728,
-          "curveShapeMaePp": 1.177744,
-          "medianAbsLossErrorPercent": 18.648525,
-          "checks": {
-            "efficiencyMae": false,
-            "efficiencyWorst": false,
-            "medianLossError": true
-          },
-          "pass": false
-        },
-        "traces": [
-          {
-            "traceId": "vin-5v",
-            "vin": 5,
-            "pointCount": 9,
-            "efficiencyMaePp": 0.839714,
-            "efficiencyWorstAbsPp": 1.22972,
-            "efficiencySignedBiasPp": -0.779529,
-            "curveShapeMaePp": 0.372728,
-            "medianAbsLossErrorPercent": 26.318281,
-            "checks": {
-              "efficiencyMae": true,
-              "efficiencyWorst": true,
-              "medianLossError": false
-            },
-            "pass": false
-          },
-          {
-            "traceId": "vin-8v",
-            "vin": 8,
-            "pointCount": 9,
-            "efficiencyMaePp": 1.022549,
-            "efficiencyWorstAbsPp": 3.296228,
-            "efficiencySignedBiasPp": 0.274293,
-            "curveShapeMaePp": 1.11398,
-            "medianAbsLossErrorPercent": 17.893557,
-            "checks": {
-              "efficiencyMae": false,
-              "efficiencyWorst": false,
-              "medianLossError": true
-            },
-            "pass": false
-          },
-          {
-            "traceId": "vin-12v",
-            "vin": 12,
-            "pointCount": 9,
-            "efficiencyMaePp": 1.438963,
-            "efficiencyWorstAbsPp": 4.926047,
-            "efficiencySignedBiasPp": 1.39242,
-            "curveShapeMaePp": 1.44769,
-            "medianAbsLossErrorPercent": 10.758036,
-            "checks": {
-              "efficiencyMae": false,
-              "efficiencyWorst": false,
-              "medianLossError": true
-            },
-            "pass": false
-          }
-        ]
-      },
-      {
-        "id": "hot-rds-bound",
-        "acceptanceEvaluated": false,
-        "pass": false,
-        "overall": {
-          "pointCount": 27,
-          "efficiencyMaePp": 1.32737,
-          "efficiencyWorstAbsPp": 4.721229,
-          "efficiencySignedBiasPp": -0.131926,
-          "curveShapeMaePp": 1.283395,
-          "medianAbsLossErrorPercent": 31.338776,
+          "efficiencySignedBiasPp": 1.150489,
+          "curveShapeMaePp": 1.108691,
+          "medianAbsLossErrorPercent": 21.961165,
           "checks": {
             "efficiencyMae": false,
             "efficiencyWorst": false,
@@ -418,14 +349,83 @@
             "traceId": "vin-5v",
             "vin": 5,
             "pointCount": 9,
-            "efficiencyMaePp": 1.253566,
-            "efficiencyWorstAbsPp": 1.822475,
-            "efficiencySignedBiasPp": -1.23173,
-            "curveShapeMaePp": 0.512654,
-            "medianAbsLossErrorPercent": 43.217115,
+            "efficiencyMaePp": 0.292962,
+            "efficiencyWorstAbsPp": 0.682867,
+            "efficiencySignedBiasPp": -0.060212,
+            "curveShapeMaePp": 0.28337,
+            "medianAbsLossErrorPercent": 10.918177,
+            "checks": {
+              "efficiencyMae": true,
+              "efficiencyWorst": true,
+              "medianLossError": true
+            },
+            "pass": true
+          },
+          {
+            "traceId": "vin-8v",
+            "vin": 8,
+            "pointCount": 9,
+            "efficiencyMaePp": 1.097563,
+            "efficiencyWorstAbsPp": 3.296228,
+            "efficiencySignedBiasPp": 1.097563,
+            "curveShapeMaePp": 0.834103,
+            "medianAbsLossErrorPercent": 15.162641,
             "checks": {
               "efficiencyMae": false,
               "efficiencyWorst": false,
+              "medianLossError": true
+            },
+            "pass": false
+          },
+          {
+            "traceId": "vin-12v",
+            "vin": 12,
+            "pointCount": 9,
+            "efficiencyMaePp": 2.414117,
+            "efficiencyWorstAbsPp": 4.926047,
+            "efficiencySignedBiasPp": 2.414117,
+            "curveShapeMaePp": 1.020553,
+            "medianAbsLossErrorPercent": 32.859147,
+            "checks": {
+              "efficiencyMae": false,
+              "efficiencyWorst": false,
+              "medianLossError": false
+            },
+            "pass": false
+          }
+        ]
+      },
+      {
+        "id": "hot-rds-bound",
+        "acceptanceEvaluated": false,
+        "pass": false,
+        "overall": {
+          "pointCount": 27,
+          "efficiencyMaePp": 1.173884,
+          "efficiencyWorstAbsPp": 4.721229,
+          "efficiencySignedBiasPp": 0.713643,
+          "curveShapeMaePp": 1.158096,
+          "medianAbsLossErrorPercent": 20.004167,
+          "checks": {
+            "efficiencyMae": false,
+            "efficiencyWorst": false,
+            "medianLossError": false
+          },
+          "pass": false
+        },
+        "traces": [
+          {
+            "traceId": "vin-5v",
+            "vin": 5,
+            "pointCount": 9,
+            "efficiencyMaePp": 0.658836,
+            "efficiencyWorstAbsPp": 1.02106,
+            "efficiencySignedBiasPp": -0.51873,
+            "curveShapeMaePp": 0.41426,
+            "medianAbsLossErrorPercent": 20.004167,
+            "checks": {
+              "efficiencyMae": true,
+              "efficiencyWorst": true,
               "medianLossError": false
             },
             "pass": false
@@ -434,15 +434,15 @@
             "traceId": "vin-8v",
             "vin": 8,
             "pointCount": 9,
-            "efficiencyMaePp": 1.279165,
+            "efficiencyMaePp": 0.878024,
             "efficiencyWorstAbsPp": 3.112956,
-            "efficiencySignedBiasPp": -0.139711,
-            "curveShapeMaePp": 1.232595,
-            "medianAbsLossErrorPercent": 31.338776,
+            "efficiencySignedBiasPp": 0.674867,
+            "curveShapeMaePp": 0.95674,
+            "medianAbsLossErrorPercent": 8.356726,
             "checks": {
-              "efficiencyMae": false,
+              "efficiencyMae": true,
               "efficiencyWorst": false,
-              "medianLossError": false
+              "medianLossError": true
             },
             "pass": false
           },
@@ -450,15 +450,15 @@
             "traceId": "vin-12v",
             "vin": 12,
             "pointCount": 9,
-            "efficiencyMaePp": 1.449379,
+            "efficiencyMaePp": 1.984793,
             "efficiencyWorstAbsPp": 4.721229,
-            "efficiencySignedBiasPp": 0.975662,
-            "curveShapeMaePp": 1.559023,
-            "medianAbsLossErrorPercent": 13.84335,
+            "efficiencySignedBiasPp": 1.984793,
+            "curveShapeMaePp": 1.137711,
+            "medianAbsLossErrorPercent": 25.213429,
             "checks": {
               "efficiencyMae": false,
               "efficiencyWorst": false,
-              "medianLossError": true
+              "medianLossError": false
             },
             "pass": false
           }
@@ -471,11 +471,11 @@
         "vin": 5,
         "iout": 2,
         "measuredEfficiencyPercent": 96.8742,
-        "predictedEfficiencyPercent": 97.145029,
+        "predictedEfficiencyPercent": 97.557067,
         "measuredLossW": 0.212959,
-        "predictedKnownLossW": 0.193966,
-        "efficiencyErrorPp": 0.270829,
-        "lossErrorPercent": -8.918934,
+        "predictedKnownLossW": 0.165271,
+        "efficiencyErrorPp": 0.682867,
+        "lossErrorPercent": -22.393196,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -487,11 +487,11 @@
         "vin": 5,
         "iout": 6,
         "measuredEfficiencyPercent": 96.8398,
-        "predictedEfficiencyPercent": 95.732021,
+        "predictedEfficiencyPercent": 96.506817,
         "measuredLossW": 0.646139,
-        "predictedKnownLossW": 0.882735,
-        "efficiencyErrorPp": -1.107779,
-        "lossErrorPercent": 36.616874,
+        "predictedKnownLossW": 0.716685,
+        "efficiencyErrorPp": -0.332983,
+        "lossErrorPercent": 10.918177,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -503,11 +503,11 @@
         "vin": 5,
         "iout": 10,
         "measuredEfficiencyPercent": 95.2646,
-        "predictedEfficiencyPercent": 94.430699,
+        "predictedEfficiencyPercent": 95.257811,
         "measuredLossW": 1.64036,
-        "predictedKnownLossW": 1.946262,
-        "efficiencyErrorPp": -0.833901,
-        "lossErrorPercent": 18.648525,
+        "predictedKnownLossW": 1.642828,
+        "efficiencyErrorPp": -0.006789,
+        "lossErrorPercent": 0.150509,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -535,11 +535,11 @@
         "vin": 8,
         "iout": 6,
         "measuredEfficiencyPercent": 96.0344,
-        "predictedEfficiencyPercent": 95.648254,
+        "predictedEfficiencyPercent": 96.615338,
         "measuredLossW": 0.817612,
-        "predictedKnownLossW": 0.900848,
-        "efficiencyErrorPp": -0.386146,
-        "lossErrorPercent": 10.180425,
+        "predictedKnownLossW": 0.69364,
+        "efficiencyErrorPp": 0.580938,
+        "lossErrorPercent": -15.162641,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -551,11 +551,11 @@
         "vin": 8,
         "iout": 10,
         "measuredEfficiencyPercent": 95.3001,
-        "predictedEfficiencyPercent": 94.459337,
+        "predictedEfficiencyPercent": 95.596724,
         "measuredLossW": 1.627456,
-        "predictedKnownLossW": 1.935668,
-        "efficiencyErrorPp": -0.840763,
-        "lossErrorPercent": 18.938256,
+        "predictedKnownLossW": 1.520011,
+        "efficiencyErrorPp": 0.296624,
+        "lossErrorPercent": -6.601993,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -583,11 +583,11 @@
         "vin": 12,
         "iout": 6,
         "measuredEfficiencyPercent": 94.2886,
-        "predictedEfficiencyPercent": 94.871523,
+        "predictedEfficiencyPercent": 96.091975,
         "measuredLossW": 1.199357,
-        "predictedKnownLossW": 1.07033,
-        "efficiencyErrorPp": 0.582923,
-        "lossErrorPercent": -10.758036,
+        "predictedKnownLossW": 0.805259,
+        "efficiencyErrorPp": 1.803375,
+        "lossErrorPercent": -32.859147,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -599,11 +599,11 @@
         "vin": 12,
         "iout": 10,
         "measuredEfficiencyPercent": 93.7683,
-        "predictedEfficiencyPercent": 93.611756,
+        "predictedEfficiencyPercent": 95.145928,
         "measuredLossW": 2.19313,
-        "predictedKnownLossW": 2.251983,
-        "efficiencyErrorPp": -0.156544,
-        "lossErrorPercent": 2.683495,
+        "predictedKnownLossW": 1.683565,
+        "efficiencyErrorPp": 1.377628,
+        "lossErrorPercent": -23.234608,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -615,11 +615,11 @@
         "vin": 5,
         "iout": 2,
         "measuredEfficiencyPercent": 96.8742,
-        "predictedEfficiencyPercent": 96.972463,
+        "predictedEfficiencyPercent": 97.383949,
         "measuredLossW": 0.212959,
-        "predictedKnownLossW": 0.206056,
-        "efficiencyErrorPp": 0.098263,
-        "lossErrorPercent": -3.241761,
+        "predictedKnownLossW": 0.177298,
+        "efficiencyErrorPp": 0.509749,
+        "lossErrorPercent": -16.745858,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -631,11 +631,11 @@
         "vin": 5,
         "iout": 6,
         "measuredEfficiencyPercent": 96.8398,
-        "predictedEfficiencyPercent": 95.277856,
+        "predictedEfficiencyPercent": 96.046231,
         "measuredLossW": 0.646139,
-        "predictedKnownLossW": 0.981324,
-        "efficiencyErrorPp": -1.561944,
-        "lossErrorPercent": 51.875112,
+        "predictedKnownLossW": 0.815072,
+        "efficiencyErrorPp": -0.793569,
+        "lossErrorPercent": 26.145078,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -647,11 +647,11 @@
         "vin": 5,
         "iout": 10,
         "measuredEfficiencyPercent": 95.2646,
-        "predictedEfficiencyPercent": 93.703013,
+        "predictedEfficiencyPercent": 94.518338,
         "measuredLossW": 1.64036,
-        "predictedKnownLossW": 2.217651,
-        "efficiencyErrorPp": -1.561587,
-        "lossErrorPercent": 35.192972,
+        "predictedKnownLossW": 1.91386,
+        "efficiencyErrorPp": -0.746262,
+        "lossErrorPercent": 16.673178,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -679,11 +679,11 @@
         "vin": 8,
         "iout": 6,
         "measuredEfficiencyPercent": 96.0344,
-        "predictedEfficiencyPercent": 95.235865,
+        "predictedEfficiencyPercent": 96.194011,
         "measuredLossW": 0.817612,
-        "predictedKnownLossW": 0.990487,
-        "efficiencyErrorPp": -0.798535,
-        "lossErrorPercent": 21.14386,
+        "predictedKnownLossW": 0.783402,
+        "efficiencyErrorPp": 0.159611,
+        "lossErrorPercent": -4.184128,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -695,11 +695,11 @@
         "vin": 8,
         "iout": 10,
         "measuredEfficiencyPercent": 95.3001,
-        "predictedEfficiencyPercent": 93.806167,
+        "predictedEfficiencyPercent": 94.927266,
         "measuredLossW": 1.627456,
-        "predictedKnownLossW": 2.178924,
-        "efficiencyErrorPp": -1.493933,
-        "lossErrorPercent": 33.885288,
+        "predictedKnownLossW": 1.763458,
+        "efficiencyErrorPp": -0.372834,
+        "lossErrorPercent": 8.356726,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -727,11 +727,11 @@
         "vin": 12,
         "iout": 6,
         "measuredEfficiencyPercent": 94.2886,
-        "predictedEfficiencyPercent": 94.458761,
+        "predictedEfficiencyPercent": 95.666232,
         "measuredLossW": 1.199357,
-        "predictedKnownLossW": 1.161528,
-        "efficiencyErrorPp": 0.170161,
-        "lossErrorPercent": -3.154089,
+        "predictedKnownLossW": 0.896958,
+        "efficiencyErrorPp": 1.377632,
+        "lossErrorPercent": -25.213429,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",
@@ -743,11 +743,11 @@
         "vin": 12,
         "iout": 10,
         "measuredEfficiencyPercent": 93.7683,
-        "predictedEfficiencyPercent": 92.966302,
+        "predictedEfficiencyPercent": 94.477002,
         "measuredLossW": 2.19313,
-        "predictedKnownLossW": 2.496733,
-        "efficiencyErrorPp": -0.801998,
-        "lossErrorPercent": 13.84335,
+        "predictedKnownLossW": 1.929135,
+        "efficiencyErrorPp": 0.708702,
+        "lossErrorPercent": -12.037359,
         "availability": "subtotal",
         "omitted": [
           "inductorCoreResidualMissingData",

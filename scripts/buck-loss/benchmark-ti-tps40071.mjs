@@ -13,7 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../..");
 export const FIXTURE_PATH = resolve(root, "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json");
 export const ARTIFACT_PATH = resolve(root, "design-research/buck-loss-ti-tps40071-benchmark.artifact.json");
-const GENERATED_AT = "2026-07-11T12:00:00Z";
+const GENERATED_AT = "2026-07-12T12:00:00Z";
 
 const round = (value, digits = 4) => {
   const scale = 10 ** digits;
@@ -137,7 +137,7 @@ export function buildBenchmarkArtifact(fixture, analysis) {
   const measurement = fixture.sources.measurement;
   const calculationSource = source(
     "benchmark_calculation",
-    "TI curve extraction and buck-loss v2.2 calculation",
+    "TI curve extraction and buck-loss v2.3 calculation",
     "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json",
     measurement.url
   );
@@ -315,7 +315,7 @@ export function buildBenchmarkArtifact(fixture, analysis) {
             "",
             `- **Result: ${resultUpper}.** The nominal model ${resultWord} the locked ≤1.0 pp MAE, ≤1.5 pp worst-error, and ≤20% median-loss-error policy when every input-voltage trace must pass.`,
             `- Across all 27 nominal points, efficiency MAE is **${overall.efficiencyMaePp.toFixed(2)} pp**, worst-case error is **${overall.efficiencyWorstAbsPp.toFixed(2)} pp**, and median absolute loss error is **${overall.medianAbsLossErrorPercent.toFixed(1)}%**.`,
-            `- At 12 V and 10 A, the model is close: ${high12.calculatedEfficiencyPct.toFixed(2)}% calculated versus ${high12.measuredEfficiencyPct.toFixed(2)}% measured, with ${signed(high12.lossErrorPct, 1, "%")} known-loss error. At 2 A it overstates efficiency by ${low12.efficiencyErrorPp.toFixed(2)} pp.`,
+            `- At 12 V and 10 A, the ${high12.calculatedEfficiencyPct.toFixed(2)}% calculated ceiling remains above the ${high12.measuredEfficiencyPct.toFixed(2)}% measured result, with ${signed(high12.lossErrorPct, 1, "%")} known-loss error. Reverse recovery is zero because the fixture declares zero LS→HS dead time. At 2 A it overstates efficiency by ${low12.efficiencyErrorPp.toFixed(2)} pp.`,
             "- The comparison validates the calculator as an auditable loss subtotal, not yet as a strict full-board efficiency predictor.",
             `- Mechanism validation is **${analysis.mechanismValidation.status}**: TI Figure 5-3 supplies total efficiency only, not direct conduction, transition, dead-time, magnetic, or gate-drive loss measurements.`
           ].join("\n")
@@ -326,9 +326,9 @@ export function buildBenchmarkArtifact(fixture, analysis) {
           type: "markdown",
           sourceId: "benchmark_calculation",
           body: [
-            "## The 12 V trace converges at high load but misses fixed loss at low load",
+            "## The 12 V known-loss ceiling remains above measurement across the trace",
             "",
-            `At 10 A the nominal prediction is within ${Math.abs(high12.efficiencyErrorPp).toFixed(2)} pp of TI. At 2 A, the calculated ${low12.calculatedEfficiencyPct.toFixed(2)}% ceiling is ${low12.efficiencyErrorPp.toFixed(2)} pp above the measured curve. The widening low-load gap is consistent with omitted fixed or weakly current-dependent terms, but the published curve alone cannot identify their individual causes.`
+            `At 10 A the nominal ceiling is ${Math.abs(high12.efficiencyErrorPp).toFixed(2)} pp above TI. At 2 A, the calculated ${low12.calculatedEfficiencyPct.toFixed(2)}% ceiling is ${low12.efficiencyErrorPp.toFixed(2)} pp above the measured curve. The load-dependent residual is consistent with omitted fixed and dynamic terms, but the published curve alone cannot identify their individual causes.`
           ].join("\n")
         },
         { id: "efficiency_12v_chart", type: "chart", chartId: "efficiency_12v" },
@@ -339,7 +339,7 @@ export function buildBenchmarkArtifact(fixture, analysis) {
           body: [
             "## Measured total loss exposes what the known-loss subtotal cannot cover",
             "",
-            `At 2 A, TI's inferred total loss is ${low12.measuredLossW.toFixed(3)} W versus ${low12.calculatedKnownLossW.toFixed(3)} W modeled. By 10 A the values converge to ${high12.measuredLossW.toFixed(3)} W measured and ${high12.calculatedKnownLossW.toFixed(3)} W modeled. The hot-RDS(on) lane is a sensitivity bound, not a fitted correction.`
+            `At 2 A, TI's inferred total loss is ${low12.measuredLossW.toFixed(3)} W versus ${low12.calculatedKnownLossW.toFixed(3)} W modeled. At 10 A, the ${high12.calculatedKnownLossW.toFixed(3)} W known-loss subtotal remains below the ${high12.measuredLossW.toFixed(3)} W measured total, restoring the declared subtotal invariant. The hot-RDS(on) lane is a sensitivity bound, not a fitted correction.`
           ].join("\n")
         },
         { id: "loss_12v_chart", type: "chart", chartId: "loss_12v" },
@@ -350,7 +350,7 @@ export function buildBenchmarkArtifact(fixture, analysis) {
           body: [
             "## The residual changes sign with input voltage, so one fitted offset would be misleading",
             "",
-            `The 8 V trace is nearly exact at 5 A (${signed(mid8.efficiencyErrorPp, 2, " pp")}) but overstates efficiency at low load. The 5 V trace instead becomes pessimistic through mid/high load; at 8 A its error is ${signed(high5.efficiencyErrorPp, 2, " pp")}. This pattern points to condition-dependent gate drive, transition, and resistance assumptions rather than a single missing constant loss.`
+            `At 5 A the 8 V trace error is ${signed(mid8.efficiencyErrorPp, 2, " pp")}; at 8 A the 5 V trace error is ${signed(high5.efficiencyErrorPp, 2, " pp")}. The residual changes with input voltage and load, pointing to condition-dependent gate drive, transition, resistance, and omitted board-loss assumptions rather than a single fitted offset.`
           ].join("\n")
         },
         { id: "nominal_error_chart", type: "chart", chartId: "nominal_error" },
@@ -370,7 +370,7 @@ export function buildBenchmarkArtifact(fixture, analysis) {
           body: [
             "## Method: published vectors, disclosed adaptations, no curve fitting",
             "",
-            "The 27 measurements come from the vector centerlines embedded in TI Figure 5-3, calibrated against every integer axis gridline. The fixture retains the source document hash and a ±0.1 pp publication/readout uncertainty. The symmetric Si7860DP pair uses TI's 8 mΩ design value, Vishay measured charge/diode data, derived gate-path timing, and a disclosed triangular recovery-charge proxy. The 5 V case uses Vishay's measured 9 mΩ value at 4.5 V gate drive. The second lane changes only both MOSFET resistances by TI's documented 1.3 temperature factor. No parameter is fitted to measured efficiency."
+            "The 27 measurements come from the vector centerlines embedded in TI Figure 5-3, calibrated against every integer axis gridline. The fixture retains the source document hash and a ±0.1 pp publication/readout uncertainty. The symmetric Si7860DP pair uses TI's 8 mΩ design value, Vishay measured charge/diode data, derived gate-path timing, and a disclosed triangular recovery-charge proxy capped by diffusion buildup during LS→HS dead time. The predictive zero-dead-time fixture therefore contributes zero reverse-recovery charge. The 5 V case uses Vishay's measured 9 mΩ value at 4.5 V gate drive. The second lane changes only both MOSFET resistances by TI's documented 1.3 temperature factor. No parameter is fitted to measured efficiency."
           ].join("\n")
         },
         { id: "nominal_detail_table", type: "table", tableId: "nominal_point_detail" },

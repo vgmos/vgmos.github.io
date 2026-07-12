@@ -107,8 +107,12 @@ describe("TI TPS40071EVM hardware benchmark", () => {
     assert.equal(analysis.acceptance.pass, false);
     assert.ok(analysis.acceptance.overall.efficiencyMaePp > fixture.acceptance.maxEfficiencyMaePp);
     assert.ok(analysis.acceptance.overall.efficiencyWorstAbsPp > fixture.acceptance.maxEfficiencyWorstAbsPp);
-    assert.ok(analysis.acceptance.overall.medianAbsLossErrorPercent < fixture.acceptance.maxMedianAbsLossErrorPercent);
-    assert.ok(analysis.acceptance.traces.every((trace) => trace.pass === false));
+    assert.ok(analysis.acceptance.overall.medianAbsLossErrorPercent > fixture.acceptance.maxMedianAbsLossErrorPercent);
+    assert.deepEqual(Object.fromEntries(analysis.acceptance.traces.map((trace) => [trace.vin, trace.pass])), {
+      5: true,
+      8: false,
+      12: false
+    });
     assert.deepEqual(analysis.mechanismValidation, {
       status: "not-evaluable",
       pass: null,
@@ -124,7 +128,10 @@ describe("TI TPS40071EVM hardware benchmark", () => {
     const nominal = analysis.lanes.find((lane) => lane.id === "nominal-25c");
     const highLoad12 = nominal.rows.find((row) => row.vin === 12 && row.iout === 10);
     const lowLoad12 = nominal.rows.find((row) => row.vin === 12 && row.iout === 2);
-    assert.ok(Math.abs(highLoad12.efficiencyErrorPp) < 0.2);
+    assert.equal(highLoad12.atomicKnownLossesW.reverseRecovery, 0);
+    assert.ok(highLoad12.predictedKnownLossW < highLoad12.measuredLossW);
+    assert.ok(Math.abs(highLoad12.predictedKnownLossW - 1.6835650833988285) < 1e-12);
+    assert.ok(Math.abs(highLoad12.efficiencyErrorPp - 1.377628397641402) < 1e-12);
     assert.ok(lowLoad12.efficiencyErrorPp > 4.9);
     assert.deepEqual(fixture.expected, expectedBuckLossBenchmarkV1(analysis));
   });

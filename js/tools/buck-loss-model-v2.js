@@ -663,7 +663,7 @@ const UNCERTAINTY_PARAMETERS_V2 = Object.freeze({
   magnetics: Object.freeze(["dcr", "rac", "inductorAcManual"]),
   capacitors: Object.freeze(["inputEsr", "esr"]),
   switchingTransitions: Object.freeze(["switchingEnergySurface", "qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "gateResistanceOffHigh", "effectiveTurnOn", "effectiveTurnOff"]),
-  deadTimeRecovery: Object.freeze(["deadTimeHighToLow", "deadTimeLowToHigh", "diodeVf", "reversePathResistance", "qrrRef"]),
+  deadTimeRecovery: Object.freeze(["deadTimeHighToLow", "deadTimeLowToHigh", "diodeVf", "reversePathResistance", "qrrRef", "qrrRefCurrent"]),
   gateDrive: Object.freeze(["qgHigh", "qgLow", "vDrive"]),
   nodeEnergy: Object.freeze(["cossErHigh", "cossErLow"]),
   controllerBias: Object.freeze(["iq", "vBias"])
@@ -892,8 +892,14 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   } else if (technology === "gan") {
     losses.reverseRecovery = 0;
   } else if (finite(inputs.qrrRef) && finite(inputs.qrrRefCurrent) && inputs.qrrRefCurrent > 0) {
-    const scaledQrr = inputs.qrrRef * turnOnCurrent / inputs.qrrRefCurrent;
-    losses.reverseRecovery = waveform.mode === "dcm" ? 0 : vSwing * scaledQrr * inputs.fsw;
+    if (waveform.mode === "dcm" || turnOnCurrent <= EPSILON || inputs.qrrRef <= 0 || inputs.deadTimeLowToHigh <= 0) {
+      losses.reverseRecovery = 0;
+    } else {
+      const tauF = inputs.qrrRef / inputs.qrrRefCurrent;
+      const buildUp = clamp(-Math.expm1(-inputs.deadTimeLowToHigh / tauF), 0, 1);
+      const scaledQrr = inputs.qrrRef * turnOnCurrent / inputs.qrrRefCurrent * buildUp;
+      losses.reverseRecovery = vSwing * scaledQrr * inputs.fsw;
+    }
   } else {
     addGap("reverseRecovery", "reverseRecoveryMissingData");
   }

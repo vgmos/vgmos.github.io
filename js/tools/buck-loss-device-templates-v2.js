@@ -120,10 +120,28 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       requiredDirectives: Object.freeze([]),
       redistribution: "not-redistributed"
     }),
+    parameterConditions: Object.freeze({
+      rdsHigh: Object.freeze({ statistic: "typical", conditions: "VGS = 5 V, ID = 16 A, TJ = 25 °C", maximum: 5.2 }),
+      rdsLow: Object.freeze({ statistic: "typical", conditions: "VGS = 5 V, ID = 16 A, TJ = 25 °C", maximum: 5.2 }),
+      qgHigh: Object.freeze({ statistic: "typical", conditions: "VDS = 50 V, ID = 16 A, VGS = 0 to 5 V, TJ = 25 °C", maximum: 9.3, qualification: "Defined by design; not subject to production test." }),
+      qgLow: Object.freeze({ statistic: "typical", conditions: "VDS = 50 V, ID = 16 A, VGS = 0 to 5 V, TJ = 25 °C", maximum: 9.3, qualification: "Defined by design; not subject to production test." }),
+      qgs2High: Object.freeze({ statistic: "inferred", conditions: "QGS 2.8 nC − QG(th) 2.1 nC; VDS = 50 V, ID = 16 A, VGS = 0 to 5 V, TJ = 25 °C" }),
+      qgs2Low: Object.freeze({ statistic: "inferred", conditions: "QGS 2.8 nC − QG(th) 2.1 nC; VDS = 50 V, ID = 16 A, VGS = 0 to 5 V, TJ = 25 °C" }),
+      qgdHigh: Object.freeze({ statistic: "typical", conditions: "VDS = 50 V, ID = 16 A, VGS = 0 to 5 V, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
+      qgdLow: Object.freeze({ statistic: "typical", conditions: "VDS = 50 V, ID = 16 A, VGS = 0 to 5 V, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
+      cossErHigh: Object.freeze({ statistic: "energy-equivalent", conditions: "VDS = 0 to 50 V, VGS = 0 V, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
+      cossErLow: Object.freeze({ statistic: "energy-equivalent", conditions: "VDS = 0 to 50 V, VGS = 0 V, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
+      eossMaxVoltage: Object.freeze({ statistic: "characterization limit", conditions: "COSS(ER) is supported only over VDS = 0 to 50 V at TJ = 25 °C" }),
+      diodeVf: Object.freeze({ statistic: "typical", conditions: "VGS = 0 V, IS = 0.5 A, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
+      qrrRef: Object.freeze({ statistic: "not applicable", conditions: "Majority-carrier reverse conduction; EPC specifies zero QRR" }),
+      vDrive: Object.freeze({ statistic: "selected test condition", conditions: "VGS = 5 V to match the RDS(on) and gate-charge conditions at TJ = 25 °C" }),
+      effectiveTurnOn: Object.freeze({ statistic: "illustrative assumption", conditions: "Not condition-matched; used only when no complete gate-charge path or EON/EOFF surface is loaded" }),
+      effectiveTurnOff: Object.freeze({ statistic: "illustrative assumption", conditions: "Not condition-matched; used only when no complete gate-charge path or EON/EOFF surface is loaded" })
+    }),
     notes: Object.freeze([
-      "QGS2 is inferred as QGS − QG(TH).",
-      "COSS(ER) is characterized over 0–50 V; EOSS is omitted above that domain.",
-      "Automatic transition selection tries a condition-matched energy table, then complete gate-charge timing, then the 3 ns / 2 ns illustrative effective-time fallback."
+      "QGS2 is inferred as QGS − QG(TH); QG and QGD retain their disclosed 50 V / 16 A datasheet conditions and are not rescaled at the operating point.",
+      "COSS(ER) is an energy-equivalent scalar characterized over 0–50 V; EOSS is omitted above that domain and is not condition-scaled below it.",
+      "No shipped EON/EOFF surface is loaded. Automatic transition selection therefore uses a complete gate-charge path when available, then the disclosed 3 ns / 2 ns illustrative effective-time fallback."
     ]),
     provenanceOverrides: {
       qgs2High: "inferred-qgs-minus-qgth",
@@ -202,7 +220,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     notes: Object.freeze([
       "Active values retain their individual datasheet conditions: RDS(on) and QG use the 4.5 V corner; QGS2 is inferred, while QGD and plateau use the 10 V gate-charge test. QGD and QRR are defined by design, not production-tested.",
       "The published 1 Ω internal gate resistance is not the total driver-plus-external gate path, so overlap remains omitted until a complete gate path or effective time is entered.",
-      "QRR scales linearly from its 10 A reference point; VSD remains a load-independent first-order value.",
+      "Asymptotic QRR scales linearly from its 10 A reference point and is capped by diffusion buildup during LS→HS dead time; VSD remains a load-independent first-order value.",
       "QOSS and small-signal COSS are not substituted for energy-equivalent COSS(ER), so switch-node energy remains omitted.",
       "The official PSpice library is checked in native LTspice only for scoped validation; the vendor model is not redistributed."
     ]),
@@ -281,7 +299,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     notes: Object.freeze([
       "This template exists to reproduce the published TI TPS40071EVM benchmark, not to recommend an obsolete MOSFET.",
       "The 8 mΩ channel value is the EVM design value. The benchmark overrides it to Vishay's measured 9 mΩ value for the 5 V input trace, where gate drive is about 4.5 V.",
-      "QGS2, plateau, equivalent driver-path resistance, and QRR are disclosed adaptations because compatible scalar values are not published.",
+      "QGS2, plateau, equivalent driver-path resistance, and asymptotic QRR are disclosed adaptations because compatible scalar values are not published; recovered charge is capped by diffusion buildup during LS→HS dead time.",
       "Energy-equivalent COSS(ER) is unavailable and remains unset, so switch-node energy is omitted and calculated efficiency is a ceiling."
     ]),
     provenanceOverrides: {
@@ -344,7 +362,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     source: TEACHING_SOURCE,
     notes: Object.freeze([
       "All values are synthetic and fixed at 25 °C for reproducible teaching examples.",
-      "QRR scales linearly from the 10 A reference current."
+      "Asymptotic QRR scales linearly from the 10 A reference current and is capped by diffusion buildup during LS→HS dead time."
     ]),
     values: symmetric({ ...item, eossMaxVoltage: item.voltageClass })
   }))

@@ -101,7 +101,7 @@ const TERM_PARAMETERS = Object.freeze({
   turnOnOverlap: ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "effectiveTurnOn"],
   turnOffOverlap: ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOffHigh", "effectiveTurnOff"],
   deadTimeConduction: ["deadTimeHighToLow", "deadTimeLowToHigh", "diodeVf", "reversePathResistance"],
-  reverseRecovery: ["qrrRef", "qrrRefCurrent"],
+  reverseRecovery: ["deadTimeLowToHigh", "qrrRef", "qrrRefCurrent"],
   gateDriveHigh: ["qgHigh", "vDrive"],
   gateDriveLow: ["qgLow", "vDrive"],
   nodeEnergy: ["cossErHigh", "cossErLow", "eossMaxVoltage"],
@@ -386,7 +386,7 @@ function prepareMarkup(root) {
   const caveat = root.querySelector(".blx-top-caveat");
   if (caveat) caveat.textContent = "This is an analytical intuition model at a disclosed 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.";
   const equations = root.querySelector(".blx-equations");
-  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Atomic analytical rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
+  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. The surface tier is reserved for characterized data, but no shipped device template currently loads one; automatic mode exposes the fallback it selects. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Atomic analytical rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
   const caveats = root.querySelector(".blx-caveats");
   if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation remains omitted. CCM ZVS classification is diagnostic until a nonlinear COSS/QOSS commutation model or waveform measurement supports an energy credit.</li><li>Automatic transition selection falls back visibly when no condition-matched energy surface is present. Effective-time fallbacks carry the widest uncertainty bound.</li><li>The waveform viewer's linear RLC trace is a first-order parasitic estimate; ringing loss, nonlinear COSS, snubbers, probe loading, PCB/package resistance, bootstrap loss, and full IC leakage remain outside the power-loss total.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
 }
@@ -416,10 +416,14 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
     root.appendChild(dialog);
   }
   const vin = Number(options.vin) || 12;
-  const preloaded = options.recommendedId || (vin <= 18 ? "epc2090" : recommendedSiliconTemplateV2(vin));
-  const manufacturer = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.catalogKind === "manufacturer");
-  const teaching = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.catalogKind !== "manufacturer");
-    dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2></div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
+  const eligible = BUCK_LOSS_DEVICE_TEMPLATES_V2.filter((template) => template.voltageClass >= vin);
+  const fallbackId = vin <= 18 ? "epc2090" : recommendedSiliconTemplateV2(vin);
+  const requestedId = options.recommendedId || fallbackId;
+  const preloaded = eligible.some((template) => template.id === requestedId) ? requestedId : fallbackId;
+  const manufacturer = eligible.filter((template) => template.catalogKind === "manufacturer");
+  const teaching = eligible.filter((template) => template.catalogKind !== "manufacturer");
+  const message = options.message ? `<p>${escapeHtml(options.message)}</p>` : "";
+  dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2>${message}</div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
   return new Promise((resolve) => {
     let settled = false;
     const finish = async (value) => {
@@ -629,7 +633,9 @@ function renderDevice(root, state) {
   setText(root, "[data-blx-device-summary]", summary);
   const conditionSummary = template.id === "infineon-bsc010n04ls6-4v5"
     ? "Values mix datasheet corners: RDS(on)/QG at VGS 4.5 V; QGD and plateau use the 10 V test; QGS2 is inferred."
-    : `Values use the ${template.cornerLabel || template.cornerId} corner; detailed conditions and notes are disclosed below.`;
+    : template.id === "epc2090"
+      ? "QG/QGD retain their 50 V / 16 A test conditions; COSS(ER) is a 0–50 V energy-equivalent scalar; transition overlap uses a disclosed fallback."
+      : `Values use the ${template.cornerLabel || template.cornerId} corner; detailed conditions and notes are disclosed below.`;
   setText(root, "[data-blx-device-condition-summary]", conditionSummary);
   const sourceLink = root.querySelector("[data-blx-device-source]");
   if (sourceLink) {
@@ -1867,6 +1873,7 @@ function renderWarningsAndInsight(root, state, point) {
   else if (state.controlMode === "forced-ccm") messages.push({ copy: "Forced CCM is an expert comparison; watch the valley-current sign at light load." });
   if (state.selectedPart && state.dcrMode === "max") messages.push({ copy: "Maximum DCR changes copper loss only; the catalog AC/core residual remains tied to its typical characterization." });
   if (point.warnings.includes("switching-energy-surface-fallback")) messages.push({ copy: "The supplied switching-energy surface was outside its declared domain or conditions; the automatic hierarchy used the next supported method.", strong: true });
+  if (point.transition?.method === "effective-fallback") messages.push({ copy: "Transitions use the template's illustrative effective-time fallback; no condition-matched EON/EOFF surface is loaded. Gate charge and COSS(ER) retain their disclosed datasheet conditions and are not rescaled.", strong: true });
   if (state.urlNotes.length) messages.push({ copy: "Some URL values were unknown or adjusted to the valid schema." });
   if (holder) holder.innerHTML = messages.map(({ copy, strong }) => `<p class="blx-note${strong ? " blx-note-strong" : ""}">${escapeHtml(copy)}</p>`).join("");
   const advisory = point.insights.fetAreaOptimumScale;
@@ -2685,13 +2692,45 @@ function populatePresets(root, state) {
     button.type = "button";
     button.dataset.blxPreset = preset.id;
     button.textContent = preset.name;
-    button.addEventListener("click", () => applyPreset(root, state, preset));
+    button.addEventListener("click", () => { void applyPreset(root, state, preset); });
     holder.append(button);
   });
 }
 
-function applyPreset(root, state, preset) {
-  state.rawInputs = cloneRaw({ ...state.rawInputs, ...preset.rawInputs });
+function rawInputsForPreset(state, preset) {
+  return cloneRaw({
+    ...state.rawInputs,
+    ...preset.rawInputs,
+    __provenance: {
+      ...(state.rawInputs.__provenance || {}),
+      ...(preset.rawInputs.__provenance || {})
+    }
+  });
+}
+
+async function applyPreset(root, state, preset) {
+  let deviceId = state.deviceId;
+  if (state.template.voltageClass < preset.rawInputs.vin) {
+    deviceId = await requestBuckLossDeviceV2(root, {
+      title: `Choose a switch rated for ${displayNumber(preset.rawInputs.vin, 3)} V`,
+      message: `${state.template.label} is below this preset's input-voltage class. Choose a compatible device to apply the preset.`,
+      vin: preset.rawInputs.vin,
+      allowCancel: true
+    });
+    if (!deviceId) return;
+  }
+
+  let nextRawInputs = rawInputsForPreset(state, preset);
+  if (deviceId !== state.deviceId) {
+    const applied = applyBuckLossDeviceTemplateV2(nextRawInputs, deviceId);
+    nextRawInputs = cloneRaw(applied.rawInputs);
+    state.deviceId = deviceId;
+    state.template = applied.template;
+    state.timingMode = applied.template.timingMode;
+    state.waveformRinging = waveformRingingForTemplate(applied.template, applied.rawInputs, state.waveformRinging);
+    try { localStorage.setItem(DEVICE_MEMORY_KEY, deviceId); } catch {}
+  }
+  state.rawInputs = nextRawInputs;
   state.presetId = preset.id;
   state.cursor = clamp(preset.cursor, 0, preset.rawInputs.ioutMax);
   state.selectedPart = preset.inductorPart;
@@ -3010,11 +3049,19 @@ export async function initBuckLossExplorerV2(root) {
   if (!root || root.dataset.blxInit === "v2") return;
   root.dataset.blxInit = "v2";
   prepareMarkup(root);
-  let parsed = parseBuckLossUrlV2(typeof window === "undefined" ? "" : window.location.search, { rememberedDeviceId: readRememberedDevice() });
-  if (parsed.needsDevice) {
-    const deviceId = await requestBuckLossDeviceV2(root, { vin: parsed.rawInputs.vin });
+  const rawSearch = typeof window === "undefined" ? "" : window.location.search;
+  const searchParams = new URLSearchParams(rawSearch);
+  let parsed = parseBuckLossUrlV2(rawSearch, { rememberedDeviceId: readRememberedDevice() });
+  const parsedTemplate = getBuckLossDeviceTemplateV2(parsed.deviceId);
+  const incompatibleRememberedDevice = !searchParams.has("device") && parsedTemplate && parsedTemplate.voltageClass < parsed.rawInputs.vin;
+  if (parsed.needsDevice || incompatibleRememberedDevice) {
+    const deviceId = await requestBuckLossDeviceV2(root, {
+      title: incompatibleRememberedDevice ? `Choose a switch rated for ${displayNumber(parsed.rawInputs.vin, 3)} V` : undefined,
+      message: incompatibleRememberedDevice ? `${parsedTemplate.label} is below this preset's input-voltage class.` : undefined,
+      vin: parsed.rawInputs.vin
+    });
     try { localStorage.setItem(DEVICE_MEMORY_KEY, deviceId); } catch {}
-    const chosenState = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+    const chosenState = new URLSearchParams(rawSearch);
     chosenState.set("m", "2");
     chosenState.set("device", deviceId);
     parsed = parseBuckLossUrlV2(chosenState.toString(), { rememberedDeviceId: deviceId });
