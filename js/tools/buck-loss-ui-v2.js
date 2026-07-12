@@ -7,7 +7,7 @@ function versionedModuleUrl(path) {
 }
 
 const [
-  { animateDialog, animateFlip, animatePanelSwap, animatePointSeries },
+  { animateDialog, animateFlip, animatePanelSwap, animatePointSeries, animateWaveformDomain },
   {
     BUCK_LOSS_GROUPS_V2,
     BUCK_LOSS_MODEL_REVISION,
@@ -31,6 +31,22 @@ const [
   { parseBuckLossUrlV2, serializeBuckLossUrlV2 },
   { evaluateBuckLossPointV2, evaluateBuckLossSweepV2 },
   { BUCK_LOSS_FAMILIES_V2 },
+  {
+    buildWaveformGeometryV2,
+    calculateRingingModelV2,
+    clampWaveformViewV2,
+    defaultWaveformViewV2,
+    edgePresetWaveformViewV2,
+    panWaveformViewV2,
+    phaseFromUnitV2,
+    sampleWaveformAtPhaseV2,
+    semanticWaveformViewV2,
+    unitFromPhaseV2,
+    waveformEdgeEvidenceV2,
+    waveformTimeTicksV2,
+    waveformTimelineV2,
+    zoomWaveformViewV2
+  },
   { dcrForMode, groupPartsBySeries, loadCoilcraftCatalog, selectIsat }
 ] = await Promise.all([
   import(versionedModuleUrl("./buck-loss-motion.js")),
@@ -40,6 +56,7 @@ const [
   import(versionedModuleUrl("./buck-loss-url-v2.js")),
   import(versionedModuleUrl("./buck-loss-evaluator-v2.js")),
   import(versionedModuleUrl("./buck-loss-equations-v2.js")),
+  import(versionedModuleUrl("./buck-loss-waveform-view-v2.js")),
   import(versionedModuleUrl("./coilcraft-catalog.js"))
 ]);
 
@@ -144,6 +161,26 @@ function clamp(value, min, max) {
 
 function finite(value) {
   return Number.isFinite(value);
+}
+
+const EXAMPLE_RINGING_LOOP_INDUCTANCE_H = 2e-9;
+const EXAMPLE_RINGING_LOOP_RESISTANCE_OHM = 0.35;
+
+function waveformRingingForTemplate(template, rawInputs, previous = null) {
+  const sourcedCoss = Number(template?.waveformRinging?.cossPerDevicePf);
+  const nodeCapacitanceF = finite(sourcedCoss) && sourcedCoss > 0
+    ? 2 * sourcedCoss * 1e-12
+    : null;
+  return {
+    nodeCapacitanceF,
+    loopInductanceH: previous?.loopInductanceH ?? EXAMPLE_RINGING_LOOP_INDUCTANCE_H,
+    loopResistanceOhm: previous?.loopResistanceOhm ?? EXAMPLE_RINGING_LOOP_RESISTANCE_OHM,
+    capacitanceSource: finite(sourcedCoss) && sourcedCoss > 0
+      ? template.waveformRinging.sourceLabel
+      : "No small-signal device capacitance source available",
+    characterizationVoltageV: template?.waveformRinging?.characterizationVoltageV ?? null,
+    loopAssumptionSource: previous?.loopAssumptionSource ?? "illustrative-starting-point"
+  };
 }
 
 function cloneRaw(raw) {
@@ -294,7 +331,43 @@ function prepareMarkup(root) {
     <div class="blx-v2-badges" data-blx-result-badges></div>
     <section class="blx-section blx-v2-confidence" data-blx-valid-only aria-label="Model confidence and sensitivity"><div class="blx-section-heading"><h2>Model confidence</h2><span class="blx-section-total" data-blx-confidence-status>—</span></div><div class="blx-operating-metrics" data-blx-confidence-metrics></div><p class="blx-sentence" data-blx-confidence-copy></p></section>
     <section class="blx-section blx-v2-failure" data-blx-model-failure hidden><div class="blx-failure-copy"><h2 data-blx-failure-title>This point cannot regulate</h2><p data-blx-failure-explanation></p><p data-blx-failure-recovery></p></div><p class="blx-failure-equation" data-blx-failure-equation></p><p>Results resume as soon as the operating point is feasible.</p><div class="blx-actions"><button type="button" data-blx-fix-output hidden>Fix output voltage</button><button type="button" data-blx-reset-invalid hidden>Reset operating point</button><button type="button" data-blx-copy>Copy link</button></div></section>
-    <section class="blx-section blx-waveform-section" data-blx-valid-only aria-label="Switching waveforms and mode intervals"><div class="blx-section-heading"><h2>Switching cycle</h2><button type="button" class="blx-section-total blx-boundary-button" data-blx-boundary-copy>—</button></div><div class="blx-waveform-probe"><label for="blx-v2-waveform-probe">Time probe</label><input id="blx-v2-waveform-probe" data-blx-waveform-probe type="range" min="0" max="1000" step="1" value="320" aria-label="Time within one switching cycle"><output data-blx-waveform-readout>—</output></div><div class="blx-waveform-canvas" data-blx-waveform-diagram aria-label="Interactive switching-cycle plot"></div><p class="blx-waveform-note">Dead-time bands are widened visually so short windows remain legible; the probe uses exact timing. Ringing is qualitative—its amplitude and frequency depend on package, layout, and snubber parasitics and are excluded from the loss total.</p></section>
+    <section class="blx-section blx-waveform-section" data-blx-valid-only aria-label="Switching waveforms and mode intervals">
+      <div class="blx-section-heading"><h2>Switching cycle</h2></div>
+      <div class="blx-waveform-toolbar" aria-label="Waveform view controls">
+        <div class="blx-waveform-view-modes" role="group" aria-label="Waveform view">
+          <button type="button" data-blx-waveform-mode="full" aria-pressed="true">Full cycle</button>
+          <button type="button" data-blx-waveform-mode="rising" aria-pressed="false">Rising edge</button>
+          <button type="button" data-blx-waveform-mode="falling" aria-pressed="false">Falling edge</button>
+        </div>
+        <div class="blx-waveform-view-actions" role="group" aria-label="Zoom and pan">
+          <button type="button" data-blx-waveform-action="zoom-in" aria-label="Zoom in horizontally">+</button>
+          <button type="button" data-blx-waveform-action="zoom-out" aria-label="Zoom out horizontally">−</button>
+          <button type="button" data-blx-waveform-action="pan-left" aria-label="Pan waveform left">←</button>
+          <button type="button" data-blx-waveform-action="pan-right" aria-label="Pan waveform right">→</button>
+        </div>
+      </div>
+      <output class="blx-waveform-view-status" data-blx-waveform-view-status aria-live="polite">Full cycle</output>
+      <div class="blx-waveform-overview" data-blx-waveform-overview role="img" aria-label="One-cycle waveform overview and visible time window"></div>
+      <div class="blx-waveform-detail" data-blx-waveform-diagram tabindex="0" role="group" aria-label="Zoomable switching-cycle detail plot">
+        <div class="blx-waveform-edge-flags" aria-label="Switching edges">
+          <button type="button" data-blx-waveform-edge-flag="rising">▼ rising</button>
+          <button type="button" data-blx-waveform-edge-flag="falling">▼ falling</button>
+        </div>
+        <div class="blx-waveform-selection" data-blx-waveform-selection hidden></div>
+      </div>
+      <div class="blx-waveform-probe"><label for="blx-v2-waveform-probe">Time probe</label><input id="blx-v2-waveform-probe" data-blx-waveform-probe type="range" min="0" max="1000" step="1" value="500" aria-label="Time within the visible waveform window"><output data-blx-waveform-readout>—</output></div>
+      <details class="blx-waveform-ringing-model" data-blx-waveform-ringing-model>
+        <summary><span>First-order series-RLC response</span><span data-blx-waveform-ringing-status>—</span></summary>
+        <div class="blx-waveform-ringing-controls">
+          <label><span>Node C<small>OSS</small></span><span><input type="number" min="1" step="1" inputmode="decimal" data-blx-waveform-ringing-input="nodeCapacitancePf" aria-label="Effective switch-node capacitance in picofarads"> pF</span></label>
+          <label><span>Power-loop L</span><span><input type="number" min="0.01" step="0.1" inputmode="decimal" data-blx-waveform-ringing-input="loopInductanceNh" aria-label="Commutation-loop inductance in nanohenries"> nH</span></label>
+          <label><span>Loop damping R</span><span><input type="number" min="0.001" step="0.01" inputmode="decimal" data-blx-waveform-ringing-input="loopResistanceOhm" aria-label="Commutation-loop damping resistance in ohms"> Ω</span></label>
+          <p data-blx-waveform-ringing-source></p>
+        </div>
+      </details>
+      <p class="blx-waveform-note">The detail plot uses exact dead-time widths and auto-fits iL vertically in edge views. The dashed trace is a calculated, step/ramp-excited first-order series-RLC response; it uses the disclosed C<small>OSS</small> seed and editable example loop-L/damping-R assumptions above and is excluded from the loss total.</p>
+      <div class="blx-waveform-hint" data-blx-waveform-hint><span>drag to zoom · ⌘/Ctrl+scroll to zoom · double-click to reset</span><button type="button" data-blx-waveform-hint-dismiss aria-label="Dismiss waveform interaction hint">×</button></div>
+    </section>
     <section class="blx-section" data-blx-valid-only aria-label="Ranked loss budget"><div class="blx-section-heading"><h2>Loss budget · ranked</h2><button type="button" class="blx-section-total blx-term-trigger" data-blx-coverage-trigger data-blx-out="loss-total">—</button></div><p class="blx-v2-subtotal-copy" data-blx-subtotal-copy hidden></p><ol class="blx-breakdown-list blx-v2-family-list" data-blx-family-list></ol></section>
     <section class="blx-section blx-v2-power-balance" data-blx-valid-only aria-label="Power balance"><div class="blx-section-heading"><h2>Power balance</h2><span class="blx-section-total" data-blx-power-copy>Output + analytical losses</span></div><div class="blx-power-balance" data-blx-power-balance></div><div class="blx-operating-metrics" data-blx-operating-metrics></div></section>
     <section class="blx-section blx-v2-reference" data-blx-valid-only data-blx-reference-card hidden></section>
@@ -315,7 +388,7 @@ function prepareMarkup(root) {
   const equations = root.querySelector(".blx-equations");
   if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Atomic analytical rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
   const caveats = root.querySelector(".blx-caveats");
-  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation remains omitted. CCM ZVS classification is diagnostic until a nonlinear COSS/QOSS commutation model or waveform measurement supports an energy credit.</li><li>Automatic transition selection falls back visibly when no condition-matched energy surface is present. Effective-time fallbacks carry the widest uncertainty bound.</li><li>Bootstrap, snubbers, PCB/package resistance, ringing, and full IC leakage remain outside scope.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
+  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation remains omitted. CCM ZVS classification is diagnostic until a nonlinear COSS/QOSS commutation model or waveform measurement supports an energy credit.</li><li>Automatic transition selection falls back visibly when no condition-matched energy surface is present. Effective-time fallbacks carry the widest uncertainty bound.</li><li>The waveform viewer's linear RLC trace is a first-order parasitic estimate; ringing loss, nonlinear COSS, snubbers, probe loading, PCB/package resistance, bootstrap loss, and full IC leakage remain outside the power-loss total.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
 }
 
 function chooserCard(template, preloaded) {
@@ -674,33 +747,6 @@ function formatWaveformTime(seconds) {
   return `${displayNumber(seconds * 1e6, 3)} µs`;
 }
 
-function waveformTimeline(point) {
-  let elapsed = 0;
-  return point.waveform.segments.map((segment) => {
-    const entry = { ...segment, start: elapsed, end: elapsed + segment.duration };
-    elapsed = entry.end;
-    return entry;
-  });
-}
-
-function waveformSample(state, point, timeline, fraction) {
-  const period = point.waveform.period;
-  const safeFraction = clamp(fraction, 0, 1);
-  const time = safeFraction * period;
-  const lookupTime = time >= period ? Math.max(0, period - Number.EPSILON) : time;
-  const segment = timeline.find((entry) => lookupTime >= entry.start && lookupTime < entry.end) || timeline.at(-1);
-  const local = segment?.duration > 0 ? clamp((lookupTime - segment.start) / segment.duration, 0, 1) : 0;
-  const current = segment ? segment.iStart + (segment.iEnd - segment.iStart) * local : 0;
-  const switchVoltage = segment?.state === "high-side"
-    ? state.inputs.vin
-    : segment?.state === "dead-time"
-      ? -state.inputs.diodeVf
-      : segment?.state === "zero-current"
-        ? state.inputs.vout
-        : 0;
-  return { fraction: safeFraction, time, segment, current, switchVoltage };
-}
-
 function waveformStateLabel(segment) {
   return {
     "high-side": "high side on",
@@ -710,182 +756,782 @@ function waveformStateLabel(segment) {
   }[segment?.state] || "transition";
 }
 
-function renderWaveformDiagram(root, state, point) {
-  const holder = root.querySelector("[data-blx-waveform-diagram]");
-  if (!holder || !point.valid) return;
-  const timeline = waveformTimeline(point);
-  const period = point.waveform.period;
-  const width = 720;
-  const height = 286;
-  const left = 54;
+const WAVEFORM_DETAIL_HEIGHT = 318;
+const WAVEFORM_OVERVIEW_HEIGHT = 78;
+const WAVEFORM_MIN_SPAN = 1 / 1000;
+
+function waveformTickLabel(seconds, spanSeconds) {
+  const useNanoseconds = Math.abs(spanSeconds) < 2e-6;
+  const scale = useNanoseconds ? 1e9 : 1e6;
+  const value = Math.abs(seconds) < Math.abs(spanSeconds) * 1e-9 ? 0 : seconds * scale;
+  return `${displayNumber(value, 3)} ${useNanoseconds ? "ns" : "µs"}`;
+}
+
+function waveformPath(samples, xForPhase, yForValue, key) {
+  if (!samples.length) return "";
+  let drawing = false;
+  const commands = [];
+  samples.forEach((sample) => {
+    const value = sample[key];
+    if (!finite(value)) {
+      drawing = false;
+      return;
+    }
+    commands.push(`${drawing ? "L" : "M"}${xForPhase(sample.phase)},${yForValue(value)}`);
+    drawing = true;
+  });
+  return commands.join(" ");
+}
+
+function createWaveformGroup(svg, className) {
+  const group = svgNode("g", { class: className });
+  svg.append(group);
+  return group;
+}
+
+function ensureDetailWaveformScene(holder) {
+  if (holder.blxWaveformScene) return holder.blxWaveformScene;
+  const svg = svgNode("svg", { role: "img" });
+  svg.classList.add("blx-waveform-svg", "blx-waveform-detail-svg");
+  const scene = {
+    svg,
+    grid: createWaveformGroup(svg, "blx-waveform-grid"),
+    unresolved: createWaveformGroup(svg, "blx-waveform-unresolved"),
+    intervals: createWaveformGroup(svg, "blx-waveform-intervals"),
+    dead: createWaveformGroup(svg, "blx-waveform-dead-times"),
+    traces: createWaveformGroup(svg, "blx-waveform-traces"),
+    evidence: createWaveformGroup(svg, "blx-waveform-evidence"),
+    axis: createWaveformGroup(svg, "blx-waveform-axis"),
+    labels: createWaveformGroup(svg, "blx-waveform-labels"),
+    cursors: createWaveformGroup(svg, "blx-waveform-cursors")
+  };
+  scene.paths = {
+    ideal: svgNode("path", { class: "blx-waveform-voltage-ideal", "data-blx-waveform-trace": "switch-node-ideal" }),
+    supported: svgNode("path", { class: "blx-waveform-voltage", "data-blx-waveform-trace": "switch-node" }),
+    ringing: svgNode("path", { class: "blx-waveform-ringing", "data-blx-waveform-trace": "switch-node-ringing" }),
+    current: svgNode("path", { class: "blx-waveform-current", "data-blx-waveform-trace": "inductor-current" })
+  };
+  scene.traces.append(...Object.values(scene.paths));
+  const makeCursor = (kind) => {
+    const group = svgNode("g", { class: `blx-waveform-${kind}-cursor`, "data-blx-waveform-cursor": kind });
+    const line = svgNode("line", { class: "blx-waveform-cursor" });
+    const voltage = svgNode("circle", { r: kind === "probe" ? 4 : 3, class: "blx-waveform-marker" });
+    const current = svgNode("circle", { r: kind === "probe" ? 4 : 3, class: "blx-waveform-marker" });
+    group.append(line, voltage, current);
+    scene.cursors.append(group);
+    return { group, line, voltage, current };
+  };
+  scene.probe = makeCursor("probe");
+  scene.ghost = makeCursor("ghost");
+  holder.prepend(svg);
+  holder.blxWaveformScene = scene;
+  return scene;
+}
+
+function ensureOverviewWaveformScene(holder) {
+  if (holder.blxWaveformScene) return holder.blxWaveformScene;
+  const svg = svgNode("svg", { role: "img", "aria-label": "Full switching cycle with adjustable detail window" });
+  svg.classList.add("blx-waveform-svg", "blx-waveform-overview-svg");
+  const scene = {
+    svg,
+    intervals: createWaveformGroup(svg, "blx-waveform-overview-intervals"),
+    dead: createWaveformGroup(svg, "blx-waveform-overview-dead"),
+    traces: createWaveformGroup(svg, "blx-waveform-overview-traces"),
+    edges: createWaveformGroup(svg, "blx-waveform-overview-edges"),
+    brush: createWaveformGroup(svg, "blx-waveform-brush")
+  };
+  scene.ideal = svgNode("path", { class: "blx-waveform-voltage-ideal" });
+  scene.supported = svgNode("path", { class: "blx-waveform-voltage" });
+  scene.traces.append(scene.ideal, scene.supported);
+  scene.brushTrue = svgNode("rect", { class: "blx-waveform-brush-true" });
+  scene.brushVisual = svgNode("rect", { class: "blx-waveform-brush-visual", "data-blx-overview-brush": "body" });
+  scene.handleStart = svgNode("rect", { class: "blx-waveform-brush-handle", "data-blx-overview-brush": "start", tabindex: "0" });
+  scene.handleEnd = svgNode("rect", { class: "blx-waveform-brush-handle", "data-blx-overview-brush": "end", tabindex: "0" });
+  scene.brush.append(scene.brushTrue, scene.brushVisual, scene.handleStart, scene.handleEnd);
+  holder.append(svg);
+  holder.blxWaveformScene = scene;
+  return scene;
+}
+
+function waveformCommutationCopy(edge) {
+  const commutation = edge?.commutation;
+  if (!commutation) return "commutation unresolved";
+  const classification = commutation.classification || commutation.class || commutation.mode || "commutation resolved";
+  const device = commutation.turnOnDevice || commutation.device;
+  return `${device ? `${device} · ` : ""}${String(classification).replaceAll("-", " ")}`;
+}
+
+function setWaveformCursor(cursor, sample, xForPhase, voltageY, currentY, top, bottom) {
+  if (!sample) {
+    cursor.group.setAttribute("hidden", "");
+    return;
+  }
+  cursor.group.removeAttribute("hidden");
+  const x = xForPhase(sample.phase);
+  cursor.line.setAttribute("x1", x);
+  cursor.line.setAttribute("x2", x);
+  cursor.line.setAttribute("y1", top);
+  cursor.line.setAttribute("y2", bottom);
+  cursor.voltage.setAttribute("cx", x);
+  cursor.voltage.setAttribute("cy", voltageY(finite(sample.ringingVoltage) ? sample.ringingVoltage : sample.supportedVoltage));
+  cursor.current.setAttribute("cx", x);
+  cursor.current.setAttribute("cy", currentY(sample.current));
+}
+
+function renderDetailWaveform(controller) {
+  const { root, state, point, holder } = controller;
+  const scene = ensureDetailWaveformScene(holder);
+  const width = Math.max(280, Math.round(holder.clientWidth || 720));
+  const height = WAVEFORM_DETAIL_HEIGHT;
+  const left = width < 420 ? 42 : 52;
   const right = 14;
-  const plotWidth = width - left - right;
-  const intervalY = 252;
-  const maxCurrent = Math.max(1e-9, point.waveform.iPeak, Math.abs(point.waveform.iValley));
-  const minCurrent = Math.min(0, point.waveform.iValley);
-  const span = Math.max(1e-9, maxCurrent - minCurrent);
-  const currentY = (current) => 188 - ((current - minCurrent) / span) * 58;
+  const plotWidth = Math.max(1, width - left - right);
+  const view = state.waveformView;
+  const geometry = buildWaveformGeometryV2({ point, inputs: state.inputs, view, width: plotWidth, parasitics: state.waveformRinging });
+  const xForPhase = (phase) => left + unitFromPhaseV2(view, phase) * plotWidth;
+  const visibleCurrents = geometry.samples.map((sample) => sample.current).filter(finite);
+  const autoFitCurrent = view.mode !== "full" && view.endPhase - view.startPhase < 1 - 1e-10;
+  let currentMin = autoFitCurrent ? Math.min(...visibleCurrents) : Math.min(0, point.waveform.iValley);
+  let currentMax = autoFitCurrent ? Math.max(...visibleCurrents) : Math.max(0, point.waveform.iPeak);
+  if (!finite(currentMin) || !finite(currentMax)) {
+    currentMin = 0;
+    currentMax = 1;
+  }
+  if (autoFitCurrent) {
+    const rawSpan = currentMax - currentMin;
+    const fallbackSpan = Math.max(Math.abs((currentMax + currentMin) / 2) * 0.02, Math.abs(point.waveform.iPeak - point.waveform.iValley) * 0.01, 1e-3);
+    const paddedSpan = Math.max(rawSpan, fallbackSpan);
+    const center = (currentMin + currentMax) / 2;
+    currentMin = center - paddedSpan * 0.58;
+    currentMax = center + paddedSpan * 0.58;
+  }
+  const currentSpan = Math.max(1e-9, currentMax - currentMin);
+  const currentTop = 138;
+  const currentBottom = 242;
+  const currentY = (current) => currentBottom - ((current - currentMin) / currentSpan) * (currentBottom - currentTop);
+  const visibleVoltages = geometry.samples.flatMap((sample) => [sample.supportedVoltage, sample.ringingVoltage]).filter(finite);
+  const voltageDataMin = visibleVoltages.length ? Math.min(...visibleVoltages) : 0;
+  const voltageDataMax = visibleVoltages.length ? Math.max(...visibleVoltages) : state.inputs.vin;
+  const voltagePadding = Math.max(0.04 * state.inputs.vin, 0.08 * (voltageDataMax - voltageDataMin));
+  const voltageMin = Math.min(-0.2 * state.inputs.vin, -1.4 * state.inputs.diodeVf, voltageDataMin - voltagePadding);
+  const voltageMax = Math.max(1.22 * state.inputs.vin, voltageDataMax + voltagePadding);
+  const voltageY = (voltage) => 104 - ((voltage - voltageMin) / Math.max(1e-9, voltageMax - voltageMin)) * 70;
+  const intervalY = 260;
+  controller.layout = { left, right, width, plotWidth, height };
+  controller.geometry = geometry;
+  controller.timeline = geometry.timeline;
+  scene.svg.removeAttribute("hidden");
+  scene.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  scene.svg.setAttribute("width", width);
+  scene.svg.setAttribute("height", height);
+  scene.svg.setAttribute("aria-label", `${compactMode(point.waveform.mode)} switch-node voltage, auto-fitted inductor current, first-order series-RLC response, edge evidence, and exact dead time`);
+
+  const gridLines = [svgNode("line", { x1: left, y1: voltageY(0), x2: width - right, y2: voltageY(0), class: "blx-waveform-zero" })];
+  if (currentMin <= 0 && currentMax >= 0) {
+    gridLines.push(svgNode("line", { x1: left, y1: currentY(0), x2: width - right, y2: currentY(0), class: "blx-waveform-zero" }));
+  }
+  scene.grid.replaceChildren(...gridLines);
+  const laneLabels = [["VSW", 25], ["iL", 132]];
+  scene.labels.replaceChildren(...laneLabels.map(([copy, y]) => {
+    const label = svgNode("text", { x: left - 9, y, "text-anchor": "end", class: "blx-waveform-lane-label" });
+    label.textContent = copy;
+    return label;
+  }));
+  scene.paths.ideal.setAttribute("d", waveformPath(geometry.samples, xForPhase, voltageY, "idealVoltage"));
+  scene.paths.supported.setAttribute("d", waveformPath(geometry.samples, xForPhase, voltageY, "supportedVoltage"));
+  const showRinging = point.waveform.mode === "ccm" && geometry.ringingModel.available;
+  scene.paths.ringing.setAttribute("d", showRinging ? waveformPath(geometry.samples, xForPhase, voltageY, "ringingVoltage") : "");
+  scene.paths.ringing.toggleAttribute("hidden", !showRinging);
+  scene.paths.current.setAttribute("d", waveformPath(geometry.samples, xForPhase, currentY, "current"));
+
+  const stateClass = { "high-side": "high", "low-side": "low", "dead-time": "dead", "zero-current": "zero" };
+  const intervalNodes = [];
+  const deadNodes = [];
+  const unresolvedNodes = [];
+  geometry.segments.forEach((segment) => {
+    const x0 = xForPhase(segment.visibleStartPhase);
+    const x1 = xForPhase(segment.visibleEndPhase);
+    intervalNodes.push(svgNode("rect", { x: x0, y: intervalY, width: Math.max(0.35, x1 - x0), height: 12, class: `blx-interval-${stateClass[segment.state]}` }));
+    if (segment.state === "dead-time") {
+      const band = svgNode("rect", { x: x0, y: 16, width: Math.max(0.25, x1 - x0), height: intervalY - 11, class: "blx-waveform-dead-band", "data-blx-dead-time-band": "" });
+      deadNodes.push(band);
+      if (x1 - x0 < 1) deadNodes.push(svgNode("line", { x1: (x0 + x1) / 2, x2: (x0 + x1) / 2, y1: 16, y2: intervalY + 1, class: "blx-waveform-dead-hairline" }));
+      const marker = svgNode("text", { x: clamp((x0 + x1) / 2, left + 22, width - right - 22), y: intervalY - 5, "text-anchor": "middle", class: "blx-waveform-dead-label" });
+      marker.textContent = formatWaveformTime(segment.duration);
+      deadNodes.push(marker);
+    }
+    if (segment.state === "zero-current") {
+      unresolvedNodes.push(svgNode("rect", { x: x0, y: 16, width: Math.max(0.4, x1 - x0), height: 92, class: "blx-waveform-unresolved-region" }));
+    }
+    if (x1 - x0 > 58) {
+      const label = svgNode("text", { x: (x0 + x1) / 2, y: 292, "text-anchor": "middle", class: "blx-waveform-interval-label" });
+      label.textContent = segment.state.replace("-", " ");
+      intervalNodes.push(label);
+    }
+  });
+  if (point.waveform.mode !== "ccm" && unresolvedNodes.length) {
+    const label = svgNode("text", { x: left + 8, y: 96, class: "blx-waveform-unresolved-label" });
+    label.textContent = "unresolved DCM commutation · VSW floats";
+    unresolvedNodes.push(label);
+  }
+  scene.intervals.replaceChildren(...intervalNodes);
+  scene.dead.replaceChildren(...deadNodes);
+  scene.unresolved.replaceChildren(...unresolvedNodes);
+
+  const evidenceNodes = [];
+  geometry.edges.forEach((edge) => {
+    const x = xForPhase(edge.visiblePhase);
+    const durationPhase = edge.timing.durationSeconds / point.waveform.period;
+    const xEnd = xForPhase(Math.min(view.endPhase, edge.visiblePhase + durationPhase));
+    if (edge.timing.kind === "effective-bracket" && durationPhase > 0) {
+      evidenceNodes.push(svgNode("rect", { x, y: 20, width: Math.max(1, xEnd - x), height: 238, class: "blx-waveform-overlap-bracket" }));
+    }
+    if (view.endPhase - view.startPhase < 0.35 && plotWidth >= 360) {
+      const timingLabel = svgNode("text", { x: clamp(x + 6, left + 4, width - right - 100), y: 46, class: "blx-waveform-evidence-label" });
+      timingLabel.textContent = edge.timing.kind === "energy-only"
+        ? "energy evidence only · edge time unavailable"
+        : `${edge.timing.label.toLowerCase()} · ${formatWaveformTime(edge.timing.durationSeconds)}`;
+      evidenceNodes.push(timingLabel);
+      const commutation = svgNode("text", { x: clamp(x + 6, left + 4, width - right - 100), y: 59, class: "blx-waveform-commutation-label" });
+      commutation.textContent = waveformCommutationCopy(edge);
+      evidenceNodes.push(commutation);
+    }
+    if (showRinging && view.endPhase - view.startPhase < 0.22 && plotWidth >= 420) {
+      const label = svgNode("text", { x: clamp(x + 8, left + 4, width - right - 105), y: 116, class: "blx-waveform-ringing-label" });
+      label.textContent = `series RLC · ${displayNumber(geometry.ringingModel.frequencyHz / 1e6, 3)} MHz · ζ ${displayNumber(geometry.ringingModel.dampingRatio, 2)}`;
+      evidenceNodes.push(label);
+    }
+  });
+  scene.evidence.replaceChildren(...evidenceNodes);
+
+  const axisNodes = [];
+  const spanSeconds = (view.endPhase - view.startPhase) * point.waveform.period;
+  waveformTimeTicksV2(point, view).forEach((tick) => {
+    const x = xForPhase(tick.phase);
+    axisNodes.push(svgNode("line", { x1: x, x2: x, y1: 278, y2: 283, class: "blx-waveform-tick" }));
+    const label = svgNode("text", { x, y: 309, "text-anchor": "middle", class: "blx-waveform-tick-label" });
+    label.textContent = waveformTickLabel(tick.timeSeconds, spanSeconds);
+    axisNodes.push(label);
+  });
+  scene.axis.replaceChildren(...axisNodes);
+
+  const inView = (phase) => phase >= view.startPhase - 1e-12 && phase <= view.endPhase + 1e-12;
+  const probeSample = inView(view.probePhase) ? sampleWaveformAtPhaseV2(point, state.inputs, geometry.timeline, view.probePhase, state.waveformRinging) : null;
+  const ghostSample = finite(state.waveformGhostPhase) && inView(state.waveformGhostPhase)
+    ? sampleWaveformAtPhaseV2(point, state.inputs, geometry.timeline, state.waveformGhostPhase, state.waveformRinging)
+    : null;
+  setWaveformCursor(scene.probe, probeSample, xForPhase, voltageY, currentY, 16, intervalY + 12);
+  setWaveformCursor(scene.ghost, ghostSample, xForPhase, voltageY, currentY, 16, intervalY + 12);
+
+  const flags = root.querySelectorAll("[data-blx-waveform-edge-flag]");
+  flags.forEach((flag) => {
+    const id = flag.dataset.blxWaveformEdgeFlag;
+    const edge = geometry.edges.find((candidate) => candidate.id === id);
+    flag.hidden = !edge;
+    if (!edge) return;
+    flag.style.left = `${clamp(xForPhase(edge.visiblePhase), left, width - right)}px`;
+    flag.title = `${edge.label} · dead time ${formatWaveformTime(edge.deadTimeSeconds)} · ${edge.timing.label} · ${waveformCommutationCopy(edge)}`;
+  });
+  updateWaveformReadout(controller);
+}
+
+function renderOverviewWaveform(controller) {
+  const { state, point, overview } = controller;
+  const scene = ensureOverviewWaveformScene(overview);
+  const width = Math.max(280, Math.round(overview.clientWidth || 720));
+  const height = WAVEFORM_OVERVIEW_HEIGHT;
+  const left = width < 420 ? 42 : 52;
+  const right = 14;
+  const plotWidth = Math.max(1, width - left - right);
+  const full = defaultWaveformViewV2(point, state.waveformView.probePhase);
+  const geometry = buildWaveformGeometryV2({ point, inputs: state.inputs, view: full, width: plotWidth });
+  const xForPhase = (phase) => left + unitFromPhaseV2(full, phase) * plotWidth;
   const voltageMin = Math.min(-0.2 * state.inputs.vin, -1.4 * state.inputs.diodeVf);
   const voltageMax = 1.22 * state.inputs.vin;
-  const voltageY = (voltage) => 100 - ((voltage - voltageMin) / Math.max(1e-9, voltageMax - voltageMin)) * 67;
-  const xForFraction = (fraction) => left + plotWidth * fraction;
-  const stateClass = {
-    "high-side": "high",
-    "low-side": "low",
-    "dead-time": "dead",
-    "zero-current": "zero"
-  };
-  const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": `${compactMode(point.waveform.mode)} switch-node voltage, inductor current, gate commands, and conduction intervals` });
-  svg.classList.add("blx-waveform-svg");
-  const laneLabels = [["VSW", 22], ["iL", 122], ["GH", 213], ["GL", 235]];
-  laneLabels.forEach(([copy, y]) => {
-    const label = svgNode("text", { x: left - 10, y, "text-anchor": "end", class: "blx-waveform-lane-label" });
-    label.textContent = copy;
-    svg.append(label);
+  const voltageY = (voltage) => 39 - ((voltage - voltageMin) / Math.max(1e-9, voltageMax - voltageMin)) * 27;
+  controller.overviewLayout = { left, right, width, plotWidth, full };
+  scene.svg.removeAttribute("hidden");
+  scene.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  scene.svg.setAttribute("width", width);
+  scene.svg.setAttribute("height", height);
+  scene.ideal.setAttribute("d", waveformPath(geometry.samples, xForPhase, voltageY, "idealVoltage"));
+  scene.supported.setAttribute("d", waveformPath(geometry.samples, xForPhase, voltageY, "supportedVoltage"));
+  const stateClass = { "high-side": "high", "low-side": "low", "dead-time": "dead", "zero-current": "zero" };
+  scene.intervals.replaceChildren(...geometry.segments.map((segment) => svgNode("rect", {
+    x: xForPhase(segment.visibleStartPhase), y: 48,
+    width: Math.max(0.35, xForPhase(segment.visibleEndPhase) - xForPhase(segment.visibleStartPhase)),
+    height: 9, class: `blx-interval-${stateClass[segment.state]}`
+  })));
+  const deadNodes = [];
+  geometry.segments.filter((segment) => segment.state === "dead-time").forEach((segment) => {
+    const x0 = xForPhase(segment.visibleStartPhase);
+    const x1 = xForPhase(segment.visibleEndPhase);
+    const exactWidth = Math.max(0.25, x1 - x0);
+    const marker = svgNode("rect", { x: (x0 + x1) / 2 - Math.max(6, exactWidth) / 2, y: 5, width: Math.max(6, exactWidth), height: 54, class: "blx-waveform-overview-dead-marker" });
+    const title = svgNode("title");
+    title.textContent = `Exact dead time ${formatWaveformTime(segment.duration)}`;
+    marker.append(title);
+    deadNodes.push(marker);
   });
-  svg.append(svgNode("line", { x1: left, y1: voltageY(0), x2: width - right, y2: voltageY(0), class: "blx-waveform-zero" }));
-  svg.append(svgNode("line", { x1: left, y1: currentY(0), x2: width - right, y2: currentY(0), class: "blx-waveform-zero" }));
+  scene.dead.replaceChildren(...deadNodes);
+  scene.edges.replaceChildren(...geometry.edges.map((edge) => {
+    const group = svgNode("g", { class: "blx-waveform-overview-edge" });
+    const x = xForPhase(edge.visiblePhase);
+    const line = svgNode("line", { x1: x, x2: x, y1: 3, y2: 59 });
+    const text = svgNode("text", { x, y: 72, "text-anchor": "middle" });
+    text.textContent = edge.id === "rising" ? "R" : "F";
+    group.append(line, text);
+    return group;
+  }));
+  const startX = xForPhase(state.waveformView.startPhase);
+  const endX = xForPhase(state.waveformView.endPhase);
+  const exactWidth = Math.max(0.5, endX - startX);
+  const visualWidth = Math.max(8, exactWidth);
+  const visualX = clamp((startX + endX) / 2 - visualWidth / 2, left, width - right - visualWidth);
+  [scene.brushTrue, scene.brushVisual].forEach((node) => {
+    node.setAttribute("y", 2);
+    node.setAttribute("height", 58);
+  });
+  scene.brushTrue.setAttribute("x", startX);
+  scene.brushTrue.setAttribute("width", exactWidth);
+  scene.brushVisual.setAttribute("x", visualX);
+  scene.brushVisual.setAttribute("width", visualWidth);
+  scene.handleStart.setAttribute("x", startX - 6);
+  scene.handleEnd.setAttribute("x", endX - 6);
+  [scene.handleStart, scene.handleEnd].forEach((node) => {
+    node.setAttribute("y", 0);
+    node.setAttribute("width", 12);
+    node.setAttribute("height", 62);
+  });
+}
 
-  const edgeFractions = [0];
-  const highSide = timeline.find((segment) => segment.state === "high-side");
-  if (highSide) edgeFractions.push(highSide.end / period);
-  const ringWindow = 0.038;
-  const ringVoltageAt = (fraction) => {
-    const base = waveformSample(state, point, timeline, fraction).switchVoltage;
-    let ring = 0;
-    edgeFractions.forEach((edge, index) => {
-      let distance = fraction - edge;
-      if (distance < 0) distance += 1;
-      if (distance <= ringWindow) {
-        const progress = distance / ringWindow;
-        const direction = index === 0 ? 1 : -1;
-        ring += direction * state.inputs.vin * 0.11 * Math.exp(-4.4 * progress) * Math.sin(progress * Math.PI * 7);
-      }
-    });
-    return base + ring;
-  };
-  const idealVoltagePoints = [];
-  const ringingVoltagePoints = [];
-  const currentPoints = [];
-  for (let index = 0; index <= 420; index += 1) {
-    const fraction = index / 420;
-    const sample = waveformSample(state, point, timeline, fraction);
-    idealVoltagePoints.push([xForFraction(fraction), voltageY(sample.switchVoltage)]);
-    ringingVoltagePoints.push([xForFraction(fraction), voltageY(ringVoltageAt(fraction))]);
-    currentPoints.push([xForFraction(fraction), currentY(sample.current)]);
-  }
-  const linePath = (points) => `M${points.map((entry) => entry.join(",")).join(" L")}`;
-  svg.append(svgNode("path", { d: linePath(idealVoltagePoints), class: "blx-waveform-voltage-ideal", "data-blx-waveform-trace": "switch-node-ideal" }));
-  svg.append(svgNode("path", { d: linePath(ringingVoltagePoints), class: "blx-waveform-voltage blx-waveform-ringing", "data-blx-waveform-trace": "switch-node" }));
-  svg.append(svgNode("path", { d: linePath(currentPoints), class: "blx-waveform-current", "data-blx-waveform-trace": "inductor-current" }));
-
-  const gatePath = (onState, lowY, highY) => {
-    const commands = [];
-    timeline.forEach((segment, index) => {
-      const x0 = left + plotWidth * segment.start / period;
-      const x1 = left + plotWidth * segment.end / period;
-      const y = segment.state === onState ? highY : lowY;
-      if (!index) commands.push(`M${x0},${y}`);
-      else commands.push(`L${x0},${y}`);
-      commands.push(`L${x1},${y}`);
-    });
-    return commands.join(" ");
-  };
-  svg.append(svgNode("path", { d: gatePath("high-side", 218, 207), class: "blx-waveform-gate blx-waveform-gate-high", "data-blx-waveform-trace": "gate-high" }));
-  svg.append(svgNode("path", { d: gatePath("low-side", 240, 229), class: "blx-waveform-gate blx-waveform-gate-low", "data-blx-waveform-trace": "gate-low" }));
-
-  for (const segment of timeline) {
-    const x0 = left + plotWidth * segment.start / period;
-    const x1 = left + plotWidth * segment.end / period;
-    const rect = svgNode("rect", { x: x0, y: intervalY, width: Math.max(0.8, x1 - x0), height: 12, class: `blx-interval-${stateClass[segment.state]}` });
-    svg.append(rect);
-    if (segment.state === "dead-time") {
-      const visibleWidth = Math.max(8, x1 - x0);
-      svg.append(svgNode("rect", { x: (x0 + x1 - visibleWidth) / 2, y: 16, width: visibleWidth, height: intervalY + 2 - 16, class: "blx-waveform-dead-band", "data-blx-dead-time-band": "" }));
-      const marker = svgNode("text", { x: (x0 + x1) / 2, y: intervalY - 5, "text-anchor": "middle", class: "blx-waveform-dead-label" });
-      marker.textContent = formatWaveformTime(segment.duration);
-      svg.append(marker);
-    }
-    if (x1 - x0 > 50) {
-      const label = svgNode("text", { x: (x0 + x1) / 2, y: 279, "text-anchor": "middle" });
-      label.textContent = segment.state.replace("-", " ");
-      svg.append(label);
-    }
-  }
-
-  const ringLabel = svgNode("text", { x: left + 8, y: 114, class: "blx-waveform-ringing-label" });
-  ringLabel.textContent = "qualitative ringing";
-  svg.append(ringLabel);
-  const cursor = svgNode("line", { x1: left, y1: 16, x2: left, y2: intervalY + 12, class: "blx-waveform-cursor", "data-blx-waveform-cursor": "" });
-  const voltageMarker = svgNode("circle", { cx: left, cy: voltageY(0), r: 4, class: "blx-waveform-marker", "data-blx-waveform-marker": "voltage" });
-  const currentMarker = svgNode("circle", { cx: left, cy: currentY(0), r: 4, class: "blx-waveform-marker", "data-blx-waveform-marker": "current" });
-  svg.append(cursor, voltageMarker, currentMarker);
-  holder.replaceChildren(svg);
-  const probe = root.querySelector("[data-blx-waveform-probe]");
+function updateWaveformReadout(controller) {
+  const { root, state, point } = controller;
+  const view = state.waveformView;
+  const timeline = controller.timeline || waveformTimelineV2(point.waveform);
+  const phase = finite(state.waveformGhostPhase) ? state.waveformGhostPhase : view.probePhase;
+  const sample = sampleWaveformAtPhaseV2(point, state.inputs, timeline, phase, state.waveformRinging);
+  const model = calculateRingingModelV2(state.waveformRinging);
+  const ringingCopy = point.waveform.mode === "ccm" && model.available && view.endPhase - view.startPhase < 0.22
+    ? ` · RLC ${displayNumber(model.frequencyHz / 1e6, 3)} MHz`
+    : "";
+  const pinnedOutside = !finite(state.waveformGhostPhase) && (view.probePhase < view.startPhase || view.probePhase > view.endPhase);
+  const voltageCopy = finite(sample.ringingVoltage)
+    ? `VSW RLC ≈ ${displayNumber(sample.ringingVoltage, 3)} V · drive target ${displayNumber(sample.supportedVoltage, 3)} V`
+    : `VSW ≈ ${displayNumber(sample.supportedVoltage, 3)} V`;
+  const copy = `${formatWaveformTime(sample.timeSeconds)} · ${waveformStateLabel(sample.segment)} · ${voltageCopy} · iL ${formatCurrent(sample.current)}${ringingCopy}${pinnedOutside ? " · pinned time outside view" : ""}`;
   const readout = root.querySelector("[data-blx-waveform-readout]");
-  holder.blxWaveformUpdate = (fraction) => {
-    const sample = waveformSample(state, point, timeline, fraction);
-    const x = xForFraction(sample.fraction);
-    cursor.setAttribute("x1", x);
-    cursor.setAttribute("x2", x);
-    voltageMarker.setAttribute("cx", x);
-    voltageMarker.setAttribute("cy", voltageY(ringVoltageAt(sample.fraction)));
-    currentMarker.setAttribute("cx", x);
-    currentMarker.setAttribute("cy", currentY(sample.current));
-    const nearRinging = edgeFractions.some((edge) => {
-      let distance = sample.fraction - edge;
-      if (distance < 0) distance += 1;
-      return distance <= ringWindow;
-    });
-    const copy = `${formatWaveformTime(sample.time)} · ${waveformStateLabel(sample.segment)} · VSW ≈ ${displayNumber(sample.switchVoltage, 3)} V · iL ${formatCurrent(sample.current)}${nearRinging ? " · ringing shown qualitatively" : ""}`;
-    if (readout) readout.textContent = copy;
-    if (probe) {
-      probe.value = String(Math.round(sample.fraction * 1000));
-      probe.setAttribute("aria-valuetext", copy);
+  const probe = root.querySelector("[data-blx-waveform-probe]");
+  if (readout) readout.textContent = copy;
+  if (probe) {
+    probe.value = String(Math.round(clamp(unitFromPhaseV2(view, view.probePhase), 0, 1) * 1000));
+    probe.setAttribute("aria-valuetext", copy);
+  }
+  const status = root.querySelector("[data-blx-waveform-view-status]");
+  if (status) {
+    const mode = { full: "Full cycle", rising: "Rising edge", falling: "Falling edge", custom: "Custom window" }[view.mode] || "Custom window";
+    const span = view.endPhase - view.startPhase;
+    status.textContent = `${mode} · ${formatWaveformTime(span * point.waveform.period)} window · ${displayNumber(1 / span, 3)}× zoom${pinnedOutside ? " · pinned time outside view" : ""}`;
+  }
+  root.querySelectorAll("[data-blx-waveform-mode]").forEach((button) => {
+    button.setAttribute("aria-pressed", button.dataset.blxWaveformMode === view.mode ? "true" : "false");
+    if (button.dataset.blxWaveformMode !== "full") button.disabled = !waveformEdgeEvidenceV2(point).available;
+  });
+  const full = defaultWaveformViewV2(point, view.probePhase);
+  const span = view.endPhase - view.startPhase;
+  const buttons = Object.fromEntries([...root.querySelectorAll("[data-blx-waveform-action]")].map((button) => [button.dataset.blxWaveformAction, button]));
+  if (buttons["zoom-in"]) buttons["zoom-in"].disabled = span <= WAVEFORM_MIN_SPAN + 1e-10;
+  if (buttons["zoom-out"]) buttons["zoom-out"].disabled = span >= 1 - 1e-10;
+  if (buttons["pan-left"]) buttons["pan-left"].disabled = view.startPhase <= full.startPhase + 1e-10;
+  if (buttons["pan-right"]) buttons["pan-right"].disabled = view.endPhase >= full.endPhase - 1e-10;
+}
+
+function createWaveformController(root, state, holder, overview) {
+  const controller = {
+    root,
+    state,
+    holder,
+    overview,
+    point: null,
+    frame: 0,
+    update(point) {
+      this.point = point;
+      state.waveformAnimation?.cancel?.();
+      state.waveformAnimation = null;
+      state.waveformView = semanticWaveformViewV2(point, state.waveformView);
+      this.render();
+    },
+    render() {
+      if (!this.point?.valid) return;
+      renderDetailWaveform(this);
+      renderOverviewWaveform(this);
+    },
+    schedule() {
+      if (this.frame) return;
+      this.frame = requestAnimationFrame(() => {
+        this.frame = 0;
+        this.render();
+      });
+    },
+    setView(next, { animate = false } = {}) {
+      if (!this.point) return;
+      const target = clampWaveformViewV2(this.point, next, next.mode || "custom");
+      state.waveformAnimation?.cancel?.();
+      if (!animate) {
+        state.waveformView = target;
+        this.schedule();
+        return;
+      }
+      const mode = target.mode;
+      state.waveformAnimation = animateWaveformDomain({
+        from: state.waveformView,
+        to: target,
+        duration: 150,
+        draw: (view) => {
+          state.waveformView = { ...view, mode, probePhase: target.probePhase };
+          this.render();
+        }
+      });
+    },
+    setMode(mode, animate = true) {
+      if (!this.point) return;
+      const target = mode === "full"
+        ? defaultWaveformViewV2(this.point, state.waveformView.probePhase)
+        : edgePresetWaveformViewV2(this.point, mode, state.waveformView.probePhase);
+      this.setView(target, { animate });
+    },
+    zoom(anchorPhase, factor, animate = false) {
+      this.setView(zoomWaveformViewV2(this.point, state.waveformView, anchorPhase, factor), { animate });
+    },
+    pan(deltaPhase, animate = false) {
+      this.setView(panWaveformViewV2(this.point, state.waveformView, deltaPhase), { animate });
+    },
+    setProbe(phase) {
+      state.waveformView = { ...state.waveformView, probePhase: phase };
+      state.waveformGhostPhase = null;
+      this.schedule();
+    },
+    setGhost(phase) {
+      state.waveformGhostPhase = finite(phase) ? phase : null;
+      this.schedule();
+    },
+    phaseFromClientX(clientX) {
+      const rect = holder.getBoundingClientRect();
+      const layout = this.layout || { left: 52, plotWidth: Math.max(1, rect.width - 66) };
+      const unit = clamp((clientX - rect.left - layout.left) / layout.plotWidth, 0, 1);
+      return phaseFromUnitV2(state.waveformView, unit);
+    },
+    overviewPhaseFromClientX(clientX) {
+      const rect = overview.getBoundingClientRect();
+      const layout = this.overviewLayout;
+      if (!layout) return 0;
+      return phaseFromUnitV2(layout.full, clamp((clientX - rect.left - layout.left) / layout.plotWidth, 0, 1));
+    },
+    resize() {
+      this.schedule();
+    },
+    clear() {
+      state.waveformAnimation?.cancel?.();
+      if (holder.blxWaveformScene) holder.blxWaveformScene.svg.setAttribute("hidden", "");
+      if (overview.blxWaveformScene) overview.blxWaveformScene.svg.setAttribute("hidden", "");
+      root.querySelectorAll("[data-blx-waveform-edge-flag]").forEach((flag) => { flag.hidden = true; });
     }
   };
-  holder.blxWaveformUpdate(state.waveformProbe);
-  const boundary = point.waveform.ccmBoundary;
-  const button = root.querySelector("[data-blx-boundary-copy]");
-  if (button) {
-    button.textContent = finite(boundary) ? `DCM below ${formatCurrent(boundary)}` : "Boundary unavailable";
-    button.disabled = !finite(boundary);
-    button.dataset.blxBoundaryCurrent = finite(boundary) ? String(boundary) : "";
+  holder.blxWaveformController = controller;
+  overview.blxWaveformController = controller;
+  return controller;
+}
+
+function renderWaveformDiagram(root, state, point) {
+  const holder = root.querySelector("[data-blx-waveform-diagram]");
+  const overview = root.querySelector("[data-blx-waveform-overview]");
+  if (!holder || !overview || !point.valid) return;
+  const controller = holder.blxWaveformController || createWaveformController(root, state, holder, overview);
+  controller.update(point);
+  const model = calculateRingingModelV2(state.waveformRinging);
+  root.querySelectorAll("[data-blx-waveform-ringing-input]").forEach((input) => {
+    const key = input.dataset.blxWaveformRingingInput;
+    const values = {
+      nodeCapacitancePf: finite(state.waveformRinging.nodeCapacitanceF) ? state.waveformRinging.nodeCapacitanceF * 1e12 : null,
+      loopInductanceNh: finite(state.waveformRinging.loopInductanceH) ? state.waveformRinging.loopInductanceH * 1e9 : null,
+      loopResistanceOhm: finite(state.waveformRinging.loopResistanceOhm) ? state.waveformRinging.loopResistanceOhm : null
+    };
+    const value = values[key];
+    if (document.activeElement !== input) input.value = finite(value) ? String(Number(value.toPrecision(6))) : "";
+  });
+  const status = root.querySelector("[data-blx-waveform-ringing-status]");
+  if (status) {
+    status.textContent = point.waveform.mode !== "ccm"
+      ? "unresolved in DCM"
+      : model.available
+        ? `${displayNumber(model.frequencyHz / 1e6, 3)} MHz · ζ ${displayNumber(model.dampingRatio, 2)} · ${state.waveformRinging.loopAssumptionSource === "user-entered" ? "user L/R" : "example L/R"}`
+        : model.status === "non-oscillatory" ? "non-oscillatory at these values" : "enter C, L, and R";
+  }
+  const source = root.querySelector("[data-blx-waveform-ringing-source]");
+  if (source) {
+    const voltage = state.waveformRinging.characterizationVoltageV;
+    const loopCopy = state.waveformRinging.loopAssumptionSource === "user-entered"
+      ? "Loop L/R are user-entered board assumptions."
+      : "The default 2 nH loop L and 0.35 Ω damping R are illustrative board-level starting assumptions.";
+    source.textContent = `${state.waveformRinging.capacitanceSource}${finite(voltage) ? `; characterized at ${displayNumber(voltage, 3)} V` : ""}. This is a device-only, non-VIN-adjusted seed—confirm or edit it for the operating point. ${loopCopy} This first-order linear response excludes nonlinear COSS, edge-current/QRR excitation, clamps, and probe loading.`;
   }
 }
 
 function initializeWaveformInteractions(root, state) {
   const holder = root.querySelector("[data-blx-waveform-diagram]");
+  const overview = root.querySelector("[data-blx-waveform-overview]");
   const probe = root.querySelector("[data-blx-waveform-probe]");
-  if (!holder || !probe) return;
-  const setProbe = (fraction) => {
-    state.waveformProbe = clamp(fraction, 0, 1);
-    holder.blxWaveformUpdate?.(state.waveformProbe);
-  };
-  probe.addEventListener("input", () => setProbe(Number(probe.value) / 1000));
-  const fromPointer = (event) => {
+  const selection = root.querySelector("[data-blx-waveform-selection]");
+  if (!holder || !overview || !probe || !selection) return;
+  const controller = () => holder.blxWaveformController;
+  const ringingScales = { nodeCapacitancePf: 1e-12, loopInductanceNh: 1e-9, loopResistanceOhm: 1 };
+  root.querySelectorAll("[data-blx-waveform-ringing-input]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const key = input.dataset.blxWaveformRingingInput;
+      const value = Number(input.value);
+      const target = { nodeCapacitancePf: "nodeCapacitanceF", loopInductanceNh: "loopInductanceH", loopResistanceOhm: "loopResistanceOhm" }[key];
+      if (!target) return;
+      state.waveformRinging[target] = input.value !== "" && finite(value) && value > 0 ? value * ringingScales[key] : null;
+      if (key === "nodeCapacitancePf") {
+        state.waveformRinging.capacitanceSource = "User-entered effective node capacitance";
+        state.waveformRinging.characterizationVoltageV = null;
+      } else {
+        state.waveformRinging.loopAssumptionSource = "user-entered";
+      }
+      if (state.point?.valid) renderWaveformDiagram(root, state, state.point);
+    });
+  });
+  const setSelection = (startClientX, endClientX) => {
     const rect = holder.getBoundingClientRect();
-    const left = rect.width * 54 / 720;
-    const right = rect.width * 14 / 720;
-    return clamp((event.clientX - rect.left - left) / Math.max(1, rect.width - left - right), 0, 1);
+    const layout = controller()?.layout;
+    if (!layout) return;
+    const start = clamp(startClientX - rect.left, layout.left, layout.left + layout.plotWidth);
+    const end = clamp(endClientX - rect.left, layout.left, layout.left + layout.plotWidth);
+    selection.style.left = `${Math.min(start, end)}px`;
+    selection.style.width = `${Math.abs(end - start)}px`;
+    selection.hidden = Math.abs(end - start) < 6;
   };
-  holder.addEventListener("pointermove", (event) => {
-    if (event.pointerType === "touch" && state.waveformPointerId !== event.pointerId) return;
-    setProbe(fromPointer(event));
+  const endPointer = (event, cancelled = false) => {
+    const active = state.waveformPointer;
+    if (!active || active.pointerId !== event.pointerId) return;
+    const api = controller();
+    const dx = event.clientX - active.startX;
+    const distance = Math.abs(dx);
+    if (!cancelled && active.mode === "select" && distance >= 6) {
+      const startPhase = api.phaseFromClientX(active.startX);
+      const endPhase = api.phaseFromClientX(event.clientX);
+      api.setView({
+        ...state.waveformView,
+        mode: "custom",
+        startPhase: Math.min(startPhase, endPhase),
+        endPhase: Math.max(startPhase, endPhase)
+      });
+    } else if (!cancelled && active.mode === "select" && distance < 6) {
+      api.setProbe(api.phaseFromClientX(event.clientX));
+    } else if (!cancelled && active.mode === "touch" && Math.hypot(dx, event.clientY - active.startY) < 7) {
+      api.setProbe(api.phaseFromClientX(event.clientX));
+    }
+    selection.hidden = true;
+    state.waveformPointer = null;
+    try { holder.releasePointerCapture(event.pointerId); } catch {}
+  };
+
+  probe.addEventListener("input", () => {
+    const api = controller();
+    if (!api) return;
+    api.setProbe(phaseFromUnitV2(state.waveformView, Number(probe.value) / 1000));
   });
   holder.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
-    state.waveformPointerId = event.pointerId;
-    try { holder.setPointerCapture(event.pointerId); } catch {}
-    setProbe(fromPointer(event));
+    const api = controller();
+    if (!api || event.target.closest?.("button, input, a, select, textarea") || (event.button !== 0 && event.button !== 1)) return;
+    const mode = event.pointerType === "touch" ? "touch" : event.button === 1 || event.shiftKey ? "pan" : "select";
+    state.waveformPointer = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      startView: { ...state.waveformView },
+      horizontal: false,
+      vertical: false
+    };
+    if (event.pointerType !== "touch") {
+      try { holder.setPointerCapture(event.pointerId); } catch {}
+      event.preventDefault();
+    }
+    holder.focus({ preventScroll: true });
+  });
+  holder.addEventListener("pointermove", (event) => {
+    const api = controller();
+    if (!api) return;
+    const active = state.waveformPointer;
+    if (!active || active.pointerId !== event.pointerId) {
+      if (event.pointerType !== "touch") api.setGhost(api.phaseFromClientX(event.clientX));
+      return;
+    }
+    const dx = event.clientX - active.startX;
+    const dy = event.clientY - active.startY;
+    if (active.mode === "touch") {
+      if (!active.horizontal && !active.vertical && Math.hypot(dx, dy) >= 6) {
+        active.horizontal = Math.abs(dx) > Math.abs(dy);
+        active.vertical = !active.horizontal;
+        if (active.horizontal) {
+          try { holder.setPointerCapture(event.pointerId); } catch {}
+        }
+      }
+      if (active.horizontal) {
+        api.setGhost(api.phaseFromClientX(event.clientX));
+        event.preventDefault();
+      }
+      return;
+    }
+    if (active.mode === "pan") {
+      const span = active.startView.endPhase - active.startView.startPhase;
+      const delta = -dx / Math.max(1, api.layout.plotWidth) * span;
+      api.setView(panWaveformViewV2(api.point, active.startView, delta));
+      event.preventDefault();
+      return;
+    }
+    api.setGhost(api.phaseFromClientX(event.clientX));
+    setSelection(active.startX, event.clientX);
     event.preventDefault();
   });
-  holder.addEventListener("pointerup", (event) => {
-    if (state.waveformPointerId !== event.pointerId) return;
-    state.waveformPointerId = null;
-    try { holder.releasePointerCapture(event.pointerId); } catch {}
+  holder.addEventListener("pointerup", (event) => endPointer(event));
+  holder.addEventListener("pointercancel", (event) => endPointer(event, true));
+  holder.addEventListener("pointerleave", (event) => {
+    if (!state.waveformPointer && event.pointerType !== "touch") controller()?.setGhost(null);
   });
-  holder.addEventListener("pointercancel", () => { state.waveformPointerId = null; });
+  holder.addEventListener("auxclick", (event) => {
+    if (event.button === 1) event.preventDefault();
+  });
+  holder.addEventListener("wheel", (event) => {
+    const api = controller();
+    if (!api) return;
+    if (event.ctrlKey || event.metaKey) {
+      const anchor = api.phaseFromClientX(event.clientX);
+      const next = zoomWaveformViewV2(api.point, state.waveformView, anchor, clamp(Math.exp(event.deltaY * 0.0015), 0.5, 2));
+      if (next.startPhase !== state.waveformView.startPhase || next.endPhase !== state.waveformView.endPhase) {
+        event.preventDefault();
+        api.setView(next);
+      }
+      return;
+    }
+    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || state.waveformView.endPhase - state.waveformView.startPhase >= 1 - 1e-10) return;
+    const delta = event.deltaX / Math.max(1, api.layout.plotWidth) * (state.waveformView.endPhase - state.waveformView.startPhase);
+    const next = panWaveformViewV2(api.point, state.waveformView, delta);
+    if (next.startPhase !== state.waveformView.startPhase || next.endPhase !== state.waveformView.endPhase) {
+      event.preventDefault();
+      api.setView(next);
+    }
+  }, { passive: false });
+  holder.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    controller()?.setMode("full", true);
+  });
+  holder.addEventListener("keydown", (event) => {
+    const api = controller();
+    if (!api) return;
+    if (event.key === "Escape" && state.waveformPointer) {
+      selection.hidden = true;
+      state.waveformPointer = null;
+      api.setGhost(null);
+      event.preventDefault();
+      return;
+    }
+    const anchor = state.waveformView.probePhase >= state.waveformView.startPhase && state.waveformView.probePhase <= state.waveformView.endPhase
+      ? state.waveformView.probePhase
+      : (state.waveformView.startPhase + state.waveformView.endPhase) / 2;
+    if (["+", "="].includes(event.key)) api.zoom(anchor, 0.5, true);
+    else if (event.key === "-") api.zoom(anchor, 2, true);
+    else if (event.key === "Home") api.setMode("full", true);
+    else if (event.key.toLowerCase() === "r") api.setMode("rising", true);
+    else if (event.key.toLowerCase() === "f") api.setMode("falling", true);
+    else if (event.shiftKey && event.key === "ArrowLeft") api.pan(-0.15 * (state.waveformView.endPhase - state.waveformView.startPhase), true);
+    else if (event.shiftKey && event.key === "ArrowRight") api.pan(0.15 * (state.waveformView.endPhase - state.waveformView.startPhase), true);
+    else return;
+    event.preventDefault();
+  });
+
+  root.querySelectorAll("[data-blx-waveform-mode]").forEach((button) => {
+    button.addEventListener("click", () => controller()?.setMode(button.dataset.blxWaveformMode, true));
+  });
+  root.querySelectorAll("[data-blx-waveform-edge-flag]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      controller()?.setMode(button.dataset.blxWaveformEdgeFlag, true);
+    });
+  });
+  root.querySelectorAll("[data-blx-waveform-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const api = controller();
+      if (!api) return;
+      const action = button.dataset.blxWaveformAction;
+      const span = state.waveformView.endPhase - state.waveformView.startPhase;
+      const anchor = state.waveformView.probePhase >= state.waveformView.startPhase && state.waveformView.probePhase <= state.waveformView.endPhase
+        ? state.waveformView.probePhase
+        : (state.waveformView.startPhase + state.waveformView.endPhase) / 2;
+      if (action === "zoom-in") api.zoom(anchor, 0.5, true);
+      if (action === "zoom-out") api.zoom(anchor, 2, true);
+      if (action === "pan-left") api.pan(-0.2 * span, true);
+      if (action === "pan-right") api.pan(0.2 * span, true);
+    });
+  });
+  const overviewPointerEnd = (event) => {
+    if (state.waveformOverviewPointer?.pointerId !== event.pointerId) return;
+    state.waveformOverviewPointer = null;
+    try { overview.releasePointerCapture(event.pointerId); } catch {}
+  };
+  overview.addEventListener("pointerdown", (event) => {
+    const api = controller();
+    if (!api || event.button !== 0) return;
+    let role = event.target?.dataset?.blxOverviewBrush || "center";
+    const scene = overview.blxWaveformScene;
+    const visualWidth = Number(scene?.brushVisual?.getAttribute("width"));
+    if (["start", "end"].includes(role) && visualWidth <= 16) {
+      const rect = overview.getBoundingClientRect();
+      const visualStart = Number(scene.brushVisual.getAttribute("x"));
+      const localX = event.clientX - rect.left;
+      const midpoint = visualStart + visualWidth / 2;
+      role = Math.abs(localX - midpoint) <= 3 ? "body" : localX < midpoint ? "start" : "end";
+    }
+    const phase = api.overviewPhaseFromClientX(event.clientX);
+    if (role === "center") {
+      const span = state.waveformView.endPhase - state.waveformView.startPhase;
+      api.setView({ ...state.waveformView, mode: "custom", startPhase: phase - span / 2, endPhase: phase + span / 2 });
+      return;
+    }
+    state.waveformOverviewPointer = { pointerId: event.pointerId, role, startX: event.clientX, startView: { ...state.waveformView } };
+    try { overview.setPointerCapture(event.pointerId); } catch {}
+    event.preventDefault();
+  });
+  overview.addEventListener("pointermove", (event) => {
+    const active = state.waveformOverviewPointer;
+    const api = controller();
+    if (!api || !active || active.pointerId !== event.pointerId) return;
+    const phase = api.overviewPhaseFromClientX(event.clientX);
+    if (active.role === "body") {
+      const delta = (event.clientX - active.startX) / Math.max(1, api.overviewLayout.plotWidth);
+      api.setView(panWaveformViewV2(api.point, active.startView, delta));
+    } else if (active.role === "start") {
+      api.setView({ ...active.startView, mode: "custom", startPhase: Math.min(phase, active.startView.endPhase - WAVEFORM_MIN_SPAN) });
+    } else if (active.role === "end") {
+      api.setView({ ...active.startView, mode: "custom", endPhase: Math.max(phase, active.startView.startPhase + WAVEFORM_MIN_SPAN) });
+    }
+    event.preventDefault();
+  });
+  overview.addEventListener("pointerup", overviewPointerEnd);
+  overview.addEventListener("pointercancel", overviewPointerEnd);
+
+  const hint = root.querySelector("[data-blx-waveform-hint]");
+  if (hint) {
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem("blx-waveform-hint-dismissed") === "true"; } catch {}
+    hint.hidden = dismissed || !matchMedia("(pointer: fine)").matches;
+    root.querySelector("[data-blx-waveform-hint-dismiss]")?.addEventListener("click", () => {
+      hint.hidden = true;
+      try { sessionStorage.setItem("blx-waveform-hint-dismissed", "true"); } catch {}
+    });
+  }
 }
 
 function sourceCopy(source) {
@@ -1611,7 +2257,7 @@ function setResultAvailability(root, available) {
   if (loadTab) loadTab.disabled = !available;
 }
 
-function clearResultContent(root) {
+function clearResultContent(root, state = null) {
   setText(root, '[data-blx-out="efficiency"]', "—");
   setText(root, '[data-blx-out="pout"]', "—");
   setText(root, '[data-blx-out="loss"]', "—");
@@ -1628,7 +2274,15 @@ function clearResultContent(root) {
   const warnings = root.querySelector("[data-blx-warnings]");
   if (warnings) warnings.replaceChildren();
   root.querySelector("[data-blx-family-list]")?.replaceChildren();
-  root.querySelector("[data-blx-waveform-diagram]")?.replaceChildren();
+  root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.clear();
+  if (state) {
+    state.waveformAnimation?.cancel?.();
+    state.waveformView = { mode: "full", startPhase: null, endPhase: null, probePhase: 0.32 };
+    state.waveformGhostPhase = null;
+    state.waveformPointer = null;
+    state.waveformOverviewPointer = null;
+    state.waveformAnimation = null;
+  }
   root.querySelector("[data-blx-power-balance]")?.replaceChildren();
   root.querySelector("[data-blx-operating-metrics]")?.replaceChildren();
   root.querySelector("[data-blx-confidence-metrics]")?.replaceChildren();
@@ -1652,7 +2306,7 @@ function clearResultContent(root) {
 }
 
 function renderInvalid(root, state) {
-  clearResultContent(root);
+  clearResultContent(root, state);
   setResultAvailability(root, false);
   root.querySelectorAll("[data-blx-view]").forEach((tab) => {
     const active = tab.dataset.blxView === "point";
@@ -1736,7 +2390,7 @@ function failurePresentation(point) {
 }
 
 function renderModelFailure(root, state, point) {
-  clearResultContent(root);
+  clearResultContent(root, state);
   setResultAvailability(root, false);
   root.querySelectorAll("[data-blx-view]").forEach((tab) => {
     const active = tab.dataset.blxView === "point";
@@ -2068,6 +2722,7 @@ async function changeDevice(root, state) {
   }
   state.deviceId = deviceId;
   state.template = applied.template;
+  state.waveformRinging = waveformRingingForTemplate(applied.template, applied.rawInputs, state.waveformRinging);
   state.timingMode = applied.template.timingMode;
   state.previewCursor = null;
   invalidateSweep(state);
@@ -2330,13 +2985,6 @@ function initializeActions(root, state) {
     render(root, state);
   }));
   root.querySelectorAll("[data-blx-copy]").forEach((button) => button.addEventListener("click", () => copyCanonicalUrl(root, state, button)));
-  root.querySelector("[data-blx-boundary-copy]")?.addEventListener("click", (event) => {
-    const boundary = Number(event.currentTarget.dataset.blxBoundaryCurrent);
-    if (!finite(boundary)) return;
-    state.cursor = quantizeCurrent(boundary, state.rawInputs.ioutMax);
-    state.previewCursor = null;
-    render(root, state, { immediateUrl: true });
-  });
   root.querySelectorAll("[data-blx-current-fraction]").forEach((button) => button.addEventListener("click", () => {
     state.cursor = quantizeCurrent(Number(button.dataset.blxCurrentFraction) * state.rawInputs.ioutMax, state.rawInputs.ioutMax);
     state.previewCursor = null;
@@ -2387,8 +3035,12 @@ export async function initBuckLossExplorerV2(root) {
     previewCursor: null,
     chartPointerId: null,
     chartKeyboardMode: false,
-    waveformProbe: 0.32,
-    waveformPointerId: null,
+    waveformView: { mode: "full", startPhase: null, endPhase: null, probePhase: 0.32 },
+    waveformRinging: waveformRingingForTemplate(template, parsed.rawInputs),
+    waveformGhostPhase: null,
+    waveformPointer: null,
+    waveformOverviewPointer: null,
+    waveformAnimation: null,
     selectedPart: parsed.selectedInductorPart,
     dcrMode: parsed.inductorDcrMode,
     urlNotes: parsed.notes,
@@ -2436,9 +3088,10 @@ export async function initBuckLossExplorerV2(root) {
           renderLossChart(root, state);
           renderLossCharacter(root, state);
         }
+        root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.resize();
       });
     });
-    root.querySelectorAll(".blx-plot").forEach((plot) => observer.observe(plot));
+    root.querySelectorAll(".blx-plot, [data-blx-waveform-diagram], [data-blx-waveform-overview]").forEach((plot) => observer.observe(plot));
     root.blxResizeObserver = observer;
   }
   window.addEventListener("popstate", () => window.location.reload());

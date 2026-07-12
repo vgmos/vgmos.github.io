@@ -2859,27 +2859,99 @@ article.blx-page[data-blx-model="2"] .blx-summary-metric strong {
 .blx-v2-failure p { margin: 0.25rem 0 0; color: var(--ink-soft); line-height: 1.5; }
 .blx-failure-equation { padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--blx-control-bg); font: 600 0.76rem/1.45 var(--claude-mono, monospace); }
 
-.blx-boundary-button {
-  min-height: 34px;
-  padding: 5px 9px;
-  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 5%, var(--paper));
-  color: var(--accent);
-  cursor: pointer;
-  font: inherit;
-}
-
-.blx-boundary-button:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 9%, var(--paper));
-}
-
-.blx-boundary-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.blx-boundary-button:disabled { color: var(--muted); cursor: default; }
-
 .blx-waveform-section {
   overflow: hidden;
+}
+
+.blx-waveform-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.65rem 0 0;
+}
+
+.blx-waveform-view-modes,
+.blx-waveform-view-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.blx-waveform-toolbar button,
+.blx-waveform-edge-flags button,
+.blx-waveform-hint button {
+  min-width: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: 700 0.69rem/1 var(--claude-sans);
+}
+
+.blx-waveform-toolbar button:hover:not(:disabled),
+.blx-waveform-toolbar button:focus-visible,
+.blx-waveform-edge-flags button:hover,
+.blx-waveform-edge-flags button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: 2px solid transparent;
+}
+
+.blx-waveform-toolbar button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--paper));
+  color: var(--accent);
+}
+
+.blx-waveform-toolbar button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.blx-waveform-view-status {
+  display: block;
+  min-height: 1.1rem;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font: 650 0.66rem/1.3 var(--claude-mono, monospace);
+}
+
+.blx-waveform-overview,
+.blx-waveform-detail {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.blx-waveform-overview {
+  height: 78px;
+  margin-top: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--soft) 42%, var(--paper));
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.blx-waveform-detail {
+  height: 318px;
+  margin-top: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--paper) 96%, var(--soft));
+  cursor: crosshair;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.blx-waveform-detail:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .blx-waveform-probe {
@@ -2910,16 +2982,166 @@ article.blx-page[data-blx-model="2"] .blx-summary-metric strong {
   text-align: right;
 }
 
-.blx-waveform-canvas {
-  cursor: crosshair;
-  touch-action: none;
+.blx-waveform-ringing-model {
+  margin-top: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--soft) 34%, var(--paper));
+}
+
+.blx-waveform-ringing-model summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: 700 0.69rem/1.25 var(--claude-sans);
+}
+
+.blx-waveform-ringing-model summary span:last-child {
+  color: var(--accent);
+  font: 650 0.64rem/1.2 var(--claude-mono, monospace);
+  text-align: right;
+}
+
+.blx-waveform-ringing-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding: 0 10px 10px;
+}
+
+.blx-waveform-ringing-controls label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font: 700 0.64rem/1.2 var(--claude-sans);
+}
+
+.blx-waveform-ringing-controls label > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: 650 0.67rem/1 var(--claude-mono, monospace);
+}
+
+.blx-waveform-ringing-controls input {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 6px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.blx-waveform-ringing-controls input:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  outline-offset: 1px;
+}
+
+.blx-waveform-ringing-controls p {
+  grid-column: 1 / -1;
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 1.45;
 }
 
 .blx-waveform-svg {
   display: block;
   width: 100%;
-  height: auto;
-  margin-top: 0.75rem;
+  margin: 0;
+}
+
+.blx-waveform-detail-svg { height: 318px; }
+.blx-waveform-overview-svg { height: 78px; }
+
+.blx-waveform-edge-flags {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.blx-waveform-edge-flags button {
+  position: absolute;
+  top: 2px;
+  min-width: 0;
+  min-height: 27px;
+  padding: 4px 7px;
+  transform: translateX(-50%);
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--line));
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  color: var(--accent);
+  pointer-events: auto;
+  white-space: nowrap;
+  font-size: 0.61rem;
+}
+
+.blx-waveform-selection {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  pointer-events: none;
+}
+
+.blx-waveform-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-top: 0.7rem;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--paper));
+  color: var(--muted);
+  font: 600 0.64rem/1.35 var(--claude-sans);
+}
+
+.blx-waveform-hint[hidden] { display: none; }
+
+.blx-waveform-hint button {
+  flex: 0 0 auto;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.blx-waveform-brush-visual {
+  fill: color-mix(in srgb, var(--accent) 11%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 78%, transparent);
+  vector-effect: non-scaling-stroke;
+  cursor: grab;
+}
+
+.blx-waveform-brush-visual:active { cursor: grabbing; }
+
+.blx-waveform-brush-true {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.blx-waveform-brush-handle {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  vector-effect: non-scaling-stroke;
+  cursor: ew-resize;
 }
 
 .blx-waveform-svg text {
@@ -2947,8 +3169,7 @@ article.blx-page[data-blx-model="2"] .blx-summary-metric strong {
 }
 
 .blx-waveform-voltage,
-.blx-waveform-voltage-ideal,
-.blx-waveform-gate {
+.blx-waveform-voltage-ideal {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2966,12 +3187,15 @@ article.blx-page[data-blx-model="2"] .blx-summary-metric strong {
   stroke-width: 2;
 }
 
-.blx-waveform-gate {
-  stroke-width: 1.8;
+.blx-waveform-ringing {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  stroke-dasharray: 4 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
 }
-
-.blx-waveform-gate-high { stroke: var(--blx-cond); }
-.blx-waveform-gate-low { stroke: var(--blx-dcr); }
 
 .blx-waveform-dead-band {
   fill: color-mix(in srgb, var(--blx-dead) 15%, transparent);
@@ -2979,6 +3203,68 @@ article.blx-page[data-blx-model="2"] .blx-summary-metric strong {
   stroke-dasharray: 2 3;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
+}
+
+.blx-waveform-dead-hairline {
+  stroke: var(--blx-dead);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.blx-waveform-overview-dead-marker {
+  fill: color-mix(in srgb, var(--blx-dead) 16%, transparent);
+  stroke: color-mix(in srgb, var(--blx-dead) 62%, transparent);
+  stroke-dasharray: 2 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.blx-waveform-overview-edge line {
+  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.blx-waveform-overview-edge text { fill: var(--accent) !important; }
+
+.blx-waveform-overlap-bracket {
+  fill: color-mix(in srgb, var(--blx-sw) 8%, transparent);
+  stroke: color-mix(in srgb, var(--blx-sw) 75%, transparent);
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.blx-waveform-unresolved-region {
+  fill: color-mix(in srgb, var(--muted) 7%, transparent);
+  stroke: color-mix(in srgb, var(--muted) 32%, transparent);
+  stroke-dasharray: 2 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.blx-waveform-unresolved-label,
+.blx-waveform-commutation-label {
+  fill: var(--muted) !important;
+  font-style: italic !important;
+}
+
+.blx-waveform-evidence-label { fill: var(--blx-sw) !important; }
+
+.blx-waveform-tick {
+  stroke: var(--line);
+  vector-effect: non-scaling-stroke;
+}
+
+.blx-waveform-tick-label { font-family: var(--claude-mono, monospace) !important; }
+
+.blx-waveform-ghost-cursor {
+  opacity: 0.58;
+}
+
+.blx-waveform-ghost-cursor .blx-waveform-cursor {
+  stroke-dasharray: 1 3;
 }
 
 .blx-waveform-ringing-label {
@@ -3571,8 +3857,15 @@ article.blx-page[data-blx-legacy="true"] .blx-input-disclosure :disabled { opaci
   .blx-v2-family-row summary { grid-template-columns: 1.6rem minmax(0, 1fr) auto; }
   .blx-v2-family-list { grid-template-columns: 1fr; }
   .blx-v2-family-list .blx-v2-family-row.is-open { grid-column: auto; }
+  .blx-waveform-toolbar { align-items: stretch; flex-direction: column; }
+  .blx-waveform-view-modes,
+  .blx-waveform-view-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .blx-waveform-view-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .blx-waveform-toolbar button { width: 100%; }
+  .blx-waveform-edge-flags button { max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
   .blx-waveform-probe { grid-template-columns: auto minmax(100px, 1fr); gap: 0.55rem; }
   .blx-waveform-probe output { grid-column: 1 / -1; text-align: left; }
+  .blx-waveform-ringing-controls { grid-template-columns: 1fr; }
   .blx-v2-family-bar { left: 2.25rem; }
   .blx-legacy-banner,
   .blx-import-delta { width: calc(100vw - 28px); flex-direction: column; align-items: stretch; }
