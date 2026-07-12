@@ -20,12 +20,28 @@ describe("buck loss v2 URL state", () => {
     const parsed = parseBuckLossUrlV2("?m=2&p=12v-to-3v3-pol&device=epc2090&control=forced-ccm&vin=15&i=1.5");
     assert.equal(parsed.custom, true);
     const serialized = serializeBuckLossUrlV2(parsed);
-    assert.match(serialized, /^m=2&p=12v-to-3v3-pol&device=epc2090&control=forced-ccm&timing=effective/);
+    assert.match(serialized, /^m=2&p=12v-to-3v3-pol&device=epc2090&control=forced-ccm&timing=auto/);
     assert.match(serialized, /vin=15/);
     const reparsed = parseBuckLossUrlV2(`?${serialized}`);
     assert.equal(reparsed.rawInputs.vin, 15);
     assert.equal(reparsed.cursor, 1.5);
     assert.equal(reparsed.controlMode, "forced-ccm");
+    assert.equal(reparsed.timingMode, "auto");
+  });
+
+  it("round-trips unequal effective dead-time edges without changing the legacy fallback", () => {
+    const parsed = parseBuckLossUrlV2("?m=2&p=12v-to-3v3-pol&device=epc2090&td=2&tdhl=7&tdlh=1&rsd=100&i=2");
+    assert.equal(parsed.rawInputs.deadTime, 2);
+    assert.equal(parsed.rawInputs.deadTimeHighToLow, 7);
+    assert.equal(parsed.rawInputs.deadTimeLowToHigh, 1);
+    assert.equal(parsed.rawInputs.reversePathResistance, 100);
+    const serialized = serializeBuckLossUrlV2(parsed);
+    assert.match(serialized, /tdhl=7/);
+    assert.match(serialized, /tdlh=1/);
+    assert.match(serialized, /rsd=100/);
+    const reparsed = parseBuckLossUrlV2(serialized);
+    assert.equal(reparsed.rawInputs.deadTimeHighToLow, 7);
+    assert.equal(reparsed.rawInputs.deadTimeLowToHigh, 1);
   });
 
   it("round-trips the manufacturer BSC010N04LS6 template without inventing unsupported fields", () => {

@@ -84,7 +84,10 @@ export function parseBuckLossUrlV2(input, options = {}) {
   const cursorRaw = finiteNumber(params.get("i"));
   const cursor = clamp(cursorRaw ?? preset.cursor, 0, rawInputs.ioutMax);
   const controlMode = params.get("control") === "forced-ccm" ? "forced-ccm" : "auto-dcm";
-  const timingMode = params.get("timing") === "derived" ? "derived" : device?.timingMode ?? "effective";
+  const requestedTimingMode = params.get("timing");
+  const timingMode = ["auto", "derived", "effective"].includes(requestedTimingMode)
+    ? requestedTimingMode
+    : device?.timingMode ?? "auto";
   const part = params.get("part") || preset.inductorPart || null;
   const dcrMode = params.get("dcrm") === "max" ? "max" : "typ";
   return {
@@ -120,7 +123,7 @@ export function serializeBuckLossUrlV2(state) {
   values.set("p", presetId);
   values.set("device", deviceId);
   values.set("control", state.controlMode === "forced-ccm" ? "forced-ccm" : "auto-dcm");
-  values.set("timing", state.timingMode === "derived" ? "derived" : "effective");
+  values.set("timing", ["auto", "derived", "effective"].includes(state.timingMode) ? state.timingMode : "auto");
   if (state.selectedInductorPart) values.set("part", state.selectedInductorPart);
   if (state.inductorDcrMode === "max") values.set("dcrm", "max");
   for (const [key, config] of Object.entries(BUCK_LOSS_SCHEMA_V2)) {

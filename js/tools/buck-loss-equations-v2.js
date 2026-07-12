@@ -18,6 +18,26 @@ const effectiveTransitionSource = Object.freeze({
   relation: "adapted"
 });
 
+const characterizedEnergySource = Object.freeze({
+  title: "Condition-matched switching-energy characterization",
+  chapter: null,
+  equation: null,
+  printedPage: null,
+  pdfPage: null,
+  note: "Interpolates EON and EOFF only inside the declared voltage/current domain and at the declared temperature and gate-resistance conditions.",
+  relation: "direct"
+});
+
+const unavailableTransitionSource = Object.freeze({
+  title: "Automatic transition evidence hierarchy",
+  chapter: null,
+  equation: null,
+  printedPage: null,
+  pdfPage: null,
+  note: "No condition-matched energy surface, complete gate-charge path, or complete effective-time fallback is available, so this term is omitted.",
+  relation: "adapted"
+});
+
 export const BUCK_LOSS_FAMILIES_V2 = Object.freeze([
   Object.freeze({ id: "mosfetConduction", label: "MOSFET conduction", terms: ["highSideConduction", "lowSideConduction"] }),
   Object.freeze({ id: "magnetics", label: "Magnetics", terms: ["inductorDcCopper", "inductorAcCopper", "inductorCoreResidual"] }),
@@ -87,7 +107,7 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
   deadTimeConduction: Object.freeze({
     label: "Reverse-path dead time",
     family: "deadTimeRecovery",
-    formula: "VSD · ∫dead |iL| dt / TSW",
+    formula: "Σedges [VSD,0 · ∫ |iL| dt + RSD · ∫ iL² dt] / TSW",
     source: Object.freeze({
       ...source("4.33, 4.35", 193, 207, "Exact interval integration covers CCM and the single material DCM dead-time interval."),
       references: Object.freeze([
@@ -129,7 +149,34 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
 });
 
 export function resolveBuckLossTermMetadataV2(timingMode, transition = null) {
-  const effective = transition?.method === "effective-override" || (!transition?.method && timingMode === "effective");
+  const characterized = ["measured-energy-surface", "vendor-spice-energy-surface"].includes(transition?.method);
+  if (characterized) return Object.freeze({
+    ...BUCK_LOSS_TERM_METADATA_V2,
+    turnOnOverlap: Object.freeze({
+      ...BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap,
+      formula: "EON(VIN, ION, conditions) · fSW",
+      source: characterizedEnergySource
+    }),
+    turnOffOverlap: Object.freeze({
+      ...BUCK_LOSS_TERM_METADATA_V2.turnOffOverlap,
+      formula: "EOFF(VIN, IOFF, conditions) · fSW",
+      source: characterizedEnergySource
+    })
+  });
+  if (timingMode === "auto" && transition?.available === false) return Object.freeze({
+    ...BUCK_LOSS_TERM_METADATA_V2,
+    turnOnOverlap: Object.freeze({
+      ...BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap,
+      formula: "Automatic hierarchy · EON unavailable",
+      source: unavailableTransitionSource
+    }),
+    turnOffOverlap: Object.freeze({
+      ...BUCK_LOSS_TERM_METADATA_V2.turnOffOverlap,
+      formula: "Automatic hierarchy · EOFF unavailable",
+      source: unavailableTransitionSource
+    })
+  });
+  const effective = ["effective-override", "effective-fallback"].includes(transition?.method) || (!transition?.method && timingMode === "effective");
   if (!effective) return BUCK_LOSS_TERM_METADATA_V2;
   return Object.freeze({
     ...BUCK_LOSS_TERM_METADATA_V2,
