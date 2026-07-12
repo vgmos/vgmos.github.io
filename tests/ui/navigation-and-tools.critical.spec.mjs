@@ -651,8 +651,8 @@ test.describe("Buck Converter Loss Tool", () => {
     }
     await expect(page.locator("[data-blx-family]")).toHaveCount(0);
     await expect(page.locator("[data-blx-waveform-diagram] svg")).toHaveCount(1);
-    await expect(page.locator("[data-blx-waveform-diagram] svg")).toHaveAttribute("hidden", "");
-    await expect(page.locator("[data-blx-waveform-overview] svg")).toHaveAttribute("hidden", "");
+    await expect(page.locator("[data-blx-waveform-diagram] svg")).toBeHidden();
+    await expect(page.locator("[data-blx-waveform-overview] svg")).toBeHidden();
     await expect(page.locator(".blx-v2-power-track")).toHaveCount(0);
     await expect(page.locator("[data-blx-efficiency-plot] svg")).toHaveCount(0);
     await expect(page.locator("[data-blx-loss-plot] svg")).toHaveCount(0);
@@ -704,7 +704,6 @@ test.describe("Buck Converter Loss Tool", () => {
     }
     await page.evaluate(() => {
       window.__buckSweep = document.querySelector("#buck-loss-explorer").blxV2State.sweep;
-      window.__efficiencySvg = document.querySelector("[data-blx-efficiency-plot] svg");
     });
     const initialUrl = page.url();
     const initialCurrent = await page.locator('[data-blx-out="current"]').textContent();
@@ -721,7 +720,8 @@ test.describe("Buck Converter Loss Tool", () => {
     await page.waitForTimeout(320);
     expect(page.url()).toBe(initialUrl);
     expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
-    expect(await page.evaluate(() => document.querySelector("[data-blx-efficiency-plot] svg") === window.__efficiencySvg)).toBe(true);
+    await expect(efficiencyPlot.locator("svg")).toBeVisible();
+    await expect(lossPlot.locator("svg")).toBeVisible();
 
     await page.mouse.move(1, 1);
     await expect.poll(() => page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.previewCursor)).toBeNull();

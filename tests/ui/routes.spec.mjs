@@ -165,7 +165,8 @@ test("live external links do not return a confirmed broken status", async ({ pag
       .filter(Boolean)
   );
   for (const route of HTML_ROUTES) {
-    await page.goto(route, { waitUntil: "domcontentloaded" });
+    const auditRoute = route === "/tools/buck-losses/" ? BUCK_LOSS_V2_ROUTE : route;
+    await page.goto(auditRoute, { waitUntil: "domcontentloaded" });
     await settlePage(page);
     const links = await page.locator("a[href]").evaluateAll((nodes) => nodes.map((node) => node.href));
     for (const href of links) {
