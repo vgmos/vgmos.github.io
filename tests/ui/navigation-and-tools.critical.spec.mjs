@@ -367,10 +367,14 @@ test.describe("Buck Converter Loss Tool", () => {
     const waveform = page.locator("[data-blx-waveform-diagram]");
     await expect(waveform.locator('[data-blx-waveform-trace="switch-node"]')).toHaveCount(1);
     await expect(waveform.locator('[data-blx-waveform-trace="inductor-current"]')).toHaveCount(1);
-    await expect(waveform.locator('[data-blx-waveform-trace="gate-high"]')).toHaveCount(1);
-    await expect(waveform.locator('[data-blx-waveform-trace="gate-low"]')).toHaveCount(1);
+    await expect(waveform.locator('[data-blx-waveform-trace="gate-high"]')).toHaveCount(0);
+    await expect(waveform.locator('[data-blx-waveform-trace="gate-low"]')).toHaveCount(0);
+    await expect(page.locator("[data-blx-boundary-copy]")).toHaveCount(0);
+    await expect(page.locator("[data-blx-waveform-probe-chevron]")).toHaveCount(0);
     await expect(waveform.locator("[data-blx-dead-time-band]")).toHaveCount(2);
-    await expect(page.locator(".blx-waveform-note")).toContainText("probe uses exact timing");
+    await expect(waveform.locator("svg")).not.toHaveAttribute("aria-label", /gate commands/i);
+    await expect(page.locator(".blx-waveform-note")).toContainText("auto-fits iL vertically");
+    await expect(page.locator(".blx-waveform-note")).toContainText("calculated, step/ramp-excited first-order series-RLC response");
     await expect(page.locator(".blx-waveform-note")).toContainText("excluded from the loss total");
     const waveformProbe = page.locator("[data-blx-waveform-probe]");
     const waveformReadout = page.locator("[data-blx-waveform-readout]");
@@ -378,7 +382,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await waveformProbe.focus();
     await page.keyboard.press("ArrowRight");
     await expect(waveformReadout).not.toHaveText(waveformReadoutBefore || "");
-    await expect(waveformProbe).toHaveAttribute("aria-valuetext", /VSW ≈ .* · iL/);
+    await expect(waveformProbe).toHaveAttribute("aria-valuetext", /VSW(?: RLC)? ≈ .* · (?:drive target .* · )?iL/);
 
     const familyGrid = await page.locator("[data-blx-family-list]").evaluate((list) => {
       const rows = [...list.querySelectorAll("[data-blx-family]")].slice(0, 2);
@@ -567,7 +571,9 @@ test.describe("Buck Converter Loss Tool", () => {
       await expect(page.locator(`[data-blx-out="${output}"]`)).toHaveText("—");
     }
     await expect(page.locator("[data-blx-family]")).toHaveCount(0);
-    await expect(page.locator("[data-blx-waveform-diagram] svg")).toHaveCount(0);
+    await expect(page.locator("[data-blx-waveform-diagram] svg")).toHaveCount(1);
+    await expect(page.locator("[data-blx-waveform-diagram] svg")).toHaveAttribute("hidden", "");
+    await expect(page.locator("[data-blx-waveform-overview] svg")).toHaveAttribute("hidden", "");
     await expect(page.locator(".blx-v2-power-track")).toHaveCount(0);
     await expect(page.locator("[data-blx-efficiency-plot] svg")).toHaveCount(0);
     await expect(page.locator("[data-blx-loss-plot] svg")).toHaveCount(0);
@@ -583,6 +589,8 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(root).toHaveAttribute("data-blx-mode", "ccm");
     await expect(failure).toBeHidden();
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
+    await expect(page.locator("[data-blx-waveform-diagram] svg")).not.toHaveAttribute("hidden", "");
+    await expect(page.locator("[data-blx-waveform-overview] svg")).not.toHaveAttribute("hidden", "");
     await expect(page.locator(".blx-v2-power-track")).toHaveCount(1);
     await expect(page.locator('[data-blx-view="load"]')).toBeEnabled();
 
@@ -676,15 +684,6 @@ test.describe("Buck Converter Loss Tool", () => {
     expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
 
     await page.locator('[data-blx-view="point"]').click();
-    const boundary = page.locator("[data-blx-boundary-copy]");
-    await expect(boundary).toHaveText(/DCM below/);
-    const exactBoundary = Number(await boundary.getAttribute("data-blx-boundary-current"));
-    await boundary.click();
-    const snapped = await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.cursor);
-    expect(Math.abs(snapped - exactBoundary) / exactBoundary).toBeLessThan(0.005);
-    expect(Number(new URL(page.url()).searchParams.get("i"))).toBe(snapped);
-    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.sweep === window.__buckSweep)).toBe(true);
-
     await page.locator('[data-blx-view="load"]').click();
     await expect(page.locator("[data-blx-loss-character] span[data-kind]")).not.toHaveCount(0);
     await expect(page.locator("[data-blx-causal-insight]")).toContainText(/At .* terms lead at .* of known loss/);

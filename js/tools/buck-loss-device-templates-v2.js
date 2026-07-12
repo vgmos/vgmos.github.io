@@ -105,6 +105,11 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     cornerLabel: "Mixed datasheet typical · 25 °C",
     voltageClass: 100,
     timingMode: "auto",
+    waveformRinging: Object.freeze({
+      cossPerDevicePf: 364,
+      characterizationVoltageV: 50,
+      sourceLabel: "2 × EPC2090 datasheet COSS typical at 50 V"
+    }),
     source: EPC_SOURCE,
     modelSource: Object.freeze({
       publisher: "Efficient Power Conversion Corporation",
@@ -154,6 +159,11 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     cornerLabel: "Mixed datasheet typical · 25 °C · VGS 4.5 V",
     voltageClass: 40,
     timingMode: "auto",
+    waveformRinging: Object.freeze({
+      cossPerDevicePf: 1500,
+      characterizationVoltageV: 20,
+      sourceLabel: "2 × BSC010N04LS6 datasheet COSS typical at 20 V"
+    }),
     source: INFINEON_SOURCE,
     modelSource: Object.freeze({
       publisher: "Infineon Technologies AG",

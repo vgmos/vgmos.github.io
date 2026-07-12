@@ -115,3 +115,25 @@ export function animatePointSeries({ fromPoints, toPoints, duration = 220, draw 
   requestAnimationFrame(tick);
   return { cancel: () => { cancelled = true; } };
 }
+
+export function animateWaveformDomain({ from, to, duration = 150, draw }) {
+  if (prefersReducedMotion() || !from || !to) {
+    draw(to);
+    return null;
+  }
+  let cancelled = false;
+  const start = performance.now();
+  const tick = (now) => {
+    if (cancelled) return;
+    const raw = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - raw, 3);
+    draw({
+      ...to,
+      startPhase: from.startPhase + (to.startPhase - from.startPhase) * eased,
+      endPhase: from.endPhase + (to.endPhase - from.endPhase) * eased
+    });
+    if (raw < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return { cancel: () => { cancelled = true; } };
+}
