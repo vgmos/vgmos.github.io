@@ -83,7 +83,7 @@ const TERM_PARAMETERS = Object.freeze({
   outputCapEsr: ["esr"],
   turnOnOverlap: ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "effectiveTurnOn"],
   turnOffOverlap: ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOffHigh", "effectiveTurnOff"],
-  deadTimeConduction: ["deadTime", "diodeVf"],
+  deadTimeConduction: ["deadTimeHighToLow", "deadTimeLowToHigh", "diodeVf", "reversePathResistance"],
   reverseRecovery: ["qrrRef", "qrrRefCurrent"],
   gateDriveHigh: ["qgHigh", "vDrive"],
   gateDriveLow: ["qgLow", "vDrive"],
@@ -100,11 +100,20 @@ const PROVENANCE_LABELS = Object.freeze({
   "datasheet-typical": "datasheet",
   "datasheet-test-condition": "datasheet test condition",
   "datasheet-plus-test-condition": "datasheet + test condition",
+  "manufacturer-measured-typical": "vendor measured",
+  "ti-evm-design-value": "TI EVM design value",
+  "vendor-model-measured": "vendor measured",
+  "vendor-model-test-condition": "vendor test condition",
   "synthetic-teaching-fixture": "illustrative fixture",
   "inferred-qgs-minus-qgth": "inferred",
   "inferred-effective-overlap": "assumption",
+  "inferred-gate-charge-curve": "curve inferred",
+  "inferred-controller-driver-time": "driver timing inferred",
+  "inferred-triangular-trr": "triangular tRR proxy",
+  "controller-datasheet-typical": "controller datasheet",
   "inferred-from-vin": "inferred from VIN",
   "inferred-rac-equals-rdc": "inferred from RDC",
+  "inferred-from-dead-time": "fallback dead time",
   "coilcraft-datasheet": "datasheet"
 });
 
@@ -254,7 +263,7 @@ function catalogMarkup() {
 
 function advancedMarkup(group) {
   const controls = group.modeControl === "timing"
-    ? `<div class="blx-v2-select-row"><label for="blx-v2-timing-mode">Transition timing</label><select id="blx-v2-timing-mode" data-blx-timing-mode><option value="derived">Derived from gate charge</option><option value="effective">Effective-time override</option></select></div>`
+    ? `<div class="blx-v2-select-row"><label for="blx-v2-timing-mode">Transition method</label><select id="blx-v2-timing-mode" data-blx-timing-mode><option value="auto">Automatic evidence hierarchy</option><option value="derived">Force gate-charge derivation</option><option value="effective">Force effective-time override</option></select></div>`
     : group.modeControl === "control"
       ? `<div class="blx-v2-select-row"><label for="blx-v2-control-mode">Low-current comparison</label><select id="blx-v2-control-mode" data-blx-control-mode><option value="auto-dcm">Automatic diode-emulation DCM</option><option value="forced-ccm">Forced CCM comparison</option></select></div>`
       : "";
@@ -283,6 +292,7 @@ function prepareMarkup(root) {
       <div class="blx-summary-metrics"><div class="blx-summary-metric"><strong data-blx-out="pout">—</strong><span>output</span></div><div class="blx-summary-metric"><strong data-blx-out="loss">—</strong><span data-blx-loss-label>modeled loss</span></div><div class="blx-summary-metric"><strong data-blx-out="pin">—</strong><button type="button" class="blx-term-trigger blx-metric-label" data-blx-coverage-trigger data-blx-input-label>estimated input</button></div></div>
     </div>
     <div class="blx-v2-badges" data-blx-result-badges></div>
+    <section class="blx-section blx-v2-confidence" data-blx-valid-only aria-label="Model confidence and sensitivity"><div class="blx-section-heading"><h2>Model confidence</h2><span class="blx-section-total" data-blx-confidence-status>—</span></div><div class="blx-operating-metrics" data-blx-confidence-metrics></div><p class="blx-sentence" data-blx-confidence-copy></p></section>
     <section class="blx-section blx-v2-failure" data-blx-model-failure hidden><div class="blx-failure-copy"><h2 data-blx-failure-title>This point cannot regulate</h2><p data-blx-failure-explanation></p><p data-blx-failure-recovery></p></div><p class="blx-failure-equation" data-blx-failure-equation></p><p>Results resume as soon as the operating point is feasible.</p><div class="blx-actions"><button type="button" data-blx-fix-output hidden>Fix output voltage</button><button type="button" data-blx-reset-invalid hidden>Reset operating point</button><button type="button" data-blx-copy>Copy link</button></div></section>
     <section class="blx-section blx-waveform-section" data-blx-valid-only aria-label="Switching waveforms and mode intervals"><div class="blx-section-heading"><h2>Switching cycle</h2><button type="button" class="blx-section-total blx-boundary-button" data-blx-boundary-copy>—</button></div><div class="blx-waveform-probe"><label for="blx-v2-waveform-probe">Time probe</label><input id="blx-v2-waveform-probe" data-blx-waveform-probe type="range" min="0" max="1000" step="1" value="320" aria-label="Time within one switching cycle"><output data-blx-waveform-readout>—</output></div><div class="blx-waveform-canvas" data-blx-waveform-diagram aria-label="Interactive switching-cycle plot"></div><p class="blx-waveform-note">Dead-time bands are widened visually so short windows remain legible; the probe uses exact timing. Ringing is qualitative—its amplitude and frequency depend on package, layout, and snubber parasitics and are excluded from the loss total.</p></section>
     <section class="blx-section" data-blx-valid-only aria-label="Ranked loss budget"><div class="blx-section-heading"><h2>Loss budget · ranked</h2><button type="button" class="blx-section-total blx-term-trigger" data-blx-coverage-trigger data-blx-out="loss-total">—</button></div><p class="blx-v2-subtotal-copy" data-blx-subtotal-copy hidden></p><ol class="blx-breakdown-list blx-v2-family-list" data-blx-family-list></ol></section>
@@ -303,9 +313,9 @@ function prepareMarkup(root) {
   const caveat = root.querySelector(".blx-top-caveat");
   if (caveat) caveat.textContent = "This is an analytical intuition model at a disclosed 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.";
   const equations = root.querySelector(".blx-equations");
-  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>CCM uses two dead-time windows and excludes both from low-side channel conduction. Diode-emulation DCM ends low-side conduction at zero current. Atomic rows disclose the executed formula, whether the source is direct or adapted, and their citation to Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4.</p><p>Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. Efficiency remains undefined at exactly zero load because burst, PFM, and minimum-on-time behavior are controller-dependent and out of scope.</p>`;
+  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Atomic analytical rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
   const caveats = root.querySelector(".blx-caveats");
-  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation and continuous-triangle catalog residuals are omitted. Transition timing is derived only from complete gate-path data or entered as an effective-time approximation.</li><li>Bootstrap, snubbers, PCB/package resistance, ringing, and full IC leakage remain outside scope.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
+  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation remains omitted. CCM ZVS classification is diagnostic until a nonlinear COSS/QOSS commutation model or waveform measurement supports an energy credit.</li><li>Automatic transition selection falls back visibly when no condition-matched energy surface is present. Effective-time fallbacks carry the widest uncertainty bound.</li><li>Bootstrap, snubbers, PCB/package resistance, ringing, and full IC leakage remain outside scope.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
 }
 
 function chooserCard(template, preloaded) {
@@ -511,7 +521,7 @@ function syncControls(root, state) {
     field.hidden = field.dataset.blxTech !== "all" && field.dataset.blxTech !== state.template.technology;
   });
   root.querySelectorAll("[data-blx-timing]").forEach((field) => {
-    if (field.dataset.blxTiming !== "all") field.hidden = field.dataset.blxTiming !== state.timingMode;
+    if (field.dataset.blxTiming !== "all") field.hidden = state.timingMode !== "auto" && field.dataset.blxTiming !== state.timingMode;
   });
   root.querySelectorAll("[data-blx-v2-provenance]").forEach((node) => {
     const key = node.dataset.blxV2Provenance;
@@ -927,6 +937,9 @@ function initializeCoveragePopover(root, state) {
   let openTimer = 0;
   let closeTimer = 0;
   let suppressFocusOpen = false;
+  let pendingPointerType = "";
+  let touchPinned = false;
+  const coarsePointer = () => Boolean(window.matchMedia?.("(hover: none), (pointer: coarse)")?.matches);
   const close = ({ restoreFocus = false } = {}) => {
     clearTimeout(openTimer);
     clearTimeout(closeTimer);
@@ -934,6 +947,8 @@ function initializeCoveragePopover(root, state) {
     const returnTarget = activeTrigger;
     if (returnTarget) returnTarget.setAttribute("aria-expanded", "false");
     activeTrigger = null;
+    pendingPointerType = "";
+    touchPinned = false;
     if (restoreFocus && returnTarget) {
       suppressFocusOpen = true;
       returnTarget.focus();
@@ -949,21 +964,27 @@ function initializeCoveragePopover(root, state) {
     popover.style.left = `${left}px`;
     popover.style.top = `${Math.min(below, window.innerHeight - popover.offsetHeight - 12)}px`;
   };
-  const open = (trigger) => {
+  const open = (trigger, { pinForTouch = false } = {}) => {
     if (!state.point?.valid || state.point.availability !== "subtotal") return;
     if (activeTrigger && activeTrigger !== trigger) activeTrigger.setAttribute("aria-expanded", "false");
+    if (pinForTouch) touchPinned = true;
     activeTrigger = trigger;
     setText(popover, "[data-blx-coverage-copy]", coverageExplanation(state.point));
     popover.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
     position(trigger);
   };
+  root.addEventListener("pointerdown", (event) => {
+    pendingPointerType = event.target.closest("[data-blx-coverage-trigger]") ? event.pointerType : "";
+  }, true);
   root.addEventListener("click", (event) => {
     const trigger = event.target.closest("[data-blx-coverage-trigger]");
     if (!trigger || trigger.disabled) return;
     event.preventDefault();
     event.stopPropagation();
-    open(trigger);
+    const pinForTouch = pendingPointerType === "touch" || coarsePointer();
+    pendingPointerType = "";
+    open(trigger, { pinForTouch });
   });
   root.addEventListener("keydown", (event) => {
     const trigger = event.target.closest("[data-blx-coverage-trigger]");
@@ -983,25 +1004,32 @@ function initializeCoveragePopover(root, state) {
   });
   root.addEventListener("focusout", (event) => {
     window.setTimeout(() => {
+      if (touchPinned) return;
       const focused = document.activeElement;
       if (!popover.hidden && !popover.contains(focused) && !focused?.closest?.("[data-blx-coverage-trigger]")) close();
     }, 0);
   });
   root.addEventListener("pointerover", (event) => {
+    if (event.pointerType === "touch") return;
     const trigger = event.target.closest("[data-blx-coverage-trigger]");
     if (!trigger || trigger.disabled) return;
     clearTimeout(closeTimer);
     openTimer = window.setTimeout(() => open(trigger), 150);
   });
   root.addEventListener("pointerout", (event) => {
+    if (event.pointerType === "touch" || touchPinned) return;
     if (!event.target.closest("[data-blx-coverage-trigger], [data-blx-coverage-popover]")) return;
     clearTimeout(openTimer);
     closeTimer = window.setTimeout(() => close(), 200);
   });
   popover.addEventListener("pointerenter", () => clearTimeout(closeTimer));
-  popover.addEventListener("pointerleave", () => { closeTimer = window.setTimeout(() => close(), 200); });
+  popover.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "touch" || touchPinned) return;
+    closeTimer = window.setTimeout(() => close(), 200);
+  });
   popover.querySelector("[data-blx-coverage-close]")?.addEventListener("click", () => close({ restoreFocus: true }));
   document.addEventListener("pointerdown", (event) => {
+    if (touchPinned) return;
     if (!popover.hidden && !popover.contains(event.target) && !event.target.closest("[data-blx-coverage-trigger]")) close();
   });
   document.addEventListener("keydown", (event) => {
@@ -1142,6 +1170,46 @@ function renderPowerBalance(root, point) {
     : `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 
+const TRANSITION_METHOD_LABELS = Object.freeze({
+  "measured-energy-surface": "Measured EON/EOFF table",
+  "vendor-spice-energy-surface": "Vendor-SPICE EON/EOFF table",
+  "derived-gate-charge": "Gate-charge derivation",
+  "effective-fallback": "Effective-time fallback",
+  "effective-override": "Effective-time override"
+});
+
+function renderModelConfidence(root, point) {
+  const uncertainty = point.uncertainty;
+  const metrics = root.querySelector("[data-blx-confidence-metrics]");
+  const status = root.querySelector("[data-blx-confidence-status]");
+  const copy = root.querySelector("[data-blx-confidence-copy]");
+  if (!uncertainty || !metrics) return;
+  const transitionLabel = TRANSITION_METHOD_LABELS[point.transition?.method] || "Transition loss unavailable";
+  const efficiencyRange = finite(uncertainty.efficiency?.low) && finite(uncertainty.efficiency?.high)
+    ? `${formatPercent(uncertainty.efficiency.low)}–${formatPercent(uncertainty.efficiency.high)}`
+    : "—";
+  const lossRange = finite(uncertainty.lossW?.low) && finite(uncertainty.lossW?.high)
+    ? `${formatPower(uncertainty.lossW.low)}–${formatPower(uncertainty.lossW.high)}`
+    : "—";
+  const commutation = point.commutation?.edges;
+  const commutationLabel = commutation
+    ? `LS ${commutation.highToLow.classification} · HS ${commutation.lowToHigh.classification}`
+    : "Unavailable";
+  const entries = [
+    [point.availability === "total" ? "Efficiency bound" : "Known-loss ceiling bound", efficiencyRange],
+    [point.availability === "total" ? "Loss bound" : "Known-loss bound", lossRange],
+    ["Transition evidence", `${transitionLabel} · ${point.transition?.confidence || "unavailable"}`],
+    ["Commutation diagnostic", commutationLabel]
+  ];
+  metrics.innerHTML = entries.map(([label, value]) => `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
+  if (status) status.textContent = `${uncertainty.confidence} confidence`;
+  const dominant = uncertainty.dominantSensitivity;
+  if (copy) {
+    const dominantLabel = dominant ? FAMILY_STYLE[dominant.family]?.short || dominant.family : "No nonzero family";
+    copy.textContent = `${dominantLabel} is the largest modeled sensitivity (${dominant ? formatPower(dominant.spanW) : "—"} low-to-high span). These are engineering bounds, not a statistical confidence interval${point.availability === "subtotal" ? "; omitted mechanisms sit outside the range" : ""}.`;
+  }
+}
+
 function renderWarningsAndInsight(root, state, point) {
   const holder = root.querySelector("[data-blx-warnings]");
   const messages = [];
@@ -1152,6 +1220,7 @@ function renderWarningsAndInsight(root, state, point) {
   if (point.warnings.includes("negative-current-commutation-approximate")) messages.push({ copy: "Approximate commutation: forced CCM has negative valley current. ZVS, signed dead-time paths, QRR, turn-on overlap, and EOSS are only first-order estimates in this reverse-current region.", strong: true });
   else if (state.controlMode === "forced-ccm") messages.push({ copy: "Forced CCM is an expert comparison; watch the valley-current sign at light load." });
   if (state.selectedPart && state.dcrMode === "max") messages.push({ copy: "Maximum DCR changes copper loss only; the catalog AC/core residual remains tied to its typical characterization." });
+  if (point.warnings.includes("switching-energy-surface-fallback")) messages.push({ copy: "The supplied switching-energy surface was outside its declared domain or conditions; the automatic hierarchy used the next supported method.", strong: true });
   if (state.urlNotes.length) messages.push({ copy: "Some URL values were unknown or adjusted to the valid schema." });
   if (holder) holder.innerHTML = messages.map(({ copy, strong }) => `<p class="blx-note${strong ? " blx-note-strong" : ""}">${escapeHtml(copy)}</p>`).join("");
   const advisory = point.insights.fetAreaOptimumScale;
@@ -1562,6 +1631,9 @@ function clearResultContent(root) {
   root.querySelector("[data-blx-waveform-diagram]")?.replaceChildren();
   root.querySelector("[data-blx-power-balance]")?.replaceChildren();
   root.querySelector("[data-blx-operating-metrics]")?.replaceChildren();
+  root.querySelector("[data-blx-confidence-metrics]")?.replaceChildren();
+  setText(root, "[data-blx-confidence-status]", "—");
+  setText(root, "[data-blx-confidence-copy]", "");
   root.querySelector("[data-blx-efficiency-plot]")?.replaceChildren();
   root.querySelector("[data-blx-loss-plot]")?.replaceChildren();
   root.querySelector("[data-blx-series-controls]")?.replaceChildren();
@@ -1622,7 +1694,7 @@ function failurePresentation(point) {
       title: "Dead time consumes the switching period",
       explanation: "The two dead-time windows leave no usable pair of high-side and low-side intervals.",
       recovery: "Reduce dead time or switching frequency.",
-      equation: `2tDEAD / TSW = ${finite(values.deadFraction) ? displayNumber(2 * values.deadFraction, 4) : "—"}`
+      equation: `(tDEAD,HS→LS + tDEAD,LS→HS) / TSW = ${finite(values.deadFractionTotal) ? displayNumber(values.deadFractionTotal, 4) : finite(values.deadFraction) ? displayNumber(2 * values.deadFraction, 4) : "—"}`
     },
     "low-side-window-negative": {
       title: "The required duty leaves a negative low-side window",
@@ -1767,6 +1839,7 @@ function render(root, state, options = {}) {
   renderWaveformDiagram(root, state, point);
   renderFamilyList(root, state, point);
   renderPowerBalance(root, point);
+  renderModelConfidence(root, point);
   const omittedTerms = omittedAtomicTermCount(point);
   const subtotalCopy = root.querySelector("[data-blx-subtotal-copy]");
   if (subtotalCopy) {
@@ -1856,7 +1929,7 @@ function initializeInputs(root, state) {
     });
   });
   root.querySelector("[data-blx-timing-mode]")?.addEventListener("change", (event) => {
-    state.timingMode = event.currentTarget.value === "derived" ? "derived" : "effective";
+    state.timingMode = ["auto", "derived", "effective"].includes(event.currentTarget.value) ? event.currentTarget.value : "auto";
     state.custom = true;
     state.previewCursor = null;
     invalidateSweep(state);
