@@ -186,34 +186,28 @@ test.describe("Buck Converter Tool", () => {
 });
 
 test.describe("Buck Converter Loss Tool", () => {
-  test("a bare first visit requires and remembers an explicit device choice", async ({ page }) => {
+  test("the bare route offers guided setup and a resumable seeded workspace", async ({ page }) => {
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
-    const chooser = page.locator("[data-blx-device-dialog]");
-    await expect(chooser).toBeVisible();
-    await expect(chooser).toHaveAttribute("aria-labelledby", "blx-device-dialog-title");
-    await expect(chooser).toContainText("Choose a switch-pair model");
-    await expect(chooser).not.toContainText(/model v[12]/i);
-    await expect(chooser.locator(".blx-device-choice-kind")).toHaveCount(0);
-    await expect(chooser).toContainText("Continue with the preloaded example →");
-    const chooserGroups = chooser.locator(".blx-device-choice-group");
-    await expect(chooserGroups).toHaveCount(2);
-    await expect(chooserGroups.nth(0).getByRole("heading", { level: 3 })).toHaveText("Manufacturer-sourced");
-    await expect(chooserGroups.nth(0).locator("[data-blx-device-choice]")).toHaveCount(3);
-    await expect(chooserGroups.nth(0)).toContainText("Infineon BSC010N04LS6 pair");
-    await expect(chooserGroups.nth(0)).toContainText("Vishay Si7860DP pair · TI TPS40071EVM");
-    await expect(chooserGroups.nth(1).getByRole("heading", { level: 3 })).toHaveText("Example FETs");
-    await expect(chooserGroups.nth(1).locator("[data-blx-device-choice]")).toHaveCount(3);
-    const epc = page.locator('[data-blx-device-choice="epc2090"]');
-    await expect(epc).toBeFocused();
-    await epc.click();
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Buck Converter Loss Explorer");
+    await expect(page.getByRole("button", { name: "Start guided setup" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open seeded example" })).toBeVisible();
+    await expect(page.locator("[data-blx-device-dialog]")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Open seeded example" }).click();
     await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
     await expect(page).toHaveURL(/m=2/);
     await expect(page).toHaveURL(/device=epc2090/);
     await expect.poll(() => page.evaluate(() => localStorage.getItem("buck-loss-v2-device"))).toBe("epc2090");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("buck-loss-v2-last-setup"))).toContain("device=epc2090");
 
-    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await page.goBack();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Buck Converter Loss Explorer");
+    await expect(page.getByText("Resume your last setup", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open previous setup" })).toBeVisible();
+    await page.getByRole("button", { name: "Open previous setup" }).click();
     await settlePage(page);
-    await expect(chooser).toHaveCount(0);
     await expect(page.locator("[data-blx-device-label]")).toHaveText("EPC2090 GaN");
     await expect(page.locator("[data-blx-device-source]")).toHaveAttribute("href", /EPC2090_datasheet\.pdf/);
     await expect(page).toHaveURL(/m=2/);
@@ -244,6 +238,76 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
     await expect(page.locator("[data-blx-device-label]")).toHaveText("Silicon · 60 V");
     await expect(page).toHaveURL(/device=silicon-60v/);
+  });
+
+  test("the guided setup retains draft state and commits one canonical calculation", async ({ page }) => {
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.getByRole("button", { name: "Start guided setup" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Set circuit conditions");
+
+    await page.locator('[data-blx-entry-preset="48v-to-12v-bus"]').click();
+    await expect(page.locator("#blx-entry-vin")).toHaveValue("48");
+    await page.getByRole("button", { name: "Continue to switch pair" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choose a switch pair");
+    await expect(page.locator('[data-blx-entry-device][value="silicon-30v"]')).toHaveCount(0);
+    await expect(page.locator('[data-blx-entry-device][value="infineon-bsc010n04ls6-4v5"]')).toHaveCount(0);
+    await expect(page.locator('[data-blx-entry-device][value="silicon-60v"]')).toHaveCount(1);
+
+    await page.getByRole("button", { name: "Back" }).click();
+    await expect(page.locator("#blx-entry-vin")).toHaveValue("48");
+    await page.getByRole("button", { name: "Continue to switch pair" }).click();
+    await page.locator('[data-blx-entry-device][value="silicon-60v"]').check();
+    await page.getByRole("button", { name: "Continue to gate drive" }).click();
+    await expect(page.locator("#blx-entry-vDrive")).toHaveValue("5");
+    await page.getByRole("button", { name: "Continue to timing" }).click();
+    await page.getByRole("button", { name: "Continue to magnetics" }).click();
+    await expect(page.locator(".blx-entry-catalog")).toHaveAttribute("data-catalog-state", "ready");
+    await expect(page.locator("#blx-entry-part")).toHaveValue("XGL6060-153");
+    await page.getByRole("button", { name: "Continue to capacitors & control" }).click();
+    await page.getByRole("button", { name: "Review assumptions" }).click();
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review assumptions");
+    await expect(page.locator(".blx-entry-review-rows")).toContainText("48 V → 12 V · 3.5 A max · 0.4 MHz");
+    await expect(page.locator(".blx-entry-review-rows")).toContainText("Silicon · 60 V");
+    await expect(page.locator(".blx-entry-review-rows")).toContainText("XGL6060-153");
+    await page.getByRole("button", { name: "Open loss explorer" }).click();
+    await settlePage(page);
+
+    await expect(page).toHaveURL(/m=2/);
+    await expect(page).toHaveURL(/p=48v-to-12v-bus/);
+    await expect(page).toHaveURL(/device=silicon-60v/);
+    await expect(page).toHaveURL(/part=XGL6060-153/);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("48");
+    await expect(page.locator("#blx-v2-vout")).toHaveValue("12");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("buck-loss-v2-last-setup"))).toContain("device=silicon-60v");
+  });
+
+  test("guided validation and catalog failure keep the setup recoverable", async ({ page }) => {
+    await page.route("**/assets/data/coilcraft-inductors.v1.json*", (route) => route.abort());
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.getByRole("button", { name: "Start guided setup" }).click();
+
+    await page.locator("#blx-entry-vin").fill("5");
+    await page.locator("#blx-entry-vout").fill("12");
+    await page.getByRole("button", { name: "Continue to switch pair" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Set circuit conditions");
+    await expect(page.locator(".blx-entry-form-error")).toContainText("Output voltage must be below input voltage");
+
+    await page.locator("#blx-entry-vout").fill("3.3");
+    await page.getByRole("button", { name: "Continue to switch pair" }).click();
+    await page.getByRole("button", { name: "Continue to gate drive" }).click();
+    await page.getByRole("button", { name: "Continue to timing" }).click();
+    await page.getByRole("button", { name: "Continue to magnetics" }).click();
+
+    await expect(page.locator(".blx-entry-catalog")).toHaveAttribute("data-catalog-state", "error");
+    await expect(page.locator(".blx-entry-catalog")).toContainText("manual magnetic inputs remain editable");
+    await expect(page.locator("#blx-entry-part")).toBeDisabled();
+    await expect(page.locator("#blx-entry-inductance")).toBeEnabled();
+
+    await page.getByRole("button", { name: "Exit setup" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Buck Converter Loss Explorer");
   });
 
   test("incompatible preloaded devices require an explicit compatible replacement", async ({ page }) => {

@@ -26,6 +26,7 @@ export const AUDIT_ROUTES = [
 export const CRITICAL_VISUAL_ROUTES = [
   { name: "home", path: "/" },
   { name: "buck-converter", path: "/tools/buck-converter/" },
+  { name: "buck-loss-entry", path: "/tools/buck-losses/" },
   { name: "buck-losses", path: BUCK_LOSS_V2_ROUTE },
   { name: "sar-project", path: "/projects/georgia-tech-noise-shaping-sar-adc/" },
   { name: "notebook-post", path: "/2026/06/12/a-working-notebook.html" },

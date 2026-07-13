@@ -47,7 +47,8 @@ const [
     waveformTimelineV2,
     zoomWaveformViewV2
   },
-  { dcrForMode, groupPartsBySeries, loadCoilcraftCatalog, selectIsat }
+  { dcrForMode, groupPartsBySeries, loadCoilcraftCatalog, selectIsat },
+  { rememberBuckLossQueryV2 }
 ] = await Promise.all([
   import(versionedModuleUrl("./buck-loss-motion.js")),
   import(versionedModuleUrl("./buck-loss-schema-v2.js")),
@@ -57,7 +58,8 @@ const [
   import(versionedModuleUrl("./buck-loss-evaluator-v2.js")),
   import(versionedModuleUrl("./buck-loss-equations-v2.js")),
   import(versionedModuleUrl("./buck-loss-waveform-view-v2.js")),
-  import(versionedModuleUrl("./coilcraft-catalog.js"))
+  import(versionedModuleUrl("./coilcraft-catalog.js")),
+  import(versionedModuleUrl("./buck-loss-entry-v2.js"))
 ]);
 
 const DEVICE_MEMORY_KEY = "buck-loss-v2-device";
@@ -538,7 +540,9 @@ function updateCanonicalUrl(root, state, immediate = false) {
   clearTimeout(state.urlTimer);
   const commit = () => {
     state.urlTimer = 0;
-    window.history.replaceState(null, "", `${window.location.pathname}?${canonicalQuery(state)}${window.location.hash || ""}`);
+    const query = canonicalQuery(state);
+    rememberBuckLossQueryV2(query);
+    window.history.replaceState(null, "", `${window.location.pathname}?${query}${window.location.hash || ""}`);
   };
   if (immediate) commit();
   else state.urlTimer = setTimeout(commit, 260);
