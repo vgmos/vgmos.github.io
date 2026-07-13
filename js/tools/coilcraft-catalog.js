@@ -44,9 +44,12 @@ function isValidCatalog(catalog) {
 
 // Fetch the catalog JSON. Resolves to the parsed catalog, or rejects so the
 // caller can keep the manual workflow and show a quiet message.
-export async function loadCoilcraftCatalog(url) {
+export async function loadCoilcraftCatalog(url, options = {}) {
   if (!url) throw new Error("Coilcraft catalog URL is missing.");
-  const response = await fetch(url, { headers: { accept: "application/json" } });
+  const response = await fetch(url, {
+    headers: { accept: "application/json" },
+    signal: options.signal
+  });
   if (!response.ok) throw new Error(`Coilcraft catalog request failed (HTTP ${response.status}).`);
   const catalog = await response.json();
   if (!isValidCatalog(catalog)) throw new Error("Coilcraft catalog is empty or malformed.");

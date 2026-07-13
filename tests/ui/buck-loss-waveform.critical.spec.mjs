@@ -241,9 +241,19 @@ test.describe("Buck loss switching-edge viewer", () => {
 
     const targetSizes = await page.locator(".blx-waveform-toolbar button").evaluateAll((buttons) => buttons.map((button) => {
       const rect = button.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
+      return {
+        label: button.getAttribute("aria-label") || button.textContent?.trim() || "waveform control",
+        width: rect.width,
+        height: rect.height
+      };
     }));
-    expect(targetSizes.every(({ width, height }) => width >= 40 && height >= 40)).toBe(true);
+    // Chromium can report a 40px grid track as 39.99988px under parallel
+    // rendering load. Keep the contract at 40 CSS px while tolerating only
+    // that sub-pixel layout rounding, and identify the control if it regresses.
+    for (const { label, width, height } of targetSizes) {
+      expect.soft(width, `${label} touch width`).toBeGreaterThanOrEqual(39.99);
+      expect.soft(height, `${label} touch height`).toBeGreaterThanOrEqual(39.99);
+    }
     await expect(waveform).toHaveCSS("touch-action", "pan-y");
 
     const horizontal = await waveform.evaluate((element) => {

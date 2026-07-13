@@ -304,18 +304,20 @@ function updateCopyUrl(root, state) {
 }
 
 function scheduleUrlReplace(root, state) {
-  if (typeof window === "undefined" || !window.history?.replaceState) return;
+  if (state.disposed || typeof window === "undefined" || !window.history?.replaceState) return;
   updateCopyUrl(root, state);
   clearTimeout(state.urlTimer);
   state.urlTimer = setTimeout(() => {
+    if (state.disposed) return;
     state.urlTimer = 0;
     const query = canonicalQuery(state);
     const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
-    window.history.replaceState(null, "", nextUrl);
+    window.history.replaceState(window.history.state, "", nextUrl);
   }, 320);
 }
 
 async function copyCanonicalUrl(root, state, triggerButton = null) {
+  if (state.disposed) return;
   const input = root.querySelector("[data-blx-copy-url]");
   const href = canonicalHref(state);
   if (input) input.value = href;
@@ -334,6 +336,7 @@ async function copyCanonicalUrl(root, state, triggerButton = null) {
       document.execCommand("copy");
     }
   }
+  if (state.disposed) return;
   if (triggerButton) {
     const original = triggerButton.textContent;
     triggerButton.textContent = "Copied";
@@ -362,7 +365,9 @@ function setAccordionOpen(detail, open, options = {}) {
       detail.dataset.open = "true";
     } else {
       detail.dataset.open = "false";
-      requestAnimationFrame(() => {
+      cancelAnimationFrame(detail.blxAccordionFrame || 0);
+      detail.blxAccordionFrame = requestAnimationFrame(() => {
+        detail.blxAccordionFrame = 0;
         if (detail.open) detail.dataset.open = "true";
       });
     }
@@ -1247,22 +1252,25 @@ function populateCatalogOptions(root, catalog, state) {
   });
 }
 
-async function initCoilcraftCatalog(root, state) {
+async function initCoilcraftCatalog(root, state, signal) {
   const container = root.querySelector("[data-blx-catalog]");
-  if (!container) return;
+  if (!container || signal?.aborted || state.disposed) return;
   const partSelect = root.querySelector("[data-blx-catalog-part]");
   const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
   setCatalogState(root, "loading");
   try {
-    const catalogRequest = loadCoilcraftCatalog(root.dataset.blxCatalogUrl);
-    const lossRequest = root.dataset.blxInductorAcLossUrl ? fetch(root.dataset.blxInductorAcLossUrl) : null;
+    const catalogRequest = loadCoilcraftCatalog(root.dataset.blxCatalogUrl, { signal });
+    const lossRequest = root.dataset.blxInductorAcLossUrl ? fetch(root.dataset.blxInductorAcLossUrl, { signal }) : null;
     const catalog = await catalogRequest;
+    if (signal?.aborted || state.disposed) return;
     if (lossRequest) {
       try {
         const response = await lossRequest;
         if (!response.ok) throw new Error(`Coilcraft AC-loss request failed (HTTP ${response.status}).`);
         state.inductorAcDataset = await response.json();
+        if (signal?.aborted || state.disposed) return;
       } catch (error) {
+        if (signal?.aborted || state.disposed || error?.name === "AbortError") return;
         state.inductorAcDataset = null;
         console.warn("Coilcraft AC-loss model unavailable", error);
       }
@@ -1286,7 +1294,8 @@ async function initCoilcraftCatalog(root, state) {
     } else {
       render(root, state, { animate: false, commit: true });
     }
-  } catch {
+  } catch (error) {
+    if (signal?.aborted || state.disposed || error?.name === "AbortError") return;
     state.catalog = null;
     setCatalogState(root, "error");
     if (partSelect) partSelect.disabled = true;
@@ -1296,6 +1305,7 @@ async function initCoilcraftCatalog(root, state) {
 }
 
 function render(root, state, options = {}) {
+  if (state.disposed) return;
   state.inputs = normalizeInputs(state.rawInputs);
   state.validation = validateInputs(state.inputs);
   const invalidKeys = new Set(state.validation.errors.map((key) => key === "vout-lt-vin" ? "vout" : key));
@@ -1329,6 +1339,7 @@ function render(root, state, options = {}) {
 }
 
 function scheduleRender(root, state, options = {}) {
+  if (state.disposed) return;
   state.pendingRenderOptions = {
     ...state.pendingRenderOptions,
     ...options,
@@ -1339,6 +1350,7 @@ function scheduleRender(root, state, options = {}) {
   if (state.renderFrame) return;
   state.renderFrame = requestAnimationFrame(() => {
     state.renderFrame = 0;
+    if (state.disposed) return;
     const nextOptions = state.pendingRenderOptions || {};
     state.pendingRenderOptions = null;
     render(root, state, nextOptions);
@@ -1383,7 +1395,11 @@ function setFieldMessage(root, key, text = "", tone = "note", options = {}) {
     field.dataset.blxAdjusted = "false";
     void field.offsetWidth;
     field.dataset.blxAdjusted = "true";
-    setTimeout(() => { delete field.dataset.blxAdjusted; }, 300);
+    clearTimeout(field.blxAdjustedTimer);
+    field.blxAdjustedTimer = setTimeout(() => {
+      field.blxAdjustedTimer = 0;
+      delete field.dataset.blxAdjusted;
+    }, 300);
   }
 }
 
@@ -1464,8 +1480,9 @@ function applyPreset(root, state, preset, options = {}) {
 }
 
 async function setView(root, state, view, options = {}) {
-  if (view !== "point" && view !== "load") return;
+  if (state.disposed || (view !== "point" && view !== "load")) return;
   if (state.viewTransition && !options.immediate) await state.viewTransition;
+  if (state.disposed) return;
   const previousView = state.view;
   state.view = view;
   root.querySelector(".blx-view-tabs")?.setAttribute("data-active-view", view);
@@ -1490,6 +1507,7 @@ async function setView(root, state, view, options = {}) {
     const transition = animatePanelSwap(container, fromPanel, toPanel, direction);
     state.viewTransition = transition;
     await transition;
+    if (state.disposed) return;
     if (state.viewTransition === transition) state.viewTransition = null;
   }
   const tabs = root.querySelector(".blx-view-tabs");
@@ -1522,7 +1540,7 @@ function initViewTabs(root, state) {
   setView(root, state, state.view, { immediate: true });
 }
 
-function initInputSheet(root) {
+function initInputSheet(root, signal) {
   const disclosure = root.querySelector(".blx-input-disclosure");
   const desktopSlot = root.querySelector("[data-blx-desktop-input-slot]");
   const mobileSlot = root.querySelector("[data-blx-mobile-input-slot]");
@@ -1530,22 +1548,22 @@ function initInputSheet(root) {
   const openButton = root.querySelector("[data-blx-input-open]");
   const closeButton = root.querySelector("[data-blx-input-close]");
   const title = root.querySelector("#blx-input-sheet-title");
-  if (!disclosure || !desktopSlot || !mobileSlot || !dialog || typeof window === "undefined") return;
+  if (!disclosure || !desktopSlot || !mobileSlot || !dialog || typeof window === "undefined" || signal?.aborted) return;
   const mobile = window.matchMedia("(max-width: 700px)");
   let closing = false;
   const close = async () => {
     if (!dialog.open || closing) return;
     closing = true;
     await animateDialog(dialog, false);
-    dialog.close();
+    if (dialog.open) dialog.close();
     closing = false;
-    openButton?.focus();
+    if (!signal?.aborted) openButton?.focus();
   };
   const open = async () => {
     if (!mobile.matches || dialog.open) return;
     dialog.showModal();
     await animateDialog(dialog, true);
-    title?.focus();
+    if (!signal?.aborted) title?.focus();
   };
   const sync = (event = mobile) => {
     if (event.matches) {
@@ -1567,7 +1585,10 @@ function initInputSheet(root) {
     if (event.target === dialog) close();
   });
   sync();
-  mobile.addEventListener?.("change", sync);
+  mobile.addEventListener?.("change", sync, signal ? { signal } : undefined);
+  signal?.addEventListener("abort", () => {
+    if (dialog.open) dialog.close();
+  }, { once: true });
 }
 
 function initLossHighlighting(root, state) {
@@ -1607,8 +1628,9 @@ function initLossHighlighting(root, state) {
   });
 }
 
-export function initBuckLossExplorer(root) {
-  if (!root || root.dataset.blxInit === "true") return;
+export function initBuckLossExplorer(root, options = {}) {
+  if (!root || root.dataset.blxInit === "true" || options.signal?.aborted) return;
+  const lifecycle = new AbortController();
   root.dataset.blxInit = "true";
   const parsed = parseBuckLossUrl(typeof window === "undefined" ? "" : window.location.search);
   const state = {
@@ -1636,8 +1658,38 @@ export function initBuckLossExplorer(root) {
     acrossPlots: {},
     topGroups: [],
     lossRows: null,
-    lossOrder: []
+    lossOrder: [],
+    signal: lifecycle.signal,
+    disposed: false
   };
+
+  let resizeFrame = 0;
+  let resizeObserver = null;
+  let destroyed = false;
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    options.signal?.removeEventListener?.("abort", destroy);
+    state.disposed = true;
+    clearTimeout(state.urlTimer);
+    cancelAnimationFrame(state.renderFrame);
+    cancelAnimationFrame(resizeFrame);
+    resizeObserver?.disconnect();
+    root.blxResizeObserver?.disconnect?.();
+    root.querySelectorAll("*").forEach((node) => {
+      clearTimeout(node.blxTimer);
+      clearTimeout(node.blxCopyTimer);
+      clearTimeout(node.blxAccordionTimer);
+      clearTimeout(node.blxAdjustedTimer);
+      cancelAnimationFrame(node.blxAccordionFrame || 0);
+      node.blxChart?.animations?.forEach?.((animation) => animation?.cancel?.());
+    });
+    try { root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel()); } catch {}
+    root.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
+    lifecycle.abort();
+  };
+  root.blxDestroy = destroy;
+  options.signal?.addEventListener("abort", destroy, { once: true });
 
   const numberControls = makeControlMap(root, "data-blx-number");
   const rangeControls = makeControlMap(root, "data-blx-range");
@@ -1645,7 +1697,7 @@ export function initBuckLossExplorer(root) {
   root.blxRangeControls = rangeControls;
   ensureFieldMessages(root);
   initAdvancedAccordions(root);
-  initInputSheet(root);
+  initInputSheet(root, lifecycle.signal);
   initViewTabs(root, state);
   initLossHighlighting(root, state);
 
@@ -1762,17 +1814,17 @@ export function initBuckLossExplorer(root) {
   });
 
   if (typeof window !== "undefined") {
-    let resizeFrame = 0;
     const renderAtNewSize = () => {
       if (resizeFrame) cancelAnimationFrame(resizeFrame);
       resizeFrame = requestAnimationFrame(() => {
         resizeFrame = 0;
+        if (state.disposed) return;
         render(root, state, { animate: false, commit: true });
       });
     };
     if ("ResizeObserver" in window) {
       const observedWidths = new WeakMap();
-      const resizeObserver = new ResizeObserver((entries) => {
+      resizeObserver = new ResizeObserver((entries) => {
         const widthChanged = entries.some((entry) => {
           const width = entry.contentRect.width;
           const previous = observedWidths.get(entry.target);
@@ -1784,30 +1836,13 @@ export function initBuckLossExplorer(root) {
       root.querySelectorAll(".blx-plot").forEach((plot) => resizeObserver.observe(plot));
       root.blxResizeObserver = resizeObserver;
     } else {
-      window.addEventListener("resize", renderAtNewSize, { passive: true });
+      window.addEventListener("resize", renderAtNewSize, { passive: true, signal: lifecycle.signal });
     }
-    window.addEventListener("popstate", () => {
-      const next = parseBuckLossUrl(window.location.search);
-      state.rawInputs = cloneRaw(next.rawInputs);
-      state.cursor = next.cursor;
-      state.activePresetId = next.activePresetId;
-      state.explicitOptional = { ...next.explicitOptional };
-      state.selectedPart = next.selectedInductorPart;
-      state.dcrMode = next.inductorDcrMode;
-      state.urlNotes = next.notes;
-      state.inputNote = null;
-      const dcrSelect = root.querySelector("[data-blx-catalog-dcr]");
-      if (dcrSelect) dcrSelect.value = state.dcrMode;
-      if (state.catalog && findCatalogPart(state, state.selectedPart)) applyCatalogPart(root, state, state.selectedPart);
-      else clearCatalogSelection(root, state);
-      syncControls(state, numberControls, rangeControls, { force: true });
-      render(root, state, { announce: true, animate: true, commit: true });
-    });
   }
 
   syncControls(state, numberControls, rangeControls);
   render(root, state, { animate: false, commit: true });
   root.dataset.blxStatus = "ready";
   root.setAttribute("aria-busy", "false");
-  initCoilcraftCatalog(root, state);
+  initCoilcraftCatalog(root, state, lifecycle.signal);
 }

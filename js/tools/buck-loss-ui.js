@@ -11,6 +11,14 @@ const { detectBuckLossUrlVersion, serializeBuckLossUrlV2 } = await import(versio
 const IMPORT_MEMORY_KEY = "buck-loss-v1-import";
 const DEVICE_MEMORY_KEY = "buck-loss-v2-device";
 
+function navigateWithinSite(href) {
+  if (typeof window.vgmosNavigation?.navigate === "function") {
+    window.vgmosNavigation.navigate(href);
+    return;
+  }
+  window.location.assign(href);
+}
+
 function legacyBanner(root) {
   let banner = root.querySelector("[data-blx-legacy-banner]");
   if (banner) return banner;
@@ -22,7 +30,7 @@ function legacyBanner(root) {
   return banner;
 }
 
-function lockLegacyControls(root) {
+function lockLegacyControls(root, options = {}) {
   const lock = () => {
     root.querySelectorAll(".blx-input-disclosure input, .blx-input-disclosure select, .blx-input-disclosure button, [data-blx-cursor-input]").forEach((control) => {
       if (!control.disabled) control.disabled = true;
@@ -32,9 +40,10 @@ function lockLegacyControls(root) {
   const observer = new MutationObserver(() => lock());
   observer.observe(root.querySelector(".blx-workspace") || root, { childList: true, subtree: true });
   root.blxLegacyLockObserver = observer;
+  options.signal?.addEventListener("abort", () => observer.disconnect(), { once: true });
 }
 
-async function importLegacyIntoV2(root) {
+async function importLegacyIntoV2(root, options = {}) {
   const [
     { requestBuckLossDeviceV2 },
     { parseBuckLossUrl },
@@ -50,14 +59,16 @@ async function importLegacyIntoV2(root) {
     import(versionedModuleUrl("./buck-loss-device-templates-v2.js")),
     import(versionedModuleUrl("./buck-loss-presets-v2.js"))
   ]);
+  if (options.signal?.aborted) return;
   const legacy = parseBuckLossUrl(window.location.search);
   const deviceId = await requestBuckLossDeviceV2(root, {
     title: "Choose a switch-pair model",
     message: "The earlier link did not identify device technology. Compatible inputs will be retained and the changed result will be disclosed.",
     vin: legacy.rawInputs.vin,
-    allowCancel: true
+    allowCancel: true,
+    signal: options.signal
   });
-  if (!deviceId) return;
+  if (!deviceId || options.signal?.aborted) return;
   const requestedPreset = getBuckLossPresetV2(legacy.requestedPresetId) || getBuckLossPresetV2(DEFAULT_BUCK_LOSS_PRESET_V2);
   const applied = applyBuckLossDeviceTemplateV2({ ...rawDefaultsV2(), ...requestedPreset.rawInputs }, deviceId);
   const rawInputs = applied.rawInputs;
@@ -99,12 +110,13 @@ async function importLegacyIntoV2(root) {
     rawInputs,
     cursor: legacy.cursor
   });
-  window.location.assign(`${window.location.pathname}?${query}`);
+  if (!options.signal?.aborted) navigateWithinSite(`${window.location.pathname}?${query}`);
 }
 
-async function initLegacy(root) {
+async function initLegacy(root, options = {}) {
   const { initBuckLossExplorer: initV1 } = await import(versionedModuleUrl("./buck-loss-ui-v1.js"));
-  initV1(root);
+  if (options.signal?.aborted) return;
+  initV1(root, options);
   root.dataset.blxLegacy = "true";
   const eyebrow = root.querySelector(".blx-eyebrow");
   if (eyebrow) eyebrow.textContent = "Interactive tool · Archived calculation";
@@ -116,20 +128,41 @@ async function initLegacy(root) {
   if (equations) equations.innerHTML = '<h2>Archived equations</h2><p>This read-only viewer preserves the original ideal-duty, forced-CCM loss kernel used by the shared link. Update the operating point for nonideal duty, diode-emulation DCM, and term-level textbook provenance.</p>';
   const caveats = root.querySelector(".blx-caveats");
   if (caveats) caveats.innerHTML = '<h2>Archived scope</h2><p>This calculation is retained only for result fidelity. Its controls are locked and its assumptions are not being extended.</p>';
-  legacyBanner(root).querySelector("[data-blx-import-v2]")?.addEventListener("click", () => importLegacyIntoV2(root));
-  lockLegacyControls(root);
+  legacyBanner(root).querySelector("[data-blx-import-v2]")?.addEventListener("click", () => importLegacyIntoV2(root, options));
+  lockLegacyControls(root, options);
 }
 
-export async function initBuckLossExplorer(root) {
+export function destroyBuckLossExplorer(root) {
   if (!root) return;
+  const destroy = root.blxDestroy;
+  root.blxDestroy = null;
+  try { destroy?.(); } catch {}
+  root.blxLegacyLockObserver?.disconnect?.();
+  root.blxResizeObserver?.disconnect?.();
+  root.querySelectorAll?.("*").forEach((node) => {
+    clearTimeout(node.blxTimer);
+    clearTimeout(node.blxCopyTimer);
+    clearTimeout(node.blxAccordionTimer);
+    clearTimeout(node.blxAdjustedTimer);
+    cancelAnimationFrame(node.blxAccordionFrame || 0);
+  });
+  try {
+    root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel());
+  } catch {}
+}
+
+export async function initBuckLossExplorer(root, options = {}) {
+  if (!root || options.signal?.aborted) return;
   const route = detectBuckLossUrlVersion(typeof window === "undefined" ? "" : window.location.search).route;
-  if (route === "legacy-v1") await initLegacy(root);
+  if (route === "legacy-v1") await initLegacy(root, options);
   else if (route === "v2-bare") {
     const { initBuckLossEntryV2 } = await import(versionedModuleUrl("./buck-loss-entry-v2.js"));
-    await initBuckLossEntryV2(root);
+    if (options.signal?.aborted) return;
+    await initBuckLossEntryV2(root, options);
   }
   else {
     const { initBuckLossExplorerV2 } = await import(versionedModuleUrl("./buck-loss-ui-v2.js"));
-    await initBuckLossExplorerV2(root);
+    if (options.signal?.aborted) return;
+    await initBuckLossExplorerV2(root, options);
   }
 }

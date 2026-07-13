@@ -34,6 +34,26 @@
       } catch (error) {}
     }());
   </script>
+  <script>
+    // Page scripts can register teardown before the deferred soft-navigation
+    // runtime has mounted the initial document. ui.js adopts this queue and
+    // replaces the bootstrap with an abortable scope for every swapped <main>.
+    window.vgmosPageLifecycle = window.vgmosPageLifecycle || {
+      queue: [],
+      register: function (cleanup, owner) {
+        if (typeof cleanup !== "function") return function () {};
+        var entry = { cleanup: cleanup, owner: owner || document.currentScript || null };
+        var queue = this.queue;
+        queue.push(entry);
+        return function () {
+          entry.cancelled = true;
+          if (typeof entry.unregister === "function") entry.unregister();
+          var index = queue.indexOf(entry);
+          if (index >= 0) queue.splice(index, 1);
+        };
+      }
+    };
+  </script>
   <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}">
   <link rel="icon" type="image/svg+xml" href="{{ "/favicon.svg" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
   <link rel="apple-touch-icon" href="{{ "/assets/apple-touch-icon.png" | relative_url }}">
@@ -44,7 +64,7 @@
 
   <link rel="stylesheet" href="{{ "/css/site.css" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
   {%- for stylesheet in page.stylesheets -%}
-    <link rel="stylesheet" href="{{ stylesheet | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
+    <link rel="stylesheet" href="{{ stylesheet | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}" data-vgmos-page-style>
   {%- endfor -%}
   {%- if page.math == true -%}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">

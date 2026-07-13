@@ -409,6 +409,7 @@ function chooserGroup(kind, templates, selectedId) {
 }
 
 export async function requestBuckLossDeviceV2(root, options = {}) {
+  if (options.signal?.aborted) return null;
   let dialog = root.querySelector("[data-blx-device-dialog]");
   if (!dialog) {
     dialog = document.createElement("dialog");
@@ -428,11 +429,18 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
   dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2>${message}</div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
   return new Promise((resolve) => {
     let settled = false;
+    const abort = () => {
+      if (settled) return;
+      settled = true;
+      if (dialog.open) dialog.close();
+      resolve(null);
+    };
     const finish = async (value) => {
       if (settled) return;
       settled = true;
+      options.signal?.removeEventListener?.("abort", abort);
       await animateDialog(dialog, false);
-      dialog.close();
+      if (dialog.open) dialog.close();
       resolve(value);
     };
     dialog.querySelectorAll("[data-blx-device-choice]").forEach((button) => button.addEventListener("click", () => finish(button.dataset.blxDeviceChoice), { once: true }));
@@ -441,6 +449,7 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
       event.preventDefault();
       if (options.allowCancel) finish(null);
     }, { once: true });
+    options.signal?.addEventListener("abort", abort, { once: true });
     dialog.showModal();
     animateDialog(dialog, true);
     dialog.querySelector("[data-blx-device-choice]")?.focus();
@@ -534,21 +543,24 @@ function renderMismatchLinks(root, state) {
 }
 
 function updateCanonicalUrl(root, state, immediate = false) {
+  if (state.disposed) return;
   const href = canonicalHref(state);
   root.querySelectorAll("[data-blx-copy-url]").forEach((input) => { input.value = href; });
   if (typeof window === "undefined" || !window.history?.replaceState) return;
   clearTimeout(state.urlTimer);
   const commit = () => {
+    if (state.disposed) return;
     state.urlTimer = 0;
     const query = canonicalQuery(state);
     rememberBuckLossQueryV2(query);
-    window.history.replaceState(null, "", `${window.location.pathname}?${query}${window.location.hash || ""}`);
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}?${query}${window.location.hash || ""}`);
   };
   if (immediate) commit();
   else state.urlTimer = setTimeout(commit, 260);
 }
 
 async function copyCanonicalUrl(root, state, button) {
+  if (state.disposed) return;
   const href = canonicalHref(state);
   try {
     await navigator.clipboard.writeText(href);
@@ -561,6 +573,7 @@ async function copyCanonicalUrl(root, state, button) {
       document.execCommand("copy");
     }
   }
+  if (state.disposed) return;
   const original = button.textContent;
   button.textContent = "Copied";
   clearTimeout(button.blxTimer);
@@ -1164,7 +1177,9 @@ function createWaveformController(root, state, holder, overview) {
     overview,
     point: null,
     frame: 0,
+    destroyed: false,
     update(point) {
+      if (this.destroyed || state.disposed) return;
       this.point = point;
       state.waveformAnimation?.cancel?.();
       state.waveformAnimation = null;
@@ -1172,14 +1187,15 @@ function createWaveformController(root, state, holder, overview) {
       this.render();
     },
     render() {
-      if (!this.point?.valid) return;
+      if (this.destroyed || state.disposed || !this.point?.valid) return;
       renderDetailWaveform(this);
       renderOverviewWaveform(this);
     },
     schedule() {
-      if (this.frame) return;
+      if (this.destroyed || state.disposed || this.frame) return;
       this.frame = requestAnimationFrame(() => {
         this.frame = 0;
+        if (this.destroyed || state.disposed) return;
         this.render();
       });
     },
@@ -1198,6 +1214,7 @@ function createWaveformController(root, state, holder, overview) {
         to: target,
         duration: 150,
         draw: (view) => {
+          if (this.destroyed || state.disposed) return;
           state.waveformView = { ...view, mode, probePhase: target.probePhase };
           this.render();
         }
@@ -1245,6 +1262,15 @@ function createWaveformController(root, state, holder, overview) {
       if (holder.blxWaveformScene) holder.blxWaveformScene.svg.setAttribute("hidden", "");
       if (overview.blxWaveformScene) overview.blxWaveformScene.svg.setAttribute("hidden", "");
       root.querySelectorAll("[data-blx-waveform-edge-flag]").forEach((flag) => { flag.hidden = true; });
+    },
+    destroy() {
+      this.destroyed = true;
+      cancelAnimationFrame(this.frame);
+      this.frame = 0;
+      state.waveformAnimation?.cancel?.();
+      state.waveformAnimation = null;
+      holder.blxWaveformController = null;
+      overview.blxWaveformController = null;
     }
   };
   holder.blxWaveformController = controller;
@@ -1586,12 +1612,13 @@ function setCoverageTriggerState(root, enabled) {
   });
 }
 
-function initializeCoveragePopover(root, state) {
+function initializeCoveragePopover(root, state, signal) {
   const popover = root.querySelector("[data-blx-coverage-popover]");
-  if (!popover) return;
+  if (!popover || signal?.aborted) return;
   let activeTrigger = null;
   let openTimer = 0;
   let closeTimer = 0;
+  let focusTimer = 0;
   let suppressFocusOpen = false;
   let pendingPointerType = "";
   let touchPinned = false;
@@ -1659,7 +1686,10 @@ function initializeCoveragePopover(root, state) {
     if (trigger && !trigger.disabled) open(trigger);
   });
   root.addEventListener("focusout", (event) => {
-    window.setTimeout(() => {
+    clearTimeout(focusTimer);
+    focusTimer = window.setTimeout(() => {
+      focusTimer = 0;
+      if (signal?.aborted) return;
       if (touchPinned) return;
       const focused = document.activeElement;
       if (!popover.hidden && !popover.contains(focused) && !focused?.closest?.("[data-blx-coverage-trigger]")) close();
@@ -1687,14 +1717,21 @@ function initializeCoveragePopover(root, state) {
   document.addEventListener("pointerdown", (event) => {
     if (touchPinned) return;
     if (!popover.hidden && !popover.contains(event.target) && !event.target.closest("[data-blx-coverage-trigger]")) close();
-  });
+  }, signal ? { signal } : undefined);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !popover.hidden) {
       event.preventDefault();
       close({ restoreFocus: true });
     }
-  });
-  window.addEventListener("resize", () => { if (!popover.hidden && activeTrigger) position(activeTrigger); });
+  }, signal ? { signal } : undefined);
+  window.addEventListener("resize", () => { if (!popover.hidden && activeTrigger) position(activeTrigger); }, signal ? { signal } : undefined);
+  signal?.addEventListener("abort", () => {
+    clearTimeout(openTimer);
+    clearTimeout(closeTimer);
+    clearTimeout(focusTimer);
+    activeTrigger = null;
+    popover.hidden = true;
+  }, { once: true });
 }
 
 function renderFamilyList(root, state, point) {
@@ -2446,6 +2483,7 @@ function renderImportDelta(root, state) {
 }
 
 function render(root, state, options = {}) {
+  if (state.disposed) return;
   const normalized = normalizeBuckLossInputsV2(state.rawInputs);
   state.inputs = normalized.inputs;
   state.provenance = normalized.provenance;
@@ -2528,10 +2566,12 @@ function render(root, state, options = {}) {
 }
 
 function scheduleRender(root, state, options = {}) {
+  if (state.disposed) return;
   state.pendingOptions = { ...state.pendingOptions, ...options };
   if (state.renderFrame) return;
   state.renderFrame = requestAnimationFrame(() => {
     state.renderFrame = 0;
+    if (state.disposed) return;
     const next = state.pendingOptions || {};
     state.pendingOptions = null;
     render(root, state, next);
@@ -2719,9 +2759,10 @@ async function applyPreset(root, state, preset) {
       title: `Choose a switch rated for ${displayNumber(preset.rawInputs.vin, 3)} V`,
       message: `${state.template.label} is below this preset's input-voltage class. Choose a compatible device to apply the preset.`,
       vin: preset.rawInputs.vin,
-      allowCancel: true
+      allowCancel: true,
+      signal: state.signal
     });
-    if (!deviceId) return;
+    if (!deviceId || state.disposed) return;
   }
 
   let nextRawInputs = rawInputsForPreset(state, preset);
@@ -2752,9 +2793,10 @@ async function changeDevice(root, state) {
     message: "The operating point and passive assumptions stay put; device-specific values are replaced by the selected typical template.",
     vin: state.rawInputs.vin,
     recommendedId: state.deviceId,
-    allowCancel: true
+    allowCancel: true,
+    signal: state.signal
   });
-  if (!deviceId || deviceId === state.deviceId) return;
+  if (!deviceId || state.disposed || deviceId === state.deviceId) return;
   const applied = applyBuckLossDeviceTemplateV2(state.rawInputs, deviceId);
   state.rawInputs = cloneRaw(applied.rawInputs);
   if (applied.template.timingMode === "derived") {
@@ -2784,6 +2826,7 @@ function initializeTabs(root, state) {
   const tabs = [...root.querySelectorAll("[data-blx-view]")];
   const panels = [...root.querySelectorAll("[data-blx-view-panel]")];
   const activate = async (view, focus = false) => {
+    if (state.disposed) return;
     const previous = panels.find((panel) => !panel.hidden);
     const next = panels.find((panel) => panel.dataset.blxViewPanel === view);
     const previousIndex = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
@@ -2804,6 +2847,11 @@ function initializeTabs(root, state) {
     }
     if (previous && next && previous !== next) {
       const animated = await animatePanelSwap(root.querySelector("[data-blx-view-panels]"), previous, next, nextIndex >= previousIndex ? 1 : -1);
+      if (state.disposed) return;
+      if (state.view !== view) {
+        panels.forEach((panel) => { panel.hidden = panel.dataset.blxViewPanel !== state.view; });
+        return;
+      }
       if (!animated) panels.forEach((panel) => { panel.hidden = panel !== next; });
     } else panels.forEach((panel) => { panel.hidden = panel !== next; });
     if (focus) tabs[nextIndex]?.focus();
@@ -2824,26 +2872,26 @@ function initializeTabs(root, state) {
   activate("point");
 }
 
-function initializeInputSheet(root) {
+function initializeInputSheet(root, signal) {
   const disclosure = root.querySelector(".blx-input-disclosure");
   const desktopSlot = root.querySelector("[data-blx-desktop-input-slot]");
   const mobileSlot = root.querySelector("[data-blx-mobile-input-slot]");
   const dialog = root.querySelector("[data-blx-input-sheet]");
   const openButton = root.querySelector("[data-blx-input-open]");
   const closeButton = root.querySelector("[data-blx-input-close]");
-  if (!disclosure || !desktopSlot || !mobileSlot || !dialog) return;
+  if (!disclosure || !desktopSlot || !mobileSlot || !dialog || signal?.aborted) return;
   const media = matchMedia("(max-width: 700px)");
   const close = async () => {
     if (!dialog.open) return;
     await animateDialog(dialog, false);
-    dialog.close();
-    openButton?.focus();
+    if (dialog.open) dialog.close();
+    if (!signal?.aborted) openButton?.focus();
   };
   openButton?.addEventListener("click", async () => {
     if (!media.matches || dialog.open) return;
     dialog.showModal();
     await animateDialog(dialog, true);
-    dialog.querySelector("h2")?.focus();
+    if (!signal?.aborted) dialog.querySelector("h2")?.focus();
   });
   closeButton?.addEventListener("click", close);
   dialog.addEventListener("cancel", (event) => { event.preventDefault(); close(); });
@@ -2857,7 +2905,10 @@ function initializeInputSheet(root) {
     }
   };
   sync();
-  media.addEventListener?.("change", sync);
+  media.addEventListener?.("change", sync, signal ? { signal } : undefined);
+  signal?.addEventListener("abort", () => {
+    if (dialog.open) dialog.close();
+  }, { once: true });
 }
 
 function findCatalogPart(state, partNumber) {
@@ -2953,17 +3004,21 @@ function populateCatalog(root, state) {
   });
 }
 
-async function initializeCatalog(root, state) {
+async function initializeCatalog(root, state, signal) {
   const container = root.querySelector("[data-blx-catalog]");
-  if (!container) return;
+  if (!container || signal?.aborted || state.disposed) return;
   container.dataset.catalogState = "loading";
   try {
     const [catalog, lossResult] = await Promise.all([
-      loadCoilcraftCatalog(root.dataset.blxCatalogUrl),
+      loadCoilcraftCatalog(root.dataset.blxCatalogUrl, { signal }),
       root.dataset.blxInductorAcLossUrl
-        ? fetch(root.dataset.blxInductorAcLossUrl).then((response) => response.ok ? response.json() : null).catch(() => null)
+        ? fetch(root.dataset.blxInductorAcLossUrl, { signal }).then((response) => response.ok ? response.json() : null).catch((error) => {
+          if (error?.name === "AbortError") throw error;
+          return null;
+        })
         : Promise.resolve(null)
     ]);
+    if (signal?.aborted || state.disposed) return;
     state.catalog = catalog;
     state.inductorAcDataset = lossResult;
     state.catalogEpoch += 1;
@@ -2975,6 +3030,7 @@ async function initializeCatalog(root, state) {
     renderCatalogMeta(root, state);
     render(root, state);
   } catch (error) {
+    if (signal?.aborted || state.disposed || error?.name === "AbortError") return;
     container.dataset.catalogState = "error";
     state.catalog = null;
     state.catalogEpoch += 1;
@@ -3017,7 +3073,11 @@ function initializeActions(root, state) {
     const input = root.querySelector('[data-blx-v2-input="vout"]');
     if (matchMedia("(max-width: 700px)").matches) {
       root.querySelector("[data-blx-input-open]")?.click();
-      window.setTimeout(() => input?.focus(), 340);
+      clearTimeout(state.focusTimer);
+      state.focusTimer = window.setTimeout(() => {
+        state.focusTimer = 0;
+        if (!state.disposed) input?.focus();
+      }, 340);
     } else input?.focus();
   });
   root.querySelector("[data-blx-change-device]")?.addEventListener("click", () => changeDevice(root, state));
@@ -3049,8 +3109,42 @@ function readImportPayload() {
   }
 }
 
-export async function initBuckLossExplorerV2(root) {
-  if (!root || root.dataset.blxInit === "v2") return;
+export async function initBuckLossExplorerV2(root, options = {}) {
+  if (!root || root.dataset.blxInit === "v2" || options.signal?.aborted) return;
+  const lifecycle = new AbortController();
+  let state = null;
+  let resizeObserver = null;
+  let resizeFrame = 0;
+  let destroyed = false;
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    options.signal?.removeEventListener?.("abort", destroy);
+    if (state) {
+      state.disposed = true;
+      clearTimeout(state.urlTimer);
+      clearTimeout(state.focusTimer);
+      cancelAnimationFrame(state.renderFrame);
+      state.waveformAnimation?.cancel?.();
+      state.chartAnimations?.forEach((animation) => animation?.cancel?.());
+      root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.destroy?.();
+    }
+    cancelAnimationFrame(resizeFrame);
+    resizeObserver?.disconnect();
+    root.blxResizeObserver?.disconnect?.();
+    root.querySelectorAll("*").forEach((node) => {
+      clearTimeout(node.blxTimer);
+      clearTimeout(node.blxCopyTimer);
+      clearTimeout(node.blxAccordionTimer);
+      cancelAnimationFrame(node.blxAccordionFrame || 0);
+      node.blxChart?.animations?.forEach?.((animation) => animation?.cancel?.());
+    });
+    try { root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel()); } catch {}
+    root.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
+    lifecycle.abort();
+  };
+  root.blxDestroy = destroy;
+  options.signal?.addEventListener("abort", destroy, { once: true });
   root.dataset.blxInit = "v2";
   prepareMarkup(root);
   const rawSearch = typeof window === "undefined" ? "" : window.location.search;
@@ -3062,8 +3156,10 @@ export async function initBuckLossExplorerV2(root) {
     const deviceId = await requestBuckLossDeviceV2(root, {
       title: incompatibleRememberedDevice ? `Choose a switch rated for ${displayNumber(parsed.rawInputs.vin, 3)} V` : undefined,
       message: incompatibleRememberedDevice ? `${parsedTemplate.label} is below this preset's input-voltage class.` : undefined,
-      vin: parsed.rawInputs.vin
+      vin: parsed.rawInputs.vin,
+      signal: lifecycle.signal
     });
+    if (!deviceId || lifecycle.signal.aborted) return;
     try { localStorage.setItem(DEVICE_MEMORY_KEY, deviceId); } catch {}
     const chosenState = new URLSearchParams(rawSearch);
     chosenState.set("m", "2");
@@ -3072,7 +3168,7 @@ export async function initBuckLossExplorerV2(root) {
   }
   const template = getBuckLossDeviceTemplateV2(parsed.deviceId);
   if (!template) throw new Error("Buck loss v2 requires an explicit device template.");
-  const state = {
+  state = {
     rawInputs: cloneRaw(parsed.rawInputs),
     inputs: null,
     provenance: {},
@@ -3111,6 +3207,9 @@ export async function initBuckLossExplorerV2(root) {
     renderFrame: 0,
     pendingOptions: null,
     urlTimer: 0,
+    focusTimer: 0,
+    signal: lifecycle.signal,
+    disposed: false,
     view: "point",
     importPayload: readImportPayload(),
     importRendered: false
@@ -3122,18 +3221,20 @@ export async function initBuckLossExplorerV2(root) {
   initializeWaveformInteractions(root, state);
   initializeAccordions(root);
   initializeTabs(root, state);
-  initializeInputSheet(root);
+  initializeInputSheet(root, lifecycle.signal);
   initializeActions(root, state);
-  initializeCoveragePopover(root, state);
+  initializeCoveragePopover(root, state, lifecycle.signal);
   render(root, state, { immediateUrl: true });
-  await initializeCatalog(root, state);
+  await initializeCatalog(root, state, lifecycle.signal);
+  if (lifecycle.signal.aborted || state.disposed) return;
   root.dataset.blxStatus = "ready";
   root.setAttribute("aria-busy", "false");
   if (typeof ResizeObserver !== "undefined") {
-    let frame = 0;
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
+    resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+        if (state.disposed) return;
         if (state.point?.valid && state.view === "load") {
           renderEfficiencyChart(root, state);
           renderLossChart(root, state);
@@ -3142,8 +3243,7 @@ export async function initBuckLossExplorerV2(root) {
         root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.resize();
       });
     });
-    root.querySelectorAll(".blx-plot, [data-blx-waveform-diagram], [data-blx-waveform-overview]").forEach((plot) => observer.observe(plot));
-    root.blxResizeObserver = observer;
+    root.querySelectorAll(".blx-plot, [data-blx-waveform-diagram], [data-blx-waveform-overview]").forEach((plot) => resizeObserver.observe(plot));
+    root.blxResizeObserver = resizeObserver;
   }
-  window.addEventListener("popstate", () => window.location.reload());
 }
