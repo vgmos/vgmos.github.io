@@ -28,6 +28,17 @@ const characterizedEnergySource = Object.freeze({
   relation: "direct"
 });
 
+const analyticalTransitionSource = Object.freeze({
+  title: "EPC AN030 — Hard Switching Losses Calculations",
+  chapter: null,
+  equation: "1–14",
+  printedPage: "2–5",
+  pdfPage: "2–5",
+  url: "https://epc-co.com/epc/Portals/0/epc/documents/application-notes/AN030%20Hard%20Switching%20Losses%20Calculation.pdf",
+  note: "Uses phase-specific gate current with QGS2(I), QGD(V), the Miller plateau, threshold voltage, and the complete source/sink gate-loop resistance; adapts Vbus to the buck hard-switch swing VIN + VSD.",
+  relation: "adapted"
+});
+
 const unavailableTransitionSource = Object.freeze({
   title: "Automatic transition evidence hierarchy",
   chapter: null,
@@ -95,14 +106,14 @@ export const BUCK_LOSS_TERM_METADATA_V2 = Object.freeze({
   turnOnOverlap: Object.freeze({
     label: "Turn-on overlap",
     family: "switchingTransitions",
-    formula: "VSW · ION · fSW · (tI/3 + tV/2)",
-    source: source("4.39", 197, 211, "Uses 1/3 current-transition and 1/2 voltage-transition coefficients when phase data is available.")
+    formula: "½ · VSW · ION · (tCR + tVF) · fSW",
+    source: analyticalTransitionSource
   }),
   turnOffOverlap: Object.freeze({
     label: "Turn-off overlap",
     family: "switchingTransitions",
-    formula: "VSW · IOFF · fSW · (tV/2 + tI/3)",
-    source: source("4.39", 197, 211, "Uses the peak current at turn-off and the technology-specific switch-node swing.")
+    formula: "½ · VSW · IOFF · (tCF + tVR) · fSW",
+    source: analyticalTransitionSource
   }),
   deadTimeConduction: Object.freeze({
     label: "Reverse-path dead time",

@@ -78,19 +78,21 @@ describe("buck loss v2 textbook vectors", () => {
     ]);
   });
 
-  it("reproduces the closing-edge overlap in Example 9 / Eq. 4.39", () => {
+  it("documents the EPC AN030 first-order hard-switching overlap", () => {
     const current = 0.47;
     const switchSwing = 4.8;
     const currentRise = 240e-12;
     const voltageFall = 1.6e-9;
     const switchingFrequency = 1e6;
-    const overlap = current * switchSwing * switchingFrequency * (currentRise / 3 + voltageFall / 2);
-    assert.ok(Math.abs(overlap - 2e-3) / 2e-3 < 0.01, `${overlap} does not reproduce the example's rounded 2.0 mW`);
-    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.formula, "VSW · ION · fSW · (tI/3 + tV/2)");
-    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.equation, "4.39");
-    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.printedPage, 197);
-    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.pdfPage, 211);
-    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.relation, "direct");
+    const overlap = 0.5 * current * switchSwing * switchingFrequency * (currentRise + voltageFall);
+    assert.ok(overlap > 0);
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.formula, "½ · VSW · ION · (tCR + tVF) · fSW");
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.title, "EPC AN030 — Hard Switching Losses Calculations");
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.equation, "1–14");
+    assert.match(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.url, /AN030/);
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.printedPage, "2–5");
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.pdfPage, "2–5");
+    assert.equal(BUCK_LOSS_TERM_METADATA_V2.turnOnOverlap.source.relation, "adapted");
   });
 
   it("exposes equation provenance for every atomic term", () => {

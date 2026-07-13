@@ -37,6 +37,8 @@ function profileSetup(presetId, deviceId) {
       parameterCorner: template.cornerId,
       timingMode: template.timingMode,
       controlMode: "auto-dcm",
+      conditionModel: template.conditionModel,
+      junctionTemperatureC: 25,
       provenance,
       inductorPartNumber: preset.inductorPart,
       inductorAcDataset

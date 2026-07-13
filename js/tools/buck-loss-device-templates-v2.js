@@ -58,6 +58,16 @@ const driveVoltageCurve = (points) => Object.freeze({
   points: Object.freeze(points)
 });
 
+const capacitancePoint = (voltageV, capacitancePf) => Object.freeze({ voltageV, capacitancePf });
+
+const normalizedCrssIntegral = (referenceVoltageV, points) => Object.freeze({
+  method: "normalized-crss-integral",
+  equation: "QGD(V) = QGD,ref * integral(0..V) CRSS(v) dv / integral(0..Vref) CRSS(v) dv",
+  interpolation: "piecewise-linear-capacitance-with-trapezoidal-integration",
+  referenceVoltageV,
+  points: Object.freeze(points)
+});
+
 const overdriveFit = (config) => Object.freeze({
   method: "overdrive-fit",
   equation: "Rfloor + (Rref - Rfloor) * ((Vref - Vth) / (Vdrive - Vth))^exponent",
@@ -72,6 +82,7 @@ const conditionModel = ({
   rdsOn,
   qgThresholdNc,
   chargeReferenceDriveVoltageV = reference.driveVoltageV,
+  qgdVoltage = null,
   effectiveTiming = null
 }) => {
   const plateauOverdriveV = reference.plateauV - thresholdVoltageV;
@@ -81,7 +92,7 @@ const conditionModel = ({
     reference.totalGateChargeNc - qgThresholdNc - reference.qgs2Nc - reference.qgdNc
   ) / (chargeReferenceDriveVoltageV - reference.plateauV);
   return Object.freeze({
-    version: 1,
+    version: 2,
     method: "condition-coupled-transfer-and-charge",
     source: sourceDetail,
     driveRange: Object.freeze(driveRange),
@@ -101,6 +112,7 @@ const conditionModel = ({
       referenceDriveVoltageV: chargeReferenceDriveVoltageV,
       qgThresholdNc,
       qgdNc: reference.qgdNc,
+      qgdVoltage,
       cgsNcPerV,
       cpostNcPerV
     }),
@@ -170,7 +182,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     }),
     source: EPC_SOURCE,
     conditionModel: conditionModel({
-      sourceDetail: "EPC2090 datasheet Figures 2, 3, and 7 plus the 25 C dynamic-characteristics table; curve readouts are disclosed first-order fits.",
+      sourceDetail: "EPC2090 datasheet Figures 2, 3, 5, and 7 plus the 25 C dynamic-characteristics table; curve readouts are disclosed first-order fits.",
       driveRange: {
         minVoltageV: 3,
         maxVoltageV: 5,
@@ -198,15 +210,32 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
         curvePoint(5, 3.8)
       ]),
       qgThresholdNc: 2.1,
+      qgdVoltage: normalizedCrssIntegral(50, [
+        capacitancePoint(0, 75),
+        capacitancePoint(2.5, 60),
+        capacitancePoint(5, 45),
+        capacitancePoint(10, 22),
+        capacitancePoint(15, 11),
+        capacitancePoint(20, 7.5),
+        capacitancePoint(25, 5.5),
+        capacitancePoint(40, 4),
+        capacitancePoint(50, 3.1),
+        capacitancePoint(75, 1.5),
+        capacitancePoint(100, 1.2)
+      ]),
       effectiveTiming: {
-        method: "gate-headroom-scaling",
-        turnOnEquation: "teff,on = teff,on,ref * (Vdrive,ref - Vplateau,ref) / (Vdrive - Vplateau)",
-        turnOffEquation: "teff,off = teff,off,ref * Vplateau,ref / Vplateau",
+        method: "phase-charge-scaling",
+        turnOnEquation: "teff,on = teff,on,ref * [QGS2/IG,cr,on + QGD(VIN)/IG,vf,on] / reference sum",
+        turnOffEquation: "teff,off = teff,off,ref * [QGS2/IG,cf,off + QGD(VIN)/IG,vr,off] / reference sum",
         referenceDriveVoltageV: 5,
         referencePlateauVoltageV: 2.3,
+        referenceThresholdVoltageV: 1.9,
+        referenceQgs2Nc: 0.7,
+        referenceQgdNc: 0.7,
+        offDriveVoltageV: 0,
         referenceTurnOnNs: 3,
         referenceTurnOffNs: 2,
-        source: "Disclosed EPC illustrative effective-time fallback; only gate-current headroom is scaled."
+        source: "Disclosed 3 ns / 2 ns EPC illustrative anchor, scaled with the phase-charge ratios from EPC AN030."
       }
     }),
     modelSource: Object.freeze({
@@ -233,14 +262,14 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       diodeVf: Object.freeze({ statistic: "typical", conditions: "VGS = 0 V, IS = 0.5 A, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
       qrrRef: Object.freeze({ statistic: "not applicable", conditions: "Majority-carrier reverse conduction; EPC specifies zero QRR" }),
       vDrive: Object.freeze({ statistic: "selected test condition", conditions: "VGS = 5 V to match the RDS(on) and gate-charge conditions at TJ = 25 °C" }),
-      effectiveTurnOn: Object.freeze({ statistic: "illustrative assumption", conditions: "3 ns at the 5 V / 16 A reference point; gate-current headroom scaling is used away from that point" }),
-      effectiveTurnOff: Object.freeze({ statistic: "illustrative assumption", conditions: "2 ns at the 5 V / 16 A reference point; Miller-level scaling is used away from that point" })
+      effectiveTurnOn: Object.freeze({ statistic: "illustrative assumption", conditions: "3 ns at the 50 V / 16 A / 5 V reference point; EPC AN030 phase-charge scaling is used away from that point" }),
+      effectiveTurnOff: Object.freeze({ statistic: "illustrative assumption", conditions: "2 ns at the 50 V / 16 A / 5 V reference point; EPC AN030 phase-charge scaling is used away from that point" })
     }),
     notes: Object.freeze([
-      "QGS2 is inferred as QGS − QG(TH). Away from the 50 V / 16 A / 5 V reference point, QGS2, QG, and the Miller level use the disclosed first-order transfer and charge-partition fit.",
+      "QGS2 is inferred as QGS − QG(TH). Away from the 50 V / 16 A / 5 V reference point, QGS2, QGD(VIN), QG, and the Miller level use disclosed first-order curve fits.",
       "COSS(ER) is an energy-equivalent scalar characterized over 0–50 V; EOSS is omitted above that domain and is not condition-scaled below it.",
       "The 0.4 Ω datasheet gate resistance is internal device resistance, not the complete driver-plus-loop path, so it is not used as a total gate-drive resistance.",
-      "No shipped EON/EOFF surface is loaded. Automatic transition selection therefore uses the disclosed 3 ns / 2 ns illustrative fallback, condition-scaled by gate-current headroom."
+      "No shipped EON/EOFF surface is loaded. Automatic transition selection therefore uses the disclosed 3 ns / 2 ns illustrative anchor, scaled by EPC AN030 phase-charge ratios at the live VIN, current, and drive."
     ]),
     provenanceOverrides: {
       qgs2High: "inferred-qgs-minus-qgth",
@@ -287,7 +316,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     }),
     source: INFINEON_SOURCE,
     conditionModel: conditionModel({
-      sourceDetail: "BSC010N04LS6 datasheet Tables 4 and 6 plus Diagrams 7, 8, and 14 at 25 C; intermediate curve points are disclosed readouts.",
+      sourceDetail: "BSC010N04LS6 datasheet Tables 4 and 6 plus Diagrams 7, 8, 11, and 14 at 25 C; intermediate curve points are disclosed readouts.",
       driveRange: { minVoltageV: 3, maxVoltageV: 10 },
       reference: {
         driveVoltageV: 4.5,
@@ -310,7 +339,21 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
         curvePoint(5, 1.04),
         curvePoint(10, 0.89)
       ]),
-      qgThresholdNc: 7.3
+      qgThresholdNc: 7.3,
+      qgdVoltage: normalizedCrssIntegral(20, [
+        capacitancePoint(0, 900),
+        capacitancePoint(2.5, 600),
+        capacitancePoint(5, 450),
+        capacitancePoint(7.5, 340),
+        capacitancePoint(10, 230),
+        capacitancePoint(12.5, 115),
+        capacitancePoint(15, 55),
+        capacitancePoint(20, 40),
+        capacitancePoint(25, 33),
+        capacitancePoint(30, 31),
+        capacitancePoint(35, 29),
+        capacitancePoint(40, 28)
+      ])
     }),
     modelSource: Object.freeze({
       publisher: "Infineon Technologies AG",
@@ -347,7 +390,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       vDrive: Object.freeze({ statistic: "selected test condition", conditions: "VGS = 4.5 V to match the active RDS(on) and total-gate-charge corner at TJ = 25 °C" })
     }),
     notes: Object.freeze([
-      "Active values retain their individual datasheet conditions: RDS(on) and QG use the 4.5 V corner; QGS2 is inferred, while QGD and plateau use the 10 V gate-charge test. QGD and QRR are defined by design, not production-tested.",
+      "Active values retain their individual datasheet conditions: RDS(on) and QG use the 4.5 V corner; QGS2 is inferred, while QGD and plateau use the 10 V gate-charge test. QGD(VIN) is normalized to Diagram 11's CRSS integral; QGD and QRR are defined by design, not production-tested.",
       "The published 1 Ω internal gate resistance is not the total driver-plus-external gate path, so overlap remains omitted until a complete gate path or effective time is entered.",
       "Asymptotic QRR scales linearly from its 10 A reference point and is capped by diffusion buildup during LS→HS dead time; VSD remains a load-independent first-order value.",
       "QOSS and small-signal COSS are not substituted for energy-equivalent COSS(ER), so switch-node energy remains omitted.",

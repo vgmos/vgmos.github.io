@@ -81,6 +81,8 @@ const CONDITIONED_DEVICE_KEYS = new Set([
   "qgLow",
   "qgs2High",
   "qgs2Low",
+  "qgdHigh",
+  "qgdLow",
   "plateauHigh",
   "plateauLow",
   "effectiveTurnOn",
@@ -155,8 +157,10 @@ const PROVENANCE_LABELS = Object.freeze({
   "calculated-condition-rds": "calculated from drive",
   "calculated-condition-plateau": "calculated at IOUT,max",
   "calculated-condition-qgs2": "calculated at IOUT,max",
+  "calculated-condition-qgd": "calculated from VIN",
+  "source-held-qgd-anchor": "source-held outside VIN curve",
   "calculated-condition-total-qg": "calculated from drive + current",
-  "calculated-condition-effective-time": "calculated from gate headroom"
+  "calculated-condition-effective-time": "calculated from phase charge"
 });
 
 const QUIET_RAIL_PROVENANCE = new Set(["entered", "url-entered", "default", "missing", "entered-blank"]);
@@ -277,6 +281,14 @@ function formatPower(value) {
   if (value < 1e-3) return `${displayNumber(value * 1e6, 2)} µW`;
   if (value < 1) return `${displayNumber(value * 1e3, 2)} mW`;
   return `${displayNumber(value, 3)} W`;
+}
+
+function formatEnergy(value) {
+  if (!finite(value)) return "—";
+  if (value < 1e-9) return `${displayNumber(value * 1e12, 2)} pJ`;
+  if (value < 1e-6) return `${displayNumber(value * 1e9, 2)} nJ`;
+  if (value < 1e-3) return `${displayNumber(value * 1e6, 3)} µJ`;
+  return `${displayNumber(value * 1e3, 3)} mJ`;
 }
 
 function formatCurrent(value) {
@@ -443,7 +455,7 @@ function prepareMarkup(root) {
   const caveat = root.querySelector(".blx-top-caveat");
   if (caveat) caveat.textContent = "This is an analytical intuition model at a disclosed 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.";
   const equations = root.querySelector(".blx-equations");
-  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. The surface tier is reserved for characterized data, but no shipped device template currently loads one; automatic mode exposes the fallback it selects. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Atomic analytical rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
+  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. The analytical path follows EPC AN030: separate current and voltage phases use <code>QGS2(I)</code>, voltage-conditioned <code>QGD</code> when a CRSS curve is loaded (otherwise the source or entered QGD), the live Miller level, threshold voltage, and total source/sink gate-loop resistance. <code>EON</code> uses valley current and <code>EOFF</code> uses peak current. The surface tier is reserved for characterized data, but no shipped device template currently loads one; automatic mode exposes the fallback it selects. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Most non-transition atomic rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4; analytical edge timing cites EPC AN030. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
   const caveats = root.querySelector(".blx-caveats");
   if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation remains omitted. CCM ZVS classification is diagnostic until a nonlinear COSS/QOSS commutation model or waveform measurement supports an energy credit.</li><li>Automatic transition selection falls back visibly when no condition-matched energy surface is present. Effective-time fallbacks carry the widest uncertainty bound.</li><li>The waveform viewer's linear RLC trace is a first-order parasitic estimate; ringing loss, nonlinear COSS, snubbers, probe loading, PCB/package resistance, bootstrap loss, and full IC leakage remain outside the power-loss total.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
 }
@@ -520,6 +532,8 @@ function stateContext(state) {
     timingMode: state.timingMode,
     controlMode: state.controlMode,
     provenance: state.provenance,
+    conditionModel: state.template.conditionModel,
+    junctionTemperatureC: 25,
     inductorPartNumber: state.selectedPart,
     inductorAcDataset: state.inductorAcDataset
   };
@@ -719,7 +733,7 @@ function renderDevice(root, state) {
   const sourceCondition = template.id === "infineon-bsc010n04ls6-4v5"
     ? "Reference anchors mix datasheet corners: RDS(on)/QG at VGS 4.5 V; QGD and plateau use the 10 V test; QGS2 is inferred for the source partition before the live condition calculation."
     : template.id === "epc2090"
-      ? "Reference QG/QGD originate at their 50 V / 16 A test conditions; the live QG is condition-resolved, QGD remains source-held, COSS(ER) is a 0–50 V energy-equivalent scalar, and transition overlap uses a disclosed fallback."
+      ? "Reference QG/QGD originate at their 50 V / 16 A test conditions; live QGD integrates the normalized CRSS(V) curve at VIN, QG is condition-resolved, COSS(ER) is a 0–50 V energy-equivalent scalar, and transition overlap uses a disclosed fallback."
       : `Values use the ${template.cornerLabel || template.cornerId} corner; detailed conditions and notes are disclosed below.`;
   const diagnostics = state.conditioning?.diagnostics || {};
   const high = diagnostics.lanes?.high || {};
@@ -752,9 +766,12 @@ function renderDevice(root, state) {
     edgeSummary
   ].filter(Boolean).join(" · ");
   const conditionIssues = [...(state.conditioning?.errors || []), ...(state.conditioning?.warnings || [])];
+  const qgdConditionCopy = template.conditionModel?.gateCharge?.qgdVoltage?.method
+    ? "VIN changes QGD through the loaded CRSS curve"
+    : "QGD stays at its source anchor unless you enter an override";
   const conditionCopy = [
     resolvedCondition ? `${resolvedCondition}.` : null,
-    "The Miller plateau uses IOUT,max as the transfer-fit current proxy; changing the drive rail changes headroom, RDS(on), QG, and supported edge timing.",
+    `The setup fields use IOUT,max as their preview current; live EON/EOFF re-resolve the transfer fit at the actual valley/peak edge currents. ${qgdConditionCopy}, while the drive rail changes headroom, RDS(on), QG, and supported edge timing.`,
     sourceCondition,
     conditionIssues.length ? `Condition check: ${conditionIssues.map((entry) => entry.message).join(" ")}` : null
   ].filter(Boolean).join(" ");
@@ -1963,6 +1980,8 @@ function renderPowerBalance(root, point) {
     ["Low-side duty", formatPercent(point.waveform.duties.lowSide)],
     ["Zero-current window", formatPercent(point.waveform.duties.zeroCurrent)],
     ["Peak / valley", `${formatCurrent(point.waveform.iPeak)} / ${formatCurrent(point.waveform.iValley)}`],
+    ["EON / EOFF", `${formatEnergy(point.transition?.turnOnEnergyJ)} / ${formatEnergy(point.transition?.turnOffEnergyJ)}`],
+    ["ION / IOFF", `${formatCurrent(point.transition?.turnOnCurrentA)} / ${formatCurrent(point.transition?.turnOffCurrentA)}`],
     ["Inductor RMS", formatCurrent(Math.sqrt(point.waveform.moments.iLrms2))],
     ["Coverage", point.availability === "total" ? "All terms modeled" : `${omittedTerms} term${omittedTerms === 1 ? "" : "s"} omitted`]
   ];
@@ -2027,7 +2046,7 @@ function renderWarningsAndInsight(root, state, point) {
       .every((key) => state.rawInputs.__provenance?.[key] === "calculated-condition-effective-time");
     messages.push({
       copy: conditionedTiming
-        ? "Transitions use the template's illustrative effective-time fallback, scaled from its disclosed reference by calculated gate-drive headroom at IOUT,max; no condition-matched EON/EOFF surface is loaded."
+        ? "Transitions use the template's illustrative effective-time anchor, scaled per edge from QGS2, QGD(VIN), the live plateau, threshold, and drive using EPC AN030 phase-charge ratios; no condition-matched EON/EOFF surface is loaded."
         : "Transitions use a manually overridden effective-time fallback; no condition-matched EON/EOFF surface is loaded.",
       strong: true
     });

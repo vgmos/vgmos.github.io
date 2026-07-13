@@ -49,6 +49,197 @@ function resolveRdsOnMohm(model, driveVoltageV) {
     + (referenceResistanceMohm - floorResistanceMohm) * Math.pow(overdriveRatio, exponent);
 }
 
+function capacitanceCurve(model) {
+  const points = model?.points;
+  if (!Array.isArray(points) || points.length < 2) return null;
+  const sorted = [...points]
+    .filter((point) => finite(point?.voltageV) && finite(point?.capacitancePf))
+    .map((point) => ({ voltageV: Number(point.voltageV), capacitancePf: Number(point.capacitancePf) }))
+    .sort((left, right) => left.voltageV - right.voltageV);
+  if (sorted.length < 2
+    || sorted[0].voltageV !== 0
+    || sorted.some((point, index) => point.voltageV < 0
+      || point.capacitancePf < 0
+      || (index > 0 && point.voltageV <= sorted[index - 1].voltageV))) return null;
+  return sorted;
+}
+
+function integrateCapacitanceCurvePc(points, voltageV) {
+  if (!Array.isArray(points) || !(voltageV >= 0) || voltageV > points.at(-1).voltageV) return null;
+  if (voltageV === 0) return 0;
+  let chargePc = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const lower = points[index - 1];
+    const upper = points[index];
+    if (voltageV <= lower.voltageV) break;
+    const segmentEndV = Math.min(voltageV, upper.voltageV);
+    const fraction = (segmentEndV - lower.voltageV) / (upper.voltageV - lower.voltageV);
+    const endCapacitancePf = lower.capacitancePf
+      + fraction * (upper.capacitancePf - lower.capacitancePf);
+    chargePc += 0.5 * (lower.capacitancePf + endCapacitancePf) * (segmentEndV - lower.voltageV);
+    if (segmentEndV >= voltageV) break;
+  }
+  return chargePc;
+}
+
+function resolveQgdAtVoltageNc(gateCharge, switchVoltageV) {
+  const referenceQgdNc = Number(gateCharge?.qgdNc);
+  const voltageModel = gateCharge?.qgdVoltage;
+  if (voltageModel?.method !== "normalized-crss-integral") {
+    return {
+      qgdNc: Number.isFinite(referenceQgdNc) ? referenceQgdNc : null,
+      method: null,
+      supported: false,
+      domain: null
+    };
+  }
+  const points = capacitanceCurve(voltageModel);
+  const referenceVoltageV = Number(voltageModel.referenceVoltageV);
+  const domain = points ? [points[0].voltageV, points.at(-1).voltageV] : null;
+  const referenceChargePc = points ? integrateCapacitanceCurvePc(points, referenceVoltageV) : null;
+  const operatingChargePc = points ? integrateCapacitanceCurvePc(points, switchVoltageV) : null;
+  if (!(referenceQgdNc >= 0)
+    || !(referenceChargePc > 0)
+    || operatingChargePc === null) {
+    return {
+      qgdNc: Number.isFinite(referenceQgdNc) ? referenceQgdNc : null,
+      method: voltageModel.method,
+      supported: false,
+      domain
+    };
+  }
+  return {
+    qgdNc: Math.abs(switchVoltageV - referenceVoltageV) <= 1e-12
+      ? referenceQgdNc
+      : referenceQgdNc * operatingChargePc / referenceChargePc,
+    method: voltageModel.method,
+    supported: true,
+    domain,
+    referenceVoltageV
+  };
+}
+
+export function resolveBuckLossConditionPointV2(model, conditions = {}) {
+  const reference = model?.reference;
+  const currentA = numberOrNull(conditions.currentA);
+  const driveVoltageV = numberOrNull(conditions.driveVoltageV);
+  const switchVoltageV = numberOrNull(conditions.switchVoltageV)
+    ?? numberOrNull(model?.gateCharge?.qgdVoltage?.referenceVoltageV);
+  const thresholdVoltageV = Number(model?.transfer?.thresholdVoltageV);
+  const conductionParameterAPerV2 = Number(model?.transfer?.conductionParameterAPerV2);
+  if (!reference
+    || !(currentA >= 0)
+    || !(driveVoltageV > 0)
+    || !(switchVoltageV >= 0)
+    || !Number.isFinite(thresholdVoltageV)
+    || !(conductionParameterAPerV2 > 0)) {
+    return { available: false, currentA, driveVoltageV, switchVoltageV };
+  }
+  const atReferenceCurrent = Math.abs(currentA - Number(reference.currentA)) <= 1e-12;
+  const chargeReferenceDriveVoltageV = Number(
+    model.gateCharge?.referenceDriveVoltageV ?? reference.driveVoltageV
+  );
+  const atChargeReferenceDrive = Math.abs(driveVoltageV - chargeReferenceDriveVoltageV) <= 1e-12;
+  const plateauV = atReferenceCurrent
+    ? Number(reference.plateauV)
+    : thresholdVoltageV + Math.sqrt(currentA / conductionParameterAPerV2);
+  const qgs2Nc = atReferenceCurrent
+    ? Number(reference.qgs2Nc)
+    : Number(model.gateCharge?.cgsNcPerV) * (plateauV - thresholdVoltageV);
+  const qgd = resolveQgdAtVoltageNc(model.gateCharge, switchVoltageV);
+  const driveHeadroomV = driveVoltageV - plateauV;
+  const qgThresholdNc = Number(model.gateCharge?.qgThresholdNc);
+  const cpostNcPerV = Number(model.gateCharge?.cpostNcPerV);
+  const qgdNc = qgd.qgdNc;
+  const atReferencePartition = atReferenceCurrent
+    && atChargeReferenceDrive
+    && Math.abs(switchVoltageV - Number(qgd.referenceVoltageV ?? switchVoltageV)) <= 1e-12;
+  const totalGateChargeNc = atReferencePartition
+    ? Number(reference.totalGateChargeNc)
+    : qgThresholdNc + qgs2Nc + qgdNc + cpostNcPerV * driveHeadroomV;
+  const rdsOnMohm = resolveRdsOnMohm(model.rdsOn, driveVoltageV);
+  const values = [plateauV, qgs2Nc, qgdNc, totalGateChargeNc, rdsOnMohm, driveHeadroomV];
+  return {
+    available: values.every(Number.isFinite)
+      && plateauV >= thresholdVoltageV
+      && qgs2Nc >= 0
+      && qgdNc >= 0
+      && totalGateChargeNc >= 0
+      && rdsOnMohm > 0,
+    currentA,
+    driveVoltageV,
+    switchVoltageV,
+    thresholdVoltageV,
+    plateauV,
+    driveHeadroomV,
+    rdsOnMohm,
+    totalGateChargeNc,
+    qgs2Nc,
+    qgdNc,
+    qgdVoltageMethod: qgd.method,
+    qgdVoltageSupported: qgd.supported,
+    qgdVoltageDomain: qgd.domain,
+    chargeReferenceDriveVoltageV,
+    atReferenceCurrent,
+    atChargeReferenceDrive
+  };
+}
+
+export function resolveBuckLossEffectiveTimingV2(model, conditionPoint = {}) {
+  const timing = model?.effectiveTiming;
+  const reference = model?.reference;
+  if (!timing || !reference || !conditionPoint?.available) return { available: false };
+  const referenceTurnOnNs = Number(timing.referenceTurnOnNs);
+  const referenceTurnOffNs = Number(timing.referenceTurnOffNs);
+  const referenceDriveVoltageV = Number(timing.referenceDriveVoltageV ?? reference.driveVoltageV);
+  const referencePlateauVoltageV = Number(timing.referencePlateauVoltageV ?? reference.plateauV);
+  const thresholdVoltageV = Number(conditionPoint.thresholdVoltageV);
+  const offDriveVoltageV = Number(timing.offDriveVoltageV ?? 0);
+  if (![referenceTurnOnNs, referenceTurnOffNs, referenceDriveVoltageV, referencePlateauVoltageV, thresholdVoltageV, offDriveVoltageV]
+    .every(Number.isFinite)) return { available: false };
+
+  if (timing.method === "gate-headroom-scaling") {
+    const referenceHeadroomV = referenceDriveVoltageV - referencePlateauVoltageV;
+    const onHeadroomV = conditionPoint.driveVoltageV - conditionPoint.plateauV;
+    if (!(referenceHeadroomV > 0) || !(onHeadroomV > 0) || !(conditionPoint.plateauV > offDriveVoltageV)) {
+      return { available: false };
+    }
+    return {
+      available: true,
+      method: timing.method,
+      turnOnNs: referenceTurnOnNs * referenceHeadroomV / onHeadroomV,
+      turnOffNs: referenceTurnOffNs
+        * (referencePlateauVoltageV - offDriveVoltageV)
+        / (conditionPoint.plateauV - offDriveVoltageV)
+    };
+  }
+
+  if (timing.method !== "phase-charge-scaling") return { available: false };
+  const referenceThresholdVoltageV = Number(timing.referenceThresholdVoltageV ?? thresholdVoltageV);
+  const referenceQgs2Nc = Number(timing.referenceQgs2Nc ?? reference.qgs2Nc);
+  const referenceQgdNc = Number(timing.referenceQgdNc ?? reference.qgdNc);
+  const referenceAverageGateV = (referencePlateauVoltageV + referenceThresholdVoltageV) / 2;
+  const operatingAverageGateV = (conditionPoint.plateauV + thresholdVoltageV) / 2;
+  const referenceOnChargeTime = referenceQgs2Nc / (referenceDriveVoltageV - referenceAverageGateV)
+    + referenceQgdNc / (referenceDriveVoltageV - referencePlateauVoltageV);
+  const operatingOnChargeTime = conditionPoint.qgs2Nc / (conditionPoint.driveVoltageV - operatingAverageGateV)
+    + conditionPoint.qgdNc / (conditionPoint.driveVoltageV - conditionPoint.plateauV);
+  const referenceOffChargeTime = referenceQgs2Nc / (referenceAverageGateV - offDriveVoltageV)
+    + referenceQgdNc / (referencePlateauVoltageV - offDriveVoltageV);
+  const operatingOffChargeTime = conditionPoint.qgs2Nc / (operatingAverageGateV - offDriveVoltageV)
+    + conditionPoint.qgdNc / (conditionPoint.plateauV - offDriveVoltageV);
+  if (![referenceOnChargeTime, operatingOnChargeTime, referenceOffChargeTime, operatingOffChargeTime]
+    .every((value) => Number.isFinite(value) && value > 0)) return { available: false };
+  return {
+    available: true,
+    method: timing.method,
+    turnOnNs: referenceTurnOnNs * operatingOnChargeTime / referenceOnChargeTime,
+    turnOffNs: referenceTurnOffNs * operatingOffChargeTime / referenceOffChargeTime,
+    turnOnScale: operatingOnChargeTime / referenceOnChargeTime,
+    turnOffScale: operatingOffChargeTime / referenceOffChargeTime
+  };
+}
+
 function baseDiagnostics(model, currentA, driveVoltageV) {
   return {
     currentA,
@@ -58,15 +249,18 @@ function baseDiagnostics(model, currentA, driveVoltageV) {
     rdsOnMohm: null,
     totalGateChargeNc: null,
     qgs2Nc: null,
+    qgdNc: null,
+    switchVoltageV: null,
     effectiveTurnOnNs: null,
     effectiveTurnOffNs: null,
     estimatedEffectiveTurnOnNs: null,
     estimatedEffectiveTurnOffNs: null,
     supported: false,
-    method: "condition-model-v1",
+    method: "condition-model-v2",
     rdsOnMethod: model?.rdsOn?.method ?? null,
     plateauMethod: model?.transfer?.method ?? null,
     qgs2Method: model?.gateCharge?.qgs2Method ?? null,
+    qgdVoltageMethod: model?.gateCharge?.qgdVoltage?.method ?? null,
     totalGateChargeMethod: model?.gateCharge?.totalMethod ?? null,
     effectiveTimingMethod: model?.effectiveTiming?.method ?? null,
     source: model?.source ?? null,
@@ -150,25 +344,24 @@ export function resolveBuckLossConditionsV2(rawInputs = {}, template = null, opt
     ));
   }
 
-  const thresholdVoltageV = Number(model.transfer?.thresholdVoltageV);
-  const conductionParameterAPerV2 = Number(model.transfer?.conductionParameterAPerV2);
-  const atReferenceCurrent = Math.abs(currentA - Number(reference.currentA)) <= 1e-12;
-  const atReferenceDrive = Math.abs(driveVoltageV - Number(reference.driveVoltageV)) <= 1e-12;
-  const chargeReferenceDriveVoltageV = Number(
-    model.gateCharge?.referenceDriveVoltageV ?? reference.driveVoltageV
-  );
-  const atChargeReferenceDrive = Math.abs(driveVoltageV - chargeReferenceDriveVoltageV) <= 1e-12;
-  const plateauV = atReferenceCurrent
-    ? Number(reference.plateauV)
-    : thresholdVoltageV + Math.sqrt(currentA / conductionParameterAPerV2);
-  const rdsOnMohm = resolveRdsOnMohm(model.rdsOn, driveVoltageV);
+  const switchVoltageV = numberOrNull(rawInputs?.vin)
+    ?? numberOrNull(model.gateCharge?.qgdVoltage?.referenceVoltageV)
+    ?? 0;
+  const conditionPoint = resolveBuckLossConditionPointV2(model, {
+    currentA,
+    driveVoltageV,
+    switchVoltageV
+  });
+  const thresholdVoltageV = conditionPoint.thresholdVoltageV;
+  const atReferenceCurrent = conditionPoint.atReferenceCurrent;
+  const atChargeReferenceDrive = conditionPoint.atChargeReferenceDrive;
+  const plateauV = conditionPoint.plateauV;
+  const rdsOnMohm = conditionPoint.rdsOnMohm;
   const cgsNcPerV = Number(model.gateCharge?.cgsNcPerV);
   const qgThresholdNc = Number(model.gateCharge?.qgThresholdNc);
-  const qgdNc = Number(model.gateCharge?.qgdNc);
+  const qgdNc = conditionPoint.qgdNc;
   const cpostNcPerV = Number(model.gateCharge?.cpostNcPerV);
-  const qgs2Nc = atReferenceCurrent
-    ? Number(reference.qgs2Nc)
-    : cgsNcPerV * (plateauV - thresholdVoltageV);
+  const qgs2Nc = conditionPoint.qgs2Nc;
   const resolvedPlateauForLane = (key) => EXPLICIT_PROVENANCE.has(provenance[key]) && finite(rawInputs?.[key])
     ? Number(rawInputs[key])
     : plateauV;
@@ -177,17 +370,28 @@ export function resolveBuckLossConditionsV2(rawInputs = {}, template = null, opt
   const highDriveHeadroomV = driveVoltageV - highPlateauV;
   const lowDriveHeadroomV = driveVoltageV - lowPlateauV;
   const driveHeadroomV = driveVoltageV - plateauV;
-  const totalGateChargeNc = atReferenceCurrent && atChargeReferenceDrive
-    ? Number(reference.totalGateChargeNc)
-    : qgThresholdNc + qgs2Nc + qgdNc + cpostNcPerV * driveHeadroomV;
+  const totalGateChargeNc = conditionPoint.totalGateChargeNc;
 
   const driveOutsideDomain = errors.some(({ code }) => code === "drive-outside-condition-domain");
-  if (!driveOutsideDomain && (![plateauV, rdsOnMohm, qgs2Nc, totalGateChargeNc, driveHeadroomV].every(Number.isFinite)
+  if (!driveOutsideDomain && (![plateauV, rdsOnMohm, qgs2Nc, qgdNc, totalGateChargeNc, driveHeadroomV].every(Number.isFinite)
     || !(plateauV >= thresholdVoltageV)
     || !(rdsOnMohm > 0)
     || !(qgs2Nc >= 0)
     || !(totalGateChargeNc >= 0))) {
     errors.push(issue("invalid-condition-model", "The selected device condition model did not produce finite physical values."));
+  }
+  if (conditionPoint.qgdVoltageMethod && !conditionPoint.qgdVoltageSupported) {
+    const domain = conditionPoint.qgdVoltageDomain;
+    const explicitQgd = EXPLICIT_PROVENANCE.has(provenance.qgdHigh) && finite(rawInputs.qgdHigh);
+    const fallbackCopy = explicitQgd
+      ? "the entered QGD override is retained"
+      : "the automatic model uses the source QGD anchor";
+    warnings.push(issue(
+      "switch-voltage-outside-qgd-domain",
+      domain
+        ? `VIN ${switchVoltageV} V is outside the ${domain[0]}-${domain[1]} V QGD curve domain; ${fallbackCopy}.`
+        : `The voltage-dependent QGD curve is invalid; ${fallbackCopy}.`
+    ));
   }
   const belowThresholdLanes = [
     { label: "high-side", key: "plateauHigh", plateauV: highPlateauV },
@@ -233,21 +437,29 @@ export function resolveBuckLossConditionsV2(rawInputs = {}, template = null, opt
   diagnostics.rdsOnMohm = Number.isFinite(rdsOnMohm) ? rdsOnMohm : null;
   diagnostics.totalGateChargeNc = Number.isFinite(totalGateChargeNc) ? totalGateChargeNc : null;
   diagnostics.qgs2Nc = Number.isFinite(qgs2Nc) ? qgs2Nc : null;
+  diagnostics.qgdNc = Number.isFinite(qgdNc) ? qgdNc : null;
+  diagnostics.switchVoltageV = Number.isFinite(switchVoltageV) ? switchVoltageV : null;
 
   let effectiveTurnOnNs = null;
   let effectiveTurnOffNs = null;
-  if (!driveOutsideDomain && model.effectiveTiming?.method === "gate-headroom-scaling" && highDriveHeadroomV > 0) {
-    const timing = model.effectiveTiming;
-    const referenceOnHeadroomV = Number(timing.referenceDriveVoltageV) - Number(timing.referencePlateauVoltageV);
-    const highPlateauIsReference = Math.abs(highPlateauV - Number(timing.referencePlateauVoltageV)) <= 1e-12;
-    effectiveTurnOnNs = atReferenceCurrent && atReferenceDrive && highPlateauIsReference
-      ? Number(timing.referenceTurnOnNs)
-      : Number(timing.referenceTurnOnNs) * referenceOnHeadroomV / highDriveHeadroomV;
-    effectiveTurnOffNs = atReferenceCurrent && highPlateauIsReference
-      ? Number(timing.referenceTurnOffNs)
-      : Number(timing.referenceTurnOffNs) * Number(timing.referencePlateauVoltageV) / highPlateauV;
+  if (!driveOutsideDomain && model.effectiveTiming && highDriveHeadroomV > 0) {
+    const highTimingPoint = {
+      ...conditionPoint,
+      available: conditionPoint.available,
+      plateauV: highPlateauV,
+      driveHeadroomV: highDriveHeadroomV,
+      qgs2Nc: EXPLICIT_PROVENANCE.has(provenance.qgs2High) && finite(rawInputs.qgs2High)
+        ? Number(rawInputs.qgs2High)
+        : qgs2Nc,
+      qgdNc: EXPLICIT_PROVENANCE.has(provenance.qgdHigh) && finite(rawInputs.qgdHigh)
+        ? Number(rawInputs.qgdHigh)
+        : qgdNc
+    };
+    const timing = resolveBuckLossEffectiveTimingV2(model, highTimingPoint);
+    effectiveTurnOnNs = timing.available ? timing.turnOnNs : null;
+    effectiveTurnOffNs = timing.available ? timing.turnOffNs : null;
     if (![effectiveTurnOnNs, effectiveTurnOffNs].every((value) => Number.isFinite(value) && value >= 0)) {
-      errors.push(issue("invalid-effective-timing-model", "Gate-headroom timing scaling did not produce finite transition times."));
+      errors.push(issue("invalid-effective-timing-model", "Condition-aware phase-charge timing scaling did not produce finite transition times."));
       effectiveTurnOnNs = null;
       effectiveTurnOffNs = null;
     }
@@ -285,6 +497,14 @@ export function resolveBuckLossConditionsV2(rawInputs = {}, template = null, opt
         ? Number(reference.qgs2Nc)
         : cgsNcPerV * (lanePlateauV - thresholdVoltageV);
       adjust(`qgs2${lane}`, laneQgs2Nc, "calculated-condition-qgs2");
+    }
+
+    if (conditionPoint.qgdVoltageMethod && Number.isFinite(qgdNc)) {
+      const qgdProvenance = conditionPoint.qgdVoltageSupported
+        ? "calculated-condition-qgd"
+        : "source-held-qgd-anchor";
+      adjust("qgdHigh", qgdNc, qgdProvenance);
+      adjust("qgdLow", qgdNc, qgdProvenance);
     }
 
     for (const lane of ["High", "Low"]) {

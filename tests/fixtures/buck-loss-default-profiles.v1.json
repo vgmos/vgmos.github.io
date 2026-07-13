@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "modelRevision": "2.4",
+  "modelRevision": "2.5",
   "profiles": [
     {
       "presetId": "12v-to-3v3-pol",
@@ -8,7 +8,7 @@
       "compatible": true,
       "cursorA": 2,
       "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.3273788522828951, "efficiency": 0.9527413096260776, "dominantFamily": "gateDrive", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.29375515170033273, "efficiency": 0.9573882238002203, "dominantFamily": "magnetics", "omitted": [] }
     },
     {
       "presetId": "12v-to-3v3-pol",
@@ -16,7 +16,7 @@
       "compatible": true,
       "cursorA": 2,
       "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.46211790203350656, "efficiency": 0.934563836451889, "dominantFamily": "gateDrive", "omitted": ["switchingTransitionsMissingData", "nodeEnergyMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.4556319345362151, "efficiency": 0.9354229445691508, "dominantFamily": "gateDrive", "omitted": ["switchingTransitionsMissingData", "nodeEnergyMissingData"] }
     },
     {
       "presetId": "12v-to-3v3-pol",
@@ -24,7 +24,7 @@
       "compatible": true,
       "cursorA": 2,
       "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.8648046683916241, "efficiency": 0.8841490558951282, "dominantFamily": "gateDrive", "omitted": ["nodeEnergyMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.8898597477666751, "efficiency": 0.8811914004087976, "dominantFamily": "gateDrive", "omitted": ["nodeEnergyMissingData"] }
     },
     {
       "presetId": "12v-to-3v3-pol",
@@ -32,7 +32,7 @@
       "compatible": true,
       "cursorA": 2,
       "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.6060969885297661, "efficiency": 0.915891086465459, "dominantFamily": "gateDrive", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.619790343204041, "efficiency": 0.914153969334103, "dominantFamily": "gateDrive", "omitted": [] }
     },
     {
       "presetId": "12v-to-3v3-pol",
@@ -40,7 +40,7 @@
       "compatible": true,
       "cursorA": 2,
       "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.8747147969773956, "efficiency": 0.8829768331319999, "dominantFamily": "switchingTransitions", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.8999351814398657, "efficiency": 0.8800076054434522, "dominantFamily": "switchingTransitions", "omitted": [] }
     },
     {
       "presetId": "12v-to-3v3-pol",
@@ -48,7 +48,7 @@
       "compatible": true,
       "cursorA": 2,
       "resolved": { "vinV": 12, "voutV": 3.3, "ioutMaxA": 3, "inductanceUh": 2.2, "dcrMohm": 4.3, "racMohm": 4.3, "isatA": 12.1 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.3791802641652957, "efficiency": 0.8271526374257729, "dominantFamily": "switchingTransitions", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.4104230085163336, "efficiency": 0.8239265258505283, "dominantFamily": "switchingTransitions", "omitted": [] }
     },
     {
       "presetId": "5v-to-1v8-core",
@@ -56,7 +56,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.37492010667981157, "efficiency": 0.9350778712512154, "dominantFamily": "gateDrive", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.32800490579700947, "efficiency": 0.942736622752356, "dominantFamily": "gateDrive", "omitted": [] }
     },
     {
       "presetId": "5v-to-1v8-core",
@@ -64,7 +64,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.6499342828438015, "efficiency": 0.8925716788880066, "dominantFamily": "gateDrive", "omitted": ["switchingTransitionsMissingData", "nodeEnergyMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.601005192919641, "efficiency": 0.8998492463181428, "dominantFamily": "gateDrive", "omitted": ["switchingTransitionsMissingData", "nodeEnergyMissingData"] }
     },
     {
       "presetId": "5v-to-1v8-core",
@@ -72,7 +72,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.1141948731930333, "efficiency": 0.8289589281742052, "dominantFamily": "gateDrive", "omitted": ["nodeEnergyMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.1448077222502842, "efficiency": 0.8250815347319832, "dominantFamily": "gateDrive", "omitted": ["nodeEnergyMissingData"] }
     },
     {
       "presetId": "5v-to-1v8-core",
@@ -80,7 +80,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.6805820989473894, "efficiency": 0.888072870677101, "dominantFamily": "gateDrive", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 0.696146960589244, "efficiency": 0.885805416915022, "dominantFamily": "gateDrive", "omitted": [] }
     },
     {
       "presetId": "5v-to-1v8-core",
@@ -88,7 +88,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.0696757450147178, "efficiency": 0.8346631597667057, "dominantFamily": "gateDrive", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.095253190584991, "efficiency": 0.8313763669486227, "dominantFamily": "gateDrive", "omitted": [] }
     },
     {
       "presetId": "5v-to-1v8-core",
@@ -96,7 +96,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 5, "voutV": 1.8, "ioutMaxA": 5, "inductanceUh": 0.47, "dcrMohm": 4.1, "racMohm": 4.1, "isatA": 15.5 },
-      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.7554910202532628, "efficiency": 0.7546651913496317, "dominantFamily": "gateDrive", "omitted": [] }
+      "expected": { "availability": "total", "waveformMode": "ccm", "pLossW": 1.7729059435585712, "efficiency": 0.752832958147084, "dominantFamily": "gateDrive", "omitted": [] }
     },
     {
       "presetId": "48v-to-12v-bus",
@@ -104,7 +104,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.0471926056305378, "efficiency": 0.9717335503184287, "dominantFamily": "nodeEnergy", "omitted": ["inductorCoreResidualMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.00474292841876, "efficiency": 0.9728482662246212, "dominantFamily": "nodeEnergy", "omitted": ["inductorCoreResidualMissingData"] }
     },
     {
       "presetId": "48v-to-12v-bus",
@@ -120,7 +120,7 @@
       "compatible": false,
       "cursorA": 3,
       "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.5145630377590051, "efficiency": 0.9596273309585248, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData", "nodeEnergyMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.5824708537127026, "efficiency": 0.9578933790736548, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData", "nodeEnergyMissingData"] }
     },
     {
       "presetId": "48v-to-12v-bus",
@@ -128,7 +128,7 @@
       "compatible": false,
       "cursorA": 3,
       "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 0.9648529117919761, "efficiency": 0.9738980995245842, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData", "nodeEnergyOutsideVoltageDomain"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.00601384769513, "efficiency": 0.9728148551250194, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData", "nodeEnergyOutsideVoltageDomain"] }
     },
     {
       "presetId": "48v-to-12v-bus",
@@ -136,7 +136,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 1.9413957725135256, "efficiency": 0.9488317250068075, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 2.0172885182451785, "efficiency": 0.9469376013684656, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData"] }
     },
     {
       "presetId": "48v-to-12v-bus",
@@ -144,7 +144,7 @@
       "compatible": true,
       "cursorA": 3,
       "resolved": { "vinV": 48, "voutV": 12, "ioutMaxA": 3.5, "inductanceUh": 15, "dcrMohm": 28.2, "racMohm": 28.2, "isatA": 4.4 },
-      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 2.6781956006032956, "efficiency": 0.9307569663213161, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData"] }
+      "expected": { "availability": "subtotal", "waveformMode": "ccm", "pLossW": 2.7851078812301537, "efficiency": 0.9281913076080938, "dominantFamily": "switchingTransitions", "omitted": ["inductorCoreResidualMissingData"] }
     }
   ]
 }
