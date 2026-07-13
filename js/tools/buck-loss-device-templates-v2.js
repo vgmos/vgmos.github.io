@@ -50,6 +50,64 @@ const TEACHING_SOURCE = source(
   { documentId: "Synthetic teaching fixture" }
 );
 
+const curvePoint = (driveVoltageV, resistanceMohm) => Object.freeze({ driveVoltageV, resistanceMohm });
+
+const driveVoltageCurve = (points) => Object.freeze({
+  method: "drive-voltage-curve",
+  interpolation: "piecewise-linear",
+  points: Object.freeze(points)
+});
+
+const overdriveFit = (config) => Object.freeze({
+  method: "overdrive-fit",
+  equation: "Rfloor + (Rref - Rfloor) * ((Vref - Vth) / (Vdrive - Vth))^exponent",
+  ...config
+});
+
+const conditionModel = ({
+  sourceDetail,
+  driveRange,
+  reference,
+  thresholdVoltageV,
+  rdsOn,
+  qgThresholdNc,
+  chargeReferenceDriveVoltageV = reference.driveVoltageV,
+  effectiveTiming = null
+}) => {
+  const plateauOverdriveV = reference.plateauV - thresholdVoltageV;
+  const conductionParameterAPerV2 = reference.currentA / (plateauOverdriveV * plateauOverdriveV);
+  const cgsNcPerV = reference.qgs2Nc / plateauOverdriveV;
+  const cpostNcPerV = (
+    reference.totalGateChargeNc - qgThresholdNc - reference.qgs2Nc - reference.qgdNc
+  ) / (chargeReferenceDriveVoltageV - reference.plateauV);
+  return Object.freeze({
+    version: 1,
+    method: "condition-coupled-transfer-and-charge",
+    source: sourceDetail,
+    driveRange: Object.freeze(driveRange),
+    reference: Object.freeze(reference),
+    rdsOn,
+    transfer: Object.freeze({
+      method: "square-law-transfer-fit",
+      equation: "Vplateau = Vth + sqrt(ID / K)",
+      thresholdVoltageV,
+      conductionParameterAPerV2
+    }),
+    gateCharge: Object.freeze({
+      qgs2Method: "cgs-scaling",
+      qgs2Equation: "QGS2 = Cgs * (Vplateau - Vth)",
+      totalMethod: "charge-partition",
+      totalEquation: "QG = QG(th) + QGS2 + QGD + Cpost * (Vdrive - Vplateau)",
+      referenceDriveVoltageV: chargeReferenceDriveVoltageV,
+      qgThresholdNc,
+      qgdNc: reference.qgdNc,
+      cgsNcPerV,
+      cpostNcPerV
+    }),
+    effectiveTiming: effectiveTiming ? Object.freeze(effectiveTiming) : null
+  });
+};
+
 const symmetric = (values) => ({
   rdsHigh: values.rds,
   rdsLow: values.rds,
@@ -111,6 +169,46 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       sourceLabel: "2 × EPC2090 datasheet COSS typical at 50 V"
     }),
     source: EPC_SOURCE,
+    conditionModel: conditionModel({
+      sourceDetail: "EPC2090 datasheet Figures 2, 3, and 7 plus the 25 C dynamic-characteristics table; curve readouts are disclosed first-order fits.",
+      driveRange: {
+        minVoltageV: 3,
+        maxVoltageV: 5,
+        recommendedMinVoltageV: 4.5,
+        recommendedMaxVoltageV: 5,
+        absoluteMaxVoltageV: 6
+      },
+      reference: {
+        driveVoltageV: 5,
+        currentA: 16,
+        rdsOnMohm: 3.8,
+        plateauV: 2.3,
+        totalGateChargeNc: 7.3,
+        qgs2Nc: 0.7,
+        qgdNc: 0.7,
+        effectiveTurnOnNs: 3,
+        effectiveTurnOffNs: 2,
+        sourceAnchors: Object.freeze(["RDS(on) table and Figure 3", "QG/QGS/QGD/QG(th) table", "Figure 7 gate-charge curve"])
+      },
+      thresholdVoltageV: 1.9,
+      rdsOn: driveVoltageCurve([
+        curvePoint(3, 9),
+        curvePoint(3.3, 6.4),
+        curvePoint(4, 4.6),
+        curvePoint(5, 3.8)
+      ]),
+      qgThresholdNc: 2.1,
+      effectiveTiming: {
+        method: "gate-headroom-scaling",
+        turnOnEquation: "teff,on = teff,on,ref * (Vdrive,ref - Vplateau,ref) / (Vdrive - Vplateau)",
+        turnOffEquation: "teff,off = teff,off,ref * Vplateau,ref / Vplateau",
+        referenceDriveVoltageV: 5,
+        referencePlateauVoltageV: 2.3,
+        referenceTurnOnNs: 3,
+        referenceTurnOffNs: 2,
+        source: "Disclosed EPC illustrative effective-time fallback; only gate-current headroom is scaled."
+      }
+    }),
     modelSource: Object.freeze({
       publisher: "Efficient Power Conversion Corporation",
       url: "https://epc-co.com/epc/documents/spice-files/LTSPICE/EPCGaNLibrary.zip",
@@ -135,17 +233,22 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       diodeVf: Object.freeze({ statistic: "typical", conditions: "VGS = 0 V, IS = 0.5 A, TJ = 25 °C", qualification: "Defined by design; not subject to production test." }),
       qrrRef: Object.freeze({ statistic: "not applicable", conditions: "Majority-carrier reverse conduction; EPC specifies zero QRR" }),
       vDrive: Object.freeze({ statistic: "selected test condition", conditions: "VGS = 5 V to match the RDS(on) and gate-charge conditions at TJ = 25 °C" }),
-      effectiveTurnOn: Object.freeze({ statistic: "illustrative assumption", conditions: "Not condition-matched; used only when no complete gate-charge path or EON/EOFF surface is loaded" }),
-      effectiveTurnOff: Object.freeze({ statistic: "illustrative assumption", conditions: "Not condition-matched; used only when no complete gate-charge path or EON/EOFF surface is loaded" })
+      effectiveTurnOn: Object.freeze({ statistic: "illustrative assumption", conditions: "3 ns at the 5 V / 16 A reference point; gate-current headroom scaling is used away from that point" }),
+      effectiveTurnOff: Object.freeze({ statistic: "illustrative assumption", conditions: "2 ns at the 5 V / 16 A reference point; Miller-level scaling is used away from that point" })
     }),
     notes: Object.freeze([
-      "QGS2 is inferred as QGS − QG(TH); QG and QGD retain their disclosed 50 V / 16 A datasheet conditions and are not rescaled at the operating point.",
+      "QGS2 is inferred as QGS − QG(TH). Away from the 50 V / 16 A / 5 V reference point, QGS2, QG, and the Miller level use the disclosed first-order transfer and charge-partition fit.",
       "COSS(ER) is an energy-equivalent scalar characterized over 0–50 V; EOSS is omitted above that domain and is not condition-scaled below it.",
-      "No shipped EON/EOFF surface is loaded. Automatic transition selection therefore uses a complete gate-charge path when available, then the disclosed 3 ns / 2 ns illustrative effective-time fallback."
+      "The 0.4 Ω datasheet gate resistance is internal device resistance, not the complete driver-plus-loop path, so it is not used as a total gate-drive resistance.",
+      "No shipped EON/EOFF surface is loaded. Automatic transition selection therefore uses the disclosed 3 ns / 2 ns illustrative fallback, condition-scaled by gate-current headroom."
     ]),
     provenanceOverrides: {
       qgs2High: "inferred-qgs-minus-qgth",
       qgs2Low: "inferred-qgs-minus-qgth",
+      gateResistanceOnHigh: "missing",
+      gateResistanceOffHigh: "missing",
+      gateResistanceOnLow: "missing",
+      gateResistanceOffLow: "missing",
       effectiveTurnOn: "inferred-effective-overlap",
       effectiveTurnOff: "inferred-effective-overlap"
     },
@@ -156,7 +259,7 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
         qgs2: 0.7,
         qgd: 0.7,
         plateau: null,
-        rg: 0.4,
+        rg: null,
         cossEr: 441,
         eossMaxVoltage: 50,
         diodeVf: 1.5,
@@ -183,6 +286,32 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
       sourceLabel: "2 × BSC010N04LS6 datasheet COSS typical at 20 V"
     }),
     source: INFINEON_SOURCE,
+    conditionModel: conditionModel({
+      sourceDetail: "BSC010N04LS6 datasheet Tables 4 and 6 plus Diagrams 7, 8, and 14 at 25 C; intermediate curve points are disclosed readouts.",
+      driveRange: { minVoltageV: 3, maxVoltageV: 10 },
+      reference: {
+        driveVoltageV: 4.5,
+        currentA: 50,
+        rdsOnMohm: 1.1,
+        plateauV: 2.7,
+        totalGateChargeNc: 32,
+        qgs2Nc: 4.7,
+        qgdNc: 8.1,
+        effectiveTurnOnNs: null,
+        effectiveTurnOffNs: null,
+        sourceAnchors: Object.freeze(["RDS(on) at 4.5 V and 10 V", "QG at 4.5 V", "QGS/QG(th)/QGD/Vplateau at 50 A"])
+      },
+      thresholdVoltageV: 1.3,
+      rdsOn: driveVoltageCurve([
+        curvePoint(3, 2.2),
+        curvePoint(3.3, 1.55),
+        curvePoint(4, 1.18),
+        curvePoint(4.5, 1.1),
+        curvePoint(5, 1.04),
+        curvePoint(10, 0.89)
+      ]),
+      qgThresholdNc: 7.3
+    }),
     modelSource: Object.freeze({
       publisher: "Infineon Technologies AG",
       url: "https://community.infineon.com/gfawx74859/attachments/gfawx74859/mosfetsisic/9679/1/OptiMOS6_40V_Spice.zip?nobounce",
@@ -270,6 +399,37 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     voltageClass: 30,
     timingMode: "auto",
     source: VISHAY_TI_EVM_SOURCE,
+    conditionModel: conditionModel({
+      sourceDetail: "Vishay Document 70903 measured 25 C anchors plus the TPS40071EVM 8 mOhm design point; the 3.3 V endpoint is a disclosed curve-fit extrapolation.",
+      driveRange: {
+        minVoltageV: 3.3,
+        maxVoltageV: 10,
+        recommendedMinVoltageV: 4.5,
+        recommendedMaxVoltageV: 10,
+        recommendedRangeLabel: "source-backed"
+      },
+      reference: {
+        driveVoltageV: 8,
+        currentA: 16,
+        rdsOnMohm: 8,
+        plateauV: 3,
+        totalGateChargeNc: 13,
+        qgs2Nc: 2.5,
+        qgdNc: 4,
+        effectiveTurnOnNs: null,
+        effectiveTurnOffNs: null,
+        sourceAnchors: Object.freeze(["RDS(on) 9 mOhm at 4.5 V", "RDS(on) 6.6 mOhm at 10 V", "TI EVM 8 mOhm design value", "QG/QGS/QGD at 4.5 V"])
+      },
+      thresholdVoltageV: 1.7,
+      rdsOn: driveVoltageCurve([
+        curvePoint(3.3, 13.2),
+        curvePoint(4.5, 9),
+        curvePoint(8, 8),
+        curvePoint(10, 6.6)
+      ]),
+      qgThresholdNc: 2.5,
+      chargeReferenceDriveVoltageV: 4.5
+    }),
     conditions: Object.freeze({
       rdsHigh: "TI SLUU180B section 3.2 uses 8.0 mΩ for both positions; Vishay measured 6.6 mΩ at VGS = 10 V and 9.0 mΩ at VGS = 4.5 V.",
       qgHigh: "VDS = 15 V, VGS = 4.5 V, ID = 16 A; 13 nC measured typical.",
@@ -345,9 +505,9 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     }
   }),
   ...[
-    { id: "silicon-30v", label: "Silicon · 30 V", voltageClass: 30, rds: 5, qg: 20, qgs2: 4, qgd: 5, plateau: 2.5, cossEr: 800, qrrRef: 30, diodeVf: 0.8, rg: 2 },
-    { id: "silicon-60v", label: "Silicon · 60 V", voltageClass: 60, rds: 10, qg: 30, qgs2: 6, qgd: 8, plateau: 3, cossEr: 500, qrrRef: 60, diodeVf: 0.85, rg: 3 },
-    { id: "silicon-100v", label: "Silicon · 100 V", voltageClass: 100, rds: 20, qg: 45, qgs2: 9, qgd: 12, plateau: 3.5, cossEr: 350, qrrRef: 100, diodeVf: 0.9, rg: 4 }
+    { id: "silicon-30v", label: "Silicon · 30 V", voltageClass: 30, rds: 5, qg: 20, qgth: 4, qgs2: 4, qgd: 5, plateau: 2.5, vth: 1.5, cossEr: 800, qrrRef: 30, diodeVf: 0.8, rg: 2 },
+    { id: "silicon-60v", label: "Silicon · 60 V", voltageClass: 60, rds: 10, qg: 30, qgth: 6, qgs2: 6, qgd: 8, plateau: 3, vth: 1.6, cossEr: 500, qrrRef: 60, diodeVf: 0.85, rg: 3 },
+    { id: "silicon-100v", label: "Silicon · 100 V", voltageClass: 100, rds: 20, qg: 45, qgth: 9, qgs2: 9, qgd: 12, plateau: 3.5, vth: 1.8, cossEr: 350, qrrRef: 100, diodeVf: 0.9, rg: 4 }
   ].map((item) => makeTemplate({
     id: item.id,
     label: item.label,
@@ -360,6 +520,31 @@ export const BUCK_LOSS_DEVICE_TEMPLATES_V2 = Object.freeze([
     voltageClass: item.voltageClass,
     timingMode: "auto",
     source: TEACHING_SOURCE,
+    conditionModel: conditionModel({
+      sourceDetail: "Synthetic teaching fit calibrated to the rounded template anchors; it is illustrative rather than vendor characterization.",
+      driveRange: { minVoltageV: 3.3, maxVoltageV: 10 },
+      reference: {
+        driveVoltageV: 5,
+        currentA: 10,
+        rdsOnMohm: item.rds,
+        plateauV: item.plateau,
+        totalGateChargeNc: item.qg,
+        qgs2Nc: item.qgs2,
+        qgdNc: item.qgd,
+        effectiveTurnOnNs: null,
+        effectiveTurnOffNs: null,
+        sourceAnchors: Object.freeze(["Synthetic 5 V / 10 A rounded teaching anchor"])
+      },
+      thresholdVoltageV: item.vth,
+      rdsOn: overdriveFit({
+        thresholdVoltageV: item.vth,
+        referenceDriveVoltageV: 5,
+        referenceResistanceMohm: item.rds,
+        floorResistanceMohm: item.rds * 0.65,
+        exponent: 1
+      }),
+      qgThresholdNc: item.qgth
+    }),
     notes: Object.freeze([
       "All values are synthetic and fixed at 25 °C for reproducible teaching examples.",
       "Asymptotic QRR scales linearly from the 10 A reference current and is capped by diffusion buildup during LS→HS dead time."

@@ -1,5 +1,5 @@
 export const BUCK_LOSS_MODEL_VERSION = 2;
-export const BUCK_LOSS_MODEL_REVISION = "2.3";
+export const BUCK_LOSS_MODEL_REVISION = "2.4";
 
 const field = (config) => Object.freeze(config);
 
@@ -15,15 +15,15 @@ export const BUCK_LOSS_SCHEMA_V2 = Object.freeze({
   qgHigh: field({ url: "qgh", group: "drive", label: "High-side QG", unit: "nC", scale: 1e-9, min: 0, max: 500, default: null }),
   qgLow: field({ url: "qgl", group: "drive", label: "Low-side QG", unit: "nC", scale: 1e-9, min: 0, max: 500, default: null }),
   qgs2High: field({ url: "qgs2h", group: "drive", timingMode: "derived", label: "High-side QGS2", unit: "nC", scale: 1e-9, min: 0, max: 200, default: null, optional: true }),
-  qgs2Low: field({ url: "qgs2l", group: "drive", timingMode: "derived", label: "Low-side QGS2", unit: "nC", scale: 1e-9, min: 0, max: 200, default: null, optional: true }),
+  qgs2Low: field({ url: "qgs2l", group: "drive", timingMode: "derived", uiHidden: true, label: "Low-side QGS2", unit: "nC", scale: 1e-9, min: 0, max: 200, default: null, optional: true }),
   qgdHigh: field({ url: "qgdh", group: "drive", timingMode: "derived", label: "High-side QGD", unit: "nC", scale: 1e-9, min: 0, max: 200, default: null, optional: true }),
-  qgdLow: field({ url: "qgdl", group: "drive", timingMode: "derived", label: "Low-side QGD", unit: "nC", scale: 1e-9, min: 0, max: 200, default: null, optional: true }),
+  qgdLow: field({ url: "qgdl", group: "drive", timingMode: "derived", uiHidden: true, label: "Low-side QGD", unit: "nC", scale: 1e-9, min: 0, max: 200, default: null, optional: true }),
   plateauHigh: field({ url: "vplh", group: "drive", timingMode: "derived", label: "High-side plateau voltage", unit: "V", scale: 1, min: 0.1, max: 10, default: null, optional: true }),
-  plateauLow: field({ url: "vpll", group: "drive", timingMode: "derived", label: "Low-side plateau voltage", unit: "V", scale: 1, min: 0.1, max: 10, default: null, optional: true }),
+  plateauLow: field({ url: "vpll", group: "drive", timingMode: "derived", uiHidden: true, label: "Low-side plateau voltage", unit: "V", scale: 1, min: 0.1, max: 10, default: null, optional: true }),
   gateResistanceOnHigh: field({ url: "rgonh", group: "drive", timingMode: "derived", label: "High-side turn-on gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
   gateResistanceOffHigh: field({ url: "rgoffh", group: "drive", timingMode: "derived", label: "High-side turn-off gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
-  gateResistanceOnLow: field({ url: "rgonl", group: "drive", timingMode: "derived", label: "Low-side turn-on gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
-  gateResistanceOffLow: field({ url: "rgoffl", group: "drive", timingMode: "derived", label: "Low-side turn-off gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
+  gateResistanceOnLow: field({ url: "rgonl", group: "drive", timingMode: "derived", uiHidden: true, label: "Low-side turn-on gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
+  gateResistanceOffLow: field({ url: "rgoffl", group: "drive", timingMode: "derived", uiHidden: true, label: "Low-side turn-off gate resistance", unit: "Ω", scale: 1, min: 0.05, max: 100, default: null, optional: true }),
   effectiveTurnOn: field({ url: "teon", group: "drive", timingMode: "effective", label: "Effective turn-on overlap", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
   effectiveTurnOff: field({ url: "teoff", group: "drive", timingMode: "effective", label: "Effective turn-off overlap", unit: "ns", scale: 1e-9, min: 0, max: 500, default: null, optional: true }),
   deadTime: field({ url: "td", group: "timing", label: "Fallback dead time per edge", unit: "ns", scale: 1e-9, min: 0, max: 500, default: 2 }),
