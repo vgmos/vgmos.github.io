@@ -5,6 +5,37 @@ layout: default
 <section class="home-hero" aria-labelledby="home-title">
   <h1 class="home-title" id="home-title">Tools, projects, and notes</h1>
   <p class="hero-lede">I design analog and power ICs at Analog Devices, mostly low-noise DC-DC buck converters for RF, OLED, and automotive systems. This site is a working archive. The tools are small circuit-design calculators. The projects are longer write-ups from my graduate research. The notebook is where the rest goes: technical notes, loose ideas, and things that don’t quite fit on a project page.</p>
+
+  <div class="home-signal">
+    <svg class="home-signal__graphic" viewBox="0 0 720 118" role="img" aria-labelledby="home-signal-title home-signal-description" focusable="false" data-signal-path data-signal-path-state="idle">
+      <title id="home-signal-title">Buck-converter signal path</title>
+      <desc id="home-signal-description">A simplified path from input through the switch and inductor to output, ending in a settled output waveform.</desc>
+      <g class="home-signal__labels">
+        <text x="34" y="25">V<tspan class="home-signal__sub" dy="3">IN</tspan></text>
+        <text x="158" y="19">SWITCH</text>
+        <text x="359" y="19">L</text>
+        <text x="581" y="25">V<tspan class="home-signal__sub" dy="3">OUT</tspan></text>
+      </g>
+
+      <g class="home-signal__circuit">
+        <path d="M34 58H150M212 58H320M408 58H570" />
+        <path d="M154 54L202 38" />
+        <circle cx="150" cy="58" r="3.5" />
+        <circle cx="212" cy="58" r="3.5" />
+        <path d="M320 58c0-16 22-16 22 0s22 16 22 0 22-16 22 0 22 16 22 0" />
+        <circle cx="520" cy="58" r="3.5" />
+        <circle cx="570" cy="58" r="3.5" />
+        <path d="M520 58v18M505 76h30M505 85h30M520 85v16M507 101h26M512 107h16M517 113h6" />
+      </g>
+
+      <path class="home-signal__pulse" aria-hidden="true" data-signal-path-pulse pathLength="100" d="M34 58H150L202 38L212 58H320c0-16 22-16 22 0s22 16 22 0 22-16 22 0 22 16 22 0H570" />
+
+      <g class="home-signal__output">
+        <path class="home-signal__wave-baseline" d="M580 94H686" />
+        <path class="home-signal__wave" data-signal-path-wave pathLength="1" d="M586 94l10-7 10 7 10-7 10 7 10-7 10 7 10-7 10 7" />
+      </g>
+    </svg>
+  </div>
 </section>
 
 <div class="home-shell">
@@ -14,7 +45,7 @@ layout: default
     </div>
     <div class="item-list">
       {% for tool in site.data.tools %}
-        <article class="list-item reveal">
+        <article class="list-item reveal" data-reveal>
           <p class="item-meta">{{ tool.meta }}</p>
           <h3><a href="{{ tool.url | relative_url }}">{{ tool.title }}</a></h3>
           <p>{{ tool.summary }}</p>
@@ -34,7 +65,7 @@ layout: default
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
       {% for project in sorted_projects %}
         {% unless project.kind == "era" %}
-          <article class="list-item reveal">
+          <article class="list-item reveal" data-reveal>
             <p class="item-meta">{{ project.institution }} · {{ project.period }}</p>
             <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
             {% if project.summary %}
@@ -53,7 +84,7 @@ layout: default
     </div>
     <div class="item-list">
       {% for post in site.posts %}
-        <article class="list-item reveal">
+        <article class="list-item reveal" data-reveal>
           <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}</p>
           <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
           {% if post.excerpt %}

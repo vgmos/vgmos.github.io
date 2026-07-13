@@ -28,6 +28,28 @@
 
     {%- include footer.html -%}
 
+    <dialog
+      class="figure-inspector"
+      id="figure-inspector"
+      aria-labelledby="figure-inspector-title"
+      aria-describedby="figure-inspector-caption"
+      aria-modal="true"
+      data-figure-inspector>
+      <div class="figure-inspector__panel" data-figure-inspector-panel>
+        <header class="figure-inspector__header">
+          <h2 class="figure-inspector__title" id="figure-inspector-title">Figure inspector</h2>
+          <button class="figure-inspector__close" type="button" aria-label="Close figure inspector" data-figure-inspector-close>
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <path d="M5 5l10 10M15 5L5 15" />
+            </svg>
+          </button>
+        </header>
+        <div class="figure-inspector__viewport" role="region" aria-label="Expanded figure" tabindex="0" data-figure-inspector-viewport>
+        </div>
+        <div class="figure-inspector__caption" id="figure-inspector-caption" data-figure-inspector-caption></div>
+      </div>
+    </dialog>
+
   </body>
 
 </html>
