@@ -284,13 +284,13 @@
     "sources": [
       {
         "id": "benchmark_calculation",
-        "label": "TI curve extraction and buck-loss v2.3 calculation",
+        "label": "TI curve extraction and buck-loss v2.4 calculation",
         "path": "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json",
         "href": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf",
         "query": {
           "engine": "sqlite",
           "language": "sql",
-          "sql": "WITH benchmark_points(lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct, measured_loss_w, calculated_known_loss_w) AS (\n  VALUES\n    ('nominal-25c', 5, 2, 96.8742, 97.5571, 0.212959, 0.165271),\n    ('nominal-25c', 5, 3, 97, 97.3645, 0.306186, 0.267976),\n    ('nominal-25c', 5, 4, 97.1071, 97.1008, 0.393239, 0.394117),\n    ('nominal-25c', 5, 5, 97, 96.81, 0.510309, 0.543688),\n    ('nominal-25c', 5, 6, 96.8398, 96.5068, 0.646139, 0.716685),\n    ('nominal-25c', 5, 7, 96.6044, 96.1975, 0.811954, 0.913103),\n    ('nominal-25c', 5, 8, 96.3043, 95.8852, 1.013106, 1.132937),\n    ('nominal-25c', 5, 9, 95.7988, 95.5716, 1.302476, 1.37618),\n    ('nominal-25c', 5, 10, 95.2646, 95.2578, 1.64036, 1.642828),\n    ('nominal-25c', 8, 2, 93.5985, 96.8947, 0.451395, 0.211516),\n    ('nominal-25c', 8, 3, 94.7056, 97.0633, 0.553447, 0.299529),\n    ('nominal-25c', 8, 4, 95.5995, 96.9917, 0.607604, 0.40941),\n    ('nominal-25c', 8, 5, 95.9695, 96.8266, 0.692962, 0.54078),\n    ('nominal-25c', 8, 6, 96.0344, 96.6153, 0.817612, 0.69364),\n    ('nominal-25c', 8, 7, 95.9695, 96.3785, 0.970147, 0.867993),\n    ('nominal-25c', 8, 8, 95.7683, 96.1264, 1.166533, 1.063838),\n    ('nominal-25c', 8, 9, 95.5345, 95.8647, 1.388246, 1.281177),\n    ('nominal-25c', 8, 10, 95.3001, 95.5967, 1.627456, 1.520011),\n    ('nominal-25c', 12, 2, 91, 95.926, 0.652747, 0.2803),\n    ('nominal-25c', 12, 3, 92.3589, 96.3845, 0.819054, 0.371366),\n    ('nominal-25c', 12, 4, 93.5052, 96.3884, 0.916862, 0.494588),\n    ('nominal-25c', 12, 5, 94.0643, 96.2704, 1.041193, 0.639218),\n    ('nominal-25c', 12, 6, 94.2886, 96.092, 1.199357, 0.805259),\n    ('nominal-25c', 12, 7, 94.2886, 95.8796, 1.39925, 0.992711),\n    ('nominal-25c', 12, 8, 94.1657, 95.6467, 1.635686, 1.201578),\n    ('nominal-25c', 12, 9, 93.9676, 95.4007, 1.906639, 1.431862),\n    ('nominal-25c', 12, 10, 93.7683, 95.1459, 2.19313, 1.683565),\n    ('hot-rds-bound', 5, 2, 96.8742, 97.3839, 0.212959, 0.177298),\n    ('hot-rds-bound', 5, 3, 97, 97.1207, 0.306186, 0.293499),\n    ('hot-rds-bound', 5, 4, 97.1071, 96.7846, 0.393239, 0.438532),\n    ('hot-rds-bound', 5, 5, 97, 96.4214, 0.510309, 0.612392),\n    ('hot-rds-bound', 5, 6, 96.8398, 96.0462, 0.646139, 0.815072),\n    ('hot-rds-bound', 5, 7, 96.6044, 95.6658, 0.811954, 1.046566),\n    ('hot-rds-bound', 5, 8, 96.3043, 95.2832, 1.013106, 1.306866),\n    ('hot-rds-bound', 5, 9, 95.7988, 94.9004, 1.302476, 1.595967),\n    ('hot-rds-bound', 5, 10, 95.2646, 94.5183, 1.64036, 1.91386),\n    ('hot-rds-bound', 8, 2, 93.5985, 96.7115, 0.451395, 0.224424),\n    ('hot-rds-bound', 8, 3, 94.7056, 96.8268, 0.553447, 0.324439),\n    ('hot-rds-bound', 8, 4, 95.5995, 96.6952, 0.607604, 0.451136),\n    ('hot-rds-bound', 8, 5, 95.9695, 96.468, 0.692962, 0.604123),\n    ('hot-rds-bound', 8, 6, 96.0344, 96.194, 0.817612, 0.783402),\n    ('hot-rds-bound', 8, 7, 95.9695, 95.8945, 0.970147, 0.988974),\n    ('hot-rds-bound', 8, 8, 95.7683, 95.58, 1.166533, 1.220839),\n    ('hot-rds-bound', 8, 9, 95.5345, 95.2564, 1.388246, 1.479),\n    ('hot-rds-bound', 8, 10, 95.3001, 94.9273, 1.627456, 1.763458),\n    ('hot-rds-bound', 12, 2, 91, 95.7212, 0.652747, 0.295022),\n    ('hot-rds-bound', 12, 3, 92.3589, 96.1343, 0.819054, 0.398094),\n    ('hot-rds-bound', 12, 4, 93.5052, 96.0827, 0.916862, 0.538171),\n    ('hot-rds-bound', 12, 5, 94.0643, 95.9054, 1.041193, 0.704459),\n    ('hot-rds-bound', 12, 6, 94.2886, 95.6662, 1.199357, 0.896958),\n    ('hot-rds-bound', 12, 7, 94.2886, 95.3928, 1.39925, 1.115673),\n    ('hot-rds-bound', 12, 8, 94.1657, 95.0988, 1.635686, 1.360606),\n    ('hot-rds-bound', 12, 9, 93.9676, 94.792, 1.906639, 1.631759),\n    ('hot-rds-bound', 12, 10, 93.7683, 94.477, 2.19313, 1.929135)\n)\nSELECT\n  lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct,\n  calculated_efficiency_pct - measured_efficiency_pct AS efficiency_error_pp,\n  measured_loss_w, calculated_known_loss_w,\n  calculated_known_loss_w - measured_loss_w AS loss_error_w,\n  100.0 * (calculated_known_loss_w - measured_loss_w) / measured_loss_w AS loss_error_pct\nFROM benchmark_points\nORDER BY lane_id, vin_v, load_a;",
+          "sql": "WITH benchmark_points(lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct, measured_loss_w, calculated_known_loss_w) AS (\n  VALUES\n    ('nominal-25c', 5, 2, 96.8742, 97.6114, 0.212959, 0.161504),\n    ('nominal-25c', 5, 3, 97, 97.4604, 0.306186, 0.257974),\n    ('nominal-25c', 5, 4, 97.1071, 97.217, 0.393239, 0.377879),\n    ('nominal-25c', 5, 5, 97, 96.9379, 0.510309, 0.521214),\n    ('nominal-25c', 5, 6, 96.8398, 96.6421, 0.646139, 0.687975),\n    ('nominal-25c', 5, 7, 96.6044, 96.3377, 0.811954, 0.878156),\n    ('nominal-25c', 5, 8, 96.3043, 96.0288, 1.013106, 1.091753),\n    ('nominal-25c', 5, 9, 95.7988, 95.7177, 1.302476, 1.328759),\n    ('nominal-25c', 5, 10, 95.2646, 95.4056, 1.64036, 1.589169),\n    ('nominal-25c', 8, 2, 93.5985, 96.3284, 0.451395, 0.251561),\n    ('nominal-25c', 8, 3, 94.7056, 96.6887, 0.553447, 0.339048),\n    ('nominal-25c', 8, 4, 95.5995, 96.7129, 0.607604, 0.448645),\n    ('nominal-25c', 8, 5, 95.9695, 96.6041, 0.692962, 0.580018),\n    ('nominal-25c', 8, 6, 96.0344, 96.4294, 0.817612, 0.733167),\n    ('nominal-25c', 8, 7, 95.9695, 96.2176, 0.970147, 0.908093),\n    ('nominal-25c', 8, 8, 95.7683, 95.9833, 1.166533, 1.104797),\n    ('nominal-25c', 8, 9, 95.5345, 95.7346, 1.388246, 1.323282),\n    ('nominal-25c', 8, 10, 95.3001, 95.4763, 1.627456, 1.563547),\n    ('nominal-25c', 12, 2, 91, 95.239, 0.652747, 0.329937),\n    ('nominal-25c', 12, 3, 92.3589, 95.9237, 0.819054, 0.420703),\n    ('nominal-25c', 12, 4, 93.5052, 96.0528, 0.916862, 0.542442),\n    ('nominal-25c', 12, 5, 94.0643, 96.0107, 1.041193, 0.685589),\n    ('nominal-25c', 12, 6, 94.2886, 95.8831, 1.199357, 0.850146),\n    ('nominal-25c', 12, 7, 94.2886, 95.7072, 1.39925, 1.036116),\n    ('nominal-25c', 12, 8, 94.1657, 95.5017, 1.635686, 1.243499),\n    ('nominal-25c', 12, 9, 93.9676, 95.2769, 1.906639, 1.4723),\n    ('nominal-25c', 12, 10, 93.7683, 95.0392, 2.19313, 1.722519),\n    ('hot-rds-bound', 5, 2, 96.8742, 97.4383, 0.212959, 0.173518),\n    ('hot-rds-bound', 5, 3, 97, 97.2163, 0.306186, 0.283477),\n    ('hot-rds-bound', 5, 4, 97.1071, 96.9002, 0.393239, 0.422268),\n    ('hot-rds-bound', 5, 5, 97, 96.5483, 0.510309, 0.589885),\n    ('hot-rds-bound', 5, 6, 96.8398, 96.1804, 0.646139, 0.786321),\n    ('hot-rds-bound', 5, 7, 96.6044, 95.8046, 0.811954, 1.01157),\n    ('hot-rds-bound', 5, 8, 96.3043, 95.4253, 1.013106, 1.265625),\n    ('hot-rds-bound', 5, 9, 95.7988, 95.0446, 1.302476, 1.54848),\n    ('hot-rds-bound', 5, 10, 95.2646, 94.664, 1.64036, 1.860127),\n    ('hot-rds-bound', 8, 2, 93.5985, 96.144, 0.451395, 0.264701),\n    ('hot-rds-bound', 8, 3, 94.7056, 96.4498, 0.553447, 0.364407),\n    ('hot-rds-bound', 8, 4, 95.5995, 96.4128, 0.607604, 0.491122),\n    ('hot-rds-bound', 8, 5, 95.9695, 96.2408, 0.692962, 0.644499),\n    ('hot-rds-bound', 8, 6, 96.0344, 96.0022, 0.817612, 0.824538),\n    ('hot-rds-bound', 8, 7, 95.9695, 95.7265, 0.970147, 1.031242),\n    ('hot-rds-bound', 8, 8, 95.7683, 95.4288, 1.166533, 1.264611),\n    ('hot-rds-bound', 8, 9, 95.5345, 95.1172, 1.388246, 1.524647),\n    ('hot-rds-bound', 8, 10, 95.3001, 94.7967, 1.627456, 1.811351),\n    ('hot-rds-bound', 12, 2, 91, 95.037, 0.652747, 0.344661),\n    ('hot-rds-bound', 12, 3, 92.3589, 95.6758, 0.819054, 0.447441),\n    ('hot-rds-bound', 12, 4, 93.5052, 95.749, 0.916862, 0.586039),\n    ('hot-rds-bound', 12, 5, 94.0643, 95.6475, 1.041193, 0.750847),\n    ('hot-rds-bound', 12, 6, 94.2886, 95.4591, 1.199357, 0.941867),\n    ('hot-rds-bound', 12, 7, 94.2886, 95.222, 1.39925, 1.159102),\n    ('hot-rds-bound', 12, 8, 94.1657, 94.9553, 1.635686, 1.402555),\n    ('hot-rds-bound', 12, 9, 93.9676, 94.6697, 1.906639, 1.672228),\n    ('hot-rds-bound', 12, 10, 93.7683, 94.3717, 2.19313, 1.968124)\n)\nSELECT\n  lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct,\n  calculated_efficiency_pct - measured_efficiency_pct AS efficiency_error_pp,\n  measured_loss_w, calculated_known_loss_w,\n  calculated_known_loss_w - measured_loss_w AS loss_error_w,\n  100.0 * (calculated_known_loss_w - measured_loss_w) / measured_loss_w AS loss_error_pct\nFROM benchmark_points\nORDER BY lane_id, vin_v, load_a;",
           "description": "Reconciles the reviewed point records produced by the committed Node model run and derives report error fields.",
           "executed_at": "2026-07-12T12:00:00Z",
           "tables_used": [
@@ -334,7 +334,7 @@
         "id": "technical_summary",
         "type": "markdown",
         "sourceId": "benchmark_calculation",
-        "body": "## The strict hardware benchmark fails, but the mismatch is strongly load-dependent\n\n- **Result: FAIL.** The nominal model fails the locked ≤1.0 pp MAE, ≤1.5 pp worst-error, and ≤20% median-loss-error policy when every input-voltage trace must pass.\n- Across all 27 nominal points, efficiency MAE is **1.27 pp**, worst-case error is **4.93 pp**, and median absolute loss error is **22.0%**.\n- At 12 V and 10 A, the 95.15% calculated ceiling remains above the 93.77% measured result, with -23.2% known-loss error. Reverse recovery is zero because the fixture declares zero LS→HS dead time. At 2 A it overstates efficiency by 4.93 pp.\n- The comparison validates the calculator as an auditable loss subtotal, not yet as a strict full-board efficiency predictor.\n- Mechanism validation is **not-evaluable**: TI Figure 5-3 supplies total efficiency only, not direct conduction, transition, dead-time, magnetic, or gate-drive loss measurements."
+        "body": "## The strict hardware benchmark fails, but the mismatch is strongly load-dependent\n\n- **Result: FAIL.** The nominal model fails the locked ≤1.0 pp MAE, ≤1.5 pp worst-error, and ≤20% median-loss-error policy when every input-voltage trace must pass.\n- Across all 27 nominal points, efficiency MAE is **1.08 pp**, worst-case error is **4.24 pp**, and median absolute loss error is **16.3%**.\n- At 12 V and 10 A, the 95.04% calculated ceiling remains above the 93.77% measured result, with -21.5% known-loss error. Reverse recovery is zero because the fixture declares zero LS→HS dead time. At 2 A it overstates efficiency by 4.24 pp.\n- The comparison validates the calculator as an auditable loss subtotal, not yet as a strict full-board efficiency predictor.\n- Mechanism validation is **not-evaluable**: TI Figure 5-3 supplies total efficiency only, not direct conduction, transition, dead-time, magnetic, or gate-drive loss measurements."
       },
       {
         "id": "headline_metrics",
@@ -349,7 +349,7 @@
         "id": "finding_12v_efficiency",
         "type": "markdown",
         "sourceId": "benchmark_calculation",
-        "body": "## The 12 V known-loss ceiling remains above measurement across the trace\n\nAt 10 A the nominal ceiling is 1.38 pp above TI. At 2 A, the calculated 95.93% ceiling is 4.93 pp above the measured curve. The load-dependent residual is consistent with omitted fixed and dynamic terms, but the published curve alone cannot identify their individual causes."
+        "body": "## The 12 V known-loss ceiling remains above measurement across the trace\n\nAt 10 A the nominal ceiling is 1.27 pp above TI. At 2 A, the calculated 95.24% ceiling is 4.24 pp above the measured curve. The load-dependent residual is consistent with omitted fixed and dynamic terms, but the published curve alone cannot identify their individual causes."
       },
       {
         "id": "efficiency_12v_chart",
@@ -360,7 +360,7 @@
         "id": "finding_12v_loss",
         "type": "markdown",
         "sourceId": "benchmark_calculation",
-        "body": "## Measured total loss exposes what the known-loss subtotal cannot cover\n\nAt 2 A, TI's inferred total loss is 0.653 W versus 0.280 W modeled. At 10 A, the 1.684 W known-loss subtotal remains below the 2.193 W measured total, restoring the declared subtotal invariant. The hot-RDS(on) lane is a sensitivity bound, not a fitted correction."
+        "body": "## Measured total loss exposes what the known-loss subtotal cannot cover\n\nAt 2 A, TI's inferred total loss is 0.653 W versus 0.330 W modeled. At 10 A, the 1.723 W known-loss subtotal remains below the 2.193 W measured total, restoring the declared subtotal invariant. The hot-RDS(on) lane is a sensitivity bound, not a fitted correction."
       },
       {
         "id": "loss_12v_chart",
@@ -371,7 +371,7 @@
         "id": "finding_cross_vin",
         "type": "markdown",
         "sourceId": "benchmark_calculation",
-        "body": "## The residual changes sign with input voltage, so one fitted offset would be misleading\n\nAt 5 A the 8 V trace error is +0.86 pp; at 8 A the 5 V trace error is -0.42 pp. The residual changes with input voltage and load, pointing to condition-dependent gate drive, transition, resistance, and omitted board-loss assumptions rather than a single fitted offset."
+        "body": "## The residual changes sign with input voltage, so one fitted offset would be misleading\n\nAt 5 A the 8 V trace error is +0.63 pp; at 8 A the 5 V trace error is -0.28 pp. The residual changes with input voltage and load, pointing to condition-dependent gate drive, transition, resistance, and omitted board-loss assumptions rather than a single fitted offset."
       },
       {
         "id": "nominal_error_chart",
@@ -423,9 +423,9 @@
       "overall_summary": [
         {
           "result": "FAIL",
-          "efficiencyMaePp": 1.2682,
-          "efficiencyWorstAbsPp": 4.926,
-          "medianAbsLossErrorPct": 21.9612,
+          "efficiencyMaePp": 1.0835,
+          "efficiencyWorstAbsPp": 4.239,
+          "medianAbsLossErrorPct": 16.2988,
           "pointCount": 27
         }
       ],
@@ -441,7 +441,7 @@
         {
           "loadA": 2,
           "series": "25 °C ceiling",
-          "value": 95.926,
+          "value": 95.239,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 0.652747
@@ -457,7 +457,7 @@
         {
           "loadA": 3,
           "series": "25 °C ceiling",
-          "value": 96.3845,
+          "value": 95.9237,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 0.819054
@@ -473,7 +473,7 @@
         {
           "loadA": 4,
           "series": "25 °C ceiling",
-          "value": 96.3884,
+          "value": 96.0528,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 0.916862
@@ -489,7 +489,7 @@
         {
           "loadA": 5,
           "series": "25 °C ceiling",
-          "value": 96.2704,
+          "value": 96.0107,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 1.041193
@@ -505,7 +505,7 @@
         {
           "loadA": 6,
           "series": "25 °C ceiling",
-          "value": 96.092,
+          "value": 95.8831,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 1.199357
@@ -521,7 +521,7 @@
         {
           "loadA": 7,
           "series": "25 °C ceiling",
-          "value": 95.8796,
+          "value": 95.7072,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 1.39925
@@ -537,7 +537,7 @@
         {
           "loadA": 8,
           "series": "25 °C ceiling",
-          "value": 95.6467,
+          "value": 95.5017,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 1.635686
@@ -553,7 +553,7 @@
         {
           "loadA": 9,
           "series": "25 °C ceiling",
-          "value": 95.4007,
+          "value": 95.2769,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 1.906639
@@ -569,7 +569,7 @@
         {
           "loadA": 10,
           "series": "25 °C ceiling",
-          "value": 95.1459,
+          "value": 95.0392,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredLossW": 2.19313
@@ -577,7 +577,7 @@
         {
           "loadA": 2,
           "series": "1.3× RDS ceiling",
-          "value": 95.7212,
+          "value": 95.037,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 0.652747
@@ -585,7 +585,7 @@
         {
           "loadA": 3,
           "series": "1.3× RDS ceiling",
-          "value": 96.1343,
+          "value": 95.6758,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 0.819054
@@ -593,7 +593,7 @@
         {
           "loadA": 4,
           "series": "1.3× RDS ceiling",
-          "value": 96.0827,
+          "value": 95.749,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 0.916862
@@ -601,7 +601,7 @@
         {
           "loadA": 5,
           "series": "1.3× RDS ceiling",
-          "value": 95.9054,
+          "value": 95.6475,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 1.041193
@@ -609,7 +609,7 @@
         {
           "loadA": 6,
           "series": "1.3× RDS ceiling",
-          "value": 95.6662,
+          "value": 95.4591,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 1.199357
@@ -617,7 +617,7 @@
         {
           "loadA": 7,
           "series": "1.3× RDS ceiling",
-          "value": 95.3928,
+          "value": 95.222,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 1.39925
@@ -625,7 +625,7 @@
         {
           "loadA": 8,
           "series": "1.3× RDS ceiling",
-          "value": 95.0988,
+          "value": 94.9553,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 1.635686
@@ -633,7 +633,7 @@
         {
           "loadA": 9,
           "series": "1.3× RDS ceiling",
-          "value": 94.792,
+          "value": 94.6697,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 1.906639
@@ -641,7 +641,7 @@
         {
           "loadA": 10,
           "series": "1.3× RDS ceiling",
-          "value": 94.477,
+          "value": 94.3717,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredLossW": 2.19313
@@ -659,7 +659,7 @@
         {
           "loadA": 2,
           "series": "25 °C subtotal",
-          "value": 0.2803,
+          "value": 0.329937,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 91
@@ -675,7 +675,7 @@
         {
           "loadA": 3,
           "series": "25 °C subtotal",
-          "value": 0.371366,
+          "value": 0.420703,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 92.3589
@@ -691,7 +691,7 @@
         {
           "loadA": 4,
           "series": "25 °C subtotal",
-          "value": 0.494588,
+          "value": 0.542442,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 93.5052
@@ -707,7 +707,7 @@
         {
           "loadA": 5,
           "series": "25 °C subtotal",
-          "value": 0.639218,
+          "value": 0.685589,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 94.0643
@@ -723,7 +723,7 @@
         {
           "loadA": 6,
           "series": "25 °C subtotal",
-          "value": 0.805259,
+          "value": 0.850146,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 94.2886
@@ -739,7 +739,7 @@
         {
           "loadA": 7,
           "series": "25 °C subtotal",
-          "value": 0.992711,
+          "value": 1.036116,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 94.2886
@@ -755,7 +755,7 @@
         {
           "loadA": 8,
           "series": "25 °C subtotal",
-          "value": 1.201578,
+          "value": 1.243499,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 94.1657
@@ -771,7 +771,7 @@
         {
           "loadA": 9,
           "series": "25 °C subtotal",
-          "value": 1.431862,
+          "value": 1.4723,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 93.9676
@@ -787,7 +787,7 @@
         {
           "loadA": 10,
           "series": "25 °C subtotal",
-          "value": 1.683565,
+          "value": 1.722519,
           "vinV": 12,
           "laneId": "nominal-25c",
           "measuredEfficiencyPct": 93.7683
@@ -795,7 +795,7 @@
         {
           "loadA": 2,
           "series": "1.3× RDS subtotal",
-          "value": 0.295022,
+          "value": 0.344661,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 91
@@ -803,7 +803,7 @@
         {
           "loadA": 3,
           "series": "1.3× RDS subtotal",
-          "value": 0.398094,
+          "value": 0.447441,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 92.3589
@@ -811,7 +811,7 @@
         {
           "loadA": 4,
           "series": "1.3× RDS subtotal",
-          "value": 0.538171,
+          "value": 0.586039,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 93.5052
@@ -819,7 +819,7 @@
         {
           "loadA": 5,
           "series": "1.3× RDS subtotal",
-          "value": 0.704459,
+          "value": 0.750847,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 94.0643
@@ -827,7 +827,7 @@
         {
           "loadA": 6,
           "series": "1.3× RDS subtotal",
-          "value": 0.896958,
+          "value": 0.941867,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 94.2886
@@ -835,7 +835,7 @@
         {
           "loadA": 7,
           "series": "1.3× RDS subtotal",
-          "value": 1.115673,
+          "value": 1.159102,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 94.2886
@@ -843,7 +843,7 @@
         {
           "loadA": 8,
           "series": "1.3× RDS subtotal",
-          "value": 1.360606,
+          "value": 1.402555,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 94.1657
@@ -851,7 +851,7 @@
         {
           "loadA": 9,
           "series": "1.3× RDS subtotal",
-          "value": 1.631759,
+          "value": 1.672228,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 93.9676
@@ -859,7 +859,7 @@
         {
           "loadA": 10,
           "series": "1.3× RDS subtotal",
-          "value": 1.929135,
+          "value": 1.968124,
           "vinV": 12,
           "laneId": "hot-rds-bound",
           "measuredEfficiencyPct": 93.7683
@@ -870,271 +870,271 @@
           "loadA": 2,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": 0.6829,
+          "efficiencyErrorPp": 0.7372,
           "measuredEfficiencyPct": 96.8742,
-          "calculatedEfficiencyPct": 97.5571,
+          "calculatedEfficiencyPct": 97.6114,
           "measuredLossW": 0.212959,
-          "calculatedKnownLossW": 0.165271
+          "calculatedKnownLossW": 0.161504
         },
         {
           "loadA": 3,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": 0.3645,
+          "efficiencyErrorPp": 0.4604,
           "measuredEfficiencyPct": 97,
-          "calculatedEfficiencyPct": 97.3645,
+          "calculatedEfficiencyPct": 97.4604,
           "measuredLossW": 0.306186,
-          "calculatedKnownLossW": 0.267976
+          "calculatedKnownLossW": 0.257974
         },
         {
           "loadA": 4,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.0063,
+          "efficiencyErrorPp": 0.1099,
           "measuredEfficiencyPct": 97.1071,
-          "calculatedEfficiencyPct": 97.1008,
+          "calculatedEfficiencyPct": 97.217,
           "measuredLossW": 0.393239,
-          "calculatedKnownLossW": 0.394117
+          "calculatedKnownLossW": 0.377879
         },
         {
           "loadA": 5,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.19,
+          "efficiencyErrorPp": -0.0621,
           "measuredEfficiencyPct": 97,
-          "calculatedEfficiencyPct": 96.81,
+          "calculatedEfficiencyPct": 96.9379,
           "measuredLossW": 0.510309,
-          "calculatedKnownLossW": 0.543688
+          "calculatedKnownLossW": 0.521214
         },
         {
           "loadA": 6,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.333,
+          "efficiencyErrorPp": -0.1977,
           "measuredEfficiencyPct": 96.8398,
-          "calculatedEfficiencyPct": 96.5068,
+          "calculatedEfficiencyPct": 96.6421,
           "measuredLossW": 0.646139,
-          "calculatedKnownLossW": 0.716685
+          "calculatedKnownLossW": 0.687975
         },
         {
           "loadA": 7,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.4069,
+          "efficiencyErrorPp": -0.2667,
           "measuredEfficiencyPct": 96.6044,
-          "calculatedEfficiencyPct": 96.1975,
+          "calculatedEfficiencyPct": 96.3377,
           "measuredLossW": 0.811954,
-          "calculatedKnownLossW": 0.913103
+          "calculatedKnownLossW": 0.878156
         },
         {
           "loadA": 8,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.4191,
+          "efficiencyErrorPp": -0.2755,
           "measuredEfficiencyPct": 96.3043,
-          "calculatedEfficiencyPct": 95.8852,
+          "calculatedEfficiencyPct": 96.0288,
           "measuredLossW": 1.013106,
-          "calculatedKnownLossW": 1.132937
+          "calculatedKnownLossW": 1.091753
         },
         {
           "loadA": 9,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.2272,
+          "efficiencyErrorPp": -0.0811,
           "measuredEfficiencyPct": 95.7988,
-          "calculatedEfficiencyPct": 95.5716,
+          "calculatedEfficiencyPct": 95.7177,
           "measuredLossW": 1.302476,
-          "calculatedKnownLossW": 1.37618
+          "calculatedKnownLossW": 1.328759
         },
         {
           "loadA": 10,
           "series": "VIN = 5 V",
           "vinV": 5,
-          "efficiencyErrorPp": -0.0068,
+          "efficiencyErrorPp": 0.141,
           "measuredEfficiencyPct": 95.2646,
-          "calculatedEfficiencyPct": 95.2578,
+          "calculatedEfficiencyPct": 95.4056,
           "measuredLossW": 1.64036,
-          "calculatedKnownLossW": 1.642828
+          "calculatedKnownLossW": 1.589169
         },
         {
           "loadA": 2,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 3.2962,
+          "efficiencyErrorPp": 2.7299,
           "measuredEfficiencyPct": 93.5985,
-          "calculatedEfficiencyPct": 96.8947,
+          "calculatedEfficiencyPct": 96.3284,
           "measuredLossW": 0.451395,
-          "calculatedKnownLossW": 0.211516
+          "calculatedKnownLossW": 0.251561
         },
         {
           "loadA": 3,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 2.3577,
+          "efficiencyErrorPp": 1.9831,
           "measuredEfficiencyPct": 94.7056,
-          "calculatedEfficiencyPct": 97.0633,
+          "calculatedEfficiencyPct": 96.6887,
           "measuredLossW": 0.553447,
-          "calculatedKnownLossW": 0.299529
+          "calculatedKnownLossW": 0.339048
         },
         {
           "loadA": 4,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 1.3922,
+          "efficiencyErrorPp": 1.1134,
           "measuredEfficiencyPct": 95.5995,
-          "calculatedEfficiencyPct": 96.9917,
+          "calculatedEfficiencyPct": 96.7129,
           "measuredLossW": 0.607604,
-          "calculatedKnownLossW": 0.40941
+          "calculatedKnownLossW": 0.448645
         },
         {
           "loadA": 5,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 0.8571,
+          "efficiencyErrorPp": 0.6346,
           "measuredEfficiencyPct": 95.9695,
-          "calculatedEfficiencyPct": 96.8266,
+          "calculatedEfficiencyPct": 96.6041,
           "measuredLossW": 0.692962,
-          "calculatedKnownLossW": 0.54078
+          "calculatedKnownLossW": 0.580018
         },
         {
           "loadA": 6,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 0.5809,
+          "efficiencyErrorPp": 0.395,
           "measuredEfficiencyPct": 96.0344,
-          "calculatedEfficiencyPct": 96.6153,
+          "calculatedEfficiencyPct": 96.4294,
           "measuredLossW": 0.817612,
-          "calculatedKnownLossW": 0.69364
+          "calculatedKnownLossW": 0.733167
         },
         {
           "loadA": 7,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 0.409,
+          "efficiencyErrorPp": 0.2481,
           "measuredEfficiencyPct": 95.9695,
-          "calculatedEfficiencyPct": 96.3785,
+          "calculatedEfficiencyPct": 96.2176,
           "measuredLossW": 0.970147,
-          "calculatedKnownLossW": 0.867993
+          "calculatedKnownLossW": 0.908093
         },
         {
           "loadA": 8,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 0.3581,
+          "efficiencyErrorPp": 0.215,
           "measuredEfficiencyPct": 95.7683,
-          "calculatedEfficiencyPct": 96.1264,
+          "calculatedEfficiencyPct": 95.9833,
           "measuredLossW": 1.166533,
-          "calculatedKnownLossW": 1.063838
+          "calculatedKnownLossW": 1.104797
         },
         {
           "loadA": 9,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 0.3302,
+          "efficiencyErrorPp": 0.2001,
           "measuredEfficiencyPct": 95.5345,
-          "calculatedEfficiencyPct": 95.8647,
+          "calculatedEfficiencyPct": 95.7346,
           "measuredLossW": 1.388246,
-          "calculatedKnownLossW": 1.281177
+          "calculatedKnownLossW": 1.323282
         },
         {
           "loadA": 10,
           "series": "VIN = 8 V",
           "vinV": 8,
-          "efficiencyErrorPp": 0.2966,
+          "efficiencyErrorPp": 0.1762,
           "measuredEfficiencyPct": 95.3001,
-          "calculatedEfficiencyPct": 95.5967,
+          "calculatedEfficiencyPct": 95.4763,
           "measuredLossW": 1.627456,
-          "calculatedKnownLossW": 1.520011
+          "calculatedKnownLossW": 1.563547
         },
         {
           "loadA": 2,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 4.926,
+          "efficiencyErrorPp": 4.239,
           "measuredEfficiencyPct": 91,
-          "calculatedEfficiencyPct": 95.926,
+          "calculatedEfficiencyPct": 95.239,
           "measuredLossW": 0.652747,
-          "calculatedKnownLossW": 0.2803
+          "calculatedKnownLossW": 0.329937
         },
         {
           "loadA": 3,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 4.0256,
+          "efficiencyErrorPp": 3.5648,
           "measuredEfficiencyPct": 92.3589,
-          "calculatedEfficiencyPct": 96.3845,
+          "calculatedEfficiencyPct": 95.9237,
           "measuredLossW": 0.819054,
-          "calculatedKnownLossW": 0.371366
+          "calculatedKnownLossW": 0.420703
         },
         {
           "loadA": 4,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 2.8832,
+          "efficiencyErrorPp": 2.5476,
           "measuredEfficiencyPct": 93.5052,
-          "calculatedEfficiencyPct": 96.3884,
+          "calculatedEfficiencyPct": 96.0528,
           "measuredLossW": 0.916862,
-          "calculatedKnownLossW": 0.494588
+          "calculatedKnownLossW": 0.542442
         },
         {
           "loadA": 5,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 2.2061,
+          "efficiencyErrorPp": 1.9464,
           "measuredEfficiencyPct": 94.0643,
-          "calculatedEfficiencyPct": 96.2704,
+          "calculatedEfficiencyPct": 96.0107,
           "measuredLossW": 1.041193,
-          "calculatedKnownLossW": 0.639218
+          "calculatedKnownLossW": 0.685589
         },
         {
           "loadA": 6,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 1.8034,
+          "efficiencyErrorPp": 1.5945,
           "measuredEfficiencyPct": 94.2886,
-          "calculatedEfficiencyPct": 96.092,
+          "calculatedEfficiencyPct": 95.8831,
           "measuredLossW": 1.199357,
-          "calculatedKnownLossW": 0.805259
+          "calculatedKnownLossW": 0.850146
         },
         {
           "loadA": 7,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 1.591,
+          "efficiencyErrorPp": 1.4186,
           "measuredEfficiencyPct": 94.2886,
-          "calculatedEfficiencyPct": 95.8796,
+          "calculatedEfficiencyPct": 95.7072,
           "measuredLossW": 1.39925,
-          "calculatedKnownLossW": 0.992711
+          "calculatedKnownLossW": 1.036116
         },
         {
           "loadA": 8,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 1.481,
+          "efficiencyErrorPp": 1.336,
           "measuredEfficiencyPct": 94.1657,
-          "calculatedEfficiencyPct": 95.6467,
+          "calculatedEfficiencyPct": 95.5017,
           "measuredLossW": 1.635686,
-          "calculatedKnownLossW": 1.201578
+          "calculatedKnownLossW": 1.243499
         },
         {
           "loadA": 9,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 1.4331,
+          "efficiencyErrorPp": 1.3093,
           "measuredEfficiencyPct": 93.9676,
-          "calculatedEfficiencyPct": 95.4007,
+          "calculatedEfficiencyPct": 95.2769,
           "measuredLossW": 1.906639,
-          "calculatedKnownLossW": 1.431862
+          "calculatedKnownLossW": 1.4723
         },
         {
           "loadA": 10,
           "series": "VIN = 12 V",
           "vinV": 12,
-          "efficiencyErrorPp": 1.3776,
+          "efficiencyErrorPp": 1.2709,
           "measuredEfficiencyPct": 93.7683,
-          "calculatedEfficiencyPct": 95.1459,
+          "calculatedEfficiencyPct": 95.0392,
           "measuredLossW": 2.19313,
-          "calculatedKnownLossW": 1.683565
+          "calculatedKnownLossW": 1.722519
         }
       ],
       "trace_summary": [
@@ -1143,11 +1143,11 @@
           "lane": "25 °C nominal",
           "vinV": 5,
           "points": 9,
-          "efficiencyMaePp": 0.293,
-          "worstEfficiencyErrorPp": 0.6829,
-          "signedBiasPp": -0.0602,
-          "curveShapeMaePp": 0.2834,
-          "medianAbsLossErrorPct": 10.9182,
+          "efficiencyMaePp": 0.2591,
+          "worstEfficiencyErrorPp": 0.7372,
+          "signedBiasPp": 0.0628,
+          "curveShapeMaePp": 0.2661,
+          "medianAbsLossErrorPct": 6.4748,
           "result": "PASS"
         },
         {
@@ -1155,11 +1155,11 @@
           "lane": "25 °C nominal",
           "vinV": 8,
           "points": 9,
-          "efficiencyMaePp": 1.0976,
-          "worstEfficiencyErrorPp": 3.2962,
-          "signedBiasPp": 1.0976,
-          "curveShapeMaePp": 0.8341,
-          "medianAbsLossErrorPct": 15.1626,
+          "efficiencyMaePp": 0.855,
+          "worstEfficiencyErrorPp": 2.7299,
+          "signedBiasPp": 0.855,
+          "curveShapeMaePp": 0.7247,
+          "medianAbsLossErrorPct": 10.3283,
           "result": "FAIL"
         },
         {
@@ -1167,11 +1167,11 @@
           "lane": "25 °C nominal",
           "vinV": 12,
           "points": 9,
-          "efficiencyMaePp": 2.4141,
-          "worstEfficiencyErrorPp": 4.926,
-          "signedBiasPp": 2.4141,
-          "curveShapeMaePp": 1.0206,
-          "medianAbsLossErrorPct": 32.8591,
+          "efficiencyMaePp": 2.1363,
+          "worstEfficiencyErrorPp": 4.239,
+          "signedBiasPp": 2.1363,
+          "curveShapeMaePp": 0.8761,
+          "medianAbsLossErrorPct": 29.1165,
           "result": "FAIL"
         },
         {
@@ -1179,23 +1179,23 @@
           "lane": "1.3× RDS(on) hot sensitivity",
           "vinV": 5,
           "points": 9,
-          "efficiencyMaePp": 0.6588,
-          "worstEfficiencyErrorPp": 1.0211,
-          "signedBiasPp": -0.5187,
-          "curveShapeMaePp": 0.4143,
-          "medianAbsLossErrorPct": 20.0042,
-          "result": "FAIL"
+          "efficiencyMaePp": 0.5702,
+          "worstEfficiencyErrorPp": 0.879,
+          "signedBiasPp": -0.3968,
+          "curveShapeMaePp": 0.392,
+          "medianAbsLossErrorPct": 18.5208,
+          "result": "PASS"
         },
         {
           "laneId": "hot-rds-bound",
           "lane": "1.3× RDS(on) hot sensitivity",
           "vinV": 8,
           "points": 9,
-          "efficiencyMaePp": 0.878,
-          "worstEfficiencyErrorPp": 3.113,
-          "signedBiasPp": 0.6749,
-          "curveShapeMaePp": 0.9567,
-          "medianAbsLossErrorPct": 8.3567,
+          "efficiencyMaePp": 0.7678,
+          "worstEfficiencyErrorPp": 2.5455,
+          "signedBiasPp": 0.4265,
+          "curveShapeMaePp": 0.8497,
+          "medianAbsLossErrorPct": 9.8255,
           "result": "FAIL"
         },
         {
@@ -1203,11 +1203,11 @@
           "lane": "1.3× RDS(on) hot sensitivity",
           "vinV": 12,
           "points": 9,
-          "efficiencyMaePp": 1.9848,
-          "worstEfficiencyErrorPp": 4.7212,
-          "signedBiasPp": 1.9848,
-          "curveShapeMaePp": 1.1377,
-          "medianAbsLossErrorPct": 25.2134,
+          "efficiencyMaePp": 1.7089,
+          "worstEfficiencyErrorPp": 4.037,
+          "signedBiasPp": 1.7089,
+          "curveShapeMaePp": 0.9936,
+          "medianAbsLossErrorPct": 21.469,
           "result": "FAIL"
         }
       ],
@@ -1220,12 +1220,12 @@
           "voutV": 3.3,
           "loadA": 2,
           "measuredEfficiencyPct": 96.8742,
-          "calculatedEfficiencyPct": 97.5571,
-          "efficiencyErrorPp": 0.6829,
+          "calculatedEfficiencyPct": 97.6114,
+          "efficiencyErrorPp": 0.7372,
           "measuredLossW": 0.212959,
-          "calculatedKnownLossW": 0.165271,
-          "lossErrorW": -0.047688,
-          "lossErrorPct": -22.3932,
+          "calculatedKnownLossW": 0.161504,
+          "lossErrorW": -0.051455,
+          "lossErrorPct": -24.1621,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1241,12 +1241,12 @@
           "voutV": 3.3,
           "loadA": 3,
           "measuredEfficiencyPct": 97,
-          "calculatedEfficiencyPct": 97.3645,
-          "efficiencyErrorPp": 0.3645,
+          "calculatedEfficiencyPct": 97.4604,
+          "efficiencyErrorPp": 0.4604,
           "measuredLossW": 0.306186,
-          "calculatedKnownLossW": 0.267976,
-          "lossErrorW": -0.038209,
-          "lossErrorPct": -12.4792,
+          "calculatedKnownLossW": 0.257974,
+          "lossErrorW": -0.048212,
+          "lossErrorPct": -15.7459,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1262,12 +1262,12 @@
           "voutV": 3.3,
           "loadA": 4,
           "measuredEfficiencyPct": 97.1071,
-          "calculatedEfficiencyPct": 97.1008,
-          "efficiencyErrorPp": -0.0063,
+          "calculatedEfficiencyPct": 97.217,
+          "efficiencyErrorPp": 0.1099,
           "measuredLossW": 0.393239,
-          "calculatedKnownLossW": 0.394117,
-          "lossErrorW": 0.000878,
-          "lossErrorPct": 0.2233,
+          "calculatedKnownLossW": 0.377879,
+          "lossErrorW": -0.01536,
+          "lossErrorPct": -3.906,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1283,12 +1283,12 @@
           "voutV": 3.3,
           "loadA": 5,
           "measuredEfficiencyPct": 97,
-          "calculatedEfficiencyPct": 96.81,
-          "efficiencyErrorPp": -0.19,
+          "calculatedEfficiencyPct": 96.9379,
+          "efficiencyErrorPp": -0.0621,
           "measuredLossW": 0.510309,
-          "calculatedKnownLossW": 0.543688,
-          "lossErrorW": 0.033379,
-          "lossErrorPct": 6.5409,
+          "calculatedKnownLossW": 0.521214,
+          "lossErrorW": 0.010905,
+          "lossErrorPct": 2.137,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1304,12 +1304,12 @@
           "voutV": 3.3,
           "loadA": 6,
           "measuredEfficiencyPct": 96.8398,
-          "calculatedEfficiencyPct": 96.5068,
-          "efficiencyErrorPp": -0.333,
+          "calculatedEfficiencyPct": 96.6421,
+          "efficiencyErrorPp": -0.1977,
           "measuredLossW": 0.646139,
-          "calculatedKnownLossW": 0.716685,
-          "lossErrorW": 0.070547,
-          "lossErrorPct": 10.9182,
+          "calculatedKnownLossW": 0.687975,
+          "lossErrorW": 0.041836,
+          "lossErrorPct": 6.4748,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1325,12 +1325,12 @@
           "voutV": 3.3,
           "loadA": 7,
           "measuredEfficiencyPct": 96.6044,
-          "calculatedEfficiencyPct": 96.1975,
-          "efficiencyErrorPp": -0.4069,
+          "calculatedEfficiencyPct": 96.3377,
+          "efficiencyErrorPp": -0.2667,
           "measuredLossW": 0.811954,
-          "calculatedKnownLossW": 0.913103,
-          "lossErrorW": 0.101149,
-          "lossErrorPct": 12.4575,
+          "calculatedKnownLossW": 0.878156,
+          "lossErrorW": 0.066202,
+          "lossErrorPct": 8.1534,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1346,12 +1346,12 @@
           "voutV": 3.3,
           "loadA": 8,
           "measuredEfficiencyPct": 96.3043,
-          "calculatedEfficiencyPct": 95.8852,
-          "efficiencyErrorPp": -0.4191,
+          "calculatedEfficiencyPct": 96.0288,
+          "efficiencyErrorPp": -0.2755,
           "measuredLossW": 1.013106,
-          "calculatedKnownLossW": 1.132937,
-          "lossErrorW": 0.119831,
-          "lossErrorPct": 11.828,
+          "calculatedKnownLossW": 1.091753,
+          "lossErrorW": 0.078647,
+          "lossErrorPct": 7.7629,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1367,12 +1367,12 @@
           "voutV": 3.3,
           "loadA": 9,
           "measuredEfficiencyPct": 95.7988,
-          "calculatedEfficiencyPct": 95.5716,
-          "efficiencyErrorPp": -0.2272,
+          "calculatedEfficiencyPct": 95.7177,
+          "efficiencyErrorPp": -0.0811,
           "measuredLossW": 1.302476,
-          "calculatedKnownLossW": 1.37618,
-          "lossErrorW": 0.073704,
-          "lossErrorPct": 5.6588,
+          "calculatedKnownLossW": 1.328759,
+          "lossErrorW": 0.026283,
+          "lossErrorPct": 2.0179,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1388,12 +1388,12 @@
           "voutV": 3.3,
           "loadA": 10,
           "measuredEfficiencyPct": 95.2646,
-          "calculatedEfficiencyPct": 95.2578,
-          "efficiencyErrorPp": -0.0068,
+          "calculatedEfficiencyPct": 95.4056,
+          "efficiencyErrorPp": 0.141,
           "measuredLossW": 1.64036,
-          "calculatedKnownLossW": 1.642828,
-          "lossErrorW": 0.002469,
-          "lossErrorPct": 0.1505,
+          "calculatedKnownLossW": 1.589169,
+          "lossErrorW": -0.051191,
+          "lossErrorPct": -3.1207,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1409,17 +1409,17 @@
           "voutV": 3.3,
           "loadA": 2,
           "measuredEfficiencyPct": 93.5985,
-          "calculatedEfficiencyPct": 96.8947,
-          "efficiencyErrorPp": 3.2962,
+          "calculatedEfficiencyPct": 96.3284,
+          "efficiencyErrorPp": 2.7299,
           "measuredLossW": 0.451395,
-          "calculatedKnownLossW": 0.211516,
-          "lossErrorW": -0.239879,
-          "lossErrorPct": -53.1417,
+          "calculatedKnownLossW": 0.251561,
+          "lossErrorW": -0.199834,
+          "lossErrorPct": -44.2702,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0466,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0467,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1430,17 +1430,17 @@
           "voutV": 3.3,
           "loadA": 3,
           "measuredEfficiencyPct": 94.7056,
-          "calculatedEfficiencyPct": 97.0633,
-          "efficiencyErrorPp": 2.3577,
+          "calculatedEfficiencyPct": 96.6887,
+          "efficiencyErrorPp": 1.9831,
           "measuredLossW": 0.553447,
-          "calculatedKnownLossW": 0.299529,
-          "lossErrorW": -0.253918,
-          "lossErrorPct": -45.8794,
+          "calculatedKnownLossW": 0.339048,
+          "lossErrorW": -0.214399,
+          "lossErrorPct": -38.7389,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0503,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0504,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1451,17 +1451,17 @@
           "voutV": 3.3,
           "loadA": 4,
           "measuredEfficiencyPct": 95.5995,
-          "calculatedEfficiencyPct": 96.9917,
-          "efficiencyErrorPp": 1.3922,
+          "calculatedEfficiencyPct": 96.7129,
+          "efficiencyErrorPp": 1.1134,
           "measuredLossW": 0.607604,
-          "calculatedKnownLossW": 0.40941,
-          "lossErrorW": -0.198194,
-          "lossErrorPct": -32.619,
+          "calculatedKnownLossW": 0.448645,
+          "lossErrorW": -0.158958,
+          "lossErrorPct": -26.1615,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0539,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0541,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1472,17 +1472,17 @@
           "voutV": 3.3,
           "loadA": 5,
           "measuredEfficiencyPct": 95.9695,
-          "calculatedEfficiencyPct": 96.8266,
-          "efficiencyErrorPp": 0.8571,
+          "calculatedEfficiencyPct": 96.6041,
+          "efficiencyErrorPp": 0.6346,
           "measuredLossW": 0.692962,
-          "calculatedKnownLossW": 0.54078,
-          "lossErrorW": -0.152183,
-          "lossErrorPct": -21.9612,
+          "calculatedKnownLossW": 0.580018,
+          "lossErrorW": -0.112944,
+          "lossErrorPct": -16.2988,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0575,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0577,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1493,17 +1493,17 @@
           "voutV": 3.3,
           "loadA": 6,
           "measuredEfficiencyPct": 96.0344,
-          "calculatedEfficiencyPct": 96.6153,
-          "efficiencyErrorPp": 0.5809,
+          "calculatedEfficiencyPct": 96.4294,
+          "efficiencyErrorPp": 0.395,
           "measuredLossW": 0.817612,
-          "calculatedKnownLossW": 0.69364,
-          "lossErrorW": -0.123972,
-          "lossErrorPct": -15.1626,
+          "calculatedKnownLossW": 0.733167,
+          "lossErrorW": -0.084445,
+          "lossErrorPct": -10.3283,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.061,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0613,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1514,17 +1514,17 @@
           "voutV": 3.3,
           "loadA": 7,
           "measuredEfficiencyPct": 95.9695,
-          "calculatedEfficiencyPct": 96.3785,
-          "efficiencyErrorPp": 0.409,
+          "calculatedEfficiencyPct": 96.2176,
+          "efficiencyErrorPp": 0.2481,
           "measuredLossW": 0.970147,
-          "calculatedKnownLossW": 0.867993,
-          "lossErrorW": -0.102154,
-          "lossErrorPct": -10.5298,
+          "calculatedKnownLossW": 0.908093,
+          "lossErrorW": -0.062055,
+          "lossErrorPct": -6.3964,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0645,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0648,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1535,17 +1535,17 @@
           "voutV": 3.3,
           "loadA": 8,
           "measuredEfficiencyPct": 95.7683,
-          "calculatedEfficiencyPct": 96.1264,
-          "efficiencyErrorPp": 0.3581,
+          "calculatedEfficiencyPct": 95.9833,
+          "efficiencyErrorPp": 0.215,
           "measuredLossW": 1.166533,
-          "calculatedKnownLossW": 1.063838,
-          "lossErrorW": -0.102695,
-          "lossErrorPct": -8.8034,
+          "calculatedKnownLossW": 1.104797,
+          "lossErrorW": -0.061736,
+          "lossErrorPct": -5.2922,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0679,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0682,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1556,17 +1556,17 @@
           "voutV": 3.3,
           "loadA": 9,
           "measuredEfficiencyPct": 95.5345,
-          "calculatedEfficiencyPct": 95.8647,
-          "efficiencyErrorPp": 0.3302,
+          "calculatedEfficiencyPct": 95.7346,
+          "efficiencyErrorPp": 0.2001,
           "measuredLossW": 1.388246,
-          "calculatedKnownLossW": 1.281177,
-          "lossErrorW": -0.107068,
-          "lossErrorPct": -7.7125,
+          "calculatedKnownLossW": 1.323282,
+          "lossErrorW": -0.064964,
+          "lossErrorPct": -4.6796,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0712,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0716,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1577,17 +1577,17 @@
           "voutV": 3.3,
           "loadA": 10,
           "measuredEfficiencyPct": 95.3001,
-          "calculatedEfficiencyPct": 95.5967,
-          "efficiencyErrorPp": 0.2966,
+          "calculatedEfficiencyPct": 95.4763,
+          "efficiencyErrorPp": 0.1762,
           "measuredLossW": 1.627456,
-          "calculatedKnownLossW": 1.520011,
-          "lossErrorW": -0.107445,
-          "lossErrorPct": -6.602,
+          "calculatedKnownLossW": 1.563547,
+          "lossErrorW": -0.063909,
+          "lossErrorPct": -3.9269,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
-          "ripplePpA": 4.0745,
-          "rdsHighMohm": 8,
+          "ripplePpA": 4.0749,
+          "rdsHighMohm": 8.1429,
           "gateDriveV": 7.5
         },
         {
@@ -1598,12 +1598,12 @@
           "voutV": 3.3,
           "loadA": 2,
           "measuredEfficiencyPct": 91,
-          "calculatedEfficiencyPct": 95.926,
-          "efficiencyErrorPp": 4.926,
+          "calculatedEfficiencyPct": 95.239,
+          "efficiencyErrorPp": 4.239,
           "measuredLossW": 0.652747,
-          "calculatedKnownLossW": 0.2803,
-          "lossErrorW": -0.372447,
-          "lossErrorPct": -57.0584,
+          "calculatedKnownLossW": 0.329937,
+          "lossErrorW": -0.32281,
+          "lossErrorPct": -49.4541,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1619,12 +1619,12 @@
           "voutV": 3.3,
           "loadA": 3,
           "measuredEfficiencyPct": 92.3589,
-          "calculatedEfficiencyPct": 96.3845,
-          "efficiencyErrorPp": 4.0256,
+          "calculatedEfficiencyPct": 95.9237,
+          "efficiencyErrorPp": 3.5648,
           "measuredLossW": 0.819054,
-          "calculatedKnownLossW": 0.371366,
-          "lossErrorW": -0.447688,
-          "lossErrorPct": -54.6592,
+          "calculatedKnownLossW": 0.420703,
+          "lossErrorW": -0.398351,
+          "lossErrorPct": -48.6355,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1640,12 +1640,12 @@
           "voutV": 3.3,
           "loadA": 4,
           "measuredEfficiencyPct": 93.5052,
-          "calculatedEfficiencyPct": 96.3884,
-          "efficiencyErrorPp": 2.8832,
+          "calculatedEfficiencyPct": 96.0528,
+          "efficiencyErrorPp": 2.5476,
           "measuredLossW": 0.916862,
-          "calculatedKnownLossW": 0.494588,
-          "lossErrorW": -0.422274,
-          "lossErrorPct": -46.0564,
+          "calculatedKnownLossW": 0.542442,
+          "lossErrorW": -0.37442,
+          "lossErrorPct": -40.8371,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1661,12 +1661,12 @@
           "voutV": 3.3,
           "loadA": 5,
           "measuredEfficiencyPct": 94.0643,
-          "calculatedEfficiencyPct": 96.2704,
-          "efficiencyErrorPp": 2.2061,
+          "calculatedEfficiencyPct": 96.0107,
+          "efficiencyErrorPp": 1.9464,
           "measuredLossW": 1.041193,
-          "calculatedKnownLossW": 0.639218,
-          "lossErrorW": -0.401974,
-          "lossErrorPct": -38.6071,
+          "calculatedKnownLossW": 0.685589,
+          "lossErrorW": -0.355603,
+          "lossErrorPct": -34.1535,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1682,12 +1682,12 @@
           "voutV": 3.3,
           "loadA": 6,
           "measuredEfficiencyPct": 94.2886,
-          "calculatedEfficiencyPct": 96.092,
-          "efficiencyErrorPp": 1.8034,
+          "calculatedEfficiencyPct": 95.8831,
+          "efficiencyErrorPp": 1.5945,
           "measuredLossW": 1.199357,
-          "calculatedKnownLossW": 0.805259,
-          "lossErrorW": -0.394099,
-          "lossErrorPct": -32.8591,
+          "calculatedKnownLossW": 0.850146,
+          "lossErrorW": -0.349211,
+          "lossErrorPct": -29.1165,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1703,12 +1703,12 @@
           "voutV": 3.3,
           "loadA": 7,
           "measuredEfficiencyPct": 94.2886,
-          "calculatedEfficiencyPct": 95.8796,
-          "efficiencyErrorPp": 1.591,
+          "calculatedEfficiencyPct": 95.7072,
+          "efficiencyErrorPp": 1.4186,
           "measuredLossW": 1.39925,
-          "calculatedKnownLossW": 0.992711,
-          "lossErrorW": -0.406539,
-          "lossErrorPct": -29.0541,
+          "calculatedKnownLossW": 1.036116,
+          "lossErrorW": -0.363135,
+          "lossErrorPct": -25.9521,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1724,12 +1724,12 @@
           "voutV": 3.3,
           "loadA": 8,
           "measuredEfficiencyPct": 94.1657,
-          "calculatedEfficiencyPct": 95.6467,
-          "efficiencyErrorPp": 1.481,
+          "calculatedEfficiencyPct": 95.5017,
+          "efficiencyErrorPp": 1.336,
           "measuredLossW": 1.635686,
-          "calculatedKnownLossW": 1.201578,
-          "lossErrorW": -0.434108,
-          "lossErrorPct": -26.5398,
+          "calculatedKnownLossW": 1.243499,
+          "lossErrorW": -0.392187,
+          "lossErrorPct": -23.9769,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1745,12 +1745,12 @@
           "voutV": 3.3,
           "loadA": 9,
           "measuredEfficiencyPct": 93.9676,
-          "calculatedEfficiencyPct": 95.4007,
-          "efficiencyErrorPp": 1.4331,
+          "calculatedEfficiencyPct": 95.2769,
+          "efficiencyErrorPp": 1.3093,
           "measuredLossW": 1.906639,
-          "calculatedKnownLossW": 1.431862,
-          "lossErrorW": -0.474777,
-          "lossErrorPct": -24.9012,
+          "calculatedKnownLossW": 1.4723,
+          "lossErrorW": -0.434339,
+          "lossErrorPct": -22.7803,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1766,12 +1766,12 @@
           "voutV": 3.3,
           "loadA": 10,
           "measuredEfficiencyPct": 93.7683,
-          "calculatedEfficiencyPct": 95.1459,
-          "efficiencyErrorPp": 1.3776,
+          "calculatedEfficiencyPct": 95.0392,
+          "efficiencyErrorPp": 1.2709,
           "measuredLossW": 2.19313,
-          "calculatedKnownLossW": 1.683565,
-          "lossErrorW": -0.509565,
-          "lossErrorPct": -23.2346,
+          "calculatedKnownLossW": 1.722519,
+          "lossErrorW": -0.470611,
+          "lossErrorPct": -21.4584,
           "availability": "subtotal",
           "omitted": "inductorCoreResidualMissingData, nodeEnergyMissingData",
           "waveformMode": "ccm",
@@ -1786,13 +1786,13 @@
   "sources": [
     {
       "id": "benchmark_calculation",
-      "label": "TI curve extraction and buck-loss v2.3 calculation",
+      "label": "TI curve extraction and buck-loss v2.4 calculation",
       "path": "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json",
       "href": "https://www.ti.com/lit/ug/sluu180b/sluu180b.pdf",
       "query": {
         "engine": "sqlite",
         "language": "sql",
-        "sql": "WITH benchmark_points(lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct, measured_loss_w, calculated_known_loss_w) AS (\n  VALUES\n    ('nominal-25c', 5, 2, 96.8742, 97.5571, 0.212959, 0.165271),\n    ('nominal-25c', 5, 3, 97, 97.3645, 0.306186, 0.267976),\n    ('nominal-25c', 5, 4, 97.1071, 97.1008, 0.393239, 0.394117),\n    ('nominal-25c', 5, 5, 97, 96.81, 0.510309, 0.543688),\n    ('nominal-25c', 5, 6, 96.8398, 96.5068, 0.646139, 0.716685),\n    ('nominal-25c', 5, 7, 96.6044, 96.1975, 0.811954, 0.913103),\n    ('nominal-25c', 5, 8, 96.3043, 95.8852, 1.013106, 1.132937),\n    ('nominal-25c', 5, 9, 95.7988, 95.5716, 1.302476, 1.37618),\n    ('nominal-25c', 5, 10, 95.2646, 95.2578, 1.64036, 1.642828),\n    ('nominal-25c', 8, 2, 93.5985, 96.8947, 0.451395, 0.211516),\n    ('nominal-25c', 8, 3, 94.7056, 97.0633, 0.553447, 0.299529),\n    ('nominal-25c', 8, 4, 95.5995, 96.9917, 0.607604, 0.40941),\n    ('nominal-25c', 8, 5, 95.9695, 96.8266, 0.692962, 0.54078),\n    ('nominal-25c', 8, 6, 96.0344, 96.6153, 0.817612, 0.69364),\n    ('nominal-25c', 8, 7, 95.9695, 96.3785, 0.970147, 0.867993),\n    ('nominal-25c', 8, 8, 95.7683, 96.1264, 1.166533, 1.063838),\n    ('nominal-25c', 8, 9, 95.5345, 95.8647, 1.388246, 1.281177),\n    ('nominal-25c', 8, 10, 95.3001, 95.5967, 1.627456, 1.520011),\n    ('nominal-25c', 12, 2, 91, 95.926, 0.652747, 0.2803),\n    ('nominal-25c', 12, 3, 92.3589, 96.3845, 0.819054, 0.371366),\n    ('nominal-25c', 12, 4, 93.5052, 96.3884, 0.916862, 0.494588),\n    ('nominal-25c', 12, 5, 94.0643, 96.2704, 1.041193, 0.639218),\n    ('nominal-25c', 12, 6, 94.2886, 96.092, 1.199357, 0.805259),\n    ('nominal-25c', 12, 7, 94.2886, 95.8796, 1.39925, 0.992711),\n    ('nominal-25c', 12, 8, 94.1657, 95.6467, 1.635686, 1.201578),\n    ('nominal-25c', 12, 9, 93.9676, 95.4007, 1.906639, 1.431862),\n    ('nominal-25c', 12, 10, 93.7683, 95.1459, 2.19313, 1.683565),\n    ('hot-rds-bound', 5, 2, 96.8742, 97.3839, 0.212959, 0.177298),\n    ('hot-rds-bound', 5, 3, 97, 97.1207, 0.306186, 0.293499),\n    ('hot-rds-bound', 5, 4, 97.1071, 96.7846, 0.393239, 0.438532),\n    ('hot-rds-bound', 5, 5, 97, 96.4214, 0.510309, 0.612392),\n    ('hot-rds-bound', 5, 6, 96.8398, 96.0462, 0.646139, 0.815072),\n    ('hot-rds-bound', 5, 7, 96.6044, 95.6658, 0.811954, 1.046566),\n    ('hot-rds-bound', 5, 8, 96.3043, 95.2832, 1.013106, 1.306866),\n    ('hot-rds-bound', 5, 9, 95.7988, 94.9004, 1.302476, 1.595967),\n    ('hot-rds-bound', 5, 10, 95.2646, 94.5183, 1.64036, 1.91386),\n    ('hot-rds-bound', 8, 2, 93.5985, 96.7115, 0.451395, 0.224424),\n    ('hot-rds-bound', 8, 3, 94.7056, 96.8268, 0.553447, 0.324439),\n    ('hot-rds-bound', 8, 4, 95.5995, 96.6952, 0.607604, 0.451136),\n    ('hot-rds-bound', 8, 5, 95.9695, 96.468, 0.692962, 0.604123),\n    ('hot-rds-bound', 8, 6, 96.0344, 96.194, 0.817612, 0.783402),\n    ('hot-rds-bound', 8, 7, 95.9695, 95.8945, 0.970147, 0.988974),\n    ('hot-rds-bound', 8, 8, 95.7683, 95.58, 1.166533, 1.220839),\n    ('hot-rds-bound', 8, 9, 95.5345, 95.2564, 1.388246, 1.479),\n    ('hot-rds-bound', 8, 10, 95.3001, 94.9273, 1.627456, 1.763458),\n    ('hot-rds-bound', 12, 2, 91, 95.7212, 0.652747, 0.295022),\n    ('hot-rds-bound', 12, 3, 92.3589, 96.1343, 0.819054, 0.398094),\n    ('hot-rds-bound', 12, 4, 93.5052, 96.0827, 0.916862, 0.538171),\n    ('hot-rds-bound', 12, 5, 94.0643, 95.9054, 1.041193, 0.704459),\n    ('hot-rds-bound', 12, 6, 94.2886, 95.6662, 1.199357, 0.896958),\n    ('hot-rds-bound', 12, 7, 94.2886, 95.3928, 1.39925, 1.115673),\n    ('hot-rds-bound', 12, 8, 94.1657, 95.0988, 1.635686, 1.360606),\n    ('hot-rds-bound', 12, 9, 93.9676, 94.792, 1.906639, 1.631759),\n    ('hot-rds-bound', 12, 10, 93.7683, 94.477, 2.19313, 1.929135)\n)\nSELECT\n  lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct,\n  calculated_efficiency_pct - measured_efficiency_pct AS efficiency_error_pp,\n  measured_loss_w, calculated_known_loss_w,\n  calculated_known_loss_w - measured_loss_w AS loss_error_w,\n  100.0 * (calculated_known_loss_w - measured_loss_w) / measured_loss_w AS loss_error_pct\nFROM benchmark_points\nORDER BY lane_id, vin_v, load_a;",
+        "sql": "WITH benchmark_points(lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct, measured_loss_w, calculated_known_loss_w) AS (\n  VALUES\n    ('nominal-25c', 5, 2, 96.8742, 97.6114, 0.212959, 0.161504),\n    ('nominal-25c', 5, 3, 97, 97.4604, 0.306186, 0.257974),\n    ('nominal-25c', 5, 4, 97.1071, 97.217, 0.393239, 0.377879),\n    ('nominal-25c', 5, 5, 97, 96.9379, 0.510309, 0.521214),\n    ('nominal-25c', 5, 6, 96.8398, 96.6421, 0.646139, 0.687975),\n    ('nominal-25c', 5, 7, 96.6044, 96.3377, 0.811954, 0.878156),\n    ('nominal-25c', 5, 8, 96.3043, 96.0288, 1.013106, 1.091753),\n    ('nominal-25c', 5, 9, 95.7988, 95.7177, 1.302476, 1.328759),\n    ('nominal-25c', 5, 10, 95.2646, 95.4056, 1.64036, 1.589169),\n    ('nominal-25c', 8, 2, 93.5985, 96.3284, 0.451395, 0.251561),\n    ('nominal-25c', 8, 3, 94.7056, 96.6887, 0.553447, 0.339048),\n    ('nominal-25c', 8, 4, 95.5995, 96.7129, 0.607604, 0.448645),\n    ('nominal-25c', 8, 5, 95.9695, 96.6041, 0.692962, 0.580018),\n    ('nominal-25c', 8, 6, 96.0344, 96.4294, 0.817612, 0.733167),\n    ('nominal-25c', 8, 7, 95.9695, 96.2176, 0.970147, 0.908093),\n    ('nominal-25c', 8, 8, 95.7683, 95.9833, 1.166533, 1.104797),\n    ('nominal-25c', 8, 9, 95.5345, 95.7346, 1.388246, 1.323282),\n    ('nominal-25c', 8, 10, 95.3001, 95.4763, 1.627456, 1.563547),\n    ('nominal-25c', 12, 2, 91, 95.239, 0.652747, 0.329937),\n    ('nominal-25c', 12, 3, 92.3589, 95.9237, 0.819054, 0.420703),\n    ('nominal-25c', 12, 4, 93.5052, 96.0528, 0.916862, 0.542442),\n    ('nominal-25c', 12, 5, 94.0643, 96.0107, 1.041193, 0.685589),\n    ('nominal-25c', 12, 6, 94.2886, 95.8831, 1.199357, 0.850146),\n    ('nominal-25c', 12, 7, 94.2886, 95.7072, 1.39925, 1.036116),\n    ('nominal-25c', 12, 8, 94.1657, 95.5017, 1.635686, 1.243499),\n    ('nominal-25c', 12, 9, 93.9676, 95.2769, 1.906639, 1.4723),\n    ('nominal-25c', 12, 10, 93.7683, 95.0392, 2.19313, 1.722519),\n    ('hot-rds-bound', 5, 2, 96.8742, 97.4383, 0.212959, 0.173518),\n    ('hot-rds-bound', 5, 3, 97, 97.2163, 0.306186, 0.283477),\n    ('hot-rds-bound', 5, 4, 97.1071, 96.9002, 0.393239, 0.422268),\n    ('hot-rds-bound', 5, 5, 97, 96.5483, 0.510309, 0.589885),\n    ('hot-rds-bound', 5, 6, 96.8398, 96.1804, 0.646139, 0.786321),\n    ('hot-rds-bound', 5, 7, 96.6044, 95.8046, 0.811954, 1.01157),\n    ('hot-rds-bound', 5, 8, 96.3043, 95.4253, 1.013106, 1.265625),\n    ('hot-rds-bound', 5, 9, 95.7988, 95.0446, 1.302476, 1.54848),\n    ('hot-rds-bound', 5, 10, 95.2646, 94.664, 1.64036, 1.860127),\n    ('hot-rds-bound', 8, 2, 93.5985, 96.144, 0.451395, 0.264701),\n    ('hot-rds-bound', 8, 3, 94.7056, 96.4498, 0.553447, 0.364407),\n    ('hot-rds-bound', 8, 4, 95.5995, 96.4128, 0.607604, 0.491122),\n    ('hot-rds-bound', 8, 5, 95.9695, 96.2408, 0.692962, 0.644499),\n    ('hot-rds-bound', 8, 6, 96.0344, 96.0022, 0.817612, 0.824538),\n    ('hot-rds-bound', 8, 7, 95.9695, 95.7265, 0.970147, 1.031242),\n    ('hot-rds-bound', 8, 8, 95.7683, 95.4288, 1.166533, 1.264611),\n    ('hot-rds-bound', 8, 9, 95.5345, 95.1172, 1.388246, 1.524647),\n    ('hot-rds-bound', 8, 10, 95.3001, 94.7967, 1.627456, 1.811351),\n    ('hot-rds-bound', 12, 2, 91, 95.037, 0.652747, 0.344661),\n    ('hot-rds-bound', 12, 3, 92.3589, 95.6758, 0.819054, 0.447441),\n    ('hot-rds-bound', 12, 4, 93.5052, 95.749, 0.916862, 0.586039),\n    ('hot-rds-bound', 12, 5, 94.0643, 95.6475, 1.041193, 0.750847),\n    ('hot-rds-bound', 12, 6, 94.2886, 95.4591, 1.199357, 0.941867),\n    ('hot-rds-bound', 12, 7, 94.2886, 95.222, 1.39925, 1.159102),\n    ('hot-rds-bound', 12, 8, 94.1657, 94.9553, 1.635686, 1.402555),\n    ('hot-rds-bound', 12, 9, 93.9676, 94.6697, 1.906639, 1.672228),\n    ('hot-rds-bound', 12, 10, 93.7683, 94.3717, 2.19313, 1.968124)\n)\nSELECT\n  lane_id, vin_v, load_a, measured_efficiency_pct, calculated_efficiency_pct,\n  calculated_efficiency_pct - measured_efficiency_pct AS efficiency_error_pp,\n  measured_loss_w, calculated_known_loss_w,\n  calculated_known_loss_w - measured_loss_w AS loss_error_w,\n  100.0 * (calculated_known_loss_w - measured_loss_w) / measured_loss_w AS loss_error_pct\nFROM benchmark_points\nORDER BY lane_id, vin_v, load_a;",
         "description": "Reconciles the reviewed point records produced by the committed Node model run and derives report error fields.",
         "executed_at": "2026-07-12T12:00:00Z",
         "tables_used": [

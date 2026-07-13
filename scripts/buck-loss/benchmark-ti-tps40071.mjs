@@ -137,7 +137,7 @@ export function buildBenchmarkArtifact(fixture, analysis) {
   const measurement = fixture.sources.measurement;
   const calculationSource = source(
     "benchmark_calculation",
-    "TI curve extraction and buck-loss v2.3 calculation",
+    `TI curve extraction and buck-loss v${analysis.modelRevision} calculation`,
     "tests/fixtures/buck-loss-benchmark-ti-tps40071evm.v1.json",
     measurement.url
   );

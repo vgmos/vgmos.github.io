@@ -23,6 +23,7 @@ const [
     getBuckLossDeviceTemplateV2,
     recommendedSiliconTemplateV2
   },
+  { resolveBuckLossConditionsV2 },
   {
     BUCK_LOSS_PRESETS_V2,
     DEFAULT_BUCK_LOSS_PRESET_V2,
@@ -53,6 +54,7 @@ const [
   import(versionedModuleUrl("./buck-loss-motion.js")),
   import(versionedModuleUrl("./buck-loss-schema-v2.js")),
   import(versionedModuleUrl("./buck-loss-device-templates-v2.js")),
+  import(versionedModuleUrl("./buck-loss-condition-resolver-v2.js")),
   import(versionedModuleUrl("./buck-loss-presets-v2.js")),
   import(versionedModuleUrl("./buck-loss-url-v2.js")),
   import(versionedModuleUrl("./buck-loss-evaluator-v2.js")),
@@ -65,10 +67,26 @@ const [
 const DEVICE_MEMORY_KEY = "buck-loss-v2-device";
 const IMPORT_MEMORY_KEY = "buck-loss-v1-import";
 const PRIMARY_GROUP = BUCK_LOSS_GROUPS_V2.find((group) => group.primary);
-const PRIMARY_KEYS = Object.freeze(buckLossFieldKeysForGroupV2(PRIMARY_GROUP.id));
+const visibleFieldKeys = (groupId) => buckLossFieldKeysForGroupV2(groupId)
+  .filter((key) => !BUCK_LOSS_SCHEMA_V2[key]?.uiHidden);
+const PRIMARY_KEYS = Object.freeze(visibleFieldKeys(PRIMARY_GROUP.id));
 const ADVANCED_GROUPS = Object.freeze(BUCK_LOSS_GROUPS_V2
   .filter((group) => !group.primary)
-  .map((group) => Object.freeze({ ...group, keys: Object.freeze(buckLossFieldKeysForGroupV2(group.id)) })));
+  .map((group) => Object.freeze({ ...group, keys: Object.freeze(visibleFieldKeys(group.id)) })));
+
+const CONDITIONED_DEVICE_KEYS = new Set([
+  "rdsHigh",
+  "rdsLow",
+  "qgHigh",
+  "qgLow",
+  "qgs2High",
+  "qgs2Low",
+  "plateauHigh",
+  "plateauLow",
+  "effectiveTurnOn",
+  "effectiveTurnOff"
+]);
+const EXPLICIT_CONDITION_PROVENANCE = new Set(["entered", "url-entered", "entered-blank"]);
 
 const FAMILY_STYLE = Object.freeze({
   mosfetConduction: { color: "--blx-cond", short: "FET conduction" },
@@ -133,10 +151,23 @@ const PROVENANCE_LABELS = Object.freeze({
   "inferred-from-vin": "inferred from VIN",
   "inferred-rac-equals-rdc": "inferred from RDC",
   "inferred-from-dead-time": "fallback dead time",
-  "coilcraft-datasheet": "datasheet"
+  "coilcraft-datasheet": "datasheet",
+  "calculated-condition-rds": "calculated from drive",
+  "calculated-condition-plateau": "calculated at IOUT,max",
+  "calculated-condition-qgs2": "calculated at IOUT,max",
+  "calculated-condition-total-qg": "calculated from drive + current",
+  "calculated-condition-effective-time": "calculated from gate headroom"
 });
 
 const QUIET_RAIL_PROVENANCE = new Set(["entered", "url-entered", "default", "missing", "entered-blank"]);
+
+function provenanceLabel(state, key, value) {
+  const label = PROVENANCE_LABELS[value] || value;
+  if (!value.startsWith("calculated-condition-")) return label;
+  const source = state.template?.provenance?.[key];
+  if (!source || source === "missing" || source === value) return label;
+  return `${label} · ${PROVENANCE_LABELS[source] || source} source`;
+}
 
 const GAP_COPY = Object.freeze({
   inductorCoreResidualMissingData: "inductor AC/core residual is unavailable",
@@ -187,6 +218,30 @@ function waveformRingingForTemplate(template, rawInputs, previous = null) {
 
 function cloneRaw(raw) {
   return { ...raw, __provenance: { ...(raw?.__provenance || {}) } };
+}
+
+function applyConditioning(state) {
+  const conditioning = resolveBuckLossConditionsV2(state.rawInputs, state.template, {
+    currentA: state.rawInputs.ioutMax
+  });
+  state.rawInputs = cloneRaw(conditioning.rawInputs);
+  state.conditioning = conditioning;
+  return conditioning;
+}
+
+function resetConditionedField(state, key) {
+  if (!CONDITIONED_DEVICE_KEYS.has(key)) return;
+  state.rawInputs[key] = state.template.values[key] ?? null;
+  state.rawInputs.__provenance = {
+    ...(state.rawInputs.__provenance || {}),
+    [key]: state.template.provenance[key]
+      || (state.template.values[key] === null ? "missing" : state.template.source.kind)
+  };
+  applyConditioning(state);
+}
+
+function conditionErrorField(error) {
+  return error?.field || (error?.code === "invalid-condition-current" ? "ioutMax" : "vDrive");
 }
 
 function escapeHtml(value) {
@@ -277,7 +332,7 @@ function fieldMarkup(key, options = {}) {
     ${options.slider ? `<input data-blx-v2-range="${key}" type="range" min="0" max="1000" step="1" aria-label="${escapeHtml(config.label)} slider">` : ""}
     ${options.catalog ? catalogMarkup() : ""}
     <p class="blx-field-message" data-blx-v2-message="${key}" hidden></p>
-    <p class="blx-v2-provenance" data-blx-v2-provenance="${key}"></p>
+    <div class="blx-v2-field-meta"><p class="blx-v2-provenance" data-blx-v2-provenance="${key}"></p>${CONDITIONED_DEVICE_KEYS.has(key) ? `<button class="blx-v2-condition-reset" type="button" data-blx-condition-reset="${key}" hidden>Use calculated</button>` : ""}</div>
   </div>`;
 }
 
@@ -586,6 +641,7 @@ function setText(root, selector, value) {
 
 function syncControls(root, state) {
   const cursor = displayedCursor(state);
+  const driveOutsideDomain = state.conditioning?.errors?.some(({ code }) => code === "drive-outside-condition-domain");
   root.querySelectorAll("[data-blx-v2-input]").forEach((input) => {
     const key = input.dataset.blxV2Input;
     if (document.activeElement !== input) input.value = state.rawInputs[key] ?? "";
@@ -620,8 +676,16 @@ function syncControls(root, state) {
   root.querySelectorAll("[data-blx-v2-provenance]").forEach((node) => {
     const key = node.dataset.blxV2Provenance;
     const value = state.provenance[key] || "missing";
-    node.textContent = PROVENANCE_LABELS[value] || value;
-    node.hidden = QUIET_RAIL_PROVENANCE.has(value);
+    const unresolvedCondition = driveOutsideDomain && CONDITIONED_DEVICE_KEYS.has(key);
+    node.textContent = unresolvedCondition ? "not applied · unsupported drive" : provenanceLabel(state, key, value);
+    node.hidden = !unresolvedCondition && QUIET_RAIL_PROVENANCE.has(value);
+  });
+  root.querySelectorAll("[data-blx-condition-reset]").forEach((button) => {
+    const key = button.dataset.blxConditionReset;
+    const provenance = state.rawInputs.__provenance?.[key] || state.provenance[key] || "missing";
+    const manual = EXPLICIT_CONDITION_PROVENANCE.has(provenance);
+    button.hidden = !manual;
+    button.setAttribute("aria-label", `Use the calculated ${BUCK_LOSS_SCHEMA_V2[key]?.label || key}`);
   });
 }
 
@@ -631,9 +695,13 @@ function renderValidation(root, state) {
     const key = message.dataset.blxV2Message;
     const active = invalid.has(key);
     message.hidden = !active;
+    const conditionMessages = (state.conditioning?.errors || [])
+      .filter((error) => conditionErrorField(error) === key)
+      .map((error) => error.message);
     message.textContent = key === "vout" && state.validation.errors.includes("vout-lt-vin")
       ? "VOUT must remain below VIN."
-      : active ? "Enter a value inside the declared range." : "";
+      : conditionMessages.length ? conditionMessages.join(" ")
+        : active ? "Enter a value inside the declared range." : "";
     const input = root.querySelector(`[data-blx-v2-input="${key}"]`);
     if (active) input?.setAttribute("aria-invalid", "true");
     else input?.removeAttribute("aria-invalid");
@@ -648,12 +716,52 @@ function renderDevice(root, state) {
     : "example values";
   const summary = `${template.voltageClass} V ${template.technology === "gan" ? "GaN" : "silicon"} · ${sourceKind} · ${template.cornerLabel || template.cornerId}`;
   setText(root, "[data-blx-device-summary]", summary);
-  const conditionSummary = template.id === "infineon-bsc010n04ls6-4v5"
-    ? "Values mix datasheet corners: RDS(on)/QG at VGS 4.5 V; QGD and plateau use the 10 V test; QGS2 is inferred."
+  const sourceCondition = template.id === "infineon-bsc010n04ls6-4v5"
+    ? "Reference anchors mix datasheet corners: RDS(on)/QG at VGS 4.5 V; QGD and plateau use the 10 V test; QGS2 is inferred for the source partition before the live condition calculation."
     : template.id === "epc2090"
-      ? "QG/QGD retain their 50 V / 16 A test conditions; COSS(ER) is a 0–50 V energy-equivalent scalar; transition overlap uses a disclosed fallback."
+      ? "Reference QG/QGD originate at their 50 V / 16 A test conditions; the live QG is condition-resolved, QGD remains source-held, COSS(ER) is a 0–50 V energy-equivalent scalar, and transition overlap uses a disclosed fallback."
       : `Values use the ${template.cornerLabel || template.cornerId} corner; detailed conditions and notes are disclosed below.`;
-  setText(root, "[data-blx-device-condition-summary]", conditionSummary);
+  const diagnostics = state.conditioning?.diagnostics || {};
+  const high = diagnostics.lanes?.high || {};
+  const driveOutsideDomain = state.conditioning?.errors?.some(({ code }) => code === "drive-outside-condition-domain");
+  const resolvedHeadroomV = finite(diagnostics.driveVoltageV) && finite(high.plateauV)
+    ? diagnostics.driveVoltageV - high.plateauV
+    : diagnostics.driveHeadroomV;
+  const effectiveTimingComplete = finite(diagnostics.effectiveTurnOnNs) && finite(diagnostics.effectiveTurnOffNs);
+  const gateChargeTimingComplete = [
+    "qgs2High",
+    "qgdHigh",
+    "plateauHigh",
+    "gateResistanceOnHigh",
+    "gateResistanceOffHigh"
+  ].every((key) => finite(state.rawInputs[key])) && resolvedHeadroomV > 0;
+  const edgeSummary = driveOutsideDomain
+    ? "conditioned channel, charge, and edge outputs unavailable outside the fitted drive domain"
+    : state.timingMode !== "derived" && effectiveTimingComplete
+    ? `conditioned edge times ${displayNumber(diagnostics.effectiveTurnOnNs, 3)}/${displayNumber(diagnostics.effectiveTurnOffNs, 3)} ns on/off`
+    : state.timingMode !== "effective" && gateChargeTimingComplete
+      ? "edge timing from the complete gate-charge path"
+      : "edge timing unavailable with the current evidence";
+  const resolvedCondition = [
+    finite(diagnostics.currentA) ? `At IOUT,max ${displayNumber(diagnostics.currentA, 3)} A` : null,
+    finite(diagnostics.driveVoltageV) ? `VDRIVE ${displayNumber(diagnostics.driveVoltageV, 3)} V` : null,
+    finite(high.rdsOnMohm) ? `RDS(on) ${displayNumber(high.rdsOnMohm, 3)} mΩ` : null,
+    finite(high.totalGateChargeNc) ? `QG ${displayNumber(high.totalGateChargeNc, 3)} nC` : null,
+    finite(high.plateauV) ? `plateau ${displayNumber(high.plateauV, 3)} V` : null,
+    finite(resolvedHeadroomV) ? `drive headroom ${displayNumber(resolvedHeadroomV, 3)} V` : null,
+    edgeSummary
+  ].filter(Boolean).join(" · ");
+  const conditionIssues = [...(state.conditioning?.errors || []), ...(state.conditioning?.warnings || [])];
+  const conditionCopy = [
+    resolvedCondition ? `${resolvedCondition}.` : null,
+    "The Miller plateau uses IOUT,max as the transfer-fit current proxy; changing the drive rail changes headroom, RDS(on), QG, and supported edge timing.",
+    sourceCondition,
+    conditionIssues.length ? `Condition check: ${conditionIssues.map((entry) => entry.message).join(" ")}` : null
+  ].filter(Boolean).join(" ");
+  setText(root, "[data-blx-device-condition-summary]", conditionCopy);
+  root.querySelectorAll("[data-blx-device-condition-summary]").forEach((node) => {
+    node.dataset.tone = state.conditioning?.errors?.length ? "error" : diagnostics.supported ? "calculated" : "";
+  });
   const sourceLink = root.querySelector("[data-blx-device-source]");
   if (sourceLink) {
     sourceLink.hidden = !template.source.url;
@@ -1821,7 +1929,7 @@ function renderFamilyList(root, state, point) {
       provenance.className = "blx-v2-term-provenance";
       let chips = (TERM_PARAMETERS[key] || [])
         .filter((parameter) => state.provenance[parameter])
-        .map((parameter) => `${BUCK_LOSS_SCHEMA_V2[parameter]?.label || parameter}: ${PROVENANCE_LABELS[state.provenance[parameter]] || state.provenance[parameter]}`);
+        .map((parameter) => `${BUCK_LOSS_SCHEMA_V2[parameter]?.label || parameter}: ${provenanceLabel(state, parameter, state.provenance[parameter])}`);
       if (key === "inductorCoreResidual" && point.inductorAcIncluded) {
         chips = [
           `${state.selectedPart || "Catalog part"} characterization: sourced (${point.inductorAcEstimate.status})`,
@@ -1914,7 +2022,20 @@ function renderWarningsAndInsight(root, state, point) {
   else if (state.controlMode === "forced-ccm") messages.push({ copy: "Forced CCM is an expert comparison; watch the valley-current sign at light load." });
   if (state.selectedPart && state.dcrMode === "max") messages.push({ copy: "Maximum DCR changes copper loss only; the catalog AC/core residual remains tied to its typical characterization." });
   if (point.warnings.includes("switching-energy-surface-fallback")) messages.push({ copy: "The supplied switching-energy surface was outside its declared domain or conditions; the automatic hierarchy used the next supported method.", strong: true });
-  if (point.transition?.method === "effective-fallback") messages.push({ copy: "Transitions use the template's illustrative effective-time fallback; no condition-matched EON/EOFF surface is loaded. Gate charge and COSS(ER) retain their disclosed datasheet conditions and are not rescaled.", strong: true });
+  if (point.transition?.method === "effective-fallback") {
+    const conditionedTiming = ["effectiveTurnOn", "effectiveTurnOff"]
+      .every((key) => state.rawInputs.__provenance?.[key] === "calculated-condition-effective-time");
+    messages.push({
+      copy: conditionedTiming
+        ? "Transitions use the template's illustrative effective-time fallback, scaled from its disclosed reference by calculated gate-drive headroom at IOUT,max; no condition-matched EON/EOFF surface is loaded."
+        : "Transitions use a manually overridden effective-time fallback; no condition-matched EON/EOFF surface is loaded.",
+      strong: true
+    });
+  }
+  (state.conditioning?.warnings || []).forEach((warning) => messages.push({ copy: warning.message, strong: true }));
+  if (state.conditioning?.diagnostics?.preservedKeys?.length) {
+    messages.push({ copy: "Manual switch-parameter overrides are held fixed; use “Use calculated” beside a field to resume condition tracking." });
+  }
   if (state.urlNotes.length) messages.push({ copy: "Some URL values were unknown or adjusted to the valid schema." });
   if (holder) holder.innerHTML = messages.map(({ copy, strong }) => `<p class="blx-note${strong ? " blx-note-strong" : ""}">${escapeHtml(copy)}</p>`).join("");
   const advisory = point.insights.fetAreaOptimumScale;
@@ -2367,14 +2488,24 @@ function renderInvalid(root, state) {
   if (failure) failure.hidden = false;
   setText(root, '[data-blx-out="regime"]', "Invalid inputs");
   const voutInvalid = state.validation.errors.includes("vout-lt-vin");
-  setText(root, "[data-blx-failure-title]", voutInvalid ? "No result — the output must stay below the input." : "No result — check the highlighted inputs.");
+  const conditionErrors = state.conditioning?.errors || [];
+  const conditionInvalid = conditionErrors.length > 0;
+  setText(root, "[data-blx-failure-title]", voutInvalid
+    ? "No result — the output must stay below the input."
+    : conditionInvalid ? "No result — the gate-drive condition is unsupported."
+      : "No result — check the highlighted inputs.");
   setText(root, "[data-blx-failure-explanation]", voutInvalid
     ? `VOUT is ${displayNumber(state.rawInputs.vout, 3)} V but VIN is ${displayNumber(state.rawInputs.vin, 3)} V; a buck converter can only step down.`
-    : "One or more inputs sit outside the model's declared range.");
+    : conditionInvalid ? conditionErrors.map((error) => error.message).join(" ")
+      : "One or more inputs sit outside the model's declared range.");
   setText(root, "[data-blx-failure-recovery]", voutInvalid
     ? "Fix the output voltage or reset the operating point."
-    : "Correct the highlighted values or reset the operating point.");
-  setText(root, "[data-blx-failure-equation]", voutInvalid ? "VOUT < VIN is required for buck regulation" : "No valid operating point");
+    : conditionInvalid ? "Choose a gate voltage inside the selected device model's characterized domain, or change the device."
+      : "Correct the highlighted values or reset the operating point.");
+  setText(root, "[data-blx-failure-equation]", voutInvalid
+    ? "VOUT < VIN is required for buck regulation"
+    : conditionInvalid ? "VDRIVE > VPLATEAU and inside the condition-model domain"
+      : "No valid operating point");
   root.querySelector("[data-blx-fix-output]")?.toggleAttribute("hidden", !voutInvalid);
   root.querySelector("[data-blx-reset-invalid]")?.removeAttribute("hidden");
   root.dataset.blxMode = "invalid";
@@ -2484,10 +2615,14 @@ function renderImportDelta(root, state) {
 
 function render(root, state, options = {}) {
   if (state.disposed) return;
+  applyConditioning(state);
   const normalized = normalizeBuckLossInputsV2(state.rawInputs);
   state.inputs = normalized.inputs;
   state.provenance = normalized.provenance;
-  state.validation = validateBuckLossInputsV2(state.inputs);
+  const schemaValidation = validateBuckLossInputsV2(state.inputs);
+  const conditionFields = (state.conditioning?.errors || []).map(conditionErrorField);
+  const validationErrors = [...new Set([...schemaValidation.errors, ...conditionFields])];
+  state.validation = { valid: validationErrors.length === 0, errors: validationErrors };
   const maximumCurrent = Number(state.rawInputs.ioutMax) || 0;
   state.cursor = quantizeCurrent(state.cursor, maximumCurrent);
   if (finite(state.previewCursor)) state.previewCursor = clamp(state.previewCursor, 0, maximumCurrent);
@@ -2580,8 +2715,15 @@ function scheduleRender(root, state, options = {}) {
 
 function inputChanged(root, state, key, value, commit) {
   const config = BUCK_LOSS_SCHEMA_V2[key];
+  const racWasLinked = key === "dcr"
+    && (state.rawInputs.__provenance?.rac === "inferred-rac-equals-rdc"
+      || state.provenance.rac === "inferred-rac-equals-rdc");
   state.rawInputs[key] = value === "" && config.optional ? null : Number(value);
   state.rawInputs.__provenance = { ...(state.rawInputs.__provenance || {}), [key]: value === "" ? "entered-blank" : "entered" };
+  if (racWasLinked) {
+    state.rawInputs.rac = state.rawInputs.dcr;
+    state.rawInputs.__provenance.rac = "inferred-rac-equals-rdc";
+  }
   state.custom = true;
   state.previewCursor = null;
   invalidateSweep(state);
@@ -2607,6 +2749,15 @@ function initializeInputs(root, state) {
     const key = range.dataset.blxV2Range;
     range.addEventListener("input", () => inputChanged(root, state, key, fromSlider(BUCK_LOSS_SCHEMA_V2[key], range.value), false));
     range.addEventListener("change", () => updateCanonicalUrl(root, state, true));
+  });
+  root.querySelectorAll("[data-blx-condition-reset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      resetConditionedField(state, button.dataset.blxConditionReset);
+      state.custom = true;
+      state.previewCursor = null;
+      invalidateSweep(state);
+      render(root, state, { immediateUrl: true });
+    });
   });
   root.querySelectorAll("[data-blx-cursor-input]").forEach((range) => {
     range.addEventListener("keydown", (event) => {
@@ -3172,6 +3323,7 @@ export async function initBuckLossExplorerV2(root, options = {}) {
     rawInputs: cloneRaw(parsed.rawInputs),
     inputs: null,
     provenance: {},
+    conditioning: null,
     validation: { valid: true, errors: [] },
     presetId: parsed.presetId,
     deviceId: parsed.deviceId,

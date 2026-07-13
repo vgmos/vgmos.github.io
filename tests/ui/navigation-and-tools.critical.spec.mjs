@@ -490,8 +490,8 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page).toHaveURL(/m=2/);
     await expect(page.locator("[data-blx-prompt]")).toHaveText("A 12 Vᵢₙ point-of-load example with a Coilcraft 2.2 µH inductor.");
     await expect(page.locator("#blx-v2-deadTime")).toHaveValue("2");
-    await expect(page.locator("#blx-v2-effectiveTurnOn")).toHaveValue("3");
-    await expect(page.locator("#blx-v2-effectiveTurnOff")).toHaveValue("2");
+    await expect.poll(async () => Number(await page.locator("#blx-v2-effectiveTurnOn").inputValue())).toBeCloseTo(2.767532, 6);
+    await expect.poll(async () => Number(await page.locator("#blx-v2-effectiveTurnOff").inputValue())).toBeCloseTo(2.218787, 6);
     await expect(page.locator('[data-blx-field="inductance"] [data-blx-catalog]')).toHaveCount(1);
     await expect(page.locator('[data-blx-v2-group="magnetics"] [data-blx-catalog]')).toHaveCount(0);
 
@@ -558,6 +558,74 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("#blx-v2-vin")).toHaveValue("48");
     await expect(page.locator("#blx-v2-vout")).toHaveValue("12");
     await expect.poll(() => page.evaluate(() => localStorage.getItem("buck-loss-v2-last-setup"))).toContain("device=silicon-60v");
+  });
+
+  test("guided gate inputs resolve from drive and load conditions while manual overrides stay reversible", async ({ page }) => {
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.getByRole("button", { name: "Start guided setup" }).click();
+    await page.getByRole("button", { name: "Continue to switch pair" }).click();
+    await expect(page.locator('[data-blx-entry-device][value="epc2090"]')).toBeChecked();
+    await page.getByRole("button", { name: "Continue to gate drive" }).click();
+
+    const plateau = page.locator("#blx-entry-plateauHigh");
+    const rds = page.locator("#blx-entry-rdsHigh");
+    const qg = page.locator("#blx-entry-qgHigh");
+    const turnOn = page.locator("#blx-entry-effectiveTurnOn");
+    const plateauAt5V = Number(await plateau.inputValue());
+    const qgAt5V = Number(await qg.inputValue());
+    const turnOnAt5V = Number(await turnOn.inputValue());
+
+    await page.locator("#blx-entry-vDrive").fill("3.3");
+    await expect(rds).toHaveValue("6.4");
+    await expect.poll(async () => Number(await qg.inputValue())).toBeLessThan(qgAt5V);
+    await expect.poll(async () => Number(await turnOn.inputValue())).toBeGreaterThan(turnOnAt5V);
+    await expect.poll(async () => Number(await plateau.inputValue())).toBeCloseTo(plateauAt5V, 10);
+    await expect(page.locator("[data-blx-entry-condition-preview]")).toContainText("outside the device's 4.5-5 V recommended range");
+
+    await qg.fill("9");
+    await expect(qg).toHaveValue("9");
+    const reset = page.locator('[data-blx-entry-condition-reset="qgHigh"]');
+    await expect(reset).toBeVisible();
+    await page.locator("#blx-entry-vDrive").fill("5");
+    await expect(qg).toHaveValue("9");
+    await reset.click();
+    await expect.poll(async () => Number(await qg.inputValue())).not.toBe(9);
+    await expect(page.locator('[data-blx-entry-condition-reset="qgHigh"]')).toBeHidden();
+
+    await page.locator(".blx-entry-advanced > summary").click();
+    await plateau.fill("6");
+    await page.getByRole("button", { name: "Continue to timing" }).click();
+    await expect(plateau).toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator("#blx-entry-plateauHigh-error")).toContainText("does not exceed the resolved high-side plateau");
+    const plateauReset = page.locator('[data-blx-entry-condition-reset="plateauHigh"]');
+    await expect(plateauReset).toBeVisible();
+    await plateauReset.click();
+    await expect(plateau).not.toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator("#blx-entry-plateauHigh-error")).toHaveCount(0);
+    await expect(page.locator(".blx-entry-form-error")).toHaveCount(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const preview = page.locator("[data-blx-entry-condition-preview]");
+    await expect(preview).toBeVisible();
+    const previewOverflow = await preview.evaluate((node) => {
+      const bounds = node.getBoundingClientRect();
+      const offenders = [...node.querySelectorAll("*")]
+        .map((child) => ({ tag: child.tagName.toLowerCase(), className: child.className, rect: child.getBoundingClientRect().toJSON() }))
+        .filter(({ rect }) => rect.left < bounds.left - 1 || rect.right > bounds.right + 1);
+      return {
+        left: bounds.left,
+        right: bounds.right,
+        viewportWidth: innerWidth,
+        clientWidth: node.clientWidth,
+        scrollWidth: node.scrollWidth,
+        offenders
+      };
+    });
+    expect(previewOverflow.left).toBeGreaterThanOrEqual(0);
+    expect(previewOverflow.right).toBeLessThanOrEqual(previewOverflow.viewportWidth);
+    expect(previewOverflow.scrollWidth).toBeLessThanOrEqual(previewOverflow.clientWidth + 1);
+    expect(previewOverflow.offenders, "guided condition cards must not clip on mobile").toEqual([]);
   });
 
   test("guided validation and catalog failure keep the setup recoverable", async ({ page }) => {
@@ -642,7 +710,7 @@ test.describe("Buck Converter Loss Tool", () => {
   test("EPC startup conditions and catalog-failure fallbacks stay explicit", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
-    await expect(page.locator('[data-blx-out="loss-total"]')).toHaveText("Total · 326.68 mW");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toHaveText("Total · 327.38 mW");
     await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("50 V / 16 A test conditions");
     await expect(page.locator("[data-blx-device-notes]")).toContainText("No shipped EON/EOFF surface is loaded");
     await expect(page.locator("[data-blx-warnings]")).toContainText("illustrative effective-time fallback");
@@ -683,6 +751,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-device-notes]")).toContainText("QGD and QRR are defined by design");
     await expect(page.locator("[data-blx-device-summary]")).toContainText("Mixed datasheet typical · 25 °C · VGS 4.5 V");
     await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("QGS2 is inferred");
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("edge timing unavailable with the current evidence");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("3 terms omitted");
     const transitions = page.locator('[data-blx-family="switchingTransitions"]');
     await expect(transitions.locator(".blx-loss-name b")).toHaveAttribute("title", /current is already flowing while voltage still remains/i);
@@ -745,7 +814,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(root).toHaveAttribute("aria-busy", "false");
     await expect(page.locator("[data-blx-catalog]")).toHaveAttribute("data-catalog-state", "ready");
     await expect(root).toHaveAttribute("data-blx-model", "2");
-    await expect(root).toHaveAttribute("data-blx-revision", "2.3");
+    await expect(root).toHaveAttribute("data-blx-revision", "2.4");
     await expect(page.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
     await expect(page.locator("[data-blx-operating-metrics] .blx-operating-metric")).toHaveCount(6);
@@ -870,6 +939,99 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page).toHaveURL(/\/tools\/buck-converter\/$/);
   });
 
+  test("workspace conditioning recalculates from drive and current without turning calculated values into URL overrides", async ({ page }) => {
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const driveGroup = page.locator('[data-blx-v2-group="drive"]');
+    await driveGroup.locator("summary").click();
+
+    const plateau = page.locator("#blx-v2-plateauHigh");
+    const qg = page.locator("#blx-v2-qgHigh");
+    const turnOn = page.locator("#blx-v2-effectiveTurnOn");
+    const loss = page.locator('[data-blx-out="loss-total"]');
+    const plateauAt5V = Number(await plateau.inputValue());
+    const qgAt5V = Number(await qg.inputValue());
+    const turnOnAt5V = Number(await turnOn.inputValue());
+    const lossAt5V = await loss.textContent();
+
+    await page.locator("#blx-v2-vDrive").fill("3.3");
+    await page.locator("#blx-v2-vDrive").press("Tab");
+    await expect(page.locator("#blx-v2-rdsHigh")).toHaveValue("6.4");
+    await expect.poll(async () => Number(await qg.inputValue())).toBeLessThan(qgAt5V);
+    await expect.poll(async () => Number(await turnOn.inputValue())).toBeGreaterThan(turnOnAt5V);
+    await expect.poll(async () => Number(await plateau.inputValue())).toBeCloseTo(plateauAt5V, 10);
+    await expect(loss).not.toHaveText(lossAt5V || "");
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("Miller plateau uses IOUT,max as the transfer-fit current proxy");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("outside the device's 4.5-5 V recommended range");
+    await expect.poll(() => {
+      const params = new URL(page.url()).searchParams;
+      return {
+        drive: params.get("vdrv"),
+        rds: params.has("rhs"),
+        qg: params.has("qgh"),
+        plateau: params.has("vplh"),
+        turnOn: params.has("teon")
+      };
+    }).toEqual({ drive: "3.3", rds: false, qg: false, plateau: false, turnOn: false });
+
+    await qg.fill("9");
+    await qg.press("Tab");
+    const reset = page.locator('[data-blx-condition-reset="qgHigh"]');
+    await expect(reset).toBeVisible();
+    await expect.poll(() => new URL(page.url()).searchParams.get("qgh")).toBe("9");
+    await page.locator("#blx-v2-vDrive").fill("5");
+    await page.locator("#blx-v2-vDrive").press("Tab");
+    await expect(qg).toHaveValue("9");
+    await reset.click();
+    await expect.poll(async () => Number(await qg.inputValue())).not.toBe(9);
+    await expect.poll(() => new URL(page.url()).searchParams.has("qgh")).toBe(false);
+
+    await page.locator("#blx-v2-ioutMax").fill("5");
+    await page.locator("#blx-v2-ioutMax").press("Tab");
+    await expect.poll(async () => Number(await plateau.inputValue())).toBeGreaterThan(plateauAt5V);
+
+    await plateau.fill("6");
+    await plateau.press("Tab");
+    await expect(plateau).toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator('[data-blx-v2-message="plateauHigh"]')).toContainText("does not exceed the resolved high-side plateau");
+    await expect(page.locator("#blx-v2-vDrive")).not.toHaveAttribute("aria-invalid", "true");
+    const plateauReset = page.locator('[data-blx-condition-reset="plateauHigh"]');
+    await expect(plateauReset).toBeVisible();
+    await plateauReset.click();
+    await expect(plateau).not.toHaveAttribute("aria-invalid", "true");
+
+    await plateau.fill("0.1");
+    await plateau.press("Tab");
+    await expect(page.locator('[data-blx-v2-message="plateauHigh"]')).toContainText("below the device transfer-fit threshold");
+    await plateauReset.click();
+
+    await turnOn.fill("");
+    await turnOn.press("Tab");
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("edge timing unavailable with the current evidence");
+    await page.locator('[data-blx-condition-reset="effectiveTurnOn"]').click();
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("conditioned edge times");
+  });
+
+  test("hidden legacy low-side condition parameters self-heal instead of blocking an uneditable state", async ({ page }) => {
+    await page.goto(`${BUCK_LOSS_V2_ROUTE}&vpll=6&qgs2l=100&qgdl=100`, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const root = page.locator("#buck-loss-explorer");
+    await expect(root.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
+    await expect(page.locator('[data-blx-v2-message="vDrive"]')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => {
+      const state = document.querySelector("#buck-loss-explorer")?.blxV2State;
+      return {
+        plateauMirrored: Math.abs(Number(state?.rawInputs?.plateauLow) - Number(state?.rawInputs?.plateauHigh)) < 1e-12,
+        plateauProvenance: state?.rawInputs?.__provenance?.plateauLow,
+        urlHasHidden: ["vpll", "qgs2l", "qgdl"].some((key) => new URL(location.href).searchParams.has(key))
+      };
+    })).toEqual({
+      plateauMirrored: true,
+      plateauProvenance: "calculated-condition-plateau",
+      urlHasHidden: false
+    });
+  });
+
   test("automatic DCM, held references, technology switching, and chart pinning stay connected", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE.replace(/i=2$/, "i=0.05"), { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -926,7 +1088,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-series-controls] button").first()).toHaveText("Pinned");
   });
 
-  test("legacy links remain read-only and import into a canonical v2 URL with deltas", async ({ page }) => {
+  test("legacy imports preserve unsupported drive values and block until condition-valid", async ({ page }) => {
     await page.goto("/tools/buck-losses/?p=12v-to-3v3-pol&i=2&rhs=123&qhs=99&vf=2&qrr=200&vdrv=6", { waitUntil: "domcontentloaded" });
     await settlePage(page);
     const root = page.locator("#buck-loss-explorer");
@@ -934,17 +1096,21 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-legacy-banner]")).toContainText("Earlier shared calculation · Read-only");
     await expect(page.locator("#blx-num-vin")).toBeDisabled();
     await page.locator("[data-blx-import-v2]").click();
-    await page.locator('[data-blx-device-choice="silicon-30v"]').click();
+    await page.locator('[data-blx-device-choice="epc2090"]').click();
     await expect(page).toHaveURL(/m=2/);
-    await expect(page).toHaveURL(/device=silicon-30v/);
+    await expect(page).toHaveURL(/device=epc2090/);
+    await expect(root).toHaveAttribute("data-blx-model", "2");
+    await expect(page.locator("#blx-v2-vDrive")).toHaveValue("6");
+    await expect(page.locator('[data-blx-v2-message="vDrive"]')).toContainText("outside this condition model's 3-5 V domain");
+    await expect(page.locator("[data-blx-model-failure]")).toContainText("gate-drive condition is unsupported");
+    await expect(root.locator('[data-blx-out="efficiency"]')).toHaveText("—");
+
+    await page.locator('[data-blx-v2-group="drive"] > summary').click();
+    await page.locator("#blx-v2-vDrive").fill("5");
+    await page.locator("#blx-v2-vDrive").press("Tab");
     await expect(page.locator("[data-blx-import-delta]")).toContainText("This point was recalculated");
     await expect(page.locator("[data-blx-import-delta]")).toContainText("Efficiency delta");
-    await expect(root).toHaveAttribute("data-blx-model", "2");
-    await expect(page.locator("#blx-v2-rdsHigh")).toHaveValue("5");
-    await expect(page.locator("#blx-v2-qgHigh")).toHaveValue("20");
-    await expect(page.locator("#blx-v2-diodeVf")).toHaveValue("0.8");
-    await expect(page.locator("#blx-v2-qrrRef")).toHaveValue("30");
-    await expect(page.locator("#blx-v2-vDrive")).toHaveValue("6");
+    await expect(root.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
   });
 
   test("invalid and exact-zero inputs remain finite and explain unavailable efficiency", async ({ page }) => {

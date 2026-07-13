@@ -12,6 +12,7 @@ import {
   validateBuckLossInputsV2
 } from "../js/tools/buck-loss-schema-v2.js";
 import { applyBuckLossDeviceTemplateV2, getBuckLossDeviceTemplateV2 } from "../js/tools/buck-loss-device-templates-v2.js";
+import { resolveBuckLossConditionsV2 } from "../js/tools/buck-loss-condition-resolver-v2.js";
 import { evaluateBuckLossPointV2 } from "../js/tools/buck-loss-evaluator-v2.js";
 import {
   computeBuckLossPointV2,
@@ -35,6 +36,42 @@ function setup(deviceId = "epc2090", overrides = {}) {
       deviceTemplate: deviceId,
       parameterCorner: merged.template.cornerId,
       timingMode: merged.template.timingMode,
+      controlMode: "auto-dcm",
+      provenance
+    }
+  };
+}
+
+function conditionedSetup(deviceId = "epc2090", {
+  currentA = 3,
+  vDrive = null,
+  rawOverrides = {},
+  provenanceOverrides = {}
+} = {}) {
+  const applied = applyBuckLossDeviceTemplateV2({
+    ...rawDefaultsV2(),
+    inductorAcManual: 0,
+    ioutMax: currentA,
+    ...rawOverrides
+  }, deviceId);
+  Object.assign(applied.rawInputs, rawOverrides);
+  if (vDrive !== null) applied.rawInputs.vDrive = vDrive;
+  applied.rawInputs.__provenance = {
+    ...applied.rawInputs.__provenance,
+    ...(vDrive !== null ? { vDrive: "entered" } : {}),
+    ...provenanceOverrides
+  };
+  const conditioning = resolveBuckLossConditionsV2(applied.rawInputs, applied.template, { currentA });
+  const { inputs, provenance } = normalizeBuckLossInputsV2(conditioning.rawInputs);
+  return {
+    conditioning,
+    inputs,
+    context: {
+      technology: applied.template.technology,
+      catalogKind: applied.template.catalogKind,
+      deviceTemplate: deviceId,
+      parameterCorner: applied.template.cornerId,
+      timingMode: "auto",
       controlMode: "auto-dcm",
       provenance
     }
@@ -70,6 +107,74 @@ describe("buck loss v2 contracts", () => {
     assert.deepEqual(validateBuckLossInputsV2(inputs), { valid: true, errors: [] });
   });
 
+  it("keeps a blank controller bias linked to VIN while an entered bias stays pinned", () => {
+    const blankAt12V = normalizeBuckLossInputsV2({ vin: 12, vBias: "" });
+    const blankAt48V = normalizeBuckLossInputsV2({ vin: 48, vBias: "" });
+    assert.equal(blankAt12V.inputs.vBias, 12);
+    assert.equal(blankAt48V.inputs.vBias, 48);
+    assert.equal(blankAt12V.provenance.vBias, "inferred-from-vin");
+    assert.equal(blankAt48V.provenance.vBias, "inferred-from-vin");
+
+    const enteredAt12V = normalizeBuckLossInputsV2({ vin: 12, vBias: 5 });
+    const enteredAt48V = normalizeBuckLossInputsV2({ vin: 48, vBias: 5 });
+    assert.equal(enteredAt12V.inputs.vBias, 5);
+    assert.equal(enteredAt48V.inputs.vBias, 5);
+    assert.equal(enteredAt12V.provenance.vBias, "entered");
+    assert.equal(enteredAt48V.provenance.vBias, "entered");
+  });
+
+  it("keeps a blank ripple RAC linked to DCR while an entered RAC stays pinned", () => {
+    const blankAt20mOhm = normalizeBuckLossInputsV2({ dcr: 20, rac: "" });
+    const blankAt55mOhm = normalizeBuckLossInputsV2({ dcr: 55, rac: "" });
+    assert.equal(blankAt20mOhm.inputs.rac, 20e-3);
+    assert.equal(blankAt55mOhm.inputs.rac, 55e-3);
+    assert.equal(blankAt20mOhm.provenance.rac, "inferred-rac-equals-rdc");
+    assert.equal(blankAt55mOhm.provenance.rac, "inferred-rac-equals-rdc");
+
+    const enteredAt20mOhm = normalizeBuckLossInputsV2({ dcr: 20, rac: 80 });
+    const enteredAt55mOhm = normalizeBuckLossInputsV2({ dcr: 55, rac: 80 });
+    assert.equal(enteredAt20mOhm.inputs.rac, 80e-3);
+    assert.equal(enteredAt55mOhm.inputs.rac, 80e-3);
+    assert.equal(enteredAt20mOhm.provenance.rac, "entered");
+    assert.equal(enteredAt55mOhm.provenance.rac, "entered");
+  });
+
+  it("keeps blank edge dead times linked to the fallback while entered edges stay pinned", () => {
+    const blankAt2ns = normalizeBuckLossInputsV2({
+      deadTime: 2,
+      deadTimeHighToLow: "",
+      deadTimeLowToHigh: ""
+    });
+    const blankAt20ns = normalizeBuckLossInputsV2({
+      deadTime: 20,
+      deadTimeHighToLow: "",
+      deadTimeLowToHigh: ""
+    });
+    rel(blankAt2ns.inputs.deadTimeHighToLow, 2e-9, 1e-18);
+    rel(blankAt2ns.inputs.deadTimeLowToHigh, 2e-9, 1e-18);
+    rel(blankAt20ns.inputs.deadTimeHighToLow, 20e-9, 1e-18);
+    rel(blankAt20ns.inputs.deadTimeLowToHigh, 20e-9, 1e-18);
+    assert.equal(blankAt20ns.provenance.deadTimeHighToLow, "inferred-from-dead-time");
+    assert.equal(blankAt20ns.provenance.deadTimeLowToHigh, "inferred-from-dead-time");
+
+    const enteredAt2ns = normalizeBuckLossInputsV2({
+      deadTime: 2,
+      deadTimeHighToLow: 7,
+      deadTimeLowToHigh: 11
+    });
+    const enteredAt20ns = normalizeBuckLossInputsV2({
+      deadTime: 20,
+      deadTimeHighToLow: 7,
+      deadTimeLowToHigh: 11
+    });
+    rel(enteredAt2ns.inputs.deadTimeHighToLow, 7e-9, 1e-18);
+    rel(enteredAt2ns.inputs.deadTimeLowToHigh, 11e-9, 1e-18);
+    rel(enteredAt20ns.inputs.deadTimeHighToLow, 7e-9, 1e-18);
+    rel(enteredAt20ns.inputs.deadTimeLowToHigh, 11e-9, 1e-18);
+    assert.equal(enteredAt20ns.provenance.deadTimeHighToLow, "entered");
+    assert.equal(enteredAt20ns.provenance.deadTimeLowToHigh, "entered");
+  });
+
   it("owns form grouping and conditional visibility in the canonical schema", () => {
     const groupedKeys = BUCK_LOSS_GROUPS_V2.flatMap((group) => buckLossFieldKeysForGroupV2(group.id));
     assert.deepEqual([...groupedKeys].sort(), Object.keys(BUCK_LOSS_SCHEMA_V2).sort());
@@ -93,7 +198,9 @@ describe("buck loss v2 contracts", () => {
     assert.equal(epc.values.qgs2High, 0.7);
     assert.equal(epc.values.qgdHigh, 0.7);
     assert.equal(epc.values.cossErHigh, 441);
-    assert.equal(epc.values.gateResistanceOnHigh, 0.4);
+    assert.equal(epc.values.gateResistanceOnHigh, null);
+    assert.equal(epc.provenance.gateResistanceOnHigh, "missing");
+    assert.ok(epc.notes.some((note) => /internal device resistance, not the complete driver/i.test(note)));
     assert.equal(epc.values.diodeVf, 1.5);
     assert.equal(epc.values.qrrRef, 0);
     assert.equal(epc.values.effectiveTurnOn, 3);
@@ -211,7 +318,7 @@ describe("buck loss v2 contracts", () => {
     const point = computeBuckLossPointV2(inputs, 2, context);
     assert.equal(point.modelVersion, 2);
     assert.equal(point.modelRevision, BUCK_LOSS_MODEL_REVISION);
-    assert.equal(point.modelRevision, "2.3");
+    assert.equal(point.modelRevision, "2.4");
     assert.equal(point.technology, "gan");
     assert.equal(point.catalogKind, "manufacturer");
     assert.equal(point.deviceTemplate, "epc2090");
@@ -247,7 +354,7 @@ describe("buck loss v2 contracts", () => {
 
     const sweep = computeBuckLossSweepV2(inputs, context, { points: 180 });
     assert.equal(sweep.modelVersion, 2);
-    assert.equal(sweep.modelRevision, "2.3");
+    assert.equal(sweep.modelRevision, "2.4");
     assert.equal(sweep.points.length, 180);
     assert.ok(sweep.annotations.peakEfficiency);
     assert.ok(Number.isFinite(sweep.annotations.ccmBoundary));
@@ -256,6 +363,179 @@ describe("buck loss v2 contracts", () => {
     assert.ok(sweep.annotations.lossBalance.fixedToCurrentSquared);
     assert.ok(sweep.annotations.fetSizingAdvisory);
     assert.ok(sweep.annotations.dominanceRegions.length > 0);
+  });
+});
+
+describe("buck loss v2 condition-coupled device inputs", () => {
+  it("anchors Vishay total gate charge at its measured 4.5 V condition, separate from the EVM's 8 V drive", () => {
+    const template = getBuckLossDeviceTemplateV2("vishay-si7860dp-tps40071evm");
+    assert.equal(template.conditionModel.reference.driveVoltageV, 8);
+    assert.equal(template.conditionModel.gateCharge.referenceDriveVoltageV, 4.5);
+
+    const at4v5 = conditionedSetup("vishay-si7860dp-tps40071evm", { currentA: 16, vDrive: 4.5 }).conditioning;
+    const at8V = conditionedSetup("vishay-si7860dp-tps40071evm", { currentA: 16, vDrive: 8 }).conditioning;
+
+    rel(at4v5.diagnostics.totalGateChargeNc, 13);
+    rel(at4v5.rawInputs.qgHigh, 13);
+    assert.ok(at8V.diagnostics.totalGateChargeNc > at4v5.diagnostics.totalGateChargeNc);
+    rel(at8V.diagnostics.totalGateChargeNc, 22.333333333333332);
+
+    const at3v3 = conditionedSetup("vishay-si7860dp-tps40071evm", { currentA: 16, vDrive: 3.3 }).conditioning;
+    assert.ok(at3v3.warnings.some(({ code, message }) => (
+      code === "drive-outside-recommended-range" && message.includes("source-backed 4.5-10 V range")
+    )));
+  });
+
+  it("holds the transfer-model plateau at fixed current while drive changes headroom, RDS(on), charge, and turn-on time", () => {
+    const at5V = conditionedSetup("epc2090", { currentA: 3, vDrive: 5 }).conditioning;
+    const at3v3 = conditionedSetup("epc2090", { currentA: 3, vDrive: 3.3 }).conditioning;
+
+    assert.equal(at5V.diagnostics.supported, true);
+    assert.equal(at3v3.diagnostics.supported, true);
+    assert.ok(at3v3.warnings.some(({ code }) => code === "drive-outside-recommended-range"));
+    rel(at3v3.diagnostics.plateauV, at5V.diagnostics.plateauV);
+    rel(at3v3.diagnostics.qgs2Nc, at5V.diagnostics.qgs2Nc);
+    assert.ok(at3v3.diagnostics.driveHeadroomV < at5V.diagnostics.driveHeadroomV);
+    assert.ok(at3v3.diagnostics.rdsOnMohm > at5V.diagnostics.rdsOnMohm);
+    assert.ok(at3v3.diagnostics.totalGateChargeNc < at5V.diagnostics.totalGateChargeNc);
+    assert.ok(at3v3.diagnostics.effectiveTurnOnNs > at5V.diagnostics.effectiveTurnOnNs);
+    rel(at3v3.diagnostics.effectiveTurnOffNs, at5V.diagnostics.effectiveTurnOffNs);
+    assert.equal(at3v3.rawInputs.__provenance.plateauHigh, "calculated-condition-plateau");
+    assert.equal(at3v3.rawInputs.__provenance.rdsHigh, "calculated-condition-rds");
+    assert.equal(at3v3.rawInputs.__provenance.qgHigh, "calculated-condition-total-qg");
+    assert.equal(at3v3.rawInputs.__provenance.effectiveTurnOn, "calculated-condition-effective-time");
+
+    const at16A = conditionedSetup("epc2090", { currentA: 16, vDrive: 3.3 }).conditioning;
+    assert.ok(at16A.diagnostics.plateauV > at3v3.diagnostics.plateauV);
+    assert.ok(at16A.diagnostics.qgs2Nc > at3v3.diagnostics.qgs2Nc);
+    assert.ok(at16A.diagnostics.driveHeadroomV < at3v3.diagnostics.driveHeadroomV);
+  });
+
+  it("keeps explicit per-field overrides pinned while calculated sibling fields continue tracking", () => {
+    const explicit = {
+      rdsHigh: 11,
+      qgHigh: 8.8,
+      qgs2High: 0.55,
+      plateauHigh: 2.05,
+      effectiveTurnOn: 9,
+      effectiveTurnOff: 10
+    };
+    const provenanceOverrides = Object.fromEntries(Object.keys(explicit).map((key) => [key, "entered"]));
+    const at5V = conditionedSetup("epc2090", {
+      currentA: 3,
+      vDrive: 5,
+      rawOverrides: explicit,
+      provenanceOverrides
+    }).conditioning;
+    const at3v3 = resolveBuckLossConditionsV2({
+      ...at5V.rawInputs,
+      vDrive: 3.3,
+      __provenance: { ...at5V.rawInputs.__provenance, vDrive: "entered" }
+    }, getBuckLossDeviceTemplateV2("epc2090"), { currentA: 3 });
+
+    for (const [key, value] of Object.entries(explicit)) {
+      assert.equal(at3v3.rawInputs[key], value, `${key} must remain an explicit override`);
+      assert.equal(at3v3.rawInputs.__provenance[key], "entered");
+      assert.ok(at3v3.diagnostics.preservedKeys.includes(key));
+    }
+    assert.ok(at3v3.rawInputs.rdsLow > at5V.rawInputs.rdsLow);
+    assert.ok(at3v3.rawInputs.qgLow < at5V.rawInputs.qgLow);
+    assert.equal(at3v3.diagnostics.effectiveTurnOnNs, 9);
+    assert.equal(at3v3.diagnostics.effectiveTurnOffNs, 10);
+    assert.notEqual(at3v3.diagnostics.estimatedEffectiveTurnOnNs, 9);
+    assert.notEqual(at3v3.diagnostics.estimatedEffectiveTurnOffNs, 10);
+  });
+
+  it("resumes automatic calculation after reset and clears stale overrides on a device switch", () => {
+    const overridden = conditionedSetup("epc2090", {
+      currentA: 3,
+      vDrive: 3.3,
+      rawOverrides: { rdsHigh: 11, qgHigh: 8.8 },
+      provenanceOverrides: { rdsHigh: "entered", qgHigh: "entered" }
+    }).conditioning;
+    const resetRaw = {
+      ...overridden.rawInputs,
+      __provenance: { ...overridden.rawInputs.__provenance }
+    };
+    delete resetRaw.__provenance.rdsHigh;
+    delete resetRaw.__provenance.qgHigh;
+    const reset = resolveBuckLossConditionsV2(resetRaw, getBuckLossDeviceTemplateV2("epc2090"), { currentA: 3 });
+    assert.notEqual(reset.rawInputs.rdsHigh, 11);
+    assert.notEqual(reset.rawInputs.qgHigh, 8.8);
+    assert.equal(reset.rawInputs.__provenance.rdsHigh, "calculated-condition-rds");
+    assert.equal(reset.rawInputs.__provenance.qgHigh, "calculated-condition-total-qg");
+
+    const switched = applyBuckLossDeviceTemplateV2(overridden.rawInputs, "silicon-30v");
+    const switchedConditions = resolveBuckLossConditionsV2(switched.rawInputs, switched.template, { currentA: 3 });
+    assert.notEqual(switchedConditions.rawInputs.rdsHigh, 11);
+    assert.notEqual(switchedConditions.rawInputs.qgHigh, 8.8);
+    assert.equal(switchedConditions.rawInputs.__provenance.rdsHigh, "calculated-condition-rds");
+    assert.equal(switchedConditions.rawInputs.__provenance.qgHigh, "calculated-condition-total-qg");
+    assert.equal(switchedConditions.diagnostics.supported, true);
+  });
+
+  it("changes the EPC loss result coherently when drive falls from 5 V to 3.3 V", () => {
+    const at5V = conditionedSetup("epc2090", { currentA: 3, vDrive: 5 });
+    const at3v3 = conditionedSetup("epc2090", { currentA: 3, vDrive: 3.3 });
+    const point5V = computeBuckLossPointV2(at5V.inputs, 3, at5V.context);
+    const point3v3 = computeBuckLossPointV2(at3v3.inputs, 3, at3v3.context);
+
+    assert.equal(point5V.transition.method, "effective-fallback");
+    assert.equal(point3v3.transition.method, "effective-fallback");
+    assert.ok(point3v3.groupedLosses.gateDrive < point5V.groupedLosses.gateDrive);
+    assert.ok(point3v3.groupedLosses.switchingTransitions > point5V.groupedLosses.switchingTransitions);
+    assert.ok(point3v3.groupedLosses.mosfetConduction > point5V.groupedLosses.mosfetConduction);
+    assert.ok(point3v3.pLoss > point5V.pLoss);
+    assert.ok(point3v3.efficiency < point5V.efficiency);
+  });
+
+  it("diagnoses drives outside the characterized domain and insufficient plateau headroom", () => {
+    const outside = conditionedSetup("epc2090", { currentA: 3, vDrive: 2.9 }).conditioning;
+    assert.equal(outside.diagnostics.supported, false);
+    assert.ok(outside.errors.some(({ code }) => code === "drive-outside-condition-domain"));
+
+    const noHeadroom = conditionedSetup("infineon-bsc010n04ls6-4v5", { currentA: 100, vDrive: 3 }).conditioning;
+    assert.equal(noHeadroom.diagnostics.supported, false);
+    assert.ok(noHeadroom.diagnostics.driveHeadroomV <= 0);
+    assert.ok(noHeadroom.errors.some(({ code, field }) => code === "insufficient-gate-headroom" && field === "vDrive"));
+
+    const manualNoHeadroom = conditionedSetup("epc2090", {
+      currentA: 3,
+      vDrive: 5,
+      rawOverrides: { plateauHigh: 6 },
+      provenanceOverrides: { plateauHigh: "entered" }
+    }).conditioning;
+    assert.ok(manualNoHeadroom.errors.some(({ code, field }) => code === "insufficient-gate-headroom" && field === "plateauHigh"));
+
+    const belowThreshold = conditionedSetup("epc2090", {
+      currentA: 3,
+      vDrive: 5,
+      rawOverrides: { plateauHigh: 0.1 },
+      provenanceOverrides: { plateauHigh: "entered" }
+    }).conditioning;
+    assert.equal(belowThreshold.diagnostics.supported, false);
+    assert.ok(belowThreshold.errors.some(({ code, field }) => (
+      code === "plateau-below-transfer-threshold" && field === "plateauHigh"
+    )));
+    assert.ok(belowThreshold.rawInputs.qgs2High >= 0);
+  });
+
+  it("canonicalizes hidden low-side detail overrides before they can alter or block the symmetric pair", () => {
+    const template = getBuckLossDeviceTemplateV2("epc2090");
+    const applied = applyBuckLossDeviceTemplateV2({ ...rawDefaultsV2(), ioutMax: 3 }, template.id);
+    Object.assign(applied.rawInputs, { plateauLow: 6, qgs2Low: 100, qgdLow: 100 });
+    Object.assign(applied.rawInputs.__provenance, {
+      plateauLow: "url-entered",
+      qgs2Low: "url-entered",
+      qgdLow: "url-entered"
+    });
+    const conditioned = resolveBuckLossConditionsV2(applied.rawInputs, template, { currentA: 3 });
+    assert.equal(conditioned.diagnostics.supported, true);
+    rel(conditioned.rawInputs.plateauLow, conditioned.rawInputs.plateauHigh);
+    rel(conditioned.rawInputs.qgs2Low, conditioned.rawInputs.qgs2High);
+    assert.equal(conditioned.rawInputs.qgdLow, template.values.qgdLow);
+    assert.equal(conditioned.rawInputs.__provenance.plateauLow, "calculated-condition-plateau");
+    assert.equal(conditioned.rawInputs.__provenance.qgs2Low, "calculated-condition-qgs2");
   });
 });
 
@@ -843,7 +1123,7 @@ describe("buck loss v2 accounting", () => {
     assert.ok(dropoutWaveform.failure.values.highVoltage <= 0);
     assert.ok(Number.isFinite(dropoutWaveform.failure.values.availableSwitchFraction));
     assert.equal(invalidPoint.modelVersion, 2);
-    assert.equal(invalidPoint.modelRevision, "2.3");
+    assert.equal(invalidPoint.modelRevision, "2.4");
     assert.equal(invalidPoint.deviceTemplate, "silicon-30v");
     assert.equal(invalidPoint.parameterCorner, "synthetic-typical-25c");
     assert.equal(invalidPoint.failure.code, "dropout");

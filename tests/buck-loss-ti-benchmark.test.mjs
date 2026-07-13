@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
+  configureBuckLossBenchmarkInputsV2,
   evaluateBuckLossBenchmarkFixtureV2,
   expectedBuckLossBenchmarkV1,
   measuredBuckLossFromEfficiency
 } from "../js/tools/buck-loss-benchmark-v2.js";
-import { getBuckLossDeviceTemplateV2 } from "../js/tools/buck-loss-device-templates-v2.js";
+import { applyBuckLossDeviceTemplateV2, getBuckLossDeviceTemplateV2 } from "../js/tools/buck-loss-device-templates-v2.js";
+import { resolveBuckLossConditionsV2 } from "../js/tools/buck-loss-condition-resolver-v2.js";
+import { normalizeBuckLossInputsV2, rawDefaultsV2 } from "../js/tools/buck-loss-schema-v2.js";
 import { parseBuckLossUrlV2, serializeBuckLossUrlV2 } from "../js/tools/buck-loss-url-v2.js";
 import {
   ARTIFACT_PATH,
@@ -101,13 +104,49 @@ describe("TI TPS40071EVM hardware benchmark", () => {
     });
   });
 
+  it("conditions every benchmark trace through the same device resolver as the workspace", () => {
+    const lane = fixture.lanes.find(({ id }) => id === fixture.acceptance.primaryLaneId);
+    const template = getBuckLossDeviceTemplateV2(fixture.deviceTemplateId);
+    for (const trace of fixture.traces) {
+      const configured = configureBuckLossBenchmarkInputsV2(fixture, trace, lane);
+      const templated = applyBuckLossDeviceTemplateV2({
+        ...rawDefaultsV2(),
+        ...fixture.board.rawInputs
+      }, fixture.deviceTemplateId);
+      const rawInputs = {
+        ...templated.rawInputs,
+        ...(trace.rawInputOverrides || {}),
+        __provenance: {
+          ...(templated.rawInputs.__provenance || {}),
+          ...(trace.provenanceOverrides || {})
+        }
+      };
+      const conditioning = resolveBuckLossConditionsV2(rawInputs, template, { currentA: rawInputs.ioutMax });
+      assert.deepEqual(conditioning.errors, []);
+      const normalized = normalizeBuckLossInputsV2(conditioning.rawInputs);
+      for (const key of ["rdsHigh", "qgHigh", "plateauHigh", "qgs2High"]) {
+        assert.equal(configured.inputs[key], normalized.inputs[key], `${trace.id} ${key}`);
+      }
+    }
+    const twelveVolt = configureBuckLossBenchmarkInputsV2(
+      fixture,
+      fixture.traces.find(({ vin }) => vin === 12),
+      lane
+    );
+    assert.ok(twelveVolt.inputs.qgHigh > template.values.qgHigh * 1e-9);
+  });
+
   it("records the strict FAIL result instead of weakening thresholds or failing the unit suite", () => {
     const analysis = evaluateBuckLossBenchmarkFixtureV2(fixture);
     assert.equal(analysis.acceptance.status, "fail");
     assert.equal(analysis.acceptance.pass, false);
     assert.ok(analysis.acceptance.overall.efficiencyMaePp > fixture.acceptance.maxEfficiencyMaePp);
     assert.ok(analysis.acceptance.overall.efficiencyWorstAbsPp > fixture.acceptance.maxEfficiencyWorstAbsPp);
-    assert.ok(analysis.acceptance.overall.medianAbsLossErrorPercent > fixture.acceptance.maxMedianAbsLossErrorPercent);
+    assert.deepEqual(analysis.acceptance.overall.checks, {
+      efficiencyMae: false,
+      efficiencyWorst: false,
+      medianLossError: true
+    });
     assert.deepEqual(Object.fromEntries(analysis.acceptance.traces.map((trace) => [trace.vin, trace.pass])), {
       5: true,
       8: false,
@@ -130,9 +169,9 @@ describe("TI TPS40071EVM hardware benchmark", () => {
     const lowLoad12 = nominal.rows.find((row) => row.vin === 12 && row.iout === 2);
     assert.equal(highLoad12.atomicKnownLossesW.reverseRecovery, 0);
     assert.ok(highLoad12.predictedKnownLossW < highLoad12.measuredLossW);
-    assert.ok(Math.abs(highLoad12.predictedKnownLossW - 1.6835650833988285) < 1e-12);
-    assert.ok(Math.abs(highLoad12.efficiencyErrorPp - 1.377628397641402) < 1e-12);
-    assert.ok(lowLoad12.efficiencyErrorPp > 4.9);
+    assert.ok(Math.abs(highLoad12.predictedKnownLossW - 1.722519362967623) < 1e-12);
+    assert.ok(Math.abs(highLoad12.efficiencyErrorPp - 1.2708866875744889) < 1e-12);
+    assert.ok(lowLoad12.efficiencyErrorPp > 4.2);
     assert.deepEqual(fixture.expected, expectedBuckLossBenchmarkV1(analysis));
   });
 

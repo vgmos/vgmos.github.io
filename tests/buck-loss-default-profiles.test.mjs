@@ -6,6 +6,7 @@ import {
   applyBuckLossDeviceTemplateV2,
   getBuckLossDeviceTemplateV2
 } from "../js/tools/buck-loss-device-templates-v2.js";
+import { resolveBuckLossConditionsV2 } from "../js/tools/buck-loss-condition-resolver-v2.js";
 import { evaluateBuckLossPointV2 } from "../js/tools/buck-loss-evaluator-v2.js";
 import { BUCK_LOSS_PRESETS_V2, getBuckLossPresetV2 } from "../js/tools/buck-loss-presets-v2.js";
 import { BUCK_LOSS_MODEL_REVISION, normalizeBuckLossInputsV2, rawDefaultsV2 } from "../js/tools/buck-loss-schema-v2.js";
@@ -22,7 +23,9 @@ function profileSetup(presetId, deviceId) {
   const preset = getBuckLossPresetV2(presetId);
   const template = getBuckLossDeviceTemplateV2(deviceId);
   const applied = applyBuckLossDeviceTemplateV2({ ...rawDefaultsV2(), ...preset.rawInputs }, deviceId);
-  const { inputs, provenance } = normalizeBuckLossInputsV2(applied.rawInputs);
+  const conditioning = resolveBuckLossConditionsV2(applied.rawInputs, template, { currentA: preset.rawInputs.ioutMax });
+  assert.deepEqual(conditioning.errors, []);
+  const { inputs, provenance } = normalizeBuckLossInputsV2(conditioning.rawInputs);
   return {
     preset,
     template,
