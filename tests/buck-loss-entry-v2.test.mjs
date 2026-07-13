@@ -4,6 +4,7 @@ import {
   BUCK_LOSS_LAST_SETUP_KEY,
   readLastBuckLossQueryV2,
   rememberBuckLossQueryV2,
+  seedBuckLossSetupV2,
   seedBuckLossQueryV2
 } from "../js/tools/buck-loss-entry-v2.js";
 import { parseBuckLossUrlV2 } from "../js/tools/buck-loss-url-v2.js";
@@ -18,6 +19,7 @@ function memoryStorage(initial = {}) {
 }
 
 test("the entry seed is a complete canonical EPC2090 calculation", () => {
+  const state = seedBuckLossSetupV2();
   const query = seedBuckLossQueryV2();
   const parsed = parseBuckLossUrlV2(query);
 
@@ -29,6 +31,14 @@ test("the entry seed is a complete canonical EPC2090 calculation", () => {
   assert.equal(parsed.rawInputs.vin, 12);
   assert.equal(parsed.rawInputs.vout, 3.3);
   assert.equal(parsed.cursor, 2);
+  assert.equal(state.conditioning.diagnostics.supported, true);
+  assert.equal(state.conditioning.diagnostics.currentA, state.rawInputs.ioutMax);
+  assert.equal(state.rawInputs.plateauHigh, state.conditioning.diagnostics.plateauV);
+  assert.equal(state.rawInputs.rdsHigh, state.conditioning.diagnostics.rdsOnMohm);
+  assert.equal(state.rawInputs.qgHigh, state.conditioning.diagnostics.totalGateChargeNc);
+  assert.equal(state.rawInputs.__provenance.plateauHigh, "calculated-condition-plateau");
+  assert.equal(state.rawInputs.__provenance.qgHigh, "calculated-condition-total-qg");
+  assert.ok(state.rawInputs.effectiveTurnOn > 0);
 });
 
 test("last-setup memory preserves a valid customized canonical state", () => {

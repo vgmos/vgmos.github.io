@@ -1,4 +1,5 @@
 import { applyBuckLossDeviceTemplateV2 } from "./buck-loss-device-templates-v2.js";
+import { resolveBuckLossConditionsV2 } from "./buck-loss-condition-resolver-v2.js";
 import { evaluateBuckLossPointV2 } from "./buck-loss-evaluator-v2.js";
 import { BUCK_LOSS_FAMILIES_V2 } from "./buck-loss-equations-v2.js";
 import {
@@ -114,7 +115,7 @@ function qualityProfile(fixture) {
   };
 }
 
-function configuredInputs(fixture, trace, lane) {
+export function configureBuckLossBenchmarkInputsV2(fixture, trace, lane) {
   const templated = applyBuckLossDeviceTemplateV2({
     ...rawDefaultsV2(),
     ...fixture.board.rawInputs
@@ -129,7 +130,13 @@ function configuredInputs(fixture, trace, lane) {
       ...(trace.provenanceOverrides || {})
     }
   };
-  const normalized = normalizeBuckLossInputsV2(rawInputs);
+  const conditioning = resolveBuckLossConditionsV2(rawInputs, templated.template, {
+    currentA: rawInputs.ioutMax
+  });
+  if (conditioning.errors.length) {
+    throw new Error(`Invalid benchmark device conditions for ${trace.id}: ${conditioning.errors.map(({ code }) => code).join(", ")}`);
+  }
+  const normalized = normalizeBuckLossInputsV2(conditioning.rawInputs);
   const resistanceMultiplier = lane.rdsMultiplier ?? 1;
   return {
     inputs: {
@@ -168,7 +175,7 @@ function summarizeRows(rows, acceptance) {
 
 function evaluateLane(fixture, lane) {
   const traceResults = fixture.traces.map((trace) => {
-    const configured = configuredInputs(fixture, trace, lane);
+    const configured = configureBuckLossBenchmarkInputsV2(fixture, trace, lane);
     const rows = trace.points.map((measurement) => {
       const point = evaluateBuckLossPointV2(configured.inputs, measurement.iout, {
         technology: configured.template.technology,

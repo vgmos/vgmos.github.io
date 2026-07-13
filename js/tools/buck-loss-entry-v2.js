@@ -18,6 +18,7 @@ const [
     applyBuckLossDeviceTemplateV2,
     getBuckLossDeviceTemplateV2
   },
+  { resolveBuckLossConditionsV2 },
   {
     BUCK_LOSS_PRESETS_V2,
     DEFAULT_BUCK_LOSS_PRESET_V2,
@@ -29,6 +30,7 @@ const [
 ] = await Promise.all([
   import(versionedModuleUrl("./buck-loss-schema-v2.js")),
   import(versionedModuleUrl("./buck-loss-device-templates-v2.js")),
+  import(versionedModuleUrl("./buck-loss-condition-resolver-v2.js")),
   import(versionedModuleUrl("./buck-loss-presets-v2.js")),
   import(versionedModuleUrl("./buck-loss-url-v2.js")),
   import(versionedModuleUrl("./buck-loss-motion.js")),
@@ -38,6 +40,10 @@ const [
 export const BUCK_LOSS_LAST_SETUP_KEY = "buck-loss-v2-last-setup";
 const DEVICE_MEMORY_KEY = "buck-loss-v2-device";
 const DEFAULT_DEVICE_ID = "epc2090";
+const CONDITIONED_DEVICE_KEYS = new Set([
+  "rdsHigh", "rdsLow", "qgHigh", "qgLow", "qgs2High", "plateauHigh",
+  "effectiveTurnOn", "effectiveTurnOff"
+]);
 
 const STEPS = Object.freeze([
   Object.freeze({ id: "conditions", label: "Conditions", action: "Continue to switch pair" }),
@@ -52,9 +58,9 @@ const STEPS = Object.freeze([
 const STEP_KEYS = Object.freeze({
   conditions: Object.freeze(["vin", "vout", "ioutMax", "fsw"]),
   gate: Object.freeze([
-    "vDrive", "qgHigh", "qgLow", "qgs2High", "qgs2Low", "qgdHigh", "qgdLow",
-    "plateauHigh", "plateauLow", "gateResistanceOnHigh", "gateResistanceOffHigh",
-    "gateResistanceOnLow", "gateResistanceOffLow", "effectiveTurnOn", "effectiveTurnOff"
+    "vDrive", "rdsHigh", "rdsLow", "qgHigh", "qgLow", "qgs2High", "qgdHigh",
+    "plateauHigh", "gateResistanceOnHigh", "gateResistanceOffHigh",
+    "effectiveTurnOn", "effectiveTurnOff"
   ]),
   timing: Object.freeze([
     "deadTime", "deadTimeHighToLow", "deadTimeLowToHigh", "diodeVf",
@@ -76,9 +82,14 @@ function escapeHtml(value) {
 }
 
 function displayNumber(value, digits = 3) {
+  if (value === null || value === undefined || value === "") return "—";
   const number = Number(value);
   if (!Number.isFinite(number)) return "—";
   return new Intl.NumberFormat("en-US", { maximumSignificantDigits: digits }).format(number);
+}
+
+function finiteInput(value) {
+  return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 }
 
 function cloneRaw(rawInputs = {}) {
@@ -86,6 +97,48 @@ function cloneRaw(rawInputs = {}) {
     ...rawInputs,
     __provenance: { ...(rawInputs.__provenance || {}) }
   };
+}
+
+export function updateBuckLossLinkedDraftInputV2(rawInputs, key, value) {
+  const config = BUCK_LOSS_SCHEMA_V2[key];
+  const next = cloneRaw(rawInputs);
+  if (!config) return next;
+  const blank = value === "";
+  const racWasLinked = key === "dcr" && next.__provenance.rac === "inferred-rac-equals-rdc";
+  if (key === "rac" && blank) {
+    next.rac = Number(next.dcr);
+    next.__provenance.rac = "inferred-rac-equals-rdc";
+  } else {
+    next[key] = blank && config.optional ? null : Number(value);
+    next.__provenance[key] = blank ? "entered-blank" : "entered";
+  }
+  if (racWasLinked) {
+    next.rac = next.dcr;
+    next.__provenance.rac = "inferred-rac-equals-rdc";
+  }
+  return next;
+}
+
+function applyConditioningToDraft(state) {
+  const template = getBuckLossDeviceTemplateV2(state.deviceId);
+  if (!template) return null;
+  const result = resolveBuckLossConditionsV2(state.rawInputs, template, {
+    currentA: Number(state.rawInputs.ioutMax) || Number(state.cursor) || 0
+  });
+  state.rawInputs = cloneRaw(result.rawInputs);
+  state.conditioning = result;
+  return result;
+}
+
+function resetConditionedDraftField(state, key) {
+  const template = getBuckLossDeviceTemplateV2(state.deviceId);
+  if (!template || !(key in template.values)) return;
+  state.rawInputs[key] = template.values[key];
+  state.rawInputs.__provenance = {
+    ...(state.rawInputs.__provenance || {}),
+    [key]: template.provenance[key] || (template.values[key] === null ? "missing" : template.source.kind)
+  };
+  applyConditioningToDraft(state);
 }
 
 function stateForSerialization(state) {
@@ -112,7 +165,7 @@ function navigateWithinSite(href) {
 export function seedBuckLossSetupV2() {
   const preset = getBuckLossPresetV2(DEFAULT_BUCK_LOSS_PRESET_V2);
   const applied = applyBuckLossDeviceTemplateV2({ ...rawDefaultsV2(), ...preset.rawInputs }, DEFAULT_DEVICE_ID);
-  return {
+  const state = {
     presetId: preset.id,
     deviceId: applied.template.id,
     controlMode: "auto-dcm",
@@ -120,8 +173,11 @@ export function seedBuckLossSetupV2() {
     selectedPart: preset.inductorPart,
     dcrMode: preset.dcrMode,
     rawInputs: cloneRaw(applied.rawInputs),
-    cursor: preset.cursor
+    cursor: preset.cursor,
+    conditioning: null
   };
+  applyConditioningToDraft(state);
+  return state;
 }
 
 export function seedBuckLossQueryV2() {
@@ -169,7 +225,7 @@ export function rememberBuckLossQueryV2(query, storage = globalThis.localStorage
 
 function draftFromQuery(query) {
   const parsed = parseBuckLossUrlV2(query);
-  return {
+  const state = {
     step: 0,
     presetId: parsed.presetId,
     deviceId: parsed.deviceId,
@@ -183,8 +239,11 @@ function draftFromQuery(query) {
     errors: {},
     catalog: null,
     catalogStatus: "loading",
-    catalogError: ""
+    catalogError: "",
+    conditioning: null
   };
+  applyConditioningToDraft(state);
+  return state;
 }
 
 function gatewayMarkup(lastQuery) {
@@ -223,17 +282,47 @@ function progressMarkup(stepIndex) {
   </li>`).join("")}</ol>`;
 }
 
+function automaticPlaceholder(state, key) {
+  if (key === "vBias" && state.rawInputs.vBias === null) return `auto: ${displayNumber(state.rawInputs.vin)} V`;
+  if (key === "rac" && state.rawInputs.rac === null) return `auto: ${displayNumber(state.rawInputs.dcr)} mΩ`;
+  if (["deadTimeHighToLow", "deadTimeLowToHigh"].includes(key) && state.rawInputs[key] === null) {
+    return `auto: ${displayNumber(state.rawInputs.deadTime)} ns`;
+  }
+  return "blank";
+}
+
+function conditioningHelp(state, key) {
+  const provenance = state.rawInputs.__provenance?.[key] || "";
+  if (CONDITIONED_DEVICE_KEYS.has(key)
+    && state.conditioning?.errors?.some(({ code }) => code === "drive-outside-condition-domain")) {
+    return "Not resolved at this drive; the shown value is not applied until the condition is supported.";
+  }
+  if (provenance.startsWith("calculated-")) {
+    return `Auto-calculated for ${displayNumber(state.rawInputs.ioutMax)} A maximum load. Edit to override.`;
+  }
+  if (CONDITIONED_DEVICE_KEYS.has(key) && ["entered", "url-entered"].includes(provenance)) {
+    return "Manual override. Reset to resume condition tracking.";
+  }
+  return "";
+}
+
 function fieldMarkup(state, key, help = "") {
   const config = BUCK_LOSS_SCHEMA_V2[key];
   const id = `blx-entry-${key}`;
   const error = state.errors[key] || "";
-  const describedBy = [help ? `${id}-help` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ");
+  const dynamicHelp = conditioningHelp(state, key);
+  const fieldHelp = help || dynamicHelp;
+  const hasConditioningHelp = CONDITIONED_DEVICE_KEYS.has(key);
+  const showsHelp = Boolean(fieldHelp || hasConditioningHelp);
+  const describedBy = [showsHelp ? `${id}-help` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ");
   const value = state.rawInputs[key];
+  const provenance = state.rawInputs.__provenance?.[key] || "";
+  const canReset = CONDITIONED_DEVICE_KEYS.has(key) && ["entered", "url-entered"].includes(provenance);
   const step = ["fsw"].includes(key) ? "10" : ["deadTime", "deadTimeHighToLow", "deadTimeLowToHigh", "effectiveTurnOn", "effectiveTurnOff"].includes(key) ? "0.1" : "any";
   return `<div class="blx-entry-field" data-blx-entry-field="${key}">
     <label for="${id}">${escapeHtml(config.label)}</label>
-    <span class="blx-entry-input-wrap"><input id="${id}" data-blx-entry-input="${key}" type="number" inputmode="decimal" min="${config.min}" max="${config.max}" step="${step}" value="${value ?? ""}"${config.optional ? ' placeholder="blank"' : ""}${describedBy ? ` aria-describedby="${describedBy}"` : ""}${error ? ' aria-invalid="true"' : ""}><span>${escapeHtml(config.unit)}</span></span>
-    ${help ? `<small id="${id}-help">${help}</small>` : ""}
+    <span class="blx-entry-input-wrap"><input id="${id}" data-blx-entry-input="${key}" type="number" inputmode="decimal" min="${config.min}" max="${config.max}" step="${step}" value="${value ?? ""}"${config.optional ? ` placeholder="${escapeHtml(automaticPlaceholder(state, key))}"` : ""}${describedBy ? ` aria-describedby="${describedBy}"` : ""}${error ? ' aria-invalid="true"' : ""}><span>${escapeHtml(config.unit)}</span></span>
+    ${showsHelp ? `<small id="${id}-help">${hasConditioningHelp ? `<span data-blx-entry-condition-help-text="${key}">${escapeHtml(fieldHelp)}</span> <button type="button" class="blx-entry-auto-reset" data-blx-entry-condition-reset="${key}"${canReset ? "" : " hidden"}>Reset to auto</button>` : escapeHtml(fieldHelp)}</small>` : ""}
     ${error ? `<small class="blx-entry-error" id="${id}-error">${escapeHtml(error)}</small>` : ""}
   </div>`;
 }
@@ -279,13 +368,54 @@ function switchMarkup(state) {
     <aside class="blx-entry-explainer"><strong>What changes with this choice</strong><p>Selecting a switch pair preloads device-specific loss models, gate-charge and gate-resistance assumptions, reverse-recovery or ZVS behavior, and source notes. You can override any of these later.</p></aside>`;
 }
 
+function gateConditionMarkup(state) {
+  const diagnostics = state.conditioning?.diagnostics || {};
+  const highLane = diagnostics.lanes?.high || {};
+  const issues = [...(state.conditioning?.errors || []), ...(state.conditioning?.warnings || [])];
+  const driveOutsideDomain = issues.some(({ code }) => code === "drive-outside-condition-domain");
+  const plateauV = Number(highLane.plateauV);
+  const driveHeadroomV = Number(state.rawInputs.vDrive) - plateauV;
+  const transitionMetric = (edge) => {
+    if (driveOutsideDomain) return "outside fitted domain";
+    const effectiveValue = diagnostics[edge === "on" ? "effectiveTurnOnNs" : "effectiveTurnOffNs"];
+    if (state.timingMode !== "derived" && Number.isFinite(effectiveValue)) {
+      return `${displayNumber(effectiveValue)} ns`;
+    }
+    if (state.timingMode === "effective") return "unavailable";
+    const gateResistanceKey = edge === "on" ? "gateResistanceOnHigh" : "gateResistanceOffHigh";
+    const completeGatePath = ["qgs2High", "qgdHigh", "plateauHigh", gateResistanceKey]
+      .every((key) => finiteInput(state.rawInputs[key]));
+    return completeGatePath && driveHeadroomV > 0 ? "gate-charge path" : "unavailable";
+  };
+  const metrics = [
+    ["RDS(on)", `${displayNumber(highLane.rdsOnMohm)} mΩ`],
+    ["Total QG", `${displayNumber(highLane.totalGateChargeNc)} nC`],
+    ["Miller plateau", `${displayNumber(plateauV)} V`],
+    ["Drive headroom", `${displayNumber(driveHeadroomV)} V`],
+    ["Turn-on overlap", transitionMetric("on")],
+    ["Turn-off overlap", transitionMetric("off")]
+  ];
+  return `<aside class="blx-entry-condition-preview" data-blx-entry-condition-preview data-supported="${diagnostics.supported === true}">
+    <div><strong>Resolved device model</strong><span>At I<sub>MAX</sub> = ${displayNumber(state.rawInputs.ioutMax)} A and V<sub>DRIVE</sub> = ${displayNumber(state.rawInputs.vDrive)} V</span></div>
+    <dl>${metrics.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>
+    <p>The Miller level uses I<sub>MAX</sub> as the transfer-fit current proxy; the drive rail changes headroom, RDS(on), QG, and turn-on time. Auto values track those controls until you override them.</p>
+    ${issues.length ? `<ul>${issues.map(({ message }) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>` : ""}
+  </aside>`;
+}
+
 function gateMarkup(state) {
   const template = getBuckLossDeviceTemplateV2(state.deviceId);
-  const advanced = STEP_KEYS.gate.filter((key) => !["vDrive", "qgHigh", "qgLow"].includes(key));
+  const error = state.errors.gate || "";
+  const derived = ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "gateResistanceOffHigh"];
+  const effective = ["effectiveTurnOn", "effectiveTurnOff"];
+  const advanced = state.timingMode === "derived" ? derived : state.timingMode === "effective" ? effective : [...derived, ...effective];
+  const advancedHasError = advanced.some((key) => state.errors[key]);
   return `<header class="blx-entry-step-head"><p class="blx-entry-step-count">3 of 7</p><h1 id="blx-entry-step-title" tabindex="-1">Review gate drive & switching</h1><p>${escapeHtml(template.label)} supplies the starting values. Keep the defaults or replace them with condition-matched data.</p></header>
+    ${error ? `<p class="blx-entry-form-error" role="alert">${escapeHtml(error)}</p>` : ""}
     <div class="blx-entry-mode-row"><label for="blx-entry-timing-mode">Transition method</label><select id="blx-entry-timing-mode" data-blx-entry-timing-mode><option value="auto"${state.timingMode === "auto" ? " selected" : ""}>Automatic evidence hierarchy</option><option value="derived"${state.timingMode === "derived" ? " selected" : ""}>Force gate-charge derivation</option><option value="effective"${state.timingMode === "effective" ? " selected" : ""}>Force effective-time override</option></select><small>Automatic uses the best supported evidence and discloses any fallback in the results.</small></div>
-    <div class="blx-entry-field-grid">${["vDrive", "qgHigh", "qgLow"].map((key) => fieldMarkup(state, key)).join("")}</div>
-    <details class="blx-entry-advanced"><summary>Review advanced transition values</summary><p>Blank optional fields remain explicitly unavailable; they are never treated as zero.</p><div class="blx-entry-field-grid">${advanced.map((key) => fieldMarkup(state, key)).join("")}</div></details>`;
+    ${gateConditionMarkup(state)}
+    <section class="blx-entry-subsection"><h2>Drive-coupled channel & charge</h2><div class="blx-entry-field-grid">${["vDrive", "rdsHigh", "rdsLow", "qgHigh", "qgLow"].map((key) => fieldMarkup(state, key)).join("")}</div></section>
+    <details class="blx-entry-advanced"${advancedHasError ? " open" : ""}><summary>Review ${state.timingMode === "effective" ? "effective-time" : state.timingMode === "derived" ? "gate-charge" : "advanced transition"} values</summary><p>Only fields used by the selected evidence path are shown. Blank optional fields remain explicitly unavailable; they are never treated as zero.</p><div class="blx-entry-field-grid">${advanced.map((key) => fieldMarkup(state, key)).join("")}</div></details>`;
 }
 
 function timingMarkup(state) {
@@ -328,10 +458,11 @@ function controlMarkup(state) {
 
 function reviewSummary(state) {
   const template = getBuckLossDeviceTemplateV2(state.deviceId);
+  const highLane = state.conditioning?.diagnostics?.lanes?.high || {};
   return [
     ["Operating point", `${displayNumber(state.rawInputs.vin)} V → ${displayNumber(state.rawInputs.vout)} V · ${displayNumber(state.rawInputs.ioutMax)} A max · ${displayNumber(state.rawInputs.fsw / 1000)} MHz`, 0],
     ["Switch pair", `${template.label} · ${template.cornerLabel || template.cornerId}`, 1],
-    ["Gate drive & timing", `${displayNumber(state.rawInputs.vDrive)} V drive · ${state.timingMode === "auto" ? "automatic evidence hierarchy" : state.timingMode} · ${displayNumber(state.rawInputs.deadTime)} ns dead time`, 2],
+    ["Gate drive & timing", `${displayNumber(state.rawInputs.vDrive)} V drive · ${displayNumber(highLane.plateauV)} V plateau · ${displayNumber(highLane.rdsOnMohm)} mΩ RDS(on) · ${state.timingMode === "auto" ? "automatic evidence hierarchy" : state.timingMode}`, 2],
     ["Magnetics", state.selectedPart ? `${state.selectedPart} · ${displayNumber(state.rawInputs.inductance)} µH · ${state.dcrMode === "max" ? "maximum" : "typical"} DCR` : `Manual · ${displayNumber(state.rawInputs.inductance)} µH · ${displayNumber(state.rawInputs.dcr)} mΩ RDC`, 4],
     ["Capacitors & control", `${displayNumber(state.rawInputs.inputEsr)} mΩ input ESR · ${displayNumber(state.rawInputs.esr)} mΩ output ESR · ${state.controlMode === "auto-dcm" ? "automatic diode-emulation DCM" : "forced CCM"}`, 5]
   ];
@@ -340,7 +471,8 @@ function reviewSummary(state) {
 function reviewMarkup(state) {
   const template = getBuckLossDeviceTemplateV2(state.deviceId);
   const notices = [
-    "Transition loss may use a disclosed fallback when no condition-matched energy surface is available.",
+    "Auto-calculated switch values are resolved at maximum load. The Miller level follows load current; drive voltage changes gate headroom, RDS(on), total gate charge, and any supported timing fallback.",
+    "Transition loss may use a disclosed, condition-scaled fallback when no condition-matched energy surface is available.",
     "This is a 25 °C analytical intuition model, not a part-level signoff tool."
   ];
   if (template.catalogKind !== "manufacturer") notices.unshift("The selected switch pair is a deterministic teaching fixture, not a vendor part recommendation.");
@@ -393,11 +525,23 @@ function validateStep(state) {
     const template = getBuckLossDeviceTemplateV2(state.deviceId);
     if (!template || template.voltageClass < Number(state.rawInputs.vin)) errors.device = "Choose a switch pair rated for this input voltage.";
   }
+  if (step === "gate") {
+    applyConditioningToDraft(state);
+    const conditionErrors = state.conditioning?.errors || [];
+    if (conditionErrors.length) {
+      errors.gate = conditionErrors.map(({ message }) => message).join(" ");
+      for (const conditionError of conditionErrors) {
+        if (STEP_KEYS.gate.includes(conditionError.field)) errors[conditionError.field] = conditionError.message;
+      }
+    }
+  }
   state.errors = errors;
   return Object.keys(errors).length === 0;
 }
 
 function firstInvalidStep(state) {
+  applyConditioningToDraft(state);
+  if (state.conditioning?.errors?.length) return STEPS.findIndex((step) => step.id === "gate");
   const validation = validateBuckLossInputsV2(normalizeBuckLossInputsV2(state.rawInputs).inputs);
   if (validation.valid) return null;
   const first = validation.errors[0];
@@ -419,6 +563,7 @@ function applyPresetToDraft(state, presetId) {
   state.timingMode = applied.template.timingMode;
   state.customConditions = false;
   state.errors = {};
+  applyConditioningToDraft(state);
 }
 
 function applyDeviceToDraft(state, deviceId) {
@@ -428,6 +573,7 @@ function applyDeviceToDraft(state, deviceId) {
   state.deviceId = applied.template.id;
   state.timingMode = applied.template.timingMode;
   state.errors = {};
+  applyConditioningToDraft(state);
 }
 
 function applyCatalogPartToDraft(state, partNumber) {
@@ -455,12 +601,11 @@ function applyCatalogPartToDraft(state, partNumber) {
 }
 
 function setDraftInput(state, key, value) {
-  const config = BUCK_LOSS_SCHEMA_V2[key];
-  state.rawInputs[key] = value === "" && config.optional ? null : Number(value);
-  state.rawInputs.__provenance = { ...(state.rawInputs.__provenance || {}), [key]: value === "" ? "entered-blank" : "entered" };
+  state.rawInputs = updateBuckLossLinkedDraftInputV2(state.rawInputs, key, value);
   if (STEP_KEYS.conditions.includes(key)) state.customConditions = true;
   if (STEP_KEYS.magnetics.includes(key) && state.selectedPart) state.selectedPart = null;
   if (key === "ioutMax") state.cursor = Math.min(Number(state.cursor) || 0, Number(value) || 0);
+  applyConditioningToDraft(state);
   delete state.errors[key];
 }
 
@@ -468,7 +613,14 @@ function persistAndOpen(state) {
   const invalidStep = firstInvalidStep(state);
   if (invalidStep !== null) {
     state.step = invalidStep;
-    state.errors = { conditions: "Review the highlighted values before opening the workspace." };
+    if (invalidStep === STEPS.findIndex((step) => step.id === "gate")) {
+      state.errors = { gate: state.conditioning.errors.map(({ message }) => message).join(" ") };
+      for (const conditionError of state.conditioning.errors) {
+        if (STEP_KEYS.gate.includes(conditionError.field)) state.errors[conditionError.field] = conditionError.message;
+      }
+    } else {
+      state.errors = { conditions: "Review the highlighted values before opening the workspace." };
+    }
     return false;
   }
   const query = serializeBuckLossUrlV2(stateForSerialization(state));
@@ -567,6 +719,35 @@ function setupEntryController(root, options = {}) {
     const panel = root.querySelector(".blx-entry-step");
     if (animate && direction) trackAnimation(runAnimation(panel, [{ transform: `translateX(${8 * direction}px)` }, { transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }));
 
+    const refreshConditioningUi = () => {
+      const preview = root.querySelector("[data-blx-entry-condition-preview]");
+      if (preview) preview.outerHTML = gateConditionMarkup(state);
+      for (const key of CONDITIONED_DEVICE_KEYS) {
+        const input = root.querySelector(`[data-blx-entry-input="${key}"]`);
+        if (input && input !== document.activeElement) input.value = state.rawInputs[key] ?? "";
+        const help = root.querySelector(`#blx-entry-${key}-help`);
+        if (!help) continue;
+        const helpText = conditioningHelp(state, key);
+        const helpTextNode = help.querySelector(`[data-blx-entry-condition-help-text="${key}"]`);
+        if (helpTextNode) helpTextNode.textContent = helpText;
+        const provenance = state.rawInputs.__provenance?.[key] || "";
+        const reset = help.querySelector(`[data-blx-entry-condition-reset="${key}"]`);
+        if (reset) reset.hidden = !["entered", "url-entered"].includes(provenance);
+      }
+      if (!state.conditioning?.errors?.length && state.errors.gate) {
+        delete state.errors.gate;
+        root.querySelector(".blx-entry-form-error")?.remove();
+      }
+      for (const key of ["vBias", "rac", "deadTimeHighToLow", "deadTimeLowToHigh"]) {
+        const linkedInput = root.querySelector(`[data-blx-entry-input="${key}"]`);
+        if (!linkedInput || linkedInput === document.activeElement) continue;
+        linkedInput.placeholder = automaticPlaceholder(state, key);
+        if (key === "rac" && state.rawInputs.__provenance?.rac === "inferred-rac-equals-rdc") {
+          linkedInput.value = state.rawInputs.rac ?? "";
+        }
+      }
+    };
+
     root.querySelector("[data-blx-entry-form]")?.addEventListener("submit", (event) => {
       event.preventDefault();
       if (state.step === STEPS.length - 1) {
@@ -605,6 +786,7 @@ function setupEntryController(root, options = {}) {
       const syncInput = () => {
         const key = input.dataset.blxEntryInput;
         setDraftInput(state, key, input.value);
+        refreshConditioningUi();
         if (fieldError(key, state.rawInputs)) return;
         input.removeAttribute("aria-invalid");
         const errorId = `${input.id}-error`;
@@ -621,6 +803,29 @@ function setupEntryController(root, options = {}) {
       };
       input.addEventListener("input", syncInput);
       input.addEventListener("change", syncInput);
+    });
+    root.querySelector("[data-blx-entry-form]")?.addEventListener("click", (event) => {
+      const button = event.target.closest?.("[data-blx-entry-condition-reset]");
+      if (!button) return;
+      const key = button.dataset.blxEntryConditionReset;
+      resetConditionedDraftField(state, key);
+      delete state.errors.gate;
+      delete state.errors[key];
+      refreshConditioningUi();
+      const input = root.querySelector(`[data-blx-entry-input="${key}"]`);
+      if (input) {
+        input.value = state.rawInputs[key] ?? "";
+        input.removeAttribute("aria-invalid");
+        const errorId = `${input.id}-error`;
+        const describedBy = (input.getAttribute("aria-describedby") || "")
+          .split(/\s+/)
+          .filter((id) => id && id !== errorId);
+        if (describedBy.length) input.setAttribute("aria-describedby", describedBy.join(" "));
+        else input.removeAttribute("aria-describedby");
+        input.closest("[data-blx-entry-field]")?.querySelector(`#${errorId}`)?.remove();
+      }
+      if (!state.conditioning?.errors?.length) root.querySelector(".blx-entry-form-error")?.remove();
+      input?.focus();
     });
     const cursorInput = root.querySelector("[data-blx-entry-cursor]");
     if (cursorInput) {
@@ -640,7 +845,10 @@ function setupEntryController(root, options = {}) {
       cursorInput.addEventListener("input", syncCursor);
       cursorInput.addEventListener("change", syncCursor);
     }
-    root.querySelector("[data-blx-entry-timing-mode]")?.addEventListener("change", (event) => { state.timingMode = event.currentTarget.value; });
+    root.querySelector("[data-blx-entry-timing-mode]")?.addEventListener("change", (event) => {
+      state.timingMode = event.currentTarget.value;
+      renderWizard({ animate: false, focusHeading: false, focusSelector: "[data-blx-entry-timing-mode]" });
+    });
     root.querySelector("[data-blx-entry-control-mode]")?.addEventListener("change", (event) => { state.controlMode = event.currentTarget.value; });
     root.querySelector("[data-blx-entry-part]")?.addEventListener("change", (event) => {
       applyCatalogPartToDraft(state, event.currentTarget.value);

@@ -7,6 +7,8 @@ import {
 import { applyBuckLossDeviceTemplateV2, getBuckLossDeviceTemplateV2 } from "./buck-loss-device-templates-v2.js";
 import { DEFAULT_BUCK_LOSS_PRESET_V2, getBuckLossPresetV2 } from "./buck-loss-presets-v2.js";
 
+const EXPLICIT_PROVENANCE = new Set(["entered", "url-entered", "entered-blank"]);
+
 function paramsFrom(input) {
   const text = String(input ?? "").trim();
   if (!text) return new URLSearchParams();
@@ -66,11 +68,16 @@ export function parseBuckLossUrlV2(input, options = {}) {
   if (device) rawInputs = applyBuckLossDeviceTemplateV2(rawInputs, device.id).rawInputs;
   for (const [key, config] of Object.entries(BUCK_LOSS_SCHEMA_V2)) {
     if (!params.has(config.url)) continue;
-    const value = finiteNumber(params.get(config.url));
+    const parameter = params.get(config.url);
+    const value = finiteNumber(parameter);
     if (value === null) {
       if (config.optional) {
-        rawInputs[key] = null;
-        rawInputs.__provenance = { ...(rawInputs.__provenance || {}), [key]: "url-entered" };
+        const inferredRac = key === "rac" && parameter === "";
+        rawInputs[key] = inferredRac ? rawInputs.dcr : null;
+        rawInputs.__provenance = {
+          ...(rawInputs.__provenance || {}),
+          [key]: inferredRac ? "inferred-rac-equals-rdc" : "url-entered"
+        };
       }
       else notes.push({ code: "invalid-parameter", key });
       continue;
@@ -88,7 +95,7 @@ export function parseBuckLossUrlV2(input, options = {}) {
   const timingMode = ["auto", "derived", "effective"].includes(requestedTimingMode)
     ? requestedTimingMode
     : device?.timingMode ?? "auto";
-  const part = params.get("part") || preset.inductorPart || null;
+  const part = params.has("part") ? (params.get("part") || null) : (preset.inductorPart || null);
   const dcrMode = params.get("dcrm") === "max" ? "max" : "typ";
   return {
     route,
@@ -124,11 +131,21 @@ export function serializeBuckLossUrlV2(state) {
   values.set("device", deviceId);
   values.set("control", state.controlMode === "forced-ccm" ? "forced-ccm" : "auto-dcm");
   values.set("timing", ["auto", "derived", "effective"].includes(state.timingMode) ? state.timingMode : "auto");
-  if (state.selectedInductorPart) values.set("part", state.selectedInductorPart);
+  if (Object.prototype.hasOwnProperty.call(state, "selectedInductorPart")) {
+    values.set("part", state.selectedInductorPart || "");
+  }
   if (state.inductorDcrMode === "max") values.set("dcrm", "max");
   for (const [key, config] of Object.entries(BUCK_LOSS_SCHEMA_V2)) {
+    if (config.uiHidden === true) continue;
     const value = state.rawInputs?.[key];
-    if (equalValue(value, baseline[key])) continue;
+    const provenance = state.rawInputs?.__provenance?.[key];
+    if (typeof provenance === "string" && provenance.startsWith("calculated-")) continue;
+    if (key === "rac" && provenance === "inferred-rac-equals-rdc") {
+      if (!state.selectedInductorPart) values.set(config.url, "");
+      continue;
+    }
+    if (provenance === "entered-blank" && equalValue(value, baseline[key])) continue;
+    if (!EXPLICIT_PROVENANCE.has(provenance) && equalValue(value, baseline[key])) continue;
     if (value === null || value === undefined || value === "") {
       if (config.optional) values.set(config.url, "");
       continue;
