@@ -22,6 +22,7 @@
     { left: "\\(", right: "\\)", display: false }
   ];
   var navInFlight = false;
+  var pendingNavigation = null;
   var prefetched = {};
   var scrollSaveTimer = 0;
   var scrollSaveDelayMs = 250;
@@ -506,6 +507,14 @@
     });
   }
 
+  function dispatchMainLifecycle(name, main) {
+    try {
+      document.dispatchEvent(new CustomEvent(name, {
+        detail: { main: main || null }
+      }));
+    } catch (error) {}
+  }
+
   function syncHead(doc) {
     var nextTitle = doc.querySelector("title");
     if (nextTitle) document.title = nextTitle.textContent;
@@ -609,7 +618,9 @@
     }
 
     syncHead(doc);
-    currentMain.replaceWith(nextMain.cloneNode(true));
+    var replacementMain = nextMain.cloneNode(true);
+    currentMain.replaceWith(replacementMain);
+    dispatchMainLifecycle("vgmos:mainchange", replacementMain);
     if (replaceHistory) {
       history.replaceState(makeHistoryState(history.state, nextScroll), "", historyUrl);
     } else {
@@ -636,7 +647,15 @@
 
   function softNavigate(url, replaceHistory, transientHash, restoreScroll) {
     if (!replaceHistory) flushScrollSave();
-    if (navInFlight) return;
+    if (navInFlight) {
+      pendingNavigation = {
+        url: new URL(url.href),
+        replaceHistory: replaceHistory,
+        transientHash: transientHash,
+        restoreScroll: restoreScroll
+      };
+      return;
+    }
     navInFlight = true;
 
     fetchDocument(url).then(function (doc) {
@@ -645,6 +664,7 @@
         return Promise.reject("fallback");
       }
 
+      dispatchMainLifecycle("vgmos:beforemainchange", document.querySelector("main.page-content"));
       var exitLayer = makeExitLayer(document.querySelector("main.page-content"));
       root.classList.add("is-content-entering");
 
@@ -680,6 +700,16 @@
       if (error !== "fallback") fallbackNavigate(url);
     }).then(function () {
       navInFlight = false;
+      if (pendingNavigation) {
+        var nextNavigation = pendingNavigation;
+        pendingNavigation = null;
+        softNavigate(
+          nextNavigation.url,
+          nextNavigation.replaceHistory,
+          nextNavigation.transientHash,
+          nextNavigation.restoreScroll
+        );
+      }
     });
   }
 
