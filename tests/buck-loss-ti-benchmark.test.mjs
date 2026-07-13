@@ -140,10 +140,10 @@ describe("TI TPS40071EVM hardware benchmark", () => {
     const analysis = evaluateBuckLossBenchmarkFixtureV2(fixture);
     assert.equal(analysis.acceptance.status, "fail");
     assert.equal(analysis.acceptance.pass, false);
-    assert.ok(analysis.acceptance.overall.efficiencyMaePp > fixture.acceptance.maxEfficiencyMaePp);
+    assert.ok(analysis.acceptance.overall.efficiencyMaePp <= fixture.acceptance.maxEfficiencyMaePp);
     assert.ok(analysis.acceptance.overall.efficiencyWorstAbsPp > fixture.acceptance.maxEfficiencyWorstAbsPp);
     assert.deepEqual(analysis.acceptance.overall.checks, {
-      efficiencyMae: false,
+      efficiencyMae: true,
       efficiencyWorst: false,
       medianLossError: true
     });
@@ -169,9 +169,9 @@ describe("TI TPS40071EVM hardware benchmark", () => {
     const lowLoad12 = nominal.rows.find((row) => row.vin === 12 && row.iout === 2);
     assert.equal(highLoad12.atomicKnownLossesW.reverseRecovery, 0);
     assert.ok(highLoad12.predictedKnownLossW < highLoad12.measuredLossW);
-    assert.ok(Math.abs(highLoad12.predictedKnownLossW - 1.722519362967623) < 1e-12);
-    assert.ok(Math.abs(highLoad12.efficiencyErrorPp - 1.2708866875744889) < 1e-12);
-    assert.ok(lowLoad12.efficiencyErrorPp > 4.2);
+    assert.ok(Math.abs(highLoad12.predictedKnownLossW - 1.8013782010566164) < 1e-12);
+    assert.ok(Math.abs(highLoad12.efficiencyErrorPp - 1.055530853336947) < 1e-12);
+    assert.ok(lowLoad12.efficiencyErrorPp > 3.9);
     assert.deepEqual(fixture.expected, expectedBuckLossBenchmarkV1(analysis));
   });
 

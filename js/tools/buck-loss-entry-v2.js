@@ -41,7 +41,7 @@ export const BUCK_LOSS_LAST_SETUP_KEY = "buck-loss-v2-last-setup";
 const DEVICE_MEMORY_KEY = "buck-loss-v2-device";
 const DEFAULT_DEVICE_ID = "epc2090";
 const CONDITIONED_DEVICE_KEYS = new Set([
-  "rdsHigh", "rdsLow", "qgHigh", "qgLow", "qgs2High", "plateauHigh",
+  "rdsHigh", "rdsLow", "qgHigh", "qgLow", "qgs2High", "qgdHigh", "plateauHigh",
   "effectiveTurnOn", "effectiveTurnOff"
 ]);
 
@@ -370,6 +370,9 @@ function switchMarkup(state) {
 
 function gateConditionMarkup(state) {
   const diagnostics = state.conditioning?.diagnostics || {};
+  const qgdConditionCopy = state.template?.conditionModel?.gateCharge?.qgdVoltage?.method
+    ? "VIN changes QGD through the loaded CRSS curve"
+    : "QGD stays at its source anchor unless you enter an override";
   const highLane = diagnostics.lanes?.high || {};
   const issues = [...(state.conditioning?.errors || []), ...(state.conditioning?.warnings || [])];
   const driveOutsideDomain = issues.some(({ code }) => code === "drive-outside-condition-domain");
@@ -398,7 +401,7 @@ function gateConditionMarkup(state) {
   return `<aside class="blx-entry-condition-preview" data-blx-entry-condition-preview data-supported="${diagnostics.supported === true}">
     <div><strong>Resolved device model</strong><span>At I<sub>MAX</sub> = ${displayNumber(state.rawInputs.ioutMax)} A and V<sub>DRIVE</sub> = ${displayNumber(state.rawInputs.vDrive)} V</span></div>
     <dl>${metrics.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>
-    <p>The Miller level uses I<sub>MAX</sub> as the transfer-fit current proxy; the drive rail changes headroom, RDS(on), QG, and turn-on time. Auto values track those controls until you override them.</p>
+    <p>This preview uses I<sub>MAX</sub>; the live result resolves E<sub>ON</sub>/E<sub>OFF</sub> again at valley/peak current. ${escapeHtml(qgdConditionCopy)}, while the drive rail changes headroom, RDS(on), QG, and edge time. Auto values track those controls until you override them.</p>
     ${issues.length ? `<ul>${issues.map(({ message }) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>` : ""}
   </aside>`;
 }
@@ -470,9 +473,12 @@ function reviewSummary(state) {
 
 function reviewMarkup(state) {
   const template = getBuckLossDeviceTemplateV2(state.deviceId);
+  const qgdConditionCopy = template.conditionModel?.gateCharge?.qgdVoltage?.method
+    ? "VIN changes QGD through the loaded CRSS curve"
+    : "QGD stays at its source anchor unless you enter an override";
   const notices = [
-    "Auto-calculated switch values are resolved at maximum load. The Miller level follows load current; drive voltage changes gate headroom, RDS(on), total gate charge, and any supported timing fallback.",
-    "Transition loss may use a disclosed, condition-scaled fallback when no condition-matched energy surface is available.",
+    `Auto-calculated setup values are previewed at maximum load; live EON/EOFF re-resolve at valley/peak edge current. ${qgdConditionCopy}, while drive voltage changes gate headroom, RDS(on), total gate charge, and supported edge timing.`,
+    "Transition loss may use a disclosed EPC AN030 phase-charge-scaled fallback when no condition-matched energy surface is available.",
     "This is a 25 °C analytical intuition model, not a part-level signoff tool."
   ];
   if (template.catalogKind !== "manufacturer") notices.unshift("The selected switch pair is a deterministic teaching fixture, not a vendor part recommendation.");

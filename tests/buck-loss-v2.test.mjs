@@ -12,7 +12,10 @@ import {
   validateBuckLossInputsV2
 } from "../js/tools/buck-loss-schema-v2.js";
 import { applyBuckLossDeviceTemplateV2, getBuckLossDeviceTemplateV2 } from "../js/tools/buck-loss-device-templates-v2.js";
-import { resolveBuckLossConditionsV2 } from "../js/tools/buck-loss-condition-resolver-v2.js";
+import {
+  resolveBuckLossConditionPointV2,
+  resolveBuckLossConditionsV2
+} from "../js/tools/buck-loss-condition-resolver-v2.js";
 import { evaluateBuckLossPointV2 } from "../js/tools/buck-loss-evaluator-v2.js";
 import {
   computeBuckLossPointV2,
@@ -37,6 +40,7 @@ function setup(deviceId = "epc2090", overrides = {}) {
       parameterCorner: merged.template.cornerId,
       timingMode: merged.template.timingMode,
       controlMode: "auto-dcm",
+      conditionModel: merged.template.conditionModel,
       provenance
     }
   };
@@ -73,6 +77,7 @@ function conditionedSetup(deviceId = "epc2090", {
       parameterCorner: applied.template.cornerId,
       timingMode: "auto",
       controlMode: "auto-dcm",
+      conditionModel: applied.template.conditionModel,
       provenance
     }
   };
@@ -80,6 +85,11 @@ function conditionedSetup(deviceId = "epc2090", {
 
 function rel(actual, expected, tolerance = 1e-9) {
   const scale = Math.max(1, Math.abs(expected));
+  assert.ok(Math.abs(actual - expected) <= scale * tolerance, `${actual} != ${expected}`);
+}
+
+function relSmall(actual, expected, tolerance = 1e-9) {
+  const scale = Math.max(Number.MIN_VALUE, Math.abs(expected));
   assert.ok(Math.abs(actual - expected) <= scale * tolerance, `${actual} != ${expected}`);
 }
 
@@ -318,7 +328,7 @@ describe("buck loss v2 contracts", () => {
     const point = computeBuckLossPointV2(inputs, 2, context);
     assert.equal(point.modelVersion, 2);
     assert.equal(point.modelRevision, BUCK_LOSS_MODEL_REVISION);
-    assert.equal(point.modelRevision, "2.4");
+    assert.equal(point.modelRevision, "2.5");
     assert.equal(point.technology, "gan");
     assert.equal(point.catalogKind, "manufacturer");
     assert.equal(point.deviceTemplate, "epc2090");
@@ -354,7 +364,7 @@ describe("buck loss v2 contracts", () => {
 
     const sweep = computeBuckLossSweepV2(inputs, context, { points: 180 });
     assert.equal(sweep.modelVersion, 2);
-    assert.equal(sweep.modelRevision, "2.4");
+    assert.equal(sweep.modelRevision, "2.5");
     assert.equal(sweep.points.length, 180);
     assert.ok(sweep.annotations.peakEfficiency);
     assert.ok(Number.isFinite(sweep.annotations.ccmBoundary));
@@ -409,6 +419,53 @@ describe("buck loss v2 condition-coupled device inputs", () => {
     assert.ok(at16A.diagnostics.plateauV > at3v3.diagnostics.plateauV);
     assert.ok(at16A.diagnostics.qgs2Nc > at3v3.diagnostics.qgs2Nc);
     assert.ok(at16A.diagnostics.driveHeadroomV < at3v3.diagnostics.driveHeadroomV);
+  });
+
+  it("integrates the disclosed CRSS curve so QGD follows the live switch voltage", () => {
+    const model = getBuckLossDeviceTemplateV2("epc2090").conditionModel;
+    const pointAt = (switchVoltageV) => resolveBuckLossConditionPointV2(model, {
+      currentA: 3,
+      driveVoltageV: 5,
+      switchVoltageV
+    });
+    const at5V = pointAt(5);
+    const at12V = pointAt(12);
+    const at50V = pointAt(50);
+    const at75V = pointAt(75);
+
+    assert.ok([at5V, at12V, at50V, at75V].every((point) => point.available));
+    assert.ok([at5V, at12V, at50V, at75V].every((point) => point.qgdVoltageSupported));
+    assert.ok(at5V.qgdNc < at12V.qgdNc);
+    assert.ok(at12V.qgdNc < at50V.qgdNc);
+    assert.ok(at50V.qgdNc < at75V.qgdNc);
+    rel(at50V.qgdNc, 0.7);
+    assert.equal(at12V.qgdVoltageMethod, "normalized-crss-integral");
+
+    const conditioned = conditionedSetup("epc2090", {
+      currentA: 3,
+      rawOverrides: { vin: 12 }
+    }).conditioning;
+    rel(conditioned.rawInputs.qgdHigh, at12V.qgdNc);
+    rel(conditioned.rawInputs.qgdLow, at12V.qgdNc);
+    assert.equal(conditioned.rawInputs.__provenance.qgdHigh, "calculated-condition-qgd");
+
+    const outsideCurve = resolveBuckLossConditionsV2({
+      ...conditioned.rawInputs,
+      vin: 120,
+      __provenance: { ...conditioned.rawInputs.__provenance, vin: "entered" }
+    }, getBuckLossDeviceTemplateV2("epc2090"), { currentA: 3 });
+    rel(outsideCurve.rawInputs.qgdHigh, 0.7);
+    rel(outsideCurve.rawInputs.qgdLow, 0.7);
+    assert.equal(outsideCurve.rawInputs.__provenance.qgdHigh, "source-held-qgd-anchor");
+    assert.ok(outsideCurve.warnings.some(({ code }) => code === "switch-voltage-outside-qgd-domain"));
+
+    const explicitOutsideCurve = resolveBuckLossConditionsV2({
+      ...outsideCurve.rawInputs,
+      qgdHigh: 1.2,
+      __provenance: { ...outsideCurve.rawInputs.__provenance, qgdHigh: "entered" }
+    }, getBuckLossDeviceTemplateV2("epc2090"), { currentA: 3 });
+    rel(explicitOutsideCurve.rawInputs.qgdHigh, 1.2);
+    assert.ok(explicitOutsideCurve.warnings.some(({ message }) => /entered QGD override is retained/.test(message)));
   });
 
   it("keeps explicit per-field overrides pinned while calculated sibling fields continue tracking", () => {
@@ -533,9 +590,11 @@ describe("buck loss v2 condition-coupled device inputs", () => {
     assert.equal(conditioned.diagnostics.supported, true);
     rel(conditioned.rawInputs.plateauLow, conditioned.rawInputs.plateauHigh);
     rel(conditioned.rawInputs.qgs2Low, conditioned.rawInputs.qgs2High);
-    assert.equal(conditioned.rawInputs.qgdLow, template.values.qgdLow);
+    rel(conditioned.rawInputs.qgdLow, conditioned.rawInputs.qgdHigh);
+    assert.ok(conditioned.rawInputs.qgdLow < template.values.qgdLow);
     assert.equal(conditioned.rawInputs.__provenance.plateauLow, "calculated-condition-plateau");
     assert.equal(conditioned.rawInputs.__provenance.qgs2Low, "calculated-condition-qgs2");
+    assert.equal(conditioned.rawInputs.__provenance.qgdLow, "calculated-condition-qgd");
   });
 });
 
@@ -779,19 +838,21 @@ describe("buck loss v2 accounting", () => {
     assert.ok(!automatic.warnings.includes("negative-current-commutation-approximate"));
   });
 
-  it("uses the disclosed hard-switch swing and transition coefficients", () => {
+  it("returns per-edge energy and derives switching power from EPC AN030 overlap", () => {
     const gan = setup("epc2090");
     const effective = computeBuckLossPointV2(gan.inputs, 2, gan.context);
     assert.equal(effective.transition.method, "effective-fallback");
     assert.equal(effective.transition.evidenceClass, "assumed");
     const ganSwing = gan.inputs.vin + gan.inputs.diodeVf;
+    relSmall(effective.transition.turnOnEnergyJ, 0.5 * ganSwing * effective.waveform.iValley * effective.transition.effectiveTurnOn);
+    relSmall(effective.transition.turnOffEnergyJ, 0.5 * ganSwing * effective.waveform.iPeak * effective.transition.effectiveTurnOff);
     rel(
       effective.losses.turnOnOverlap,
-      0.5 * ganSwing * effective.waveform.iValley * gan.inputs.effectiveTurnOn * gan.inputs.fsw
+      effective.transition.turnOnEnergyJ * gan.inputs.fsw
     );
     rel(
       effective.losses.turnOffOverlap,
-      0.5 * ganSwing * effective.waveform.iPeak * gan.inputs.effectiveTurnOff * gan.inputs.fsw
+      effective.transition.turnOffEnergyJ * gan.inputs.fsw
     );
     assert.equal(effective.equationProvenance.turnOnOverlap.formula, "½ · VSW · ION · tEFF,ON · fSW");
     assert.equal(effective.equationProvenance.turnOffOverlap.formula, "½ · VSW · IOFF · tEFF,OFF · fSW");
@@ -803,21 +864,115 @@ describe("buck loss v2 accounting", () => {
     assert.equal(derived.transition.method, "derived-gate-charge");
     assert.equal(derived.transition.selectedBy, "automatic-hierarchy");
     const siSwing = silicon.inputs.vin + silicon.inputs.diodeVf;
-    const gateCurrentOn = (silicon.inputs.vDrive - silicon.inputs.plateauHigh) / silicon.inputs.gateResistanceOnHigh;
-    const gateCurrentOff = silicon.inputs.plateauHigh / silicon.inputs.gateResistanceOffHigh;
-    const currentRise = silicon.inputs.qgs2High / gateCurrentOn;
-    const voltageFall = silicon.inputs.qgdHigh / gateCurrentOn;
-    const voltageRise = silicon.inputs.qgdHigh / gateCurrentOff;
-    const currentFall = silicon.inputs.qgs2High / gateCurrentOff;
-    rel(derived.losses.turnOnOverlap, siSwing * derived.waveform.iValley * silicon.inputs.fsw * (currentRise / 3 + voltageFall / 2));
-    rel(derived.losses.turnOffOverlap, siSwing * derived.waveform.iPeak * silicon.inputs.fsw * (voltageRise / 2 + currentFall / 3));
-    assert.equal(derived.equationProvenance.turnOnOverlap.formula, "VSW · ION · fSW · (tI/3 + tV/2)");
-    assert.equal(derived.equationProvenance.turnOnOverlap.source.equation, "4.39");
-    assert.equal(derived.equationProvenance.turnOnOverlap.source.relation, "direct");
+    relSmall(
+      derived.transition.turnOnEnergyJ,
+      0.5 * siSwing * derived.waveform.iValley
+        * (derived.transition.currentRise + derived.transition.voltageFall)
+    );
+    relSmall(
+      derived.transition.turnOffEnergyJ,
+      0.5 * siSwing * derived.waveform.iPeak
+        * (derived.transition.currentFall + derived.transition.voltageRise)
+    );
+    rel(derived.losses.turnOnOverlap, derived.transition.turnOnEnergyJ * silicon.inputs.fsw);
+    rel(derived.losses.turnOffOverlap, derived.transition.turnOffEnergyJ * silicon.inputs.fsw);
+    assert.equal(derived.equationProvenance.turnOnOverlap.formula, "½ · VSW · ION · (tCR + tVF) · fSW");
+    assert.equal(derived.equationProvenance.turnOnOverlap.source.equation, "1–14");
+    assert.equal(derived.equationProvenance.turnOnOverlap.source.relation, "adapted");
+    assert.equal(derived.transition.edgeConditions.turnOn.pointConditioned, true);
+    assert.equal(derived.transition.edgeConditions.turnOff.pointConditioned, true);
 
     const dcm = computeBuckLossPointV2(silicon.inputs, 0.05, silicon.context);
     assert.equal(dcm.waveform.mode, "dcm");
     assert.equal(dcm.losses.turnOnOverlap, 0);
+    assert.equal(dcm.transition.turnOnEnergyJ, 0);
+    assert.ok(dcm.transition.turnOffEnergyJ > 0);
+  });
+
+  it("re-resolves EON and EOFF from load, VIN, drive, and independent gate resistances", () => {
+    const light = conditionedSetup("epc2090", { currentA: 3, rawOverrides: { vin: 12 } });
+    const lightPoint = computeBuckLossPointV2(light.inputs, 1, light.context);
+    const heavyPoint = computeBuckLossPointV2(light.inputs, 3, light.context);
+    assert.ok(heavyPoint.transition.turnOnCurrentA > lightPoint.transition.turnOnCurrentA);
+    assert.ok(heavyPoint.transition.turnOffCurrentA > lightPoint.transition.turnOffCurrentA);
+    assert.ok(heavyPoint.transition.turnOnEnergyJ > lightPoint.transition.turnOnEnergyJ);
+    assert.ok(heavyPoint.transition.turnOffEnergyJ > lightPoint.transition.turnOffEnergyJ);
+
+    const at8V = conditionedSetup("epc2090", { currentA: 3, rawOverrides: { vin: 8 } });
+    const at12V = conditionedSetup("epc2090", { currentA: 3, rawOverrides: { vin: 12 } });
+    const point8V = computeBuckLossPointV2(at8V.inputs, 2, at8V.context);
+    const point12V = computeBuckLossPointV2(at12V.inputs, 2, at12V.context);
+    assert.ok(point12V.transition.turnOnEnergyJ > point8V.transition.turnOnEnergyJ);
+    assert.ok(point12V.transition.turnOffEnergyJ > point8V.transition.turnOffEnergyJ);
+
+    const at5VDrive = conditionedSetup("epc2090", { currentA: 3, vDrive: 5 });
+    const at3v3Drive = conditionedSetup("epc2090", { currentA: 3, vDrive: 3.3 });
+    const point5VDrive = computeBuckLossPointV2(at5VDrive.inputs, 3, at5VDrive.context);
+    const point3v3Drive = computeBuckLossPointV2(at3v3Drive.inputs, 3, at3v3Drive.context);
+    assert.ok(point3v3Drive.transition.turnOnEnergyJ > point5VDrive.transition.turnOnEnergyJ);
+    assert.ok(point3v3Drive.transition.turnOffEnergyJ > point5VDrive.transition.turnOffEnergyJ);
+
+    const silicon = setup("silicon-30v");
+    const baseline = computeBuckLossPointV2(silicon.inputs, 2, silicon.context);
+    const slowerOn = computeBuckLossPointV2({
+      ...silicon.inputs,
+      gateResistanceOnHigh: 2 * silicon.inputs.gateResistanceOnHigh
+    }, 2, silicon.context);
+    const slowerOff = computeBuckLossPointV2({
+      ...silicon.inputs,
+      gateResistanceOffHigh: 2 * silicon.inputs.gateResistanceOffHigh
+    }, 2, silicon.context);
+    relSmall(slowerOn.transition.turnOnEnergyJ, 2 * baseline.transition.turnOnEnergyJ);
+    relSmall(slowerOn.transition.turnOffEnergyJ, baseline.transition.turnOffEnergyJ);
+    relSmall(slowerOff.transition.turnOnEnergyJ, baseline.transition.turnOnEnergyJ);
+    relSmall(slowerOff.transition.turnOffEnergyJ, 2 * baseline.transition.turnOffEnergyJ);
+
+    const manualBase = computeBuckLossPointV2({
+      ...silicon.inputs,
+      effectiveTurnOn: 4e-9,
+      effectiveTurnOff: 6e-9
+    }, 2, { ...silicon.context, timingMode: "effective" });
+    const manualOn = computeBuckLossPointV2({
+      ...silicon.inputs,
+      effectiveTurnOn: 8e-9,
+      effectiveTurnOff: 6e-9
+    }, 2, { ...silicon.context, timingMode: "effective" });
+    const manualOff = computeBuckLossPointV2({
+      ...silicon.inputs,
+      effectiveTurnOn: 4e-9,
+      effectiveTurnOff: 12e-9
+    }, 2, { ...silicon.context, timingMode: "effective" });
+    relSmall(manualOn.transition.turnOnEnergyJ, 2 * manualBase.transition.turnOnEnergyJ);
+    relSmall(manualOn.transition.turnOffEnergyJ, manualBase.transition.turnOffEnergyJ);
+    relSmall(manualOff.transition.turnOnEnergyJ, manualBase.transition.turnOnEnergyJ);
+    relSmall(manualOff.transition.turnOffEnergyJ, 2 * manualBase.transition.turnOffEnergyJ);
+  });
+
+  it("honors explicit gate-charge overrides in the live effective fallback", () => {
+    const automatic = conditionedSetup("epc2090", { currentA: 3 });
+    const explicit = conditionedSetup("epc2090", {
+      currentA: 3,
+      rawOverrides: { qgdHigh: 1.4 },
+      provenanceOverrides: { qgdHigh: "entered" }
+    });
+    const automaticPoint = computeBuckLossPointV2(automatic.inputs, 2, automatic.context);
+    const explicitPoint = computeBuckLossPointV2(explicit.inputs, 2, explicit.context);
+
+    assert.equal(explicit.context.provenance.qgdHigh, "entered");
+    assert.ok(explicitPoint.transition.effectiveTurnOn > automaticPoint.transition.effectiveTurnOn);
+    assert.ok(explicitPoint.transition.effectiveTurnOff > automaticPoint.transition.effectiveTurnOff);
+    assert.ok(explicitPoint.transition.turnOnEnergyJ > automaticPoint.transition.turnOnEnergyJ);
+    assert.ok(explicitPoint.transition.turnOffEnergyJ > automaticPoint.transition.turnOffEnergyJ);
+
+    const cleared = conditionedSetup("epc2090", {
+      currentA: 3,
+      rawOverrides: { qgdHigh: "" },
+      provenanceOverrides: { qgdHigh: "entered-blank" }
+    });
+    const clearedPoint = computeBuckLossPointV2(cleared.inputs, 2, cleared.context);
+    assert.equal(clearedPoint.transition.method, "effective-fallback");
+    relSmall(clearedPoint.transition.turnOnEnergyJ, automaticPoint.transition.turnOnEnergyJ);
+    relSmall(clearedPoint.transition.turnOffEnergyJ, automaticPoint.transition.turnOffEnergyJ);
   });
 
   it("prioritizes condition-matched switching-energy evidence and prevents double counting", () => {
@@ -827,6 +982,7 @@ describe("buck loss v2 accounting", () => {
       source: { id: "synthetic-energy-surface" },
       conditions: {
         temperatureC: 25,
+        driveVoltageV: gan.inputs.vDrive,
         gateResistanceOnOhm: gan.inputs.gateResistanceOnHigh,
         gateResistanceOffOhm: gan.inputs.gateResistanceOffHigh
       },
@@ -848,6 +1004,8 @@ describe("buck loss v2 accounting", () => {
     const expectedOffEnergy = 30e-9 + 40e-9 * point.waveform.iPeak / 4;
     rel(point.losses.turnOnOverlap, expectedOnEnergy * gan.inputs.fsw);
     rel(point.losses.turnOffOverlap, expectedOffEnergy * gan.inputs.fsw);
+    relSmall(point.transition.turnOnEnergyJ, expectedOnEnergy);
+    relSmall(point.transition.turnOffEnergyJ, expectedOffEnergy);
     assert.equal(point.losses.nodeEnergy, 0);
     assert.equal(point.losses.reverseRecovery, 0);
     assert.deepEqual(point.accounting.accountedElsewhere, {
@@ -865,6 +1023,14 @@ describe("buck loss v2 accounting", () => {
     assert.ok(mismatch.warnings.includes("switching-energy-surface-fallback"));
     assert.equal(mismatch.transition.attempts[0].reason, "temperatureC-mismatch");
     assert.ok(mismatch.losses.nodeEnergy > 0);
+
+    const driveMismatch = computeBuckLossPointV2({ ...gan.inputs, vDrive: 3.3 }, 2, {
+      ...gan.context,
+      junctionTemperatureC: 25,
+      switchingEnergySurface: surface
+    });
+    assert.equal(driveMismatch.transition.method, "effective-fallback");
+    assert.equal(driveMismatch.transition.attempts[0].reason, "driveVoltageV-mismatch");
   });
 
   it("returns transparent engineering bounds and ranked sensitivity drivers", () => {
@@ -876,8 +1042,8 @@ describe("buck loss v2 accounting", () => {
     assert.ok(point.uncertainty.lossW.high > point.pLoss);
     assert.ok(point.uncertainty.efficiency.low < point.efficiency);
     assert.ok(point.uncertainty.efficiency.high > point.efficiency);
-    assert.equal(point.uncertainty.dominantSensitivity.family, "switchingTransitions");
-    assert.equal(point.uncertainty.dominantSensitivity.evidenceClass, "assumed");
+    assert.equal(point.uncertainty.dominantSensitivity.family, point.uncertainty.contributors[0].family);
+    assert.equal(point.uncertainty.dominantSensitivity.evidenceClass, point.uncertainty.contributors[0].evidenceClass);
     const spans = point.uncertainty.contributors.map((contributor) => contributor.spanW);
     assert.deepEqual(spans, [...spans].sort((left, right) => right - left));
 
@@ -1123,7 +1289,7 @@ describe("buck loss v2 accounting", () => {
     assert.ok(dropoutWaveform.failure.values.highVoltage <= 0);
     assert.ok(Number.isFinite(dropoutWaveform.failure.values.availableSwitchFraction));
     assert.equal(invalidPoint.modelVersion, 2);
-    assert.equal(invalidPoint.modelRevision, "2.4");
+    assert.equal(invalidPoint.modelRevision, "2.5");
     assert.equal(invalidPoint.deviceTemplate, "silicon-30v");
     assert.equal(invalidPoint.parameterCorner, "synthetic-typical-25c");
     assert.equal(invalidPoint.failure.code, "dropout");

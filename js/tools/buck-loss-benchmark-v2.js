@@ -184,6 +184,8 @@ function evaluateLane(fixture, lane) {
         parameterCorner: `${configured.template.cornerId}-${lane.id}`,
         timingMode: configured.template.timingMode,
         controlMode: fixture.board.controlMode,
+        conditionModel: configured.template.conditionModel,
+        junctionTemperatureC: 25,
         provenance: configured.provenance
       });
       if (!point.valid) throw new Error(`${trace.id}/${lane.id}/${measurement.iout} A is invalid: ${point.errors.join(", ")}`);

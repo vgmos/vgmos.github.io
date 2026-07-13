@@ -1,7 +1,9 @@
 import { BUCK_LOSS_MODEL_REVISION, BUCK_LOSS_MODEL_VERSION, validateBuckLossInputsV2 } from "./buck-loss-schema-v2.js";
 import { BUCK_LOSS_ADVISORY_METADATA_V2, resolveBuckLossTermMetadataV2 } from "./buck-loss-equations-v2.js";
+import { resolveBuckLossConditionPointV2, resolveBuckLossEffectiveTimingV2 } from "./buck-loss-condition-resolver-v2.js";
 
 const EPSILON = 1e-12;
+const EXPLICIT_CONDITION_PROVENANCE = new Set(["entered", "url-entered", "entered-blank"]);
 const ACTIVE_PATH_V2 = Object.freeze({
   "high-side": "high-side-channel",
   "low-side": "low-side-channel",
@@ -459,6 +461,7 @@ function switchingSurfaceConditionCheck(surface, inputs, context) {
   const tolerance = surface.conditionTolerance || {};
   const checks = [
     ["temperatureC", context.junctionTemperatureC, tolerance.temperatureC ?? 0.5],
+    ["driveVoltageV", inputs.vDrive, tolerance.driveVoltageV ?? 1e-6],
     ["gateResistanceOnOhm", inputs.gateResistanceOnHigh, tolerance.gateResistanceOnOhm ?? 1e-6],
     ["gateResistanceOffOhm", inputs.gateResistanceOffHigh, tolerance.gateResistanceOffOhm ?? 1e-6]
   ];
@@ -537,14 +540,63 @@ function switchingEnergySurfaceCandidate(inputs, context, currents) {
   };
 }
 
-function derivedTransitionCandidate(inputs) {
-  const required = ["qgs2High", "qgdHigh", "plateauHigh", "gateResistanceOnHigh", "gateResistanceOffHigh"];
+function conditionIsExplicit(context, key) {
+  return EXPLICIT_CONDITION_PROVENANCE.has(context.provenance?.[key]);
+}
+
+function edgeChargeCondition(inputs, context, currentA) {
+  const calculated = context.conditionModel
+    ? resolveBuckLossConditionPointV2(context.conditionModel, {
+        currentA,
+        driveVoltageV: inputs.vDrive,
+        switchVoltageV: inputs.vin
+      })
+    : null;
+  const choose = (key, calculatedValue, scale = 1) => conditionIsExplicit(context, key)
+    ? inputs[key]
+    : calculated?.available && finite(calculatedValue)
+      ? calculatedValue * scale
+      : inputs[key];
+  return {
+    currentA,
+    thresholdVoltageV: calculated?.available ? calculated.thresholdVoltageV : null,
+    plateauV: choose("plateauHigh", calculated?.plateauV),
+    qgs2C: choose("qgs2High", calculated?.qgs2Nc, 1e-9),
+    qgdC: choose("qgdHigh", calculated?.qgdNc, 1e-9),
+    qgdVoltageMethod: calculated?.qgdVoltageSupported ? calculated.qgdVoltageMethod : null,
+    pointConditioned: Boolean(calculated?.available)
+  };
+}
+
+function derivedTransitionCandidate(inputs, context, currents) {
+  const required = ["gateResistanceOnHigh", "gateResistanceOffHigh"];
   if (required.some((key) => !finite(inputs[key]))) {
     return { available: false, candidate: "derived-gate-charge", reason: "missing-data", missing: required.filter((key) => !finite(inputs[key])) };
   }
-  const gateCurrentOn = (inputs.vDrive - inputs.plateauHigh) / inputs.gateResistanceOnHigh;
-  const gateCurrentOff = inputs.plateauHigh / inputs.gateResistanceOffHigh;
-  if (!(gateCurrentOn > 0 && gateCurrentOff > 0)) {
+  const turnOn = edgeChargeCondition(inputs, context, currents.turnOnCurrent);
+  const turnOff = edgeChargeCondition(inputs, context, currents.turnOffCurrent);
+  const conditionValues = [turnOn.qgs2C, turnOn.qgdC, turnOn.plateauV, turnOff.qgs2C, turnOff.qgdC, turnOff.plateauV];
+  if (conditionValues.some((value) => !finite(value))) {
+    return {
+      available: false,
+      candidate: "derived-gate-charge",
+      reason: "missing-data",
+      missing: ["qgs2High", "qgdHigh", "plateauHigh"].filter((key) => !finite(inputs[key]))
+    };
+  }
+  const offDriveVoltageV = Number(context.conditionModel?.effectiveTiming?.offDriveVoltageV ?? 0);
+  const turnOnAverageGateV = finite(turnOn.thresholdVoltageV)
+    ? (turnOn.plateauV + turnOn.thresholdVoltageV) / 2
+    : turnOn.plateauV;
+  const turnOffAverageGateV = finite(turnOff.thresholdVoltageV)
+    ? (turnOff.plateauV + turnOff.thresholdVoltageV) / 2
+    : turnOff.plateauV;
+  const gateCurrentCurrentRise = (inputs.vDrive - turnOnAverageGateV) / inputs.gateResistanceOnHigh;
+  const gateCurrentVoltageFall = (inputs.vDrive - turnOn.plateauV) / inputs.gateResistanceOnHigh;
+  const gateCurrentCurrentFall = (turnOffAverageGateV - offDriveVoltageV) / inputs.gateResistanceOffHigh;
+  const gateCurrentVoltageRise = (turnOff.plateauV - offDriveVoltageV) / inputs.gateResistanceOffHigh;
+  if (![gateCurrentCurrentRise, gateCurrentVoltageFall, gateCurrentCurrentFall, gateCurrentVoltageRise]
+    .every((value) => value > 0)) {
     return { available: false, candidate: "derived-gate-charge", reason: "gate-drive-headroom", missing: ["gate-drive-headroom"] };
   }
   return {
@@ -553,23 +605,59 @@ function derivedTransitionCandidate(inputs) {
     method: "derived-gate-charge",
     evidenceClass: "analytical",
     confidence: "medium-low",
-    currentRise: inputs.qgs2High / gateCurrentOn,
-    voltageFall: inputs.qgdHigh / gateCurrentOn,
-    voltageRise: inputs.qgdHigh / gateCurrentOff,
-    currentFall: inputs.qgs2High / gateCurrentOff,
+    currentRise: turnOn.qgs2C / gateCurrentCurrentRise,
+    voltageFall: turnOn.qgdC / gateCurrentVoltageFall,
+    voltageRise: turnOff.qgdC / gateCurrentVoltageRise,
+    currentFall: turnOff.qgs2C / gateCurrentCurrentFall,
+    gateCurrentsA: Object.freeze({
+      currentRise: gateCurrentCurrentRise,
+      voltageFall: gateCurrentVoltageFall,
+      currentFall: gateCurrentCurrentFall,
+      voltageRise: gateCurrentVoltageRise
+    }),
+    edgeConditions: Object.freeze({ turnOn: Object.freeze(turnOn), turnOff: Object.freeze(turnOff) }),
     accounting: { includesNodeEnergy: false, includesReverseRecovery: false }
   };
 }
 
-function effectiveTransitionCandidate(inputs, fallback) {
-  if (!finite(inputs.effectiveTurnOn) || !finite(inputs.effectiveTurnOff)) {
+function pointEffectiveTime(inputs, context, currentA, edge) {
+  if (!context.conditionModel) return null;
+  const calculated = resolveBuckLossConditionPointV2(context.conditionModel, {
+    currentA,
+    driveVoltageV: inputs.vDrive,
+    switchVoltageV: inputs.vin
+  });
+  if (!calculated.available) return null;
+  const hasFiniteExplicit = (key) => conditionIsExplicit(context, key) && finite(inputs[key]);
+  const point = {
+    ...calculated,
+    plateauV: hasFiniteExplicit("plateauHigh") ? inputs.plateauHigh : calculated.plateauV,
+    qgs2Nc: hasFiniteExplicit("qgs2High") ? inputs.qgs2High * 1e9 : calculated.qgs2Nc,
+    qgdNc: hasFiniteExplicit("qgdHigh") ? inputs.qgdHigh * 1e9 : calculated.qgdNc
+  };
+  point.driveHeadroomV = inputs.vDrive - point.plateauV;
+  point.available = [point.plateauV, point.qgs2Nc, point.qgdNc, point.driveHeadroomV]
+    .every(Number.isFinite);
+  const timing = resolveBuckLossEffectiveTimingV2(context.conditionModel, point);
+  if (!timing.available) return null;
+  return (edge === "on" ? timing.turnOnNs : timing.turnOffNs) * 1e-9;
+}
+
+function effectiveTransitionCandidate(inputs, fallback, context, currents) {
+  const turnOn = fallback && !conditionIsExplicit(context, "effectiveTurnOn")
+    ? pointEffectiveTime(inputs, context, currents.turnOnCurrent, "on") ?? inputs.effectiveTurnOn
+    : inputs.effectiveTurnOn;
+  const turnOff = fallback && !conditionIsExplicit(context, "effectiveTurnOff")
+    ? pointEffectiveTime(inputs, context, currents.turnOffCurrent, "off") ?? inputs.effectiveTurnOff
+    : inputs.effectiveTurnOff;
+  if (!finite(turnOn) || !finite(turnOff)) {
     return {
       available: false,
       candidate: "effective-overlap",
       reason: "missing-data",
       missing: [
-        !finite(inputs.effectiveTurnOn) ? "effectiveTurnOn" : null,
-        !finite(inputs.effectiveTurnOff) ? "effectiveTurnOff" : null
+        !finite(turnOn) ? "effectiveTurnOn" : null,
+        !finite(turnOff) ? "effectiveTurnOff" : null
       ].filter(Boolean)
     };
   }
@@ -579,8 +667,9 @@ function effectiveTransitionCandidate(inputs, fallback) {
     method: fallback ? "effective-fallback" : "effective-override",
     evidenceClass: "assumed",
     confidence: "low",
-    effectiveTurnOn: inputs.effectiveTurnOn,
-    effectiveTurnOff: inputs.effectiveTurnOff,
+    effectiveTurnOn: turnOn,
+    effectiveTurnOff: turnOff,
+    pointConditioned: fallback && Boolean(context.conditionModel),
     accounting: { includesNodeEnergy: false, includesReverseRecovery: false }
   };
 }
@@ -590,12 +679,12 @@ function transitionModel(inputs, timingMode, context, currents) {
   const candidates = mode === "auto"
     ? [
         () => switchingEnergySurfaceCandidate(inputs, context, currents),
-        () => derivedTransitionCandidate(inputs),
-        () => effectiveTransitionCandidate(inputs, true)
+        () => derivedTransitionCandidate(inputs, context, currents),
+        () => effectiveTransitionCandidate(inputs, true, context, currents)
       ]
     : mode === "derived"
-      ? [() => derivedTransitionCandidate(inputs)]
-      : [() => effectiveTransitionCandidate(inputs, false)];
+      ? [() => derivedTransitionCandidate(inputs, context, currents)]
+      : [() => effectiveTransitionCandidate(inputs, false, context, currents)];
   const attempts = [];
   for (const candidate of candidates) {
     const result = candidate();
@@ -860,21 +949,39 @@ export function computeBuckLossPointV2(inputs, iout, context = {}) {
   const vSwing = inputs.vin + inputs.diodeVf;
   const turnOnCurrent = currentAtTransition(waveform, "turn-on");
   const turnOffCurrent = currentAtTransition(waveform, "turn-off");
-  const transition = transitionModel(inputs, timingMode, context, { turnOnCurrent, turnOffCurrent });
+  const transitionResult = transitionModel(inputs, timingMode, context, { turnOnCurrent, turnOffCurrent });
+  let turnOnEnergyJ = null;
+  let turnOffEnergyJ = null;
+  if (waveform.mode !== "zero-load-unmodeled" && transitionResult.available) {
+    if (["measured-energy-surface", "vendor-spice-energy-surface"].includes(transitionResult.method)) {
+      turnOnEnergyJ = transitionResult.turnOnEnergyJ;
+      turnOffEnergyJ = transitionResult.turnOffEnergyJ;
+    } else if (["effective-override", "effective-fallback"].includes(transitionResult.method)) {
+      turnOnEnergyJ = 0.5 * vSwing * turnOnCurrent * transitionResult.effectiveTurnOn;
+      turnOffEnergyJ = 0.5 * vSwing * turnOffCurrent * transitionResult.effectiveTurnOff;
+    } else {
+      turnOnEnergyJ = 0.5 * vSwing * turnOnCurrent
+        * (transitionResult.currentRise + transitionResult.voltageFall);
+      turnOffEnergyJ = 0.5 * vSwing * turnOffCurrent
+        * (transitionResult.currentFall + transitionResult.voltageRise);
+    }
+  }
+  const transition = {
+    ...transitionResult,
+    turnOnEnergyJ,
+    turnOffEnergyJ,
+    turnOnCurrentA: turnOnCurrent,
+    turnOffCurrentA: turnOffCurrent,
+    switchVoltageV: vSwing
+  };
   const accountedElsewhere = {};
   if (waveform.mode === "zero-load-unmodeled") {
     addGap("switchingTransitions", "zeroLoadControlBehavior");
   } else if (!transition.available) {
     addGap("switchingTransitions", "switchingTransitionsMissingData", "whole-term", { missingFields: transition.missing ?? [] });
-  } else if (["measured-energy-surface", "vendor-spice-energy-surface"].includes(transition.method)) {
+  } else {
     losses.turnOnOverlap = transition.turnOnEnergyJ * inputs.fsw;
     losses.turnOffOverlap = transition.turnOffEnergyJ * inputs.fsw;
-  } else if (["effective-override", "effective-fallback"].includes(transition.method)) {
-    losses.turnOnOverlap = 0.5 * vSwing * turnOnCurrent * transition.effectiveTurnOn * inputs.fsw;
-    losses.turnOffOverlap = 0.5 * vSwing * turnOffCurrent * transition.effectiveTurnOff * inputs.fsw;
-  } else {
-    losses.turnOnOverlap = vSwing * turnOnCurrent * inputs.fsw * (transition.currentRise / 3 + transition.voltageFall / 2);
-    losses.turnOffOverlap = vSwing * turnOffCurrent * inputs.fsw * (transition.voltageRise / 2 + transition.currentFall / 3);
   }
 
   const deadTimeBreakdown = Object.fromEntries(Object.entries(moments.deadTimeByEdge).map(([edge, edgeMoments]) => [edge, {

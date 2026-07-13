@@ -490,8 +490,8 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page).toHaveURL(/m=2/);
     await expect(page.locator("[data-blx-prompt]")).toHaveText("A 12 Vᵢₙ point-of-load example with a Coilcraft 2.2 µH inductor.");
     await expect(page.locator("#blx-v2-deadTime")).toHaveValue("2");
-    await expect.poll(async () => Number(await page.locator("#blx-v2-effectiveTurnOn").inputValue())).toBeCloseTo(2.767532, 6);
-    await expect.poll(async () => Number(await page.locator("#blx-v2-effectiveTurnOff").inputValue())).toBeCloseTo(2.218787, 6);
+    await expect.poll(async () => Number(await page.locator("#blx-v2-effectiveTurnOn").inputValue())).toBeCloseTo(1.590882, 6);
+    await expect.poll(async () => Number(await page.locator("#blx-v2-effectiveTurnOff").inputValue())).toBeCloseTo(1.208654, 6);
     await expect(page.locator('[data-blx-field="inductance"] [data-blx-catalog]')).toHaveCount(1);
     await expect(page.locator('[data-blx-v2-group="magnetics"] [data-blx-catalog]')).toHaveCount(0);
 
@@ -571,6 +571,7 @@ test.describe("Buck Converter Loss Tool", () => {
     const plateau = page.locator("#blx-entry-plateauHigh");
     const rds = page.locator("#blx-entry-rdsHigh");
     const qg = page.locator("#blx-entry-qgHigh");
+    const qgd = page.locator("#blx-entry-qgdHigh");
     const turnOn = page.locator("#blx-entry-effectiveTurnOn");
     const plateauAt5V = Number(await plateau.inputValue());
     const qgAt5V = Number(await qg.inputValue());
@@ -594,6 +595,14 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator('[data-blx-entry-condition-reset="qgHigh"]')).toBeHidden();
 
     await page.locator(".blx-entry-advanced > summary").click();
+    const automaticQgd = Number(await qgd.inputValue());
+    await qgd.fill("1.2");
+    const qgdReset = page.locator('[data-blx-entry-condition-reset="qgdHigh"]');
+    await expect(qgdReset).toBeVisible();
+    await qgdReset.click();
+    await expect.poll(async () => Number(await qgd.inputValue())).toBeCloseTo(automaticQgd, 10);
+    await expect(qgdReset).toBeHidden();
+
     await plateau.fill("6");
     await page.getByRole("button", { name: "Continue to timing" }).click();
     await expect(plateau).toHaveAttribute("aria-invalid", "true");
@@ -710,10 +719,10 @@ test.describe("Buck Converter Loss Tool", () => {
   test("EPC startup conditions and catalog-failure fallbacks stay explicit", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
-    await expect(page.locator('[data-blx-out="loss-total"]')).toHaveText("Total · 327.38 mW");
+    await expect(page.locator('[data-blx-out="loss-total"]')).toHaveText("Total · 293.76 mW");
     await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("50 V / 16 A test conditions");
     await expect(page.locator("[data-blx-device-notes]")).toContainText("No shipped EON/EOFF surface is loaded");
-    await expect(page.locator("[data-blx-warnings]")).toContainText("illustrative effective-time fallback");
+    await expect(page.locator("[data-blx-warnings]")).toContainText("illustrative effective-time anchor");
     await expect(page.locator(".blx-equations")).toContainText("no shipped device template currently loads one");
     const conditions = page.locator("[data-blx-device-conditions]");
     await conditions.locator("summary").click();
@@ -814,10 +823,10 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(root).toHaveAttribute("aria-busy", "false");
     await expect(page.locator("[data-blx-catalog]")).toHaveAttribute("data-catalog-state", "ready");
     await expect(root).toHaveAttribute("data-blx-model", "2");
-    await expect(root).toHaveAttribute("data-blx-revision", "2.4");
+    await expect(root).toHaveAttribute("data-blx-revision", "2.5");
     await expect(page.locator('[data-blx-out="efficiency"]')).not.toHaveText("—");
     await expect(page.locator("[data-blx-family]")).toHaveCount(8);
-    await expect(page.locator("[data-blx-operating-metrics] .blx-operating-metric")).toHaveCount(6);
+    await expect(page.locator("[data-blx-operating-metrics] .blx-operating-metric")).toHaveCount(8);
     await expect(page.locator("[data-blx-confidence-metrics] .blx-operating-metric")).toHaveCount(4);
     await expect(page.locator("[data-blx-confidence-metrics]")).toContainText("Effective-time fallback · low");
     await expect(page.locator("[data-blx-confidence-copy]")).toContainText("engineering bounds, not a statistical confidence interval");
@@ -829,6 +838,8 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator("[data-blx-device-model-note]")).toContainText("Vendor archive 1.104 · 22-Jul-2025");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("Coverage");
     await expect(page.locator("[data-blx-operating-metrics]")).toContainText("All terms modeled");
+    await expect(page.locator("[data-blx-operating-metrics]")).toContainText("EON / EOFF");
+    await expect(page.locator("[data-blx-operating-metrics]")).toContainText("ION / IOFF");
     await expect(page.locator(".blx-controls [data-blx-v2-input]")).toHaveCount(5);
     await expect(page.locator("[data-blx-v2-group]")).toHaveCount(6);
     await expect(page.locator("[data-blx-presets] button")).toHaveCount(3);
@@ -947,12 +958,16 @@ test.describe("Buck Converter Loss Tool", () => {
 
     const plateau = page.locator("#blx-v2-plateauHigh");
     const qg = page.locator("#blx-v2-qgHigh");
+    const qgd = page.locator("#blx-v2-qgdHigh");
     const turnOn = page.locator("#blx-v2-effectiveTurnOn");
     const loss = page.locator('[data-blx-out="loss-total"]');
+    const edgeEnergy = page.locator("[data-blx-operating-metrics] .blx-operating-metric").filter({ hasText: "EON / EOFF" });
     const plateauAt5V = Number(await plateau.inputValue());
     const qgAt5V = Number(await qg.inputValue());
+    const qgdAt12V = Number(await qgd.inputValue());
     const turnOnAt5V = Number(await turnOn.inputValue());
     const lossAt5V = await loss.textContent();
+    const edgeEnergyAt5V = await edgeEnergy.textContent();
 
     await page.locator("#blx-v2-vDrive").fill("3.3");
     await page.locator("#blx-v2-vDrive").press("Tab");
@@ -960,8 +975,10 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect.poll(async () => Number(await qg.inputValue())).toBeLessThan(qgAt5V);
     await expect.poll(async () => Number(await turnOn.inputValue())).toBeGreaterThan(turnOnAt5V);
     await expect.poll(async () => Number(await plateau.inputValue())).toBeCloseTo(plateauAt5V, 10);
+    await expect.poll(async () => Number(await qgd.inputValue())).toBeCloseTo(qgdAt12V, 10);
     await expect(loss).not.toHaveText(lossAt5V || "");
-    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("Miller plateau uses IOUT,max as the transfer-fit current proxy");
+    await expect(edgeEnergy).not.toHaveText(edgeEnergyAt5V || "");
+    await expect(page.locator("[data-blx-device-condition-summary]")).toContainText("live EON/EOFF re-resolve");
     await expect(page.locator("[data-blx-warnings]")).toContainText("outside the device's 4.5-5 V recommended range");
     await expect.poll(() => {
       const params = new URL(page.url()).searchParams;
@@ -969,10 +986,28 @@ test.describe("Buck Converter Loss Tool", () => {
         drive: params.get("vdrv"),
         rds: params.has("rhs"),
         qg: params.has("qgh"),
+        qgd: params.has("qgdh"),
         plateau: params.has("vplh"),
         turnOn: params.has("teon")
       };
-    }).toEqual({ drive: "3.3", rds: false, qg: false, plateau: false, turnOn: false });
+    }).toEqual({ drive: "3.3", rds: false, qg: false, qgd: false, plateau: false, turnOn: false });
+
+    await qgd.fill("1.2");
+    await qgd.press("Tab");
+    const qgdReset = page.locator('[data-blx-condition-reset="qgdHigh"]');
+    await expect(qgdReset).toBeVisible();
+    await expect.poll(() => new URL(page.url()).searchParams.get("qgdh")).toBe("1.2");
+    await page.locator("#blx-v2-vin").fill("10");
+    await page.locator("#blx-v2-vin").press("Tab");
+    await expect(qgd).toHaveValue("1.2");
+    await qgdReset.click();
+    await expect.poll(async () => Number(await qgd.inputValue())).not.toBe(1.2);
+    await expect.poll(() => new URL(page.url()).searchParams.has("qgdh")).toBe(false);
+    const qgdAt10V = Number(await qgd.inputValue());
+    await page.locator("#blx-v2-vin").fill("8");
+    await page.locator("#blx-v2-vin").press("Tab");
+    await expect.poll(async () => Number(await qgd.inputValue())).toBeLessThan(qgdAt10V);
+    await expect.poll(() => new URL(page.url()).searchParams.has("qgdh")).toBe(false);
 
     await qg.fill("9");
     await qg.press("Tab");
