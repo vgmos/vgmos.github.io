@@ -12,7 +12,8 @@
   "use strict";
 
   var root = document.documentElement;
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var reduce = motionPreference.matches;
   var pageTransitionKey = "vgmos-page-transition";
   var pageTransitionOutMs = 70;
   var pageTransitionInMs = 110;
@@ -23,10 +24,111 @@
   ];
   var navInFlight = false;
   var pendingNavigation = null;
+  var activeNavigation = null;
+  var historyEntrySequence = 0;
   var prefetched = {};
+  var pageStyleLoads = {};
+  var fallbackNavigationTimer = 0;
+  var fallbackNavigationUrl = null;
   var scrollSaveTimer = 0;
   var scrollSaveDelayMs = 250;
+  var pageScopes = new WeakMap();
+  var activePageScope = null;
+  var scriptHydrationSequence = 0;
+  var exitLayerSequence = 0;
+  var lifecycleBootstrap = window.vgmosPageLifecycle;
+  var queuedPageCleanups = lifecycleBootstrap && Array.isArray(lifecycleBootstrap.queue)
+    ? lifecycleBootstrap.queue.slice()
+    : [];
   root.classList.add("js-on");
+
+  var syncMotionPreference = function (event) { reduce = event.matches; };
+  if (motionPreference.addEventListener) motionPreference.addEventListener("change", syncMotionPreference);
+  else if (motionPreference.addListener) motionPreference.addListener(syncMotionPreference);
+
+  /* --------------------------------------------- swapped-page lifecycle */
+  function mainForOwner(owner) {
+    if (owner && owner.nodeType === 1) {
+      if (owner.matches && owner.matches("main.page-content")) return owner;
+      if (owner.closest) {
+        var parentMain = owner.closest("main.page-content");
+        if (parentMain) return parentMain;
+      }
+    }
+    return activePageScope && activePageScope.main && activePageScope.main.isConnected
+      ? activePageScope.main
+      : document.querySelector("main.page-content");
+  }
+
+  function makePageScope(main) {
+    var controller = new AbortController();
+    var cleanups = [];
+    var destroyed = false;
+    var scope = {
+      main: main,
+      signal: controller.signal,
+      onCleanup: function (cleanup) {
+        if (typeof cleanup !== "function") return function () {};
+        if (destroyed || controller.signal.aborted) {
+          try { cleanup(); } catch (error) {}
+          return function () {};
+        }
+        cleanups.push(cleanup);
+        return function () {
+          var index = cleanups.indexOf(cleanup);
+          if (index >= 0) cleanups.splice(index, 1);
+        };
+      },
+      destroy: function () {
+        if (destroyed) return;
+        destroyed = true;
+        controller.abort();
+        cleanups.slice().reverse().forEach(function (cleanup) {
+          try { cleanup(); } catch (error) {}
+        });
+        cleanups = [];
+        if (activePageScope === scope) activePageScope = null;
+      }
+    };
+    pageScopes.set(main, scope);
+    return scope;
+  }
+
+  function pageScopeFor(owner) {
+    var main = mainForOwner(owner);
+    if (!main) return null;
+    var scope = pageScopes.get(main);
+    if (!scope) {
+      if (!main.isConnected) return null;
+      scope = makePageScope(main);
+    }
+    if (main.isConnected && !scope.signal.aborted) activePageScope = scope;
+    return scope;
+  }
+
+  function registerPageCleanup(cleanup, owner) {
+    var scope = pageScopeFor(owner);
+    if (scope) return scope.onCleanup(cleanup);
+    if (typeof cleanup === "function") {
+      try { cleanup(); } catch (error) {}
+    }
+    return function () {};
+  }
+
+  window.vgmosPageLifecycle = {
+    scope: pageScopeFor,
+    register: registerPageCleanup
+  };
+
+  pageScopeFor(document.querySelector("main.page-content"));
+  queuedPageCleanups.forEach(function (entry) {
+    if (!entry || entry.cancelled) return;
+    entry.unregister = registerPageCleanup(entry.cleanup, entry.owner);
+  });
+  queuedPageCleanups.length = 0;
+  if (lifecycleBootstrap && Array.isArray(lifecycleBootstrap.queue)) {
+    lifecycleBootstrap.queue.length = 0;
+  }
 
   /* ----------------------------------------------------- colour theme */
   var themeStorageKey = "vgmos-theme";
@@ -125,6 +227,11 @@
     next.soft = true;
     next.scroll = scroll || { x: 0, y: 0 };
     return next;
+  }
+
+  function nextSoftEntryId() {
+    historyEntrySequence += 1;
+    return "vgmos-" + Date.now().toString(36) + "-" + historyEntrySequence.toString(36);
   }
 
   function scrollFromState(state) {
@@ -376,11 +483,6 @@
 
     if (url.origin !== window.location.origin) return null;
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    // Interactive tools own long-lived animation and global event handlers.
-    // Use a native page load at either side of that boundary so the browser
-    // tears the old instance down instead of retaining detached tool state.
-    if (/\/tools(?:\/|$)/.test(cleanPath(url.pathname)) ||
-        /\/tools(?:\/|$)/.test(cleanPath(window.location.pathname))) return null;
     if (url.pathname === window.location.pathname &&
         url.search === window.location.search &&
         url.hash) return null;
@@ -438,6 +540,109 @@
     document.head.appendChild(next);
   }
 
+  function pageStyleHrefs(doc) {
+    return Array.prototype.slice.call(doc.querySelectorAll("link[data-vgmos-page-style][rel='stylesheet']"))
+      .map(function (link) { return link.href; })
+      .filter(function (href, index, hrefs) { return hrefs.indexOf(href) === index; });
+  }
+
+  function pageStyleNode(href) {
+    return Array.prototype.slice.call(document.head.querySelectorAll("link[data-vgmos-page-style][rel='stylesheet']"))
+      .filter(function (link) { return link.href === href; })[0] || null;
+  }
+
+  function pageStyleReady(link) {
+    if (!link) return false;
+    try {
+      return !!link.sheet;
+    } catch (error) {
+      // A stylesheet whose rules are not inspectable can still be fully loaded.
+      return true;
+    }
+  }
+
+  function waitForPageStyle(source) {
+    var href = source.href;
+    var existing = pageStyleNode(href);
+    var record = pageStyleLoads[href];
+
+    if (record && (!record.node.isConnected || record.node !== existing)) {
+      delete pageStyleLoads[href];
+      record = null;
+    }
+    if (record) {
+      if (record.status === "loading" && pageStyleReady(record.node)) record.resolve();
+      return record.promise;
+    }
+
+    var node = existing;
+    if (!node) {
+      node = document.createElement("link");
+      copyAttributes(source, node);
+    }
+
+    record = {
+      node: node,
+      status: pageStyleReady(node) ? "loaded" : "loading",
+      promise: null,
+      resolve: function () {},
+      reject: function () {}
+    };
+    record.promise = new Promise(function (resolve, reject) {
+      function cleanup() {
+        node.removeEventListener("load", loaded);
+        node.removeEventListener("error", failed);
+      }
+      function loaded() {
+        if (record.status !== "loading") return;
+        record.status = "loaded";
+        cleanup();
+        resolve();
+      }
+      function failed() {
+        if (record.status !== "loading") return;
+        record.status = "error";
+        cleanup();
+        if (pageStyleLoads[href] === record) delete pageStyleLoads[href];
+        if (node.parentNode) node.parentNode.removeChild(node);
+        reject(new Error("Page stylesheet failed to load"));
+      }
+      record.resolve = loaded;
+      record.reject = failed;
+      if (record.status === "loaded") resolve();
+      else {
+        node.addEventListener("load", loaded, { once: true });
+        node.addEventListener("error", failed, { once: true });
+      }
+    });
+    pageStyleLoads[href] = record;
+    if (!existing) document.head.appendChild(node);
+    return record.promise;
+  }
+
+  function preparePageStyles(doc) {
+    var expected = pageStyleHrefs(doc);
+    var loads = Array.prototype.slice.call(doc.querySelectorAll("link[data-vgmos-page-style][rel='stylesheet']"))
+      .filter(function (link) { return !!link.href; })
+      .map(waitForPageStyle);
+
+    return Promise.all(loads).then(function () { return expected; });
+  }
+
+  function finalizePageStyles(expected) {
+    var keep = expected || [];
+    Array.prototype.slice.call(document.head.querySelectorAll("link[data-vgmos-page-style][rel='stylesheet']"))
+      .forEach(function (link) {
+        if (keep.indexOf(link.href) !== -1) return;
+        var record = pageStyleLoads[link.href];
+        if (record && record.node === link) {
+          delete pageStyleLoads[link.href];
+          if (record.status === "loading") record.reject();
+        }
+        if (link.parentNode) link.parentNode.removeChild(link);
+      });
+  }
+
   function ensureScript(script) {
     if (!script || !script.src || hasHeadAsset("script", "src", script.src)) return Promise.resolve();
     return new Promise(function (resolve, reject) {
@@ -478,31 +683,94 @@
       .then(waitForMathReady);
   }
 
-  function renderMath(main) {
-    if (typeof window.renderMathInElement !== "function") return;
-    try {
-      window.renderMathInElement(main || document.body, {
-        delimiters: mathDelimiters,
-        throwOnError: false
-      });
-    } catch (error) {}
-  }
+  var mathResizeBound = false;
 
-  function runMainScripts(main) {
-    if (!main) return;
-    Array.prototype.slice.call(main.querySelectorAll("script")).forEach(function (oldScript) {
-      var next = document.createElement("script");
-      copyAttributes(oldScript, next);
-      next.text = oldScript.text || oldScript.textContent || "";
-      oldScript.replaceWith(next);
+  function updateMathOverflow(scope) {
+    var container = scope && scope.querySelectorAll ? scope : document;
+    Array.prototype.slice.call(container.querySelectorAll(".katex-display")).forEach(function (display) {
+      if (display.scrollWidth > display.clientWidth + 1) display.tabIndex = 0;
+      else display.removeAttribute("tabindex");
     });
   }
 
+  function renderMath(main) {
+    if (typeof window.renderMathInElement === "function") {
+      try {
+        window.renderMathInElement(main || document.body, {
+          delimiters: mathDelimiters,
+          throwOnError: false
+        });
+      } catch (error) {}
+    }
+
+    var update = function () { updateMathOverflow(main || document); };
+    window.requestAnimationFrame(update);
+    window.setTimeout(update, 250);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
+    if (!mathResizeBound) {
+      mathResizeBound = true;
+      window.addEventListener("resize", function () {
+        updateMathOverflow(document.querySelector("main.page-content") || document);
+      }, { passive: true });
+    }
+  }
+
+  function runMainScripts(main) {
+    if (!main) return Promise.resolve();
+    return Array.prototype.slice.call(main.querySelectorAll("script")).reduce(function (ready, oldScript) {
+      return ready.then(function () {
+        return new Promise(function (resolve, reject) {
+          var next = document.createElement("script");
+          var inlineModule = oldScript.type === "module" && !oldScript.src;
+          var waitsForEvaluation = inlineModule || !!oldScript.src;
+          var settled = false;
+          var timeout = 0;
+          var token = inlineModule ? "module-" + (++scriptHydrationSequence) : "";
+
+          function finish(error) {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timeout);
+            if (inlineModule) window.removeEventListener("vgmos:inline-module-ready", moduleReady);
+            if (error) reject(error);
+            else resolve();
+          }
+
+          function moduleReady(event) {
+            if (event.detail && event.detail.token === token) finish();
+          }
+
+          copyAttributes(oldScript, next);
+          if (waitsForEvaluation) {
+            next.addEventListener("load", function () { finish(); }, { once: true });
+            next.addEventListener("error", function () {
+              finish(new Error("Page script failed to load"));
+            }, { once: true });
+          }
+          if (inlineModule) {
+            window.addEventListener("vgmos:inline-module-ready", moduleReady);
+            next.text = (oldScript.text || oldScript.textContent || "") +
+              "\nwindow.dispatchEvent(new CustomEvent('vgmos:inline-module-ready',{detail:{token:" +
+              JSON.stringify(token) + "}}));";
+          } else {
+            next.text = oldScript.text || oldScript.textContent || "";
+          }
+          if (waitsForEvaluation) {
+            timeout = window.setTimeout(function () {
+              finish(new Error("Page script hydration timed out"));
+            }, 15000);
+          }
+          oldScript.replaceWith(next);
+          if (!waitsForEvaluation) finish();
+        });
+      });
+    }, Promise.resolve());
+  }
+
   function hydratePage(doc, main) {
-    runMainScripts(main);
-    return ensureMathAssets(doc).then(function () {
-      renderMath(main);
-    }).catch(function () {
+    return runMainScripts(main).then(function () {
+      return ensureMathAssets(doc).catch(function () {});
+    }).then(function () {
       renderMath(main);
     });
   }
@@ -547,13 +815,20 @@
     }
   }
 
-  function fallbackNavigate(url) {
-    flushScrollSave();
+  function fallbackNavigate(url, saveScroll) {
+    if (saveScroll !== false) flushScrollSave();
     try {
       sessionStorage.setItem(pageTransitionKey, "1");
     } catch (error) {}
     root.classList.add("is-transitioning-out");
-    window.setTimeout(function () { window.location.href = url.href; }, pageTransitionOutMs);
+    fallbackNavigationUrl = new URL(url.href);
+    if (fallbackNavigationTimer) window.clearTimeout(fallbackNavigationTimer);
+    fallbackNavigationTimer = window.setTimeout(function () {
+      var destination = fallbackNavigationUrl;
+      fallbackNavigationTimer = 0;
+      fallbackNavigationUrl = null;
+      if (destination) window.location.href = destination.href;
+    }, pageTransitionOutMs);
   }
 
   function setupScrollSpy() {
@@ -583,12 +858,65 @@
     }
   }
 
+  function isolateExitLayerIds(clone) {
+    var prefix = "vgmos-exit-" + (++exitLayerSequence) + "-";
+    var idMap = {};
+    var identified = [];
+    if (clone.id) identified.push(clone);
+    identified = identified.concat(Array.prototype.slice.call(clone.querySelectorAll("[id]")));
+    identified.forEach(function (node) {
+      var previous = node.id;
+      var next = prefix + previous;
+      idMap[previous] = next;
+      node.id = next;
+    });
+
+    var ids = Object.keys(idMap).sort(function (a, b) { return b.length - a.length; });
+    var tokenAttributes = [
+      "for", "headers", "list", "aria-activedescendant", "aria-controls",
+      "aria-describedby", "aria-details", "aria-errormessage", "aria-flowto",
+      "aria-labelledby", "aria-owns"
+    ];
+
+    [clone].concat(Array.prototype.slice.call(clone.querySelectorAll("*"))).forEach(function (node) {
+      tokenAttributes.forEach(function (name) {
+        if (!node.hasAttribute(name)) return;
+        var tokens = (node.getAttribute(name) || "").split(/\s+/).filter(Boolean);
+        node.setAttribute(name, tokens.map(function (token) { return idMap[token] || token; }).join(" "));
+      });
+
+      ["href", "xlink:href"].forEach(function (name) {
+        var value = node.getAttribute(name);
+        if (value && value.charAt(0) === "#" && idMap[value.slice(1)]) {
+          node.setAttribute(name, "#" + idMap[value.slice(1)]);
+        }
+      });
+
+      Array.prototype.slice.call(node.attributes || []).forEach(function (attribute) {
+        var value = attribute.value;
+        ids.forEach(function (id) {
+          value = value.split("url(#" + id + ")").join("url(#" + idMap[id] + ")");
+        });
+        if (value !== attribute.value) node.setAttribute(attribute.name, value);
+      });
+    });
+
+    Array.prototype.slice.call(clone.querySelectorAll("style")).forEach(function (style) {
+      var css = style.textContent || "";
+      ids.forEach(function (id) {
+        css = css.split("#" + id).join("#" + idMap[id]);
+      });
+      style.textContent = css;
+    });
+  }
+
   function makeExitLayer(main) {
     if (!main) return null;
 
     var rect = main.getBoundingClientRect();
     var layer = document.createElement("div");
     var clone = main.cloneNode(true);
+    isolateExitLayerIds(clone);
 
     layer.className = "page-exit-layer";
     layer.setAttribute("aria-hidden", "true");
@@ -606,31 +934,46 @@
     return layer;
   }
 
-  function completeNavigation(url, doc, replaceHistory, transientHash, restoreScroll) {
+  function completeNavigation(
+    url,
+    doc,
+    replaceHistory,
+    transientHash,
+    restoreScroll,
+    destinationState,
+    hasDestinationState,
+    freshReplace
+  ) {
     var nextMain = doc.querySelector("main.page-content");
     var currentMain = document.querySelector("main.page-content");
     var historyUrl = url.href;
     var nextScroll = restoreScroll || { x: 0, y: 0 };
 
-    if (!nextMain || !currentMain) {
-      fallbackNavigate(url);
-      return false;
-    }
+    if (!nextMain || !currentMain) return null;
 
     syncHead(doc);
     var replacementMain = nextMain.cloneNode(true);
+    replacementMain.setAttribute("inert", "");
+    replacementMain.inert = true;
     currentMain.replaceWith(replacementMain);
-    dispatchMainLifecycle("vgmos:mainchange", replacementMain);
     if (replaceHistory) {
-      history.replaceState(makeHistoryState(history.state, nextScroll), "", historyUrl);
+      var stateSource = freshReplace
+        ? null
+        : hasDestinationState ? destinationState : history.state;
+      var replacedState = makeHistoryState(stateSource, nextScroll);
+      if (freshReplace) replacedState.softEntryId = nextSoftEntryId();
+      history.replaceState(replacedState, "", historyUrl);
     } else {
-      history.pushState(makeHistoryState(null, nextScroll), "", historyUrl);
+      var pushedState = makeHistoryState(null, nextScroll);
+      pushedState.softEntryId = nextSoftEntryId();
+      history.pushState(pushedState, "", historyUrl);
     }
+    activePageScope = pageScopeFor(replacementMain);
+    dispatchMainLifecycle("vgmos:mainchange", replacementMain);
 
     setupScrollSpy();
     syncCurrentFromLocation(false);
     closeMobileNav();
-    focusMain(document.querySelector("main.page-content"));
 
     if (url.hash) {
       if (scrollToHash(url.hash, false) && transientHash) {
@@ -642,54 +985,152 @@
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
     saveCurrentScroll();
-    return true;
+    return replacementMain;
   }
 
-  function softNavigate(url, replaceHistory, transientHash, restoreScroll) {
-    if (!replaceHistory) flushScrollSave();
+  var navigationFallback = {};
+  var navigationSuperseded = {};
+
+  function makeNavigationAttempt() {
+    var rejectCancellation;
+    var cancelled = false;
+    var cancellation = new Promise(function (_, reject) {
+      rejectCancellation = reject;
+    });
+
+    return {
+      cancel: function () {
+        if (cancelled) return;
+        cancelled = true;
+        rejectCancellation(navigationSuperseded);
+      },
+      race: function (operation) {
+        return Promise.race([operation, cancellation]);
+      }
+    };
+  }
+
+  function softNavigate(
+    url,
+    replaceHistory,
+    transientHash,
+    restoreScroll,
+    destinationState,
+    hasDestinationState,
+    freshReplace
+  ) {
+    // Once a soft navigation has fallen back, finish with a native load. A
+    // newer request may supersede its destination, but must not race the old
+    // delayed redirect or restart work behind the transition overlay.
+    if (fallbackNavigationTimer) {
+      fallbackNavigate(url, false);
+      return;
+    }
+    if (replaceHistory) {
+      if (scrollSaveTimer) {
+        window.clearTimeout(scrollSaveTimer);
+        scrollSaveTimer = 0;
+      }
+    } else {
+      flushScrollSave();
+    }
     if (navInFlight) {
       pendingNavigation = {
         url: new URL(url.href),
         replaceHistory: replaceHistory,
         transientHash: transientHash,
-        restoreScroll: restoreScroll
+        restoreScroll: restoreScroll,
+        destinationState: destinationState,
+        hasDestinationState: !!hasDestinationState,
+        freshReplace: !!freshReplace
       };
+      // The address bar changes before popstate fires. Do not leave a Back or
+      // Forward destination queued behind an earlier page's fetch, hydration,
+      // or exit-delay timer: stop awaiting that work and drain the newest
+      // request immediately. The underlying promise may still settle, but its
+      // stale continuation can no longer swap the document.
+      if (activeNavigation) activeNavigation.cancel();
       return;
     }
     navInFlight = true;
+    var navigation = makeNavigationAttempt();
+    activeNavigation = navigation;
 
-    fetchDocument(url).then(function (doc) {
+    var expectedPageStyles = [];
+    var ownsTransientEntry = false;
+    var committedHistoryUrl = null;
+    var committedHistoryEntryId = null;
+    var didSwapMain = false;
+    var fallbackStarted = false;
+    var departingMain = document.querySelector("main.page-content");
+    dispatchMainLifecycle("vgmos:beforemainchange", departingMain);
+    if (activePageScope) activePageScope.destroy();
+    if (departingMain) {
+      departingMain.setAttribute("inert", "");
+      departingMain.inert = true;
+    }
+
+    navigation.race(fetchDocument(url)).then(function (doc) {
+      if (pendingNavigation) return Promise.reject(navigationSuperseded);
       if (pageNeedsNormalLoad(doc)) {
-        fallbackNavigate(url);
-        return Promise.reject("fallback");
+        fallbackStarted = true;
+        fallbackNavigate(url, !replaceHistory);
+        return Promise.reject(navigationFallback);
       }
 
-      dispatchMainLifecycle("vgmos:beforemainchange", document.querySelector("main.page-content"));
-      var exitLayer = makeExitLayer(document.querySelector("main.page-content"));
-      root.classList.add("is-content-entering");
+      return navigation.race(preparePageStyles(doc)).then(function (styles) {
+        if (pendingNavigation) return Promise.reject(navigationSuperseded);
+        expectedPageStyles = styles;
+        var currentMain = document.querySelector("main.page-content");
+        var exitLayer = makeExitLayer(currentMain);
+        root.classList.add("is-content-entering");
 
-      if (!completeNavigation(url, doc, replaceHistory, transientHash, restoreScroll)) {
-        return Promise.reject("fallback");
-      }
-
-      var main = document.querySelector("main.page-content");
-      return hydratePage(doc, main).then(function () {
-        if (main) void main.offsetWidth;
-
-        root.classList.remove("is-content-entering");
-        if (exitLayer) {
-          void exitLayer.offsetWidth;
-          exitLayer.classList.add("is-fading");
-          window.setTimeout(function () {
-            if (exitLayer.parentNode) exitLayer.parentNode.removeChild(exitLayer);
-          }, contentTransitionMs + 80);
+        var main = completeNavigation(
+          url,
+          doc,
+          replaceHistory,
+          transientHash,
+          restoreScroll,
+          destinationState,
+          !!hasDestinationState,
+          !!freshReplace
+        );
+        if (!main) {
+          fallbackStarted = true;
+          fallbackNavigate(url, !replaceHistory);
+          return Promise.reject(navigationFallback);
+        }
+        didSwapMain = true;
+        ownsTransientEntry = !replaceHistory || !!freshReplace;
+        if (ownsTransientEntry) {
+          committedHistoryUrl = window.location.href;
+          committedHistoryEntryId = history.state && history.state.softEntryId;
         }
 
-        return delay(contentTransitionMs + 80).then(function () {
-          if (restoreScroll) {
-            scrollToPosition(restoreScroll);
-            saveCurrentScroll();
+        return navigation.race(hydratePage(doc, main)).then(function () {
+          if (main) void main.offsetWidth;
+
+          root.classList.remove("is-content-entering");
+          if (exitLayer) {
+            void exitLayer.offsetWidth;
+            exitLayer.classList.add("is-fading");
+            window.setTimeout(function () {
+              if (exitLayer.parentNode) exitLayer.parentNode.removeChild(exitLayer);
+            }, contentTransitionMs + 80);
           }
+
+          return navigation.race(delay(contentTransitionMs + 80)).then(function () {
+            finalizePageStyles(expectedPageStyles);
+            if (restoreScroll) {
+              scrollToPosition(restoreScroll);
+              saveCurrentScroll();
+            }
+            if (!pendingNavigation && main && main.isConnected) {
+              main.inert = false;
+              main.removeAttribute("inert");
+              focusMain(main);
+            }
+          });
         });
       });
     }).catch(function (error) {
@@ -697,21 +1138,79 @@
       Array.prototype.slice.call(document.querySelectorAll(".page-exit-layer")).forEach(function (layer) {
         if (layer.parentNode) layer.parentNode.removeChild(layer);
       });
-      if (error !== "fallback") fallbackNavigate(url);
+      if (error !== navigationFallback && error !== navigationSuperseded) {
+        if (pendingNavigation) error = navigationSuperseded;
+        else {
+          fallbackStarted = true;
+          fallbackNavigate(url, !replaceHistory);
+        }
+      }
     }).then(function () {
+      if (activeNavigation === navigation) activeNavigation = null;
       navInFlight = false;
+      if (fallbackStarted) {
+        pendingNavigation = null;
+        return;
+      }
       if (pendingNavigation) {
         var nextNavigation = pendingNavigation;
         pendingNavigation = null;
+        var currentHistoryState = history.state;
+        var stillOnCommittedEntry = ownsTransientEntry &&
+          window.location.href === committedHistoryUrl &&
+          currentHistoryState &&
+          currentHistoryState.softEntryId === committedHistoryEntryId;
+        if (stillOnCommittedEntry && !nextNavigation.replaceHistory) {
+          nextNavigation.replaceHistory = true;
+          nextNavigation.freshReplace = true;
+          nextNavigation.destinationState = null;
+          nextNavigation.hasDestinationState = false;
+        }
         softNavigate(
           nextNavigation.url,
           nextNavigation.replaceHistory,
           nextNavigation.transientHash,
-          nextNavigation.restoreScroll
+          nextNavigation.restoreScroll,
+          nextNavigation.destinationState,
+          nextNavigation.hasDestinationState,
+          nextNavigation.freshReplace
         );
+      } else if (!didSwapMain && departingMain && departingMain.isConnected) {
+        departingMain.inert = false;
+        departingMain.removeAttribute("inert");
       }
     });
   }
+
+  window.vgmosNavigation = {
+    navigate: function (href, options) {
+      var url;
+      try {
+        url = new URL(href, window.location.href);
+      } catch (error) {
+        return false;
+      }
+
+      if (url.origin !== window.location.origin ||
+          (url.protocol !== "http:" && url.protocol !== "https:")) {
+        window.location.assign(url.href);
+        return false;
+      }
+      if (fallbackNavigationTimer) {
+        fallbackNavigate(url, false);
+        return true;
+      }
+      if (url.href === window.location.href) return true;
+      if (reduce) {
+        window.location.assign(url.href);
+        return true;
+      }
+
+      flushScrollSave();
+      softNavigate(url, !!(options && options.replace), false, null);
+      return true;
+    }
+  };
 
   function prefetchLink(a) {
     var url = transitionableLink(a, { defaultPrevented: false, button: 0 });
@@ -726,6 +1225,10 @@
     if (!url) return;
 
     event.preventDefault();
+    if (fallbackNavigationTimer) {
+      fallbackNavigate(url, false);
+      return;
+    }
     flushScrollSave();
     softNavigate(url, false, a.hasAttribute("data-scroll"));
   });
@@ -744,7 +1247,16 @@
   }, { passive: true });
 
   window.addEventListener("popstate", function (event) {
-    softNavigate(new URL(window.location.href), true, false, scrollFromState(event.state));
+    var destinationState = copyState(event.state);
+    softNavigate(
+      new URL(window.location.href),
+      true,
+      false,
+      scrollFromState(destinationState),
+      destinationState,
+      true,
+      false
+    );
   });
 
   syncCurrentFromLocation(false);

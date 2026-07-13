@@ -275,15 +275,34 @@ stylesheets:
 {% endraw %}
 
 <script type="module">
-  import { initBuckLossExplorer } from "{{ '/js/tools/buck-loss-ui.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
+  import { destroyBuckLossExplorer, initBuckLossExplorer } from "{{ '/js/tools/buck-loss-ui.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
   const buckLossRoot = document.getElementById("buck-loss-explorer");
+  const pageLifecycle = window.vgmosPageLifecycle;
+  const pageScope = pageLifecycle?.scope?.(buckLossRoot) || null;
+  const initController = new AbortController();
+  const abortFromPage = () => initController.abort();
+  pageScope?.signal?.addEventListener("abort", abortFromPage, { once: true });
+  let disposed = false;
+  const cleanup = () => {
+    if (disposed) return;
+    disposed = true;
+    pageScope?.signal?.removeEventListener?.("abort", abortFromPage);
+    initController.abort();
+    destroyBuckLossExplorer(buckLossRoot);
+  };
+  pageLifecycle?.register?.(cleanup, buckLossRoot);
   buckLossRoot.dataset.blxCatalogUrl = "{{ '/assets/data/coilcraft-inductors.v1.json' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
   buckLossRoot.dataset.blxInductorAcLossUrl = "{{ '/assets/data/coilcraft-inductor-loss-surfaces.v1.json' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}";
-  initBuckLossExplorer(buckLossRoot).catch((error) => {
-    console.error("Buck loss explorer failed to initialize", error);
-    buckLossRoot.dataset.blxStatus = "error";
-    buckLossRoot.setAttribute("aria-busy", "false");
-    const loading = buckLossRoot.querySelector("[data-blx-loading]");
-    if (loading) loading.textContent = "The loss model could not initialize. Reload the page or check the browser console.";
+  // Start initialization without holding the soft-navigation hydration
+  // handshake open. Some valid recovery URLs need a user to choose a device;
+  // the incoming page must become interactive before that promise can settle.
+  void initBuckLossExplorer(buckLossRoot, { signal: initController.signal }).catch((error) => {
+    if (!disposed && !initController.signal.aborted && error?.name !== "AbortError") {
+      console.error("Buck loss explorer failed to initialize", error);
+      buckLossRoot.dataset.blxStatus = "error";
+      buckLossRoot.setAttribute("aria-busy", "false");
+      const loading = buckLossRoot.querySelector("[data-blx-loading]");
+      if (loading) loading.textContent = "The loss model could not initialize. Reload the page or check the browser console.";
+    }
   });
 </script>

@@ -34,7 +34,8 @@ test.describe("global navigation", () => {
     await expect(page.locator(".site-nav .page-link--about")).toHaveClass(/page-link--active/);
   });
 
-  test("tool boundaries use native navigation while retaining theme and parent context", async ({ page }) => {
+  test("tools share one soft-navigation lifecycle and restore Buck route state", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
     const initialTheme = await page.locator("html").getAttribute("data-theme");
@@ -44,18 +45,51 @@ test.describe("global navigation", () => {
     await page.evaluate(() => { window.__documentBoundaryMarker = "home"; });
     await page.getByRole("link", { name: "Buck Converter Tool", exact: true }).click();
     await expect(page).toHaveURL(/\/tools\/buck-converter\/$/);
-    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBeUndefined();
+    await settlePage(page);
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
     await expect(page).toHaveTitle(/Buck Converter Tool/);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/tools\/buck-converter\/$/);
     await expect(page.locator("html")).toHaveAttribute("data-theme", selectedTheme);
     await expect(page.locator(".site-nav .page-link--tools")).toHaveClass(/page-link--active/);
+    await expect(page.locator("#out-d")).not.toHaveText("—");
+
+    await page.locator("#num-vin").fill("24");
+    await page.locator("#num-vin").press("Tab");
+    await expect(page.locator("#num-vin")).toHaveValue("24");
+
+    await page.getByRole("link", { name: "Buck Converter Loss Tool", exact: true }).click();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await settlePage(page);
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
+    await expect(page.locator('link[data-vgmos-page-style][href*="buck-losses.css"]')).toHaveCount(1);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/tools\/buck-converter\/$/);
+    await settlePage(page);
+    await expect(page.locator("#num-vin")).toHaveValue("24");
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", selectedTheme);
+    await expect.poll(() => page.locator('link[data-vgmos-page-style][href*="buck-losses.css"]').count()).toBe(0);
 
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", selectedTheme);
+    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+
     await page.goForward();
     await expect(page).toHaveURL(/\/tools\/buck-converter\/$/);
+    await settlePage(page);
+    await expect(page.locator("#num-vin")).toHaveValue("24");
     await expect(page.locator(".site-nav .page-link--tools")).toHaveClass(/page-link--active/);
+
+    await page.goForward();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await settlePage(page);
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
+    await expect(page.locator('link[data-vgmos-page-style][href*="buck-losses.css"]')).toHaveCount(1);
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+    expect(issues).toEqual([]);
   });
 
   test("back navigation restores the saved home-page scroll position", async ({ page }) => {
@@ -74,6 +108,249 @@ test.describe("global navigation", () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(savedScroll - 30);
+  });
+
+  test("an in-flight Loss edit cannot overwrite a Back or Forward destination", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    await page.getByRole("link", { name: "Buck Converter Loss Tool", exact: true }).click();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await settlePage(page);
+    await page.getByRole("button", { name: "Open seeded example" }).click();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/\?/);
+    await settlePage(page);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+
+    await page.locator("#blx-v2-vin").fill("13");
+    await page.goBack();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await settlePage(page);
+    await page.waitForTimeout(350);
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await expect(page.getByRole("button", { name: "Start guided setup" })).toBeVisible();
+
+    await page.goForward();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/\?/);
+    await settlePage(page);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+    expect(issues).toEqual([]);
+  });
+
+  test("rapid navigation keeps only the final destination in history", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.evaluate(() => { window.__documentBoundaryMarker = "home"; });
+
+    // Dispatch both clicks in the same page task so this deterministically
+    // exercises the router's in-flight coalescing path. Two awaited locator
+    // clicks can be separated by actionability work long enough for the first
+    // transition to finish, especially in WebKit under parallel load.
+    await page.evaluate(() => {
+      document.querySelector('a[href="/tools/buck-converter/"]')?.click();
+      document.querySelector(".site-nav .page-link--about")?.click();
+    });
+    await expect(page).toHaveURL(/\/about\/$/);
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1, name: "About" })).toBeVisible();
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+
+    await page.goBack();
+    await expect(page).toHaveURL((url) => (
+      url.pathname === "/" && !url.search && !url.hash
+    ));
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    expect(issues).toEqual([]);
+  });
+
+  test("three post-commit clicks share one transient history entry", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.evaluate(() => { window.__documentBoundaryMarker = "home"; });
+
+    const entryIds = await page.evaluate(() => new Promise((resolve, reject) => {
+      const deadline = performance.now() + 4000;
+      let stage = 0;
+      let aboutEntryId = null;
+
+      const advance = () => {
+        const transitionIsActive =
+          document.documentElement.classList.contains("is-content-entering") ||
+          Boolean(document.querySelector(".page-exit-layer"));
+
+        if (stage === 0 && window.location.pathname === "/about/" && transitionIsActive) {
+          aboutEntryId = window.history.state?.softEntryId || null;
+          stage = 1;
+          window.vgmosNavigation.navigate("/writing/");
+        } else if (stage === 1 && window.location.pathname === "/writing/" && transitionIsActive) {
+          const writingEntryId = window.history.state?.softEntryId || null;
+          window.vgmosNavigation.navigate("/about/");
+          resolve({ aboutEntryId, writingEntryId });
+          return;
+        }
+
+        if (performance.now() >= deadline) {
+          reject(new Error("Chained navigation did not commit within its active transitions"));
+          return;
+        }
+        requestAnimationFrame(advance);
+      };
+
+      window.vgmosNavigation.navigate("/about/");
+      requestAnimationFrame(advance);
+    }));
+
+    expect(entryIds.aboutEntryId).toBeTruthy();
+    expect(entryIds.writingEntryId).toBeTruthy();
+    expect(entryIds.writingEntryId).not.toBe(entryIds.aboutEntryId);
+    await expect(page).toHaveURL(/\/about\/$/);
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1, name: "About" })).toBeVisible();
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    expect(issues).toEqual([]);
+  });
+
+  test("Back cancels a navigation whose inline module never finishes hydrating", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.route("**/about/", async (route) => {
+      const response = await route.fetch();
+      const html = await response.text();
+      const stalledHtml = html.replace(
+        "</main>",
+        '<script type="module">await new Promise(() => {});</script></main>',
+      );
+      await route.fulfill({ response, body: stalledHtml });
+    });
+
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.locator(".site-nav .page-link--about").click();
+    await expect(page).toHaveURL(/\/about\/$/);
+
+    // The About URL is committed, but hydration cannot reach the router's
+    // 15-second module timeout. Back must cancel that wait and render Home.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" }),
+    ).toBeVisible({ timeout: 4000 });
+    await settlePage(page);
+    expect(issues).toEqual([]);
+  });
+
+  test("a retried navigation still waits for its in-flight page stylesheet", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    let markCssRequested;
+    let releaseCss;
+    const cssRequested = new Promise((resolve) => { markCssRequested = resolve; });
+    const cssRelease = new Promise((resolve) => { releaseCss = resolve; });
+
+    await page.route("**/css/tools/buck-losses.css*", async (route) => {
+      markCssRequested();
+      await cssRelease;
+      await route.continue();
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    await page.evaluate(() => window.vgmosNavigation.navigate("/tools/buck-losses/"));
+    await Promise.race([
+      cssRequested,
+      page.waitForTimeout(3000).then(() => { throw new Error("Loss stylesheet was not requested"); }),
+    ]);
+
+    try {
+      // Retry while the first attempt owns the still-loading link. The second
+      // attempt must reuse that load promise rather than commit unstyled UI.
+      await page.evaluate(() => window.vgmosNavigation.navigate("/tools/buck-losses/"));
+      await page.waitForTimeout(200);
+      expect(new URL(page.url()).pathname).toBe("/");
+    } finally {
+      releaseCss();
+    }
+
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await settlePage(page);
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
+    expect(issues).toEqual([]);
+  });
+
+  test("a soft-navigated device recovery dialog is interactive before initialization settles", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.evaluate(() => {
+      localStorage.removeItem("buck-loss-v2-device");
+      window.__documentBoundaryMarker = "device-recovery";
+      window.vgmosNavigation.navigate("/tools/buck-losses/?m=2");
+    });
+
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/\?m=2$/);
+    const chooser = page.locator("[data-blx-device-dialog]");
+    await expect(chooser).toBeVisible();
+    await expect.poll(() => page.locator("body > main.page-content").evaluate((main) => main.inert)).toBe(false);
+
+    await chooser.locator("[data-blx-device-choice]").first().click();
+    await expect(page.locator("#buck-loss-explorer")).toHaveAttribute("data-blx-status", "ready");
+    await settlePage(page);
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("device-recovery");
+    expect(issues).toEqual([]);
+  });
+
+  test("a click queued after Back preserves the returned history entry", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.evaluate(() => { window.__documentBoundaryMarker = "home"; });
+
+    await page.locator(".site-nav .page-link--about").click();
+    await expect(page).toHaveURL(/\/about\/$/);
+
+    // Fire Back while About's pushed-entry transition is still settling. The
+    // router receives the popstate first; a second click in that same event
+    // task then replaces the queued destination before cancellation drains.
+    await page.evaluate(() => new Promise((resolve, reject) => {
+      const deadline = performance.now() + 3000;
+      const arm = () => {
+        const transitionIsSettling =
+          !document.documentElement.classList.contains("is-content-entering") &&
+          Boolean(document.querySelector(".page-exit-layer"));
+        if (transitionIsSettling) {
+          window.addEventListener("popstate", () => {
+            window.vgmosNavigation.navigate("/writing/");
+            resolve();
+          }, { once: true });
+          window.history.back();
+          return;
+        }
+        if (performance.now() >= deadline) {
+          reject(new Error("About transition did not enter its settling phase"));
+          return;
+        }
+        requestAnimationFrame(arm);
+      };
+      arm();
+    }));
+
+    await expect(page).toHaveURL(/\/writing\/$/);
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Notebook" })).toBeVisible();
+    expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await settlePage(page);
+    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    expect(issues).toEqual([]);
   });
 
   test("direct section URLs scroll and expose the matching active navigation item", async ({ page }) => {
@@ -296,6 +573,7 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page.locator(".blx-entry-form-error")).toContainText("Output voltage must be below input voltage");
 
     await page.locator("#blx-entry-vout").fill("3.3");
+    await expect(page.locator(".blx-entry-form-error")).toHaveCount(0);
     await page.getByRole("button", { name: "Continue to switch pair" }).click();
     await page.getByRole("button", { name: "Continue to gate drive" }).click();
     await page.getByRole("button", { name: "Continue to timing" }).click();

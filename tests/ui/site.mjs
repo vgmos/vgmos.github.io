@@ -70,6 +70,10 @@ export async function settlePage(page) {
     if (document.fonts?.ready) await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   });
+  await page.waitForFunction(() => (
+    !document.documentElement.classList.contains("is-content-entering") &&
+    !document.querySelector(".page-exit-layer")
+  ));
 }
 
 export async function settleVisualPage(page) {

@@ -1508,7 +1508,66 @@ permalink: /tools/buck-converter/
     }
   }
 
+  /* Refined field interactions: quiet at rest, crisp on intent. Numeric
+     geometry stays fixed so dense engineering rows never jump on focus. */
+  .bc-page .bc-entry input[type="number"],
+  .bc-page .bc-inline-param input[type="number"] {
+    border-color: var(--field-border, var(--line));
+    border-radius: var(--field-radius, 7px);
+    background-color: var(--field-surface, var(--paper));
+    transition:
+      background-color var(--field-motion, 150ms) var(--field-ease, ease),
+      border-color var(--field-motion, 150ms) var(--field-ease, ease),
+      box-shadow var(--field-motion, 150ms) var(--field-ease, ease),
+      color var(--field-motion, 150ms) var(--field-ease, ease);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bc-page .bc-entry input[type="number"]:not(:disabled):hover,
+    .bc-page .bc-inline-param input[type="number"]:not(:disabled):hover {
+      border-color: var(--field-border-hover, var(--muted));
+      background-color: var(--field-surface-hover, var(--soft));
+    }
+  }
+
+  .bc-page .bc-entry input[type="number"]:focus-visible,
+  .bc-page .bc-inline-param input[type="number"]:focus-visible {
+    border-color: var(--field-border-focus, var(--accent));
+    background-color: var(--field-surface, var(--paper));
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px var(--field-ring, var(--claude-ring));
+  }
+
+  .bc-page .bc-entry input[type="number"]:is([aria-invalid="true"], :user-invalid),
+  .bc-page .bc-inline-param input[type="number"]:is([aria-invalid="true"], :user-invalid) {
+    border-color: var(--field-invalid, #a83f35);
+  }
+
+  .bc-page .bc-entry input[type="number"]:is([aria-invalid="true"], :user-invalid):focus-visible,
+  .bc-page .bc-inline-param input[type="number"]:is([aria-invalid="true"], :user-invalid):focus-visible {
+    box-shadow: 0 0 0 3px var(--field-invalid-ring, rgba(168, 63, 53, 0.16));
+  }
+
+  .bc-page .bc-field-head > label,
+  .bc-page .bc-inline-param label,
+  .bc-page .bc-unit {
+    transition: color var(--field-motion, 150ms) var(--field-ease, ease);
+  }
+
+  .bc-page .bc-field:focus-within > .bc-field-head > label,
+  .bc-page .bc-field:focus-within .bc-unit,
+  .bc-page .bc-inline-param:focus-within label,
+  .bc-page .bc-inline-param:focus-within .bc-unit {
+    color: var(--accent);
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .bc-page .bc-entry input[type="number"],
+    .bc-page .bc-inline-param input[type="number"],
+    .bc-page .bc-field-head > label,
+    .bc-page .bc-inline-param label,
+    .bc-page .bc-unit,
     .bc-segmented::before,
     .bc-design-result,
     .bc-dcm-options,
@@ -1530,7 +1589,10 @@ permalink: /tools/buck-converter/
     .bc-segmented button,
     .bc-dcm-toggle { min-height: 44px; }
     .bc-entry input[type="number"],
-    .bc-inline-param input[type="number"] { font-size: 16px; }
+    .bc-inline-param input[type="number"] {
+      min-height: 44px;
+      font-size: 16px;
+    }
     .bc-field input[type="range"] { height: 28px; }
     .bc-ticks { height: 24px; }
     .bc-tick {
@@ -1547,10 +1609,21 @@ permalink: /tools/buck-converter/
   }
 
   @media (max-width: 700px) {
+    .bc-entry input[type="number"],
+    .bc-inline-param input[type="number"] {
+      min-height: 44px;
+      font-size: 16px;
+    }
     .bc-presets button,
     .bc-segmented button,
     .bc-dcm-toggle {
       min-height: 44px;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .bc-page input:focus-visible {
+      outline-color: Highlight;
     }
   }
 </style>
@@ -1866,6 +1939,20 @@ permalink: /tools/buck-converter/
 (function () {
   "use strict";
 
+  var pageScript = document.currentScript;
+  var disposed = false;
+  var managedTimers = [];
+
+  function setManagedTimeout(callback, delay) {
+    var id = window.setTimeout(function () {
+      var index = managedTimers.indexOf(id);
+      if (index >= 0) { managedTimers.splice(index, 1); }
+      if (!disposed) { callback(); }
+    }, delay);
+    managedTimers.push(id);
+    return id;
+  }
+
   /* ---------- parameter definitions ---------- */
   // Internal state is SI; number inputs may use a display scale (µH, µF, kHz).
   var PARAMS = {
@@ -1905,6 +1992,48 @@ permalink: /tools/buck-converter/
   var state = Object.assign({}, DEFAULT_TARGETS, PRESETS.pol);
   var mode = "analyze";
   var dcmEnabled = false;
+
+  function isBuckHistoryEntry() {
+    var pathname = window.location.pathname
+      .replace(/\/index\.html$/, "/")
+      .replace(/\/+$/, "");
+    return /(?:^|\/)tools\/buck-converter$/.test(pathname);
+  }
+
+  function restoreBuckHistoryState() {
+    var payload = window.history.state && window.history.state.buckConverter;
+    if (!payload || payload.version !== 1 || !payload.state) { return; }
+
+    Object.keys(PARAMS).forEach(function (key) {
+      var value = payload.state[key];
+      if (typeof value === "number" && isFinite(value)) {
+        state[key] = clampParam(key, value);
+      }
+    });
+    mode = payload.mode === "design" ? "design" : "analyze";
+    dcmEnabled = payload.dcmEnabled === true;
+    enforceBuck();
+  }
+
+  function persistBuckHistoryState() {
+    if (disposed || !isBuckHistoryEntry() || !window.history.replaceState) { return; }
+    var next = {};
+    var current = window.history.state;
+    if (current && typeof current === "object") {
+      Object.keys(current).forEach(function (key) { next[key] = current[key]; });
+    }
+    next.buckConverter = {
+      version: 1,
+      state: Object.assign({}, state),
+      mode: mode,
+      dcmEnabled: dcmEnabled
+    };
+    try {
+      window.history.replaceState(next, "", window.location.href);
+    } catch (error) {}
+  }
+
+  restoreBuckHistoryState();
 
   /* ---------- slider <-> value mapping ---------- */
   function toSlider(key, v) {
@@ -2630,6 +2759,7 @@ permalink: /tools/buck-converter/
   var modeSegmented = document.querySelector(".bc-segmented");
   var dcmExtraControls = Array.prototype.slice.call(document.querySelectorAll("[data-dcm-extra]"));
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  var motionHandler = null;
   var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
   var cancelRaf = window.cancelAnimationFrame
     ? function (id) { window.cancelAnimationFrame(id); }
@@ -2686,7 +2816,7 @@ permalink: /tools/buck-converter/
       if (active && wasHidden && !(reduceMotion && reduceMotion.matches)) {
         void field.offsetWidth;
         field.classList.add("bc-field-enter");
-        window.setTimeout(function () {
+        setManagedTimeout(function () {
           field.classList.remove("bc-field-enter");
         }, 240);
       }
@@ -2867,6 +2997,7 @@ permalink: /tools/buck-converter/
 
   function tickAnimatedSchematic(now) {
     animFrame = 0;
+    if (disposed) { return; }
     if (!animSchematic.ready || (reduceMotion && reduceMotion.matches)) {
       drawReducedMotionSchematic();
       return;
@@ -2885,7 +3016,7 @@ permalink: /tools/buck-converter/
   }
 
   function startAnimatedSchematic() {
-    if (!animSchematic.ready) { return; }
+    if (disposed || !animSchematic.ready) { return; }
     if (reduceMotion && reduceMotion.matches) {
       if (animFrame) {
         cancelRaf(animFrame);
@@ -2969,7 +3100,7 @@ permalink: /tools/buck-converter/
   }
 
   function initAnimatedSchematic() {
-    if (!hasAnimatedSchematic() || animSchematic.ready) { return; }
+    if (disposed || !hasAnimatedSchematic() || animSchematic.ready) { return; }
     animSchematic.ready = true;
 
     animDutyTickValues.forEach(function (pct) {
@@ -2996,7 +3127,7 @@ permalink: /tools/buck-converter/
     });
 
     if (reduceMotion) {
-      var motionHandler = function () { startAnimatedSchematic(); };
+      motionHandler = function () { startAnimatedSchematic(); };
       if (reduceMotion.addEventListener) {
         reduceMotion.addEventListener("change", motionHandler);
       } else if (reduceMotion.addListener) {
@@ -3008,6 +3139,7 @@ permalink: /tools/buck-converter/
 
   /* ---------- render ---------- */
   function render() {
+    if (disposed) { return; }
     clearDeltaProbe();
     var s = workingState();
     var d = designValues(state);
@@ -3130,6 +3262,8 @@ permalink: /tools/buck-converter/
   }
 
   function renderNow() {
+    if (disposed) { return; }
+    persistBuckHistoryState();
     if (renderFrame) {
       cancelRaf(renderFrame);
       renderFrame = 0;
@@ -3140,9 +3274,16 @@ permalink: /tools/buck-converter/
   }
 
   function scheduleRender(shouldSync) {
+    if (disposed) { return; }
+    persistBuckHistoryState();
     renderFrameNeedsSync = renderFrameNeedsSync || shouldSync !== false;
     if (renderFrame) { return; }
     renderFrame = raf(function () {
+      if (disposed) {
+        renderFrame = 0;
+        renderFrameNeedsSync = false;
+        return;
+      }
       var needsSync = renderFrameNeedsSync;
       renderFrame = 0;
       renderFrameNeedsSync = false;
@@ -3378,6 +3519,7 @@ permalink: /tools/buck-converter/
     if (probeFrame) { return; }
     probeFrame = raf(function () {
       probeFrame = 0;
+      if (disposed) { return; }
       updateProbe(probeClientX);
     });
   });
@@ -3406,19 +3548,26 @@ permalink: /tools/buck-converter/
     else { clearProbe(); }
   });
 
-  document.addEventListener("pointerdown", function (ev) {
+  function handleDocumentPointerDown(ev) {
     if (el["bc-scope"] && !el["bc-scope"].contains(ev.target)) {
       clearDeltaProbe();
       clearProbe();
     }
-  });
+  }
 
-  window.addEventListener("resize", function () {
+  function handleWindowResize() {
+    if (disposed) { return; }
     clearDeltaProbe();
     hideProbe();
     positionAnimatedDutyTicks();
     scheduleRender(false);
-  });
+  }
+
+  document.addEventListener("pointerdown", handleDocumentPointerDown);
+  window.addEventListener("resize", handleWindowResize);
+  if (window.vgmosPageLifecycle && typeof window.vgmosPageLifecycle.register === "function") {
+    window.vgmosPageLifecycle.register(destroyBuckConverter, pageScript);
+  }
 
   /* ---------- constraints ---------- */
   function enforceBuck(changed) {
@@ -3501,7 +3650,7 @@ permalink: /tools/buck-converter/
   }
 
   function glideRangeThumb(range, fromValue, toValue, onUpdate) {
-    if (!range) { return; }
+    if (disposed || !range) { return; }
     var from = parseFloat(fromValue);
     var to = parseFloat(toValue);
     cancelRangeThumbGlide(range);
@@ -3519,6 +3668,10 @@ permalink: /tools/buck-converter/
     if (onUpdate) { onUpdate(from); }
 
     function step(now) {
+      if (disposed) {
+        range.bcThumbGlideFrame = 0;
+        return;
+      }
       if (!startedAt) { startedAt = now || glideNow(); }
       var t = clamp(((now || glideNow()) - startedAt) / duration, 0, 1);
       var value = from + (to - from) * easeThumbGlide(t);
@@ -3584,9 +3737,55 @@ permalink: /tools/buck-converter/
     });
   });
 
+  function destroyBuckConverter() {
+    if (disposed) { return; }
+
+    // Save only while this history entry still belongs to the Buck tool. During
+    // popstate, location/history already point at the destination entry.
+    persistBuckHistoryState();
+    disposed = true;
+    animSchematic.ready = false;
+
+    if (animFrame) {
+      cancelRaf(animFrame);
+      animFrame = 0;
+    }
+    if (renderFrame) {
+      cancelRaf(renderFrame);
+      renderFrame = 0;
+    }
+    if (probeFrame) {
+      cancelRaf(probeFrame);
+      probeFrame = 0;
+    }
+    renderFrameNeedsSync = false;
+
+    Object.keys(paramControls).forEach(function (key) {
+      paramControls[key].ranges.forEach(function (range) {
+        cancelRangeThumbGlide(range);
+      });
+    });
+    cancelRangeThumbGlide(el["bc-duty-slider"]);
+
+    managedTimers.forEach(function (id) { window.clearTimeout(id); });
+    managedTimers.length = 0;
+
+    document.removeEventListener("pointerdown", handleDocumentPointerDown);
+    window.removeEventListener("resize", handleWindowResize);
+    if (reduceMotion && motionHandler) {
+      if (reduceMotion.removeEventListener) {
+        reduceMotion.removeEventListener("change", motionHandler);
+      } else if (reduceMotion.removeListener) {
+        reduceMotion.removeListener(motionHandler);
+      }
+    }
+    motionHandler = null;
+  }
+
   initAnimatedSchematic();
   syncInputs();
   render();
+  persistBuckHistoryState();
 }());
 </script>
 {% endraw %}

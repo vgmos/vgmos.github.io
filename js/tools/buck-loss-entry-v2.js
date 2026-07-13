@@ -101,6 +101,14 @@ function stateForSerialization(state) {
   };
 }
 
+function navigateWithinSite(href) {
+  if (typeof window.vgmosNavigation?.navigate === "function") {
+    window.vgmosNavigation.navigate(href);
+    return;
+  }
+  window.location.assign(href);
+}
+
 export function seedBuckLossSetupV2() {
   const preset = getBuckLossPresetV2(DEFAULT_BUCK_LOSS_PRESET_V2);
   const applied = applyBuckLossDeviceTemplateV2({ ...rawDefaultsV2(), ...preset.rawInputs }, DEFAULT_DEVICE_ID);
@@ -466,17 +474,28 @@ function persistAndOpen(state) {
   const query = serializeBuckLossUrlV2(stateForSerialization(state));
   rememberBuckLossQueryV2(query);
   try { localStorage.setItem(DEVICE_MEMORY_KEY, state.deviceId); } catch {}
-  window.location.assign(`${window.location.pathname}?${query}`);
+  navigateWithinSite(`${window.location.pathname}?${query}`);
   return true;
 }
 
-function setupEntryController(root) {
+function setupEntryController(root, options = {}) {
   let state = null;
   let catalogPromise = null;
   let catalogCache = null;
   let catalogFailed = false;
+  let focusFrame = 0;
+  let disposed = false;
+  const animations = new Set();
+  const signal = options.signal;
+  const trackAnimation = (animation) => {
+    if (!animation) return animation;
+    animations.add(animation);
+    animation.finished?.catch(() => {}).finally(() => animations.delete(animation));
+    return animation;
+  };
 
   const beginCatalogLoad = () => {
+    if (disposed || signal?.aborted) return Promise.resolve(null);
     if (catalogCache) {
       state.catalog = catalogCache;
       state.catalogStatus = "ready";
@@ -489,8 +508,9 @@ function setupEntryController(root) {
       return Promise.resolve(null);
     }
     if (catalogPromise) return catalogPromise;
-    catalogPromise = loadCoilcraftCatalog(root.dataset.blxCatalogUrl)
+    catalogPromise = loadCoilcraftCatalog(root.dataset.blxCatalogUrl, { signal })
       .then((catalog) => {
+        if (disposed || signal?.aborted) return null;
         catalogCache = catalog;
         if (!state) return catalog;
         state.catalog = catalog;
@@ -500,6 +520,7 @@ function setupEntryController(root) {
         return catalog;
       })
       .catch((error) => {
+        if (disposed || signal?.aborted || error?.name === "AbortError") return null;
         catalogFailed = true;
         if (state) {
           state.catalogStatus = "error";
@@ -513,6 +534,7 @@ function setupEntryController(root) {
   };
 
   const renderGateway = ({ focus = false } = {}) => {
+    if (disposed || signal?.aborted) return;
     state = null;
     root.dataset.blxEntry = "gateway";
     root.dataset.blxStatus = "ready";
@@ -520,7 +542,7 @@ function setupEntryController(root) {
     const lastQuery = readLastBuckLossQueryV2();
     root.innerHTML = gatewayMarkup(lastQuery);
     const panel = root.querySelector("[data-blx-entry-panel]");
-    runAnimation(panel, [{ transform: "translateY(8px)" }, { transform: "translateY(0)" }], { duration: 320, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+    trackAnimation(runAnimation(panel, [{ transform: "translateY(8px)" }, { transform: "translateY(0)" }], { duration: 320, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }));
     root.querySelector("[data-blx-entry-start]")?.addEventListener("click", () => {
       state = draftFromQuery(seedBuckLossQueryV2());
       beginCatalogLoad();
@@ -533,16 +555,17 @@ function setupEntryController(root) {
         const deviceId = parseBuckLossUrlV2(query).deviceId;
         if (deviceId) localStorage.setItem(DEVICE_MEMORY_KEY, deviceId);
       } catch {}
-      window.location.assign(`${window.location.pathname}?${query}`);
+      navigateWithinSite(`${window.location.pathname}?${query}`);
     });
     if (focus) root.querySelector("[data-blx-entry-start]")?.focus();
   };
 
   const renderWizard = ({ direction = 0, animate = true, focusHeading = true, focusSelector = "" } = {}) => {
+    if (disposed || signal?.aborted || !state) return;
     root.dataset.blxEntry = "wizard";
     root.innerHTML = wizardMarkup(state);
     const panel = root.querySelector(".blx-entry-step");
-    if (animate && direction) runAnimation(panel, [{ transform: `translateX(${8 * direction}px)` }, { transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+    if (animate && direction) trackAnimation(runAnimation(panel, [{ transform: `translateX(${8 * direction}px)` }, { transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }));
 
     root.querySelector("[data-blx-entry-form]")?.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -578,11 +601,45 @@ function setupEntryController(root) {
       applyDeviceToDraft(state, input.value);
       renderWizard({ animate: false, focusHeading: false, focusSelector: `[data-blx-entry-device][value="${input.value}"]` });
     }));
-    root.querySelectorAll("[data-blx-entry-input]").forEach((input) => input.addEventListener("input", () => setDraftInput(state, input.dataset.blxEntryInput, input.value)));
-    root.querySelector("[data-blx-entry-cursor]")?.addEventListener("input", (event) => {
-      state.cursor = Number(event.currentTarget.value);
-      delete state.errors.cursor;
+    root.querySelectorAll("[data-blx-entry-input]").forEach((input) => {
+      const syncInput = () => {
+        const key = input.dataset.blxEntryInput;
+        setDraftInput(state, key, input.value);
+        if (fieldError(key, state.rawInputs)) return;
+        input.removeAttribute("aria-invalid");
+        const errorId = `${input.id}-error`;
+        const describedBy = (input.getAttribute("aria-describedby") || "").split(/\s+/).filter((id) => id && id !== errorId);
+        if (describedBy.length) input.setAttribute("aria-describedby", describedBy.join(" "));
+        else input.removeAttribute("aria-describedby");
+        input.closest("[data-blx-entry-field]")?.querySelector(`#${errorId}`)?.remove();
+        const conditionsValid = STEP_KEYS.conditions.every((conditionKey) => !fieldError(conditionKey, state.rawInputs))
+          && Number(state.rawInputs.vout) < Number(state.rawInputs.vin);
+        if (conditionsValid && state.errors.conditions) {
+          delete state.errors.conditions;
+          root.querySelector(".blx-entry-form-error")?.remove();
+        }
+      };
+      input.addEventListener("input", syncInput);
+      input.addEventListener("change", syncInput);
     });
+    const cursorInput = root.querySelector("[data-blx-entry-cursor]");
+    if (cursorInput) {
+      const syncCursor = (event) => {
+        state.cursor = Number(event.currentTarget.value);
+        delete state.errors.cursor;
+        if (Number.isFinite(state.cursor) && state.cursor >= 0 && state.cursor <= Number(state.rawInputs.ioutMax)) {
+          const input = event.currentTarget;
+          input.removeAttribute("aria-invalid");
+          const errorId = `${input.id}-error`;
+          const describedBy = (input.getAttribute("aria-describedby") || "").split(/\s+/).filter((id) => id && id !== errorId);
+          if (describedBy.length) input.setAttribute("aria-describedby", describedBy.join(" "));
+          else input.removeAttribute("aria-describedby");
+          input.closest("[data-blx-entry-field]")?.querySelector(`#${errorId}`)?.remove();
+        }
+      };
+      cursorInput.addEventListener("input", syncCursor);
+      cursorInput.addEventListener("change", syncCursor);
+    }
     root.querySelector("[data-blx-entry-timing-mode]")?.addEventListener("change", (event) => { state.timingMode = event.currentTarget.value; });
     root.querySelector("[data-blx-entry-control-mode]")?.addEventListener("change", (event) => { state.controlMode = event.currentTarget.value; });
     root.querySelector("[data-blx-entry-part]")?.addEventListener("change", (event) => {
@@ -595,21 +652,45 @@ function setupEntryController(root) {
       renderWizard({ animate: false, focusHeading: false, focusSelector: "[data-blx-entry-dcr-mode]" });
     });
 
-    requestAnimationFrame(() => {
+    cancelAnimationFrame(focusFrame);
+    focusFrame = requestAnimationFrame(() => {
+      focusFrame = 0;
+      if (disposed || signal?.aborted) return;
       if (focusSelector) root.querySelector(focusSelector)?.focus();
       else if (focusHeading) root.querySelector("#blx-entry-step-title")?.focus();
     });
   };
 
-  return { renderGateway };
+  return {
+    renderGateway,
+    destroy() {
+      if (disposed) return;
+      disposed = true;
+      cancelAnimationFrame(focusFrame);
+      animations.forEach((animation) => animation.cancel?.());
+      animations.clear();
+      try { root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel()); } catch {}
+    }
+  };
 }
 
-export async function initBuckLossEntryV2(root) {
-  if (!root || root.dataset.blxInit === "entry-v2") return;
+export async function initBuckLossEntryV2(root, options = {}) {
+  if (!root || root.dataset.blxInit === "entry-v2" || options.signal?.aborted) return;
   root.dataset.blxInit = "entry-v2";
-  const controller = setupEntryController(root);
+  const lifecycle = new AbortController();
+  const controller = setupEntryController(root, { signal: lifecycle.signal });
+  let destroyed = false;
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    options.signal?.removeEventListener?.("abort", destroy);
+    lifecycle.abort();
+    controller.destroy();
+  };
+  root.blxDestroy = destroy;
+  options.signal?.addEventListener("abort", destroy, { once: true });
   controller.renderGateway();
   window.addEventListener("pageshow", () => {
     if (!window.location.search) controller.renderGateway();
-  });
+  }, { signal: lifecycle.signal });
 }
