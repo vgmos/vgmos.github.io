@@ -65,7 +65,7 @@
         return items.indexOf(left.target) - items.indexOf(right.target);
       });
       entering.forEach(function (entry, index) {
-        reveal(entry.target, Math.min(index, 3) * 45);
+        reveal(entry.target, Math.min(index, 3) * 28);
       });
     }, {
       rootMargin: "0px 0px -8% 0px",

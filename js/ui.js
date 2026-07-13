@@ -22,6 +22,7 @@
     { left: "\\(", right: "\\)", display: false }
   ];
   var navInFlight = false;
+  var pendingNavigation = null;
   var prefetched = {};
   var scrollSaveTimer = 0;
   var scrollSaveDelayMs = 250;
@@ -646,7 +647,15 @@
 
   function softNavigate(url, replaceHistory, transientHash, restoreScroll) {
     if (!replaceHistory) flushScrollSave();
-    if (navInFlight) return;
+    if (navInFlight) {
+      pendingNavigation = {
+        url: new URL(url.href),
+        replaceHistory: replaceHistory,
+        transientHash: transientHash,
+        restoreScroll: restoreScroll
+      };
+      return;
+    }
     navInFlight = true;
 
     fetchDocument(url).then(function (doc) {
@@ -691,6 +700,16 @@
       if (error !== "fallback") fallbackNavigate(url);
     }).then(function () {
       navInFlight = false;
+      if (pendingNavigation) {
+        var nextNavigation = pendingNavigation;
+        pendingNavigation = null;
+        softNavigate(
+          nextNavigation.url,
+          nextNavigation.replaceHistory,
+          nextNavigation.transientHash,
+          nextNavigation.restoreScroll
+        );
+      }
     });
   }
 
