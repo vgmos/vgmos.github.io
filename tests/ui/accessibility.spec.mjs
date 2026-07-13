@@ -71,6 +71,21 @@ test.describe("automated accessibility", () => {
     expect(severe).toEqual([]);
   });
 
+  test("loss-tool selects retain a native affordance in forced colors", async ({ page }) => {
+    await page.emulateMedia({ forcedColors: "active" });
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    const treatment = await page.locator("#blx-v2-timing-mode").evaluate((select) => ({
+      appearance: getComputedStyle(select).appearance,
+      backgroundImage: getComputedStyle(select).backgroundImage,
+      catalogWrapperChevron: getComputedStyle(document.querySelector(".blx-select-wrap"), "::after").display
+    }));
+    expect(treatment.appearance).not.toBe("none");
+    expect(treatment.backgroundImage).toBe("none");
+    expect(treatment.catalogWrapperChevron).toBe("none");
+  });
+
   test("the read-only legacy viewer has no serious or critical WCAG violations", async ({ page }, testInfo) => {
     await auditRoute(page, "/tools/buck-losses/?p=12v-to-3v3-pol&i=2", "light", testInfo);
   });

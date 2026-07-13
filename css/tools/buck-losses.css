@@ -4596,7 +4596,8 @@ html[data-theme="dark"] .blx-entry-form-error {
 
 @media (max-width: 700px) {
   article.blx-page[data-blx-entry] {
-    width: calc(100vw - 28px);
+    /* Expand past the site's 22px wrapper gutter to a deliberate 14px tool gutter. */
+    width: calc(100% + 16px);
     min-height: 0;
     margin-bottom: 1.5rem;
   }
@@ -4760,5 +4761,241 @@ html[data-theme="dark"] .blx-entry-form-error {
   .blx-entry-presets button:hover,
   .blx-entry-device-choice:hover {
     transform: none;
+  }
+}
+
+/* Refined field interactions ------------------------------------------------
+   The tool opts into the site's neutral field tokens. Dimensions stay put;
+   only color and shadow respond, which keeps dense engineering rows stable. */
+
+article.blx-page {
+  --blx-field-surface: var(--field-surface, var(--paper));
+  --blx-field-surface-hover: var(--field-surface-hover, var(--soft));
+  --blx-field-border: var(--field-border, var(--line));
+  --blx-field-border-hover: var(--field-border-hover, var(--muted));
+  --blx-field-ring: var(--field-ring, var(--claude-ring));
+  --blx-field-invalid: var(--field-invalid, #a83f35);
+  --blx-field-invalid-ring: var(--field-invalid-ring, rgba(168, 63, 53, 0.16));
+}
+
+article.blx-page :is(
+  .blx-entry input[type="number"],
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-waveform-ringing-controls input,
+  .blx-entry-field input,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select,
+  .blx-copy input
+) {
+  border-color: var(--blx-field-border);
+  border-radius: var(--field-radius, 7px);
+  background-color: var(--blx-field-surface);
+  transition:
+    background-color var(--field-motion, 150ms) var(--field-ease, ease),
+    border-color var(--field-motion, 150ms) var(--field-ease, ease),
+    box-shadow var(--field-motion, 150ms) var(--field-ease, ease),
+    color var(--field-motion, 150ms) var(--field-ease, ease);
+}
+
+article.blx-page :is(
+  .blx-entry input[type="number"],
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-waveform-ringing-controls input,
+  .blx-entry-field input,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select
+):not(:disabled):hover {
+  border-color: var(--blx-field-border-hover);
+  background-color: var(--blx-field-surface-hover);
+}
+
+article.blx-page :is(
+  .blx-entry input[type="number"],
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-waveform-ringing-controls input,
+  .blx-entry-field input,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select,
+  .blx-copy input
+):focus-visible {
+  border-color: var(--field-border-focus, var(--accent));
+  background-color: var(--blx-field-surface);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--blx-field-ring);
+}
+
+article.blx-page :is(
+  .blx-entry input[type="number"],
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-waveform-ringing-controls input,
+  .blx-entry-field input,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select
+):is([aria-invalid="true"], :user-invalid) {
+  border-color: var(--blx-field-invalid);
+}
+
+article.blx-page :is(
+  .blx-entry input[type="number"],
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-waveform-ringing-controls input,
+  .blx-entry-field input,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select
+):is([aria-invalid="true"], :user-invalid):focus-visible {
+  box-shadow: 0 0 0 3px var(--blx-field-invalid-ring);
+}
+
+article.blx-page :is(
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select
+) {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 2rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) calc(50% - 1px),
+    calc(100% - 8px) calc(50% - 1px);
+  background-repeat: no-repeat;
+  background-size: 4px 4px, 4px 4px;
+}
+
+/* Catalog controls already provide a chevron on their wrapper. */
+article.blx-page .blx-select-wrap select {
+  background-image: none;
+}
+
+article.blx-page :is(
+  .blx-catalog select,
+  .blx-v2-select-row select,
+  .blx-v2-series-slot select,
+  .blx-entry-field input,
+  .blx-entry-mode-row select,
+  .blx-entry-catalog select
+):disabled {
+  opacity: 1;
+  border-color: var(--blx-field-border);
+  background-color: var(--field-disabled-surface, var(--soft));
+  color: var(--field-disabled-text, var(--muted));
+  cursor: not-allowed;
+}
+
+article.blx-page :is(
+  .blx-field-head label,
+  .blx-unit,
+  .blx-catalog-field label,
+  .blx-v2-select-row label,
+  .blx-entry-field > label,
+  .blx-entry-input-wrap > span,
+  .blx-entry-mode-row > label,
+  .blx-entry-catalog label
+) {
+  transition: color var(--field-motion, 150ms) var(--field-ease, ease);
+}
+
+article.blx-page .blx-field:focus-within .blx-field-head label,
+article.blx-page .blx-field:focus-within .blx-unit,
+article.blx-page .blx-catalog-field:focus-within label,
+article.blx-page .blx-v2-select-row:focus-within label,
+article.blx-page .blx-entry-field:focus-within > label,
+article.blx-page .blx-entry-input-wrap:focus-within > span,
+article.blx-page .blx-entry-mode-row:focus-within > label,
+article.blx-page .blx-entry-catalog > div:focus-within label {
+  color: var(--accent);
+}
+
+/* A subtle parent response helps guided setup read as one composed field
+   without moving the card or changing its geometry. */
+article.blx-page .blx-entry-field,
+article.blx-page .blx-entry-mode-row,
+article.blx-page .blx-v2-select-row {
+  transition:
+    background-color var(--field-motion, 150ms) var(--field-ease, ease),
+    border-color var(--field-motion, 150ms) var(--field-ease, ease),
+    box-shadow var(--field-motion, 150ms) var(--field-ease, ease);
+}
+
+article.blx-page .blx-entry-field:focus-within,
+article.blx-page .blx-entry-mode-row:focus-within,
+article.blx-page .blx-v2-select-row:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  article.blx-page .blx-entry-field:hover,
+  article.blx-page .blx-entry-mode-row:hover,
+  article.blx-page .blx-v2-select-row:hover {
+    border-color: var(--blx-field-border-hover);
+  }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  article.blx-page :is(
+    .blx-entry input[type="number"],
+    .blx-catalog select,
+    .blx-v2-select-row select,
+    .blx-v2-series-slot select,
+    .blx-waveform-ringing-controls input,
+    .blx-entry-field input,
+    .blx-entry-mode-row select,
+    .blx-entry-catalog select,
+    .blx-copy input
+  ) {
+    min-height: 44px;
+    font-size: max(1rem, 16px);
+  }
+}
+
+@media (forced-colors: active) {
+  article.blx-page :is(input, select):focus-visible {
+    outline-color: Highlight;
+  }
+
+  /* Forced-colors suppresses background-image chevrons. Give selects back to
+     the platform renderer so their dropdown affordance remains visible. */
+  article.blx-page select:not([multiple]) {
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+    appearance: auto;
+    padding-right: 0.55rem;
+    background-image: none;
+  }
+
+  article.blx-page .blx-select-wrap::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  article.blx-page :is(
+    input,
+    select,
+    .blx-field-head label,
+    .blx-unit,
+    .blx-catalog-field label,
+    .blx-v2-select-row label,
+    .blx-entry-field,
+    .blx-entry-mode-row,
+    .blx-entry-input-wrap > span
+  ) {
+    transition: none !important;
   }
 }
