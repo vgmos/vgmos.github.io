@@ -124,6 +124,10 @@ export async function initBuckLossExplorer(root) {
   if (!root) return;
   const route = detectBuckLossUrlVersion(typeof window === "undefined" ? "" : window.location.search).route;
   if (route === "legacy-v1") await initLegacy(root);
+  else if (route === "v2-bare") {
+    const { initBuckLossEntryV2 } = await import(versionedModuleUrl("./buck-loss-entry-v2.js"));
+    await initBuckLossEntryV2(root);
+  }
   else {
     const { initBuckLossExplorerV2 } = await import(versionedModuleUrl("./buck-loss-ui-v2.js"));
     await initBuckLossExplorerV2(root);

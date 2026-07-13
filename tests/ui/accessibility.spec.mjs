@@ -47,8 +47,22 @@ test.describe("automated accessibility", () => {
     });
   }
 
-  test("the first-visit device chooser has an accessible dialog contract", async ({ page }) => {
+  test("the loss-entry gateway and guided form have accessible contracts", async ({ page }) => {
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    let results = await new AxeBuilder({ page }).include("#buck-loss-explorer").withTags(WCAG_TAGS).analyze();
+    let severe = results.violations.filter((violation) => ["critical", "serious"].includes(violation.impact));
+    expect(severe).toEqual([]);
+
+    await page.getByRole("button", { name: "Start guided setup" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Set circuit conditions");
+    results = await new AxeBuilder({ page }).include("#buck-loss-explorer").withTags(WCAG_TAGS).analyze();
+    severe = results.violations.filter((violation) => ["critical", "serious"].includes(violation.impact));
+    expect(severe).toEqual([]);
+  });
+
+  test("the recovery device chooser retains an accessible dialog contract", async ({ page }) => {
+    await page.goto("/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=not-real&i=2", { waitUntil: "domcontentloaded" });
     const chooser = page.locator("[data-blx-device-dialog]");
     await expect(chooser).toBeVisible();
     await expect(chooser).toHaveAttribute("aria-labelledby", "blx-device-dialog-title");
