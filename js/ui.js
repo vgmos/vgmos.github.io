@@ -506,6 +506,14 @@
     });
   }
 
+  function dispatchMainLifecycle(name, main) {
+    try {
+      document.dispatchEvent(new CustomEvent(name, {
+        detail: { main: main || null }
+      }));
+    } catch (error) {}
+  }
+
   function syncHead(doc) {
     var nextTitle = doc.querySelector("title");
     if (nextTitle) document.title = nextTitle.textContent;
@@ -609,7 +617,9 @@
     }
 
     syncHead(doc);
-    currentMain.replaceWith(nextMain.cloneNode(true));
+    var replacementMain = nextMain.cloneNode(true);
+    currentMain.replaceWith(replacementMain);
+    dispatchMainLifecycle("vgmos:mainchange", replacementMain);
     if (replaceHistory) {
       history.replaceState(makeHistoryState(history.state, nextScroll), "", historyUrl);
     } else {
@@ -645,6 +655,7 @@
         return Promise.reject("fallback");
       }
 
+      dispatchMainLifecycle("vgmos:beforemainchange", document.querySelector("main.page-content"));
       var exitLayer = makeExitLayer(document.querySelector("main.page-content"));
       root.classList.add("is-content-entering");
 
