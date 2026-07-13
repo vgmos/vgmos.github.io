@@ -520,7 +520,7 @@ function setupEntryController(root) {
     const lastQuery = readLastBuckLossQueryV2();
     root.innerHTML = gatewayMarkup(lastQuery);
     const panel = root.querySelector("[data-blx-entry-panel]");
-    runAnimation(panel, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 320, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+    runAnimation(panel, [{ transform: "translateY(8px)" }, { transform: "translateY(0)" }], { duration: 320, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
     root.querySelector("[data-blx-entry-start]")?.addEventListener("click", () => {
       state = draftFromQuery(seedBuckLossQueryV2());
       beginCatalogLoad();
@@ -542,7 +542,7 @@ function setupEntryController(root) {
     root.dataset.blxEntry = "wizard";
     root.innerHTML = wizardMarkup(state);
     const panel = root.querySelector(".blx-entry-step");
-    if (animate && direction) runAnimation(panel, [{ opacity: 0, transform: `translateX(${8 * direction}px)` }, { opacity: 1, transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+    if (animate && direction) runAnimation(panel, [{ transform: `translateX(${8 * direction}px)` }, { transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
 
     root.querySelector("[data-blx-entry-form]")?.addEventListener("submit", (event) => {
       event.preventDefault();
