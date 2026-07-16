@@ -269,4 +269,39 @@ test.describe("purposeful tool motion", () => {
     expect(motion.css.filter((call) => call.name === "blx-value-fluid-swap")).toEqual([]);
     expect(issues).toEqual([]);
   });
+
+  test("mobile disclosure reveals detail without sliding rows across it", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await installMotionProbe(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(BUCK_LOSS_WORKSPACE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+
+    const family = page.locator('[data-blx-family="magnetics"]');
+    await family.locator("summary").scrollIntoViewIfNeeded();
+    await clearMotionProbe(page);
+    await family.locator("summary").click();
+    await expect(family).toHaveClass(/is-open/);
+    await page.waitForTimeout(70);
+
+    const overlap = await family.evaluate((row) => {
+      const body = row.querySelector(".blx-v2-atomic-list").getBoundingClientRect();
+      const followingRows = [];
+      for (let sibling = row.nextElementSibling; sibling; sibling = sibling.nextElementSibling) {
+        followingRows.push(sibling.getBoundingClientRect());
+      }
+      return followingRows.some((rect) => (
+        rect.left < body.right - 0.5
+        && rect.right > body.left + 0.5
+        && rect.top < body.bottom - 0.5
+        && rect.bottom > body.top + 0.5
+      ));
+    });
+    expect(overlap, "following loss rows must not cross the disclosed detail").toBe(false);
+
+    const motion = await readMotionProbe(page);
+    expect(motion.css.filter((call) => call.name === "blx-v2-family-disclose").length).toBe(1);
+    expect(motion.waapi.filter((call) => call.target.family)).toEqual([]);
+    expect(issues).toEqual([]);
+  });
 });
