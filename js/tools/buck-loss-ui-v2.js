@@ -1932,7 +1932,8 @@ function renderFamilyList(root, state, point) {
         item.classList.toggle("is-open", details.open);
         const beforeRects = item.blxFamilyBeforeRects;
         item.blxFamilyBeforeRects = null;
-        if (beforeRects) {
+        const isSingleColumn = globalThis.matchMedia?.("(max-width: 700px)").matches;
+        if (beforeRects && !isSingleColumn) {
           animateFlip([...holder.children], beforeRects, {
             duration: 220,
             easing: "cubic-bezier(0.22, 1, 0.36, 1)"
