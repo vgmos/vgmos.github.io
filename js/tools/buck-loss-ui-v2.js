@@ -7,7 +7,7 @@ function versionedModuleUrl(path) {
 }
 
 const [
-  { animateDialog, animateFlip, animatePanelSwap, animatePointSeries, animateWaveformDomain },
+  { animateDialog, animateFlip, animatePanelSwap, animatePointSeries, animateWaveformDomain, runAnimation },
   {
     BUCK_LOSS_GROUPS_V2,
     BUCK_LOSS_MODEL_REVISION,
@@ -89,6 +89,16 @@ const CONDITIONED_DEVICE_KEYS = new Set([
   "effectiveTurnOff"
 ]);
 const EXPLICIT_CONDITION_PROVENANCE = new Set(["entered", "url-entered", "entered-blank"]);
+const REFERENCE_CARD_MOTION = Object.freeze({
+  enterDuration: 220,
+  exitDuration: 140,
+  enterEasing: "cubic-bezier(0.22, 1, 0.36, 1)",
+  exitEasing: "cubic-bezier(0.65, 0, 0.35, 1)"
+});
+const REFERENCE_ICON_MOTION = Object.freeze({
+  duration: 140,
+  easing: "cubic-bezier(0.16, 1, 0.3, 1)"
+});
 
 const FAMILY_STYLE = Object.freeze({
   mosfetConduction: { color: "--blx-cond", short: "FET conduction" },
@@ -631,11 +641,13 @@ function updateCanonicalUrl(root, state, immediate = false) {
 async function copyCanonicalUrl(root, state, button) {
   if (state.disposed) return;
   const href = canonicalHref(state);
+  let usedFallback = false;
   try {
     await navigator.clipboard.writeText(href);
   } catch {
     const input = root.querySelector("[data-blx-copy-url]");
     if (input) {
+      usedFallback = true;
       input.value = href;
       input.focus();
       input.select();
@@ -643,10 +655,33 @@ async function copyCanonicalUrl(root, state, button) {
     }
   }
   if (state.disposed) return;
-  const original = button.textContent;
-  button.textContent = "Copied";
+  if (usedFallback && button.isConnected) button.focus({ preventScroll: true });
+  let label = button.querySelector("[data-blx-copy-label]");
+  if (!label) {
+    label = document.createElement("span");
+    label.dataset.blxCopyLabel = "";
+    label.textContent = button.textContent.trim() || "Copy link";
+    button.replaceChildren(label);
+  }
+  button.blxCopyOriginal ??= label.textContent;
+  const swapLabel = (copy) => {
+    clearTimeout(label.blxSwapTimer);
+    label.classList.remove("blx-value-swap");
+    void label.offsetWidth;
+    label.textContent = copy;
+    label.classList.add("blx-value-swap");
+    label.blxSwapTimer = setTimeout(() => label.classList.remove("blx-value-swap"), 180);
+  };
+  swapLabel("Copied");
+  const live = root.querySelector("[data-blx-live]");
+  if (live) {
+    live.textContent = "";
+    requestAnimationFrame(() => {
+      if (!state.disposed) live.textContent = "Link copied to clipboard.";
+    });
+  }
   clearTimeout(button.blxTimer);
-  button.blxTimer = setTimeout(() => { button.textContent = original; }, 1200);
+  button.blxTimer = setTimeout(() => swapLabel(button.blxCopyOriginal), 1200);
 }
 
 function setText(root, selector, value) {
@@ -1887,10 +1922,22 @@ function renderFamilyList(root, state, point) {
       const body = document.createElement("div");
       body.className = "blx-v2-atomic-list";
       details.append(summary, body);
+      summary.addEventListener("click", () => {
+        item.blxFamilyBeforeRects = new Map([...holder.children]
+          .map((sibling) => [sibling, sibling.getBoundingClientRect()]));
+      });
       details.addEventListener("toggle", () => {
         if (details.open) state.openFamilies.add(family.id);
         else state.openFamilies.delete(family.id);
         item.classList.toggle("is-open", details.open);
+        const beforeRects = item.blxFamilyBeforeRects;
+        item.blxFamilyBeforeRects = null;
+        if (beforeRects) {
+          animateFlip([...holder.children], beforeRects, {
+            duration: 220,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+          });
+        }
       });
       item.append(details);
     }
@@ -2403,18 +2450,104 @@ function makeReference(state) {
   };
 }
 
+function renderReferenceButton(button, active) {
+  const nextActive = active ? "true" : "false";
+  const previousActive = button.dataset.active;
+  const icon = button.querySelector("svg");
+  const fromTransform = icon ? getComputedStyle(icon).transform : null;
+  button.dataset.active = nextActive;
+  const span = button.querySelector("span");
+  if (span) span.textContent = active ? "Clear reference" : "Hold reference";
+  if (!icon || previousActive === undefined || previousActive === nextActive) return;
+
+  const token = {};
+  button.blxReferenceMotionToken = token;
+  button.dataset.blxReferenceMotion = active ? "holding" : "clearing";
+  const animation = runAnimation(icon, [
+    { transform: fromTransform === "none" ? `scale(${active ? 0.94 : 1})` : fromTransform },
+    { transform: `scale(${active ? 1 : 0.94})` }
+  ], REFERENCE_ICON_MOTION);
+  if (!animation) {
+    delete button.dataset.blxReferenceMotion;
+    return;
+  }
+  animation.finished.catch(() => {}).then(() => {
+    if (button.blxReferenceMotionToken !== token) return;
+    animation.cancel();
+    delete button.dataset.blxReferenceMotion;
+  });
+}
+
+function revealReferenceCard(card) {
+  const interruptedExit = card.dataset.blxReferenceMotion === "exit";
+  if (!card.hidden && !interruptedExit) return;
+  const computed = interruptedExit ? getComputedStyle(card) : null;
+  const token = {};
+  card.blxReferenceMotionToken = token;
+  card.hidden = false;
+  card.removeAttribute("aria-hidden");
+  card.dataset.blxReferenceMotion = "enter";
+  const animation = runAnimation(card, [
+    interruptedExit
+      ? { opacity: computed.opacity, transform: computed.transform === "none" ? "translateY(0)" : computed.transform }
+      : { opacity: 0, transform: "translateY(6px)" },
+    { opacity: 1, transform: "translateY(0)" }
+  ], {
+    duration: REFERENCE_CARD_MOTION.enterDuration,
+    easing: REFERENCE_CARD_MOTION.enterEasing
+  });
+  if (!animation) {
+    delete card.dataset.blxReferenceMotion;
+    return;
+  }
+  animation.finished.catch(() => {}).then(() => {
+    if (card.blxReferenceMotionToken !== token) return;
+    animation.cancel();
+    delete card.dataset.blxReferenceMotion;
+  });
+}
+
+function concealReferenceCard(card) {
+  if (card.hidden) {
+    card.replaceChildren();
+    card.removeAttribute("aria-hidden");
+    delete card.dataset.blxReferenceMotion;
+    return;
+  }
+  if (card.dataset.blxReferenceMotion === "exit") return;
+  const computed = getComputedStyle(card);
+  const token = {};
+  card.blxReferenceMotionToken = token;
+  card.setAttribute("aria-hidden", "true");
+  card.dataset.blxReferenceMotion = "exit";
+  const animation = runAnimation(card, [
+    { opacity: computed.opacity, transform: computed.transform === "none" ? "translateY(0)" : computed.transform },
+    { opacity: 0, transform: "translateY(6px)" }
+  ], {
+    duration: REFERENCE_CARD_MOTION.exitDuration,
+    easing: REFERENCE_CARD_MOTION.exitEasing
+  });
+  const finish = () => {
+    if (card.blxReferenceMotionToken !== token) return;
+    card.hidden = true;
+    card.replaceChildren();
+    animation?.cancel();
+    card.removeAttribute("aria-hidden");
+    delete card.dataset.blxReferenceMotion;
+  };
+  if (!animation) finish();
+  else animation.finished.catch(() => {}).then(finish);
+}
+
 function renderReference(root, state) {
   root.querySelectorAll("[data-blx-reference]").forEach((button) => {
-    button.dataset.active = state.reference ? "true" : "false";
-    const span = button.querySelector("span");
-    if (span) span.textContent = state.reference ? "Clear reference" : "Hold reference";
+    renderReferenceButton(button, Boolean(state.reference));
   });
   const card = root.querySelector("[data-blx-reference-card]");
   const key = root.querySelector("[data-blx-reference-key]");
   if (!card) return;
   if (!state.reference) {
-    card.hidden = true;
-    card.replaceChildren();
+    concealReferenceCard(card);
     if (key) {
       key.hidden = true;
       key.textContent = "";
@@ -2427,11 +2560,11 @@ function renderReference(root, state) {
     ? state.point.efficiency - reference.point.efficiency
     : null;
   const lossDelta = state.point.pLoss - reference.point.pLoss;
-  card.hidden = false;
   const deltaCopy = finite(efficiencyDelta)
     ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} percentage points · known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference.`
     : `Known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference. Efficiency deltas stay hidden while either run has omitted terms — subtotals cannot be subtracted honestly.`;
   card.innerHTML = `<div class="blx-section-heading"><h2>Held reference</h2><span class="blx-section-total">${escapeHtml(reference.label)}</span></div><div class="blx-v2-reference-sides"><div><span>Reference</span><strong>${formatPercent(reference.point.efficiency)} · ${formatPower(reference.point.pLoss)}</strong><small>${reference.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(reference.mode)} · ${reference.corner} · ${reference.point.availability}</small></div><div><span>Current</span><strong>${formatPercent(state.point.efficiency)} · ${formatPower(state.point.pLoss)}</strong><small>${state.template.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(state.point.waveform.mode)} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}</small></div></div><p>${deltaCopy}</p>`;
+  revealReferenceCard(card);
   if (key) {
     key.hidden = false;
     key.textContent = `Solid: ${state.template.label} · ${state.controlMode} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}. Dashed: ${reference.label} · ${reference.controlMode} · ${reference.corner} · ${reference.point.availability}.`;
@@ -2439,7 +2572,10 @@ function renderReference(root, state) {
 }
 
 function setResultAvailability(root, available) {
-  root.querySelectorAll("[data-blx-valid-only]").forEach((node) => { node.hidden = !available; });
+  root.querySelectorAll("[data-blx-valid-only]").forEach((node) => {
+    if (available && node.matches("[data-blx-reference-card]")) return;
+    node.hidden = !available;
+  });
   root.querySelectorAll("[data-blx-reference]").forEach((button) => { button.disabled = !available; });
   const loadTab = root.querySelector('[data-blx-view="load"]');
   if (loadTab) loadTab.disabled = !available;
@@ -2483,8 +2619,12 @@ function clearResultContent(root, state = null) {
   setText(root, "[data-blx-causal-insight]", "");
   const card = root.querySelector("[data-blx-reference-card]");
   if (card) {
+    card.blxReferenceMotionToken = {};
+    card.getAnimations().forEach((animation) => animation.cancel());
     card.hidden = true;
     card.replaceChildren();
+    card.removeAttribute("aria-hidden");
+    delete card.dataset.blxReferenceMotion;
   }
   const referenceKey = root.querySelector("[data-blx-reference-key]");
   if (referenceKey) {
@@ -3304,6 +3444,7 @@ export async function initBuckLossExplorerV2(root, options = {}) {
     root.blxResizeObserver?.disconnect?.();
     root.querySelectorAll("*").forEach((node) => {
       clearTimeout(node.blxTimer);
+      clearTimeout(node.blxSwapTimer);
       clearTimeout(node.blxCopyTimer);
       clearTimeout(node.blxAccordionTimer);
       cancelAnimationFrame(node.blxAccordionFrame || 0);

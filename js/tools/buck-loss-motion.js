@@ -19,16 +19,20 @@ export function animateFlip(elements, beforeRects, options = {}) {
     const before = beforeRects.get(element);
     if (!before) return;
     const after = element.getBoundingClientRect();
+    const deltaX = before.left - after.left;
     const deltaY = before.top - after.top;
-    if (Math.abs(deltaY) < 0.5) return;
+    if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) return;
     const animation = runAnimation(element, [
-      { transform: `translateY(${deltaY}px)` },
-      { transform: "translateY(0)" }
+      { transform: `translate(${deltaX}px, ${deltaY}px)` },
+      { transform: "translate(0, 0)" }
     ], {
       duration: options.duration ?? 220,
       easing: options.easing ?? "cubic-bezier(0.16, 1, 0.3, 1)"
     });
-    if (animation) animations.push(animation);
+    if (animation) {
+      animations.push(animation);
+      animation.finished.catch(() => {}).then(() => animation.cancel());
+    }
   });
   return animations;
 }

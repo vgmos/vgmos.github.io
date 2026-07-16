@@ -642,6 +642,29 @@ permalink: /tools/buck-converter/
   .bc-card .bc-v { margin: 0; color: var(--ink); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .bc-card .bc-s { margin: 2px 0 0; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 
+  /* A committed mode/preset change replaces the model first, then settles the
+     final surfaces. Direct manipulation stays immediate and motion-free. */
+  .bc-results.bc-commit-settle {
+    --bc-commit-opacity: 0.82;
+  }
+  .bc-schematic--animated.bc-commit-settle,
+  .bc-scope.bc-commit-settle {
+    --bc-commit-opacity: 0.72;
+  }
+  .bc-commit-settle {
+    animation: bcCommitSettle var(--bc-motion-fast) var(--claude-ease, var(--ease));
+  }
+  @keyframes bcCommitSettle {
+    from {
+      opacity: var(--bc-commit-opacity, 0.76);
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .bc-note {
     max-height: 0;
     margin: 0;
@@ -1577,6 +1600,9 @@ permalink: /tools/buck-converter/
     .bc-note.bc-show {
       transition: none !important;
       transition-delay: 0s !important;
+    }
+    .bc-commit-settle {
+      animation: none !important;
     }
     .bc-field.bc-field-enter {
       animation: none;
@@ -2758,6 +2784,11 @@ permalink: /tools/buck-converter/
   var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
   var modeSegmented = document.querySelector(".bc-segmented");
   var dcmExtraControls = Array.prototype.slice.call(document.querySelectorAll("[data-dcm-extra]"));
+  var committedChangeSurfaces = Array.prototype.filter.call([
+    document.querySelector(".bc-results"),
+    document.querySelector(".bc-schematic--animated"),
+    document.querySelector(".bc-scope")
+  ], Boolean);
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   var motionHandler = null;
   var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
@@ -2841,6 +2872,30 @@ permalink: /tools/buck-converter/
       Array.prototype.slice.call(node.querySelectorAll("input")).forEach(function (input) {
         input.disabled = !active;
       });
+    });
+  }
+
+  function finishCommittedChangeSettle(event) {
+    if (event.animationName === "bcCommitSettle") {
+      event.currentTarget.classList.remove("bc-commit-settle");
+    }
+  }
+
+  committedChangeSurfaces.forEach(function (surface) {
+    surface.addEventListener("animationend", finishCommittedChangeSettle);
+  });
+
+  function settleCommittedChange() {
+    committedChangeSurfaces.forEach(function (surface) {
+      surface.classList.remove("bc-commit-settle");
+    });
+    if (disposed || !committedChangeSurfaces.length || (reduceMotion && reduceMotion.matches)) { return; }
+
+    // Flush the removed state once so a rapid second commit cancels and
+    // restarts from the newest, already-rendered engineering model.
+    void committedChangeSurfaces[0].offsetWidth;
+    committedChangeSurfaces.forEach(function (surface) {
+      surface.classList.add("bc-commit-settle");
     });
   }
 
@@ -3127,7 +3182,14 @@ permalink: /tools/buck-converter/
     });
 
     if (reduceMotion) {
-      motionHandler = function () { startAnimatedSchematic(); };
+      motionHandler = function () {
+        if (reduceMotion.matches) {
+          committedChangeSurfaces.forEach(function (surface) {
+            surface.classList.remove("bc-commit-settle");
+          });
+        }
+        startAnimatedSchematic();
+      };
       if (reduceMotion.addEventListener) {
         reduceMotion.addEventListener("change", motionHandler);
       } else if (reduceMotion.addListener) {
@@ -3716,9 +3778,12 @@ permalink: /tools/buck-converter/
 
   modeButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
-      mode = this.getAttribute("data-mode");
+      var nextMode = this.getAttribute("data-mode");
+      var changed = nextMode !== mode;
+      mode = nextMode;
       hideProbe();
       renderNow();
+      if (changed) { settleCommittedChange(); }
     });
   });
 
@@ -3727,13 +3792,19 @@ permalink: /tools/buck-converter/
       dcmEnabled = !dcmEnabled;
       hideProbe();
       renderNow();
+      settleCommittedChange();
     });
   }
 
   document.querySelectorAll(".bc-presets button").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      state = Object.assign({}, state, PRESETS[this.getAttribute("data-preset")]);
+      var preset = PRESETS[this.getAttribute("data-preset")];
+      var changed = Object.keys(preset).some(function (key) {
+        return state[key] !== preset[key];
+      });
+      state = Object.assign({}, state, preset);
       renderNow();
+      if (changed) { settleCommittedChange(); }
     });
   });
 
@@ -3766,6 +3837,11 @@ permalink: /tools/buck-converter/
       });
     });
     cancelRangeThumbGlide(el["bc-duty-slider"]);
+
+    committedChangeSurfaces.forEach(function (surface) {
+      surface.classList.remove("bc-commit-settle");
+      surface.removeEventListener("animationend", finishCommittedChangeSettle);
+    });
 
     managedTimers.forEach(function (id) { window.clearTimeout(id); });
     managedTimers.length = 0;
