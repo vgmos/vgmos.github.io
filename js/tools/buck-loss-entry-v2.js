@@ -71,6 +71,7 @@ const STEP_KEYS = Object.freeze({
 });
 
 const FIELD_STEP = new Map(Object.entries(STEP_KEYS).flatMap(([step, keys]) => keys.map((key) => [key, step])));
+const PRESET_ACKNOWLEDGEMENT_KEYS = Object.freeze([...STEP_KEYS.conditions, "cursor"]);
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -644,12 +645,38 @@ function setupEntryController(root, options = {}) {
   let focusFrame = 0;
   let disposed = false;
   const animations = new Set();
+  const presetFieldAnimations = new Set();
   const signal = options.signal;
   const trackAnimation = (animation) => {
     if (!animation) return animation;
     animations.add(animation);
     animation.finished?.catch(() => {}).finally(() => animations.delete(animation));
     return animation;
+  };
+  const cancelPresetFieldAnimations = () => {
+    presetFieldAnimations.forEach((animation) => animation.cancel?.());
+    presetFieldAnimations.clear();
+  };
+  const animatePresetFields = (fieldKeys = []) => {
+    cancelPresetFieldAnimations();
+    fieldKeys.forEach((key, index) => {
+      const field = root.querySelector(`[data-blx-entry-field="${key}"]`);
+      const animation = runAnimation(field, [
+        { opacity: 0.72, transform: "translateY(2px)" },
+        { opacity: 1, transform: "translateY(0)" }
+      ], {
+        duration: 160,
+        delay: index * 30,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)"
+      });
+      if (!animation) return;
+      presetFieldAnimations.add(animation);
+      trackAnimation(animation);
+      animation.finished?.catch(() => {}).finally(() => {
+        presetFieldAnimations.delete(animation);
+        animation.cancel?.();
+      });
+    });
   };
 
   const beginCatalogLoad = () => {
@@ -693,6 +720,7 @@ function setupEntryController(root, options = {}) {
 
   const renderGateway = ({ focus = false } = {}) => {
     if (disposed || signal?.aborted) return;
+    cancelPresetFieldAnimations();
     state = null;
     root.dataset.blxEntry = "gateway";
     root.dataset.blxStatus = "ready";
@@ -718,12 +746,14 @@ function setupEntryController(root, options = {}) {
     if (focus) root.querySelector("[data-blx-entry-start]")?.focus();
   };
 
-  const renderWizard = ({ direction = 0, animate = true, focusHeading = true, focusSelector = "" } = {}) => {
+  const renderWizard = ({ direction = 0, animate = true, focusHeading = true, focusSelector = "", acknowledgeFields = [] } = {}) => {
     if (disposed || signal?.aborted || !state) return;
+    cancelPresetFieldAnimations();
     root.dataset.blxEntry = "wizard";
     root.innerHTML = wizardMarkup(state);
     const panel = root.querySelector(".blx-entry-step");
     if (animate && direction) trackAnimation(runAnimation(panel, [{ transform: `translateX(${8 * direction}px)` }, { transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }));
+    animatePresetFields(acknowledgeFields);
 
     const refreshConditioningUi = () => {
       const preview = root.querySelector("[data-blx-entry-condition-preview]");
@@ -781,8 +811,21 @@ function setupEntryController(root, options = {}) {
       renderWizard({ direction: -1 });
     }));
     root.querySelectorAll("[data-blx-entry-preset]").forEach((button) => button.addEventListener("click", () => {
+      const previousValues = new Map(PRESET_ACKNOWLEDGEMENT_KEYS.map((key) => [
+        key,
+        key === "cursor" ? state.cursor : state.rawInputs[key]
+      ]));
       applyPresetToDraft(state, button.dataset.blxEntryPreset);
-      renderWizard({ animate: false, focusHeading: false, focusSelector: `[data-blx-entry-preset="${button.dataset.blxEntryPreset}"]` });
+      const changedFields = PRESET_ACKNOWLEDGEMENT_KEYS.filter((key) => !Object.is(
+        previousValues.get(key),
+        key === "cursor" ? state.cursor : state.rawInputs[key]
+      ));
+      renderWizard({
+        animate: false,
+        focusHeading: false,
+        focusSelector: `[data-blx-entry-preset="${button.dataset.blxEntryPreset}"]`,
+        acknowledgeFields: changedFields
+      });
     }));
     root.querySelectorAll("[data-blx-entry-device]").forEach((input) => input.addEventListener("change", () => {
       applyDeviceToDraft(state, input.value);
@@ -881,6 +924,7 @@ function setupEntryController(root, options = {}) {
       if (disposed) return;
       disposed = true;
       cancelAnimationFrame(focusFrame);
+      cancelPresetFieldAnimations();
       animations.forEach((animation) => animation.cancel?.());
       animations.clear();
       try { root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel()); } catch {}
