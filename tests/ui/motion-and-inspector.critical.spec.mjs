@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "./fixtures.mjs";
-import { SITE_URL, pageOverflow, settlePage } from "./site.mjs";
+import { LT83402_PROJECT_ROUTE, SITE_URL, pageOverflow, settlePage } from "./site.mjs";
 
 const SAR_PROJECT = "/projects/georgia-tech-noise-shaping-sar-adc/";
 test.describe("immediately visible homepage", () => {
@@ -12,7 +12,7 @@ test.describe("immediately visible homepage", () => {
       await expect(page.locator(".home-title")).toHaveText("Tools, projects, and notes");
       await expect(page.locator(".hero-lede")).toContainText("low-noise DC-DC buck converters");
       await expect(page.locator("[data-signal-path], [data-reveal], .page-exit-layer")).toHaveCount(0);
-      await expect(page.locator(".list-item")).toHaveCount(8);
+      await expect(page.locator(".list-item")).toHaveCount(9);
       expect(await page.locator(".list-item").evaluateAll(items => items.every(item => {
         const style = getComputedStyle(item);
         return style.visibility === "visible" && style.opacity === "1" && style.transform === "none";
@@ -23,7 +23,7 @@ test.describe("immediately visible homepage", () => {
       await settlePage(page);
       await page.goBack();
       await settlePage(page);
-      await expect(page.locator(".list-item")).toHaveCount(8);
+      await expect(page.locator(".list-item")).toHaveCount(9);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(height);
     });
   }
@@ -31,7 +31,7 @@ test.describe("immediately visible homepage", () => {
     const context = await browser.newContext({javaScriptEnabled: false});
     const page = await context.newPage();
     await page.goto(new URL("/", SITE_URL).href);
-    await expect(page.locator(".list-item")).toHaveCount(8);
+    await expect(page.locator(".list-item")).toHaveCount(9);
     for (const item of await page.locator(".list-item").all()) await expect(item).toBeVisible();
     await expect(page.getByRole("link", {name: "Browse all notes"})).toBeVisible();
     await expect(page.locator("[data-signal-path], [data-reveal]")).toHaveCount(0);
@@ -39,11 +39,67 @@ test.describe("immediately visible homepage", () => {
     await expect(page.locator("[data-figure-inspect]")).toHaveCount(0);
     await expect(page.locator(".source-figure img")).toHaveCount(2);
     await expect(page.locator(".source-figure img").first()).toBeVisible();
+    await page.goto(new URL(LT83402_PROJECT_ROUTE, SITE_URL).href);
+    await expect(page.locator("[data-figure-inspect]")).toHaveCount(0);
+    await expect(page.locator(".source-figure img")).toHaveCount(4);
+    await expect(page.locator(".source-figure figcaption a")).toHaveCount(4);
     await context.close();
   });
 });
 
 test.describe("project figure inspector", () => {
+  test("LT83402 figures preserve public sources and the comparison keeps its conditions", async ({ page }) => {
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(LT83402_PROJECT_ROUTE);
+      await settlePage(page);
+      await expect(page.locator("h1")).toHaveText("LT83402: 42 V Low-Noise Buck Regulator");
+      await expect(page.locator(".project-facts")).toHaveCount(0);
+      await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", "https://vgmos.github.io/assets/projects/lt83402/lt83402-package.png");
+      const triggers = page.locator("[data-figure-inspect]");
+      await expect(triggers).toHaveCount(4);
+      const figureSources = [
+        "https://www.analog.com/en/products/lt83402.html",
+        ...[38, 11, 16].map(number => `https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=${number}`),
+      ];
+      for (const [index, sourceURL] of figureSources.entries()) {
+        const trigger = triggers.nth(index);
+        const source = await trigger.locator("img").getAttribute("src");
+        await trigger.focus();
+        await expect(trigger.locator(".figure-inspect__hint")).toHaveText("Inspect figure");
+        const clearance = await trigger.evaluate(element => {
+          const image = element.querySelector("img").getBoundingClientRect();
+          const hint = element.querySelector(".figure-inspect__hint").getBoundingClientRect();
+          return { gap: hint.top - image.bottom, height: hint.height, right: hint.right - image.right };
+        });
+        expect(clearance.gap, "Inspection control must not cover any image data").toBeGreaterThanOrEqual(7.5);
+        expect(clearance.height).toBeGreaterThanOrEqual(44);
+        expect(clearance.right).toBeLessThanOrEqual(0.5);
+        await page.keyboard.press("Enter");
+        const dialog = page.locator("[data-figure-inspector]");
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator("img")).toHaveAttribute("src", source);
+        await expect(dialog.locator("[data-figure-inspector-caption] a")).toHaveAttribute("href", sourceURL);
+        await page.keyboard.press("Shift+Tab");
+        expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
+        await page.keyboard.press("Escape");
+        await expect(dialog).toBeHidden();
+        await expect(trigger).toBeFocused();
+      }
+      const comparison = page.getByRole("region", { name: "Published LT83402 and LT83203 noise conditions" });
+      await expect(comparison.getByRole("columnheader")).toHaveCount(3);
+      await expect(comparison.getByRole("row", { name: "Noise-test load 2.5 A Not stated", exact: true })).toBeVisible();
+      await expect(comparison.getByRole("row", { name: "Switching frequency 2 MHz 6 MHz", exact: true })).toBeVisible();
+      await expect(page.locator(".project-body")).toContainText("they do not establish a device ranking");
+      if (width <= 390) {
+        await comparison.focus();
+        await comparison.press("ArrowRight");
+        await expect.poll(() => comparison.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
+      }
+      expect((await pageOverflow(page)).scrollWidth).toBeLessThanOrEqual(width + 1);
+    }
+  });
+
   test("preserves figure content, traps focus, closes with Escape, and restores focus", async ({ page }) => {
     await page.goto(SAR_PROJECT, { waitUntil: "domcontentloaded" });
     await settlePage(page);

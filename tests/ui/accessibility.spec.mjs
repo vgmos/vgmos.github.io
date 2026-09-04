@@ -4,6 +4,7 @@ import {
   AUDIT_ROUTES,
   BUCK_LOSS_V2_ROUTE,
   CRITICAL_VISUAL_ROUTES,
+  LT83402_PROJECT_ROUTE,
   pageOverflow,
   setStoredTheme,
   settlePage
@@ -41,9 +42,9 @@ test.describe("automated accessibility", () => {
     });
   }
 
-  for (const route of CRITICAL_VISUAL_ROUTES) {
-    test(`${route.path} has no serious or critical WCAG violations in dark theme`, async ({ page }, testInfo) => {
-      await auditRoute(page, route.path, "dark", testInfo);
+  for (const route of [...CRITICAL_VISUAL_ROUTES.map(({ path }) => path), LT83402_PROJECT_ROUTE]) {
+    test(`${route} has no serious or critical WCAG violations in dark theme`, async ({ page }, testInfo) => {
+      await auditRoute(page, route, "dark", testInfo);
     });
   }
 

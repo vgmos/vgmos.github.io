@@ -3,6 +3,7 @@ import path from "node:path";
 import { test, expect } from "./fixtures.mjs";
 import {
   BUCK_LOSS_V2_ROUTE,
+  LT83402_PROJECT_ROUTE,
   pageOverflow,
   setStoredTheme,
   settleVisualPage,
@@ -18,6 +19,7 @@ const pages = [
   ["y-flash", "/projects/technion-y-flash/"],
   ["op-amp", "/projects/bits-gmid-op-amp/"],
   ["ceeri", "/projects/bits-ceeri-image-processing/"],
+  ["lt83402", LT83402_PROJECT_ROUTE],
   ["converter", "/tools/buck-converter/"],
   ["loss-entry", "/tools/buck-losses/"],
   ["loss-workspace", BUCK_LOSS_V2_ROUTE],

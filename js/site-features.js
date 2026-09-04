@@ -39,6 +39,9 @@
       hint.className = "figure-inspect__hint";
       hint.setAttribute("aria-hidden", "true");
       hint.innerHTML = "<svg viewBox=\"0 0 20 20\" focusable=\"false\"><path d=\"M8 3H3v5M12 3h5v5M17 12v5h-5M8 17H3v-5\"/></svg>";
+      if (figure.classList.contains("source-figure--inspect-below")) {
+        hint.appendChild(document.createTextNode("Inspect figure"));
+      }
 
       frame.insertBefore(trigger, image);
       trigger.appendChild(image);

@@ -691,6 +691,9 @@ pre code,
 .source-figure--table {
   max-width: 100%;
 }
+.source-figure--compact {
+  max-width: 360px;
+}
 .source-figure__frame {
   box-sizing: border-box;
   overflow-x: auto;
@@ -956,6 +959,27 @@ pre code,
   border-color: var(--accent);
   opacity: 1;
   transform: scale(1);
+}
+
+/* Keep controls clear of plotted data and labels. */
+.source-figure--inspect-below .figure-inspect__hint {
+  position: static;
+  display: flex;
+  box-sizing: border-box;
+  width: max-content;
+  height: auto;
+  min-height: 44px;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0 0 auto;
+  padding: 8px 12px;
+  font-size: var(--type-small);
+  line-height: var(--leading-small);
+  background: var(--paper);
+  opacity: 1;
+  transform: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .figure-inspector {

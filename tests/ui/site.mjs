@@ -1,11 +1,13 @@
 export const SITE_URL = process.env.SITE_URL || "http://127.0.0.1:4000";
 export const LIVE_COMMIT = process.env.LIVE_COMMIT || process.env.GITHUB_SHA || "unknown";
 export const BUCK_LOSS_V2_ROUTE = "/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=epc2090&i=2";
+export const LT83402_PROJECT_ROUTE = "/projects/analog-devices-lt83402/";
 
 export const HTML_ROUTES = [
   "/",
   "/2026/06/12/a-working-notebook.html",
   "/about/",
+  LT83402_PROJECT_ROUTE,
   "/projects/bits-ceeri-image-processing/",
   "/projects/bits-gmid-op-amp/",
   "/projects/georgia-tech-led-driver-dimming/",
