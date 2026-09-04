@@ -649,7 +649,6 @@ pre code,
   margin: 24px 0 32px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  scrollbar-gutter: stable;
 }
 .project-table__hint {
   display: none;

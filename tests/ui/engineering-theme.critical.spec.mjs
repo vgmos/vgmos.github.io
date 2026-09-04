@@ -175,6 +175,32 @@ for (const theme of ["light", "dark"]) {
   }
 }
 
+test("classic scrollbars do not reserve inline space in article tables", async ({ page }) => {
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ["/projects/georgia-tech-noise-shaping-sar-adc/", "/projects/bits-ceeri-image-processing/"]) {
+      await page.goto(route);
+      await settleVisualPage(page);
+      // A non-overlay scrollbar reproduces the CI runner's reserved gutter.
+      await page.addStyleTag({ content: ".project-table::-webkit-scrollbar { width: 15px; height: 15px; }" });
+      for (const table of await page.locator(".project-table").all()) {
+        const size = await table.evaluate(el => ({
+          width: el.getBoundingClientRect().width,
+          available: el.clientWidth,
+          content: el.scrollWidth,
+        }));
+        expect(size.available).toBeCloseTo(size.width, 0);
+        if (size.content > size.available + 1) {
+          await table.focus();
+          await table.press("ArrowRight");
+          await expect.poll(() => table.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
+        }
+      }
+      expect((await pageOverflow(page)).scrollWidth).toBeLessThanOrEqual(width + 1);
+    }
+  }
+});
+
 test("forced colors retain visible controls, content and keyboard focus", async ({
   page,
 }) => {
