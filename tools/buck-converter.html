@@ -3,1662 +3,16 @@ layout: default
 title: Buck Converter Tool
 description: Interactive ideal-component buck converter calculator — duty cycle, inductor current ripple, and output voltage ripple with live CCM and fixed-frequency DCM switching waveforms.
 permalink: /tools/buck-converter/
+stylesheets:
+  - /css/tools/buck-converter.css
 ---
 
 {% raw %}
-<style>
-  .bc-page {
-    max-width: 720px;
-    --bc-motion-fast: 180ms;
-    --bc-motion: 220ms;
-    --bc-thumb-size: 15px;
-    --bc-segment-selected-bg: var(--ink);
-    --bc-segment-selected-fg: var(--paper);
-  }
-
-  .bc-header { margin-bottom: 26px; }
-  .bc-header h1 { margin-bottom: 10px; }
-
-  .bc-dek {
-    max-width: 38rem;
-    color: var(--ink-soft);
-    font-size: 1.14rem;
-    line-height: 1.58;
-  }
-
-  /* --- schematic --- */
-  .bc-schematic {
-    margin: 1.6rem 0;
-    padding: 22px 12px 14px;
-    overflow-x: auto;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--paper);
-    -webkit-overflow-scrolling: touch;
-  }
-  .bc-schematic svg { display: block; width: min(540px, 100%); margin: 0 auto; }
-  .bc-schematic .w { stroke: var(--ink); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  .bc-schematic .contact { stroke: var(--ink); stroke-width: 1.6; fill: var(--paper); }
-  .bc-schematic .dot { fill: var(--ink); }
-  .bc-schematic .lbl { fill: var(--ink); font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-schematic .lbl tspan { font-size: 11px; }
-  .bc-schematic .ph { fill: var(--muted); font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-schematic .ph tspan { font-size: 9.5px; }
-  .bc-schematic .ph.is-live { fill: var(--accent); }
-  .bc-schematic .node { fill: var(--accent); font: 500 13.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-schematic .node tspan { font-size: 10px; }
-  .bc-schematic .arr { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; transition: opacity var(--bc-motion) var(--claude-ease, var(--ease)); }
-  .bc-schematic .arm { stroke: var(--ink); stroke-width: 2; fill: none; stroke-linecap: round; }
-  .bc-schematic .halo { stroke: var(--accent); stroke-width: 6; fill: none; stroke-linecap: round; opacity: 0; }
-  .bc-schematic .pivot { fill: var(--ink); }
-  .bc-schematic .fet-node { fill: var(--accent); opacity: 0; }
-  .bc-schematic .flow-dash {
-    stroke: var(--accent);
-    stroke-width: 3;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-dasharray: 5 21;
-    opacity: 0;
-  }
-  .bc-schematic .flow-dash--cap {
-    stroke-dasharray: 4 15;
-    stroke-width: 3.2;
-  }
-
-  .bc-schematic--animated {
-    overflow: hidden;
-    padding: 16px 12px 12px;
-  }
-  .bc-anim-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 72px;
-    align-items: center;
-    gap: 8px;
-  }
-  .bc-anim-schematic-col {
-    min-width: 0;
-  }
-  .bc-schematic--animated #bc-anim-schematic {
-    width: 100%;
-    max-width: 560px;
-    min-width: 0;
-    height: auto;
-    margin: 0 0 0 auto;
-  }
-  .bc-schematic .cycle {
-    margin: 12px 0 0;
-    max-width: 560px;
-    margin-left: auto;
-  }
-  .bc-schematic .cycle-track {
-    position: relative;
-    height: 6px;
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    background: var(--soft);
-  }
-  .bc-schematic .cycle-on {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 25%;
-    border-radius: 3px 0 0 3px;
-    background: var(--claude-ring);
-  }
-  .bc-schematic .cycle-head {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--accent);
-    transform: translate(-50%, -50%);
-  }
-  .bc-schematic .cycle-labs {
-    position: relative;
-    height: 15px;
-    margin-top: 4px;
-  }
-  .bc-schematic .cycle-labs span {
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    color: var(--muted);
-    font: 500 0.7rem var(--claude-sans);
-    line-height: 1;
-    transition: color var(--bc-motion) var(--claude-ease);
-  }
-  .bc-schematic .cycle-labs span.is-live {
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .bc-schematic .cycle-labs sub {
-    font-size: 0.78em;
-  }
-  .bc-duty-control {
-    align-self: stretch;
-    min-height: 204px;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    align-items: stretch;
-    gap: 5px;
-    color: var(--muted);
-  }
-  .bc-duty-label {
-    display: block;
-    color: var(--muted);
-    font-family: var(--claude-sans);
-    font-size: 0.68rem;
-    font-weight: 600;
-    line-height: 1.08;
-  }
-  .bc-duty-rail {
-    display: grid;
-    grid-template-columns: 18px 28px;
-    align-items: center;
-    justify-content: start;
-    gap: 4px;
-  }
-  .bc-duty-control input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    writing-mode: vertical-lr;
-    direction: rtl;
-    width: 18px;
-    height: clamp(128px, 20vw, 174px);
-    margin: 0;
-    border-radius: 2px;
-    background: linear-gradient(var(--line), var(--line)) center / 3px 100% no-repeat;
-    cursor: pointer;
-    outline: none;
-  }
-  .bc-duty-control input[type="range"]::-webkit-slider-runnable-track {
-    background: transparent;
-    border: 0;
-  }
-  .bc-duty-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: var(--bc-thumb-size);
-    height: var(--bc-thumb-size);
-    box-sizing: border-box;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    background: var(--paper);
-    cursor: pointer;
-    transition:
-      transform var(--bc-motion-fast) var(--claude-ease),
-      background-color var(--bc-motion-fast) var(--claude-ease);
-  }
-  .bc-duty-control input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.08);
-  }
-  .bc-duty-control input[type="range"]::-moz-range-track {
-    width: 3px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--line);
-  }
-  .bc-duty-control input[type="range"]::-moz-range-thumb {
-    width: var(--bc-thumb-size);
-    height: var(--bc-thumb-size);
-    box-sizing: border-box;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    background: var(--paper);
-    cursor: pointer;
-    transition:
-      transform var(--bc-motion-fast) var(--claude-ease),
-      background-color var(--bc-motion-fast) var(--claude-ease);
-  }
-  .bc-duty-control input[type="range"]:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
-  .bc-duty-ticks {
-    position: relative;
-    width: 28px;
-    height: clamp(128px, 20vw, 174px);
-  }
-  .bc-duty-tick {
-    position: absolute;
-    right: 0;
-    transform: translateY(50%);
-    padding: 1px 0;
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    font: 500 0.62rem var(--claude-sans);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    cursor: pointer;
-    transition:
-      color var(--bc-motion) var(--claude-ease),
-      text-shadow var(--bc-motion) var(--claude-ease);
-  }
-  .bc-duty-tick::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: calc(100% + 3px);
-    width: 4px;
-    height: 1px;
-    background: var(--muted);
-    opacity: 0.52;
-    transition: background var(--bc-motion) var(--claude-ease), opacity var(--bc-motion) var(--claude-ease);
-  }
-  .bc-duty-tick:hover,
-  .bc-duty-tick:focus-visible {
-    color: var(--claude-accent-deep);
-    outline: none;
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .bc-duty-tick:hover::before,
-  .bc-duty-tick:focus-visible::before {
-    background: var(--accent);
-    opacity: 1;
-  }
-  .bc-duty-control.is-readonly {
-    opacity: 0.72;
-  }
-  .bc-duty-control.is-readonly input[type="range"],
-  .bc-duty-control.is-readonly .bc-duty-tick {
-    cursor: default;
-    pointer-events: none;
-  }
-  .bc-anim-status {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 22px;
-    margin: 9px 4px 0;
-    color: var(--ink-soft);
-    font-family: var(--claude-sans);
-    font-size: 0.86rem;
-    line-height: 1.35;
-  }
-  .bc-anim-pip {
-    flex: 0 0 auto;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--accent);
-    transition: transform var(--bc-motion) var(--claude-ease), background-color var(--bc-motion) var(--claude-ease);
-  }
-  .bc-anim-phase {
-    color: var(--ink);
-    font-weight: 600;
-  }
-  .bc-anim-sep {
-    color: var(--muted);
-  }
-  .bc-anim-duty {
-    color: var(--accent);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .bc-anim-cap {
-    color: var(--muted);
-    font-weight: 500;
-  }
-  .bc-anim-cap sub {
-    font-size: 0.78em;
-  }
-
-  /* --- presets --- */
-  .bc-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 1.6rem 0 0.6rem; }
-  .bc-presets span { align-self: center; color: var(--muted); font-size: 0.88rem; margin-right: 4px; }
-  .bc-presets button {
-    font: inherit;
-    font-size: 0.88rem;
-    color: var(--ink-soft);
-    background: transparent;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 5px 14px;
-    cursor: pointer;
-    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
-  }
-  .bc-preset-short { display: none; }
-  .bc-presets button:hover { color: var(--accent); border-color: var(--accent); }
-  .bc-presets button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  /* --- mode switch --- */
-  .bc-switchers {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 10px;
-    margin: 1rem 0 0;
-  }
-  .bc-mode {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 7px;
-  }
-  .bc-mode-label {
-    color: var(--muted);
-    font-size: 0.88rem;
-  }
-  .bc-segmented {
-    display: inline-flex;
-    position: relative;
-    overflow: hidden;
-    padding: 3px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--paper);
-  }
-  .bc-switchers .bc-segmented {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .bc-switchers .bc-segmented button {
-    min-width: 0;
-    padding-inline: 10px;
-    white-space: nowrap;
-  }
-  .bc-segmented::before {
-    content: "";
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: 3px;
-    width: calc((100% - 6px) / 2);
-    border-radius: 999px;
-    background: var(--bc-segment-selected-bg);
-    transition: transform var(--bc-motion) var(--claude-ease, var(--ease));
-  }
-  .bc-segmented[data-active-index="1"]::before,
-  .bc-segmented[data-active-mode="design"]::before {
-    transform: translateX(100%);
-  }
-  .bc-segmented.bc-segmented--wide button { min-width: 168px; }
-  .bc-segmented button {
-    position: relative;
-    z-index: 1;
-    min-width: 132px;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--ink-soft);
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.88rem;
-    padding: 6px 14px;
-    transition:
-      color 220ms var(--claude-ease, var(--ease)),
-      text-shadow 220ms var(--claude-ease, var(--ease));
-  }
-  .bc-segmented button[aria-pressed="true"] {
-    background: transparent;
-    color: var(--bc-segment-selected-fg);
-  }
-  .bc-segmented button:hover,
-  .bc-segmented button:focus-visible {
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .bc-segmented button:not([aria-pressed="true"]):hover,
-  .bc-segmented button:not([aria-pressed="true"]):focus-visible {
-    color: var(--claude-accent-deep);
-  }
-  .bc-segmented button:active {
-    text-shadow: var(--text-glow-strong, 0 0 8px rgba(138, 74, 56, 0.16));
-  }
-  .bc-segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  .bc-dcm-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    min-width: 76px;
-    align-self: end;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--paper);
-    color: var(--ink-soft);
-    cursor: pointer;
-    font-family: var(--claude-sans);
-    font-size: 0.88rem;
-    font-weight: 600;
-    line-height: 1;
-    padding: 0 14px;
-    text-align: center;
-    white-space: nowrap;
-    transition:
-      background-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      color var(--bc-motion) var(--claude-ease, var(--ease)),
-      text-shadow var(--bc-motion) var(--claude-ease, var(--ease));
-  }
-  .bc-dcm-toggle[aria-pressed="true"] {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .bc-dcm-toggle:hover,
-  .bc-dcm-toggle:focus-visible {
-    border-color: var(--accent);
-    color: var(--claude-accent-deep);
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .bc-dcm-toggle[aria-pressed="true"]:hover,
-  .bc-dcm-toggle[aria-pressed="true"]:focus-visible {
-    color: var(--paper);
-  }
-  .bc-dcm-toggle:active {
-    text-shadow: var(--text-glow-strong, 0 0 8px rgba(138, 74, 56, 0.16));
-  }
-  .bc-dcm-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  /* --- controls --- */
-  .bc-controls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px 32px;
-    box-sizing: border-box;
-    margin: 1rem 0 0;
-    padding: 20px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--soft);
-  }
-  .bc-field[hidden] { display: none; }
-  .bc-field { display: grid; gap: 6px; }
-  .bc-field.bc-field-enter {
-    animation: bcFieldIn var(--bc-motion-fast) var(--claude-ease, var(--ease)) both;
-  }
-  @keyframes bcFieldIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .bc-field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .bc-field-head > label {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    color: var(--ink);
-    font-size: 0.94rem;
-    font-weight: 600;
-  }
-  .bc-field-head .bc-entry { display: flex; align-items: baseline; gap: 5px; }
-  .bc-entry--compound {
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 7px 10px;
-  }
-  .bc-entry input[type="number"],
-  .bc-inline-param input[type="number"] {
-    -moz-appearance: textfield;
-    width: 5.2em;
-    padding: 2px 6px;
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    background: var(--paper);
-    color: var(--ink);
-    font: inherit;
-    font-size: 0.94rem;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-  .bc-entry input[type="number"]::-webkit-outer-spin-button,
-  .bc-entry input[type="number"]::-webkit-inner-spin-button,
-  .bc-inline-param input[type="number"]::-webkit-outer-spin-button,
-  .bc-inline-param input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  .bc-entry input[type="number"]:focus-visible,
-  .bc-inline-param input[type="number"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .bc-entry .bc-unit,
-  .bc-inline-param .bc-unit { color: var(--muted); font-size: 0.88rem; min-width: 2.2em; }
-  .bc-inline-param {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    white-space: nowrap;
-  }
-  .bc-inline-param label {
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 600;
-  }
-  .bc-inline-param input[type="number"] {
-    width: 4.6em;
-  }
-  .bc-inline-param--optional {
-    max-width: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-4px);
-    visibility: hidden;
-    transition:
-      max-width var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
-      transform var(--bc-motion) var(--claude-ease, var(--ease)),
-      visibility 0s linear var(--bc-motion);
-  }
-  .bc-inline-param--optional.bc-show {
-    max-width: 190px;
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-    visibility: visible;
-    transition:
-      max-width var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
-      transform var(--bc-motion) var(--claude-ease, var(--ease)),
-      visibility 0s;
-  }
-
-  .bc-field input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: var(--bc-thumb-size);
-    margin: 7px 0;
-    border-radius: 2px;
-    background: linear-gradient(var(--line), var(--line)) center / 100% 3px no-repeat;
-    outline: none;
-  }
-  .bc-field input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: var(--bc-thumb-size);
-    height: var(--bc-thumb-size);
-    border-radius: 50%;
-    background: var(--paper);
-    border: 2px solid var(--accent);
-    box-sizing: border-box;
-    cursor: pointer;
-  }
-  .bc-field input[type="range"]::-moz-range-thumb {
-    width: var(--bc-thumb-size);
-    height: var(--bc-thumb-size);
-    border: 2px solid var(--accent);
-    box-sizing: border-box;
-    border-radius: 50%;
-    background: var(--paper);
-    cursor: pointer;
-  }
-  .bc-field input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-  /* clickable jump ticks under a slider */
-  .bc-ticks { position: relative; height: 16px; margin: -4px 0 0; }
-  .bc-tick {
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    padding: 6px 3px 0;
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    font: 500 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    cursor: pointer;
-    transition: color var(--dur-fast) var(--ease);
-  }
-  .bc-tick::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 1px;
-    height: 4px;
-    background: var(--muted);
-    opacity: 0.6;
-    transition: background var(--dur-fast) var(--ease);
-  }
-  .bc-tick:hover, .bc-tick:focus-visible {
-    color: var(--accent);
-    outline: none;
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .bc-tick:hover::before { background: var(--accent); opacity: 1; }
-
-  /* --- results strip --- */
-  .bc-results {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin: 1.5rem 0 0.4rem;
-  }
-  .bc-card,
-  .bc-card:nth-child(3n + 1),
-  .bc-card:nth-child(odd),
-  .bc-card:nth-child(even) {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 10px 11px 9px;
-    background: var(--paper);
-  }
-  .bc-card .bc-k { margin: 0 0 3px; color: var(--muted); font-size: 0.82rem; }
-  .bc-card .bc-v { margin: 0; color: var(--ink); font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .bc-card .bc-s { margin: 2px 0 0; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
-
-  /* A committed mode/preset change replaces the model first, then settles the
-     final surfaces. Direct manipulation stays immediate and motion-free. */
-  .bc-results.bc-commit-settle {
-    --bc-commit-opacity: 0.82;
-  }
-  .bc-schematic--animated.bc-commit-settle,
-  .bc-scope.bc-commit-settle {
-    --bc-commit-opacity: 0.72;
-  }
-  .bc-commit-settle {
-    animation: bcCommitSettle var(--bc-motion-fast) var(--claude-ease, var(--ease));
-  }
-  @keyframes bcCommitSettle {
-    from {
-      opacity: var(--bc-commit-opacity, 0.76);
-      transform: translateY(2px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .bc-note {
-    max-height: 0;
-    margin: 0;
-    padding: 0 14px;
-    overflow: hidden;
-    border-left: 2px solid var(--accent);
-    background: var(--soft);
-    border-radius: 0 6px 6px 0;
-    color: var(--ink-soft);
-    font-size: 0.92rem;
-    line-height: 1.55;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
-      margin var(--bc-motion) var(--claude-ease, var(--ease)),
-      padding var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
-      visibility 0s linear var(--bc-motion);
-  }
-  .bc-note.bc-show {
-    max-height: 220px;
-    margin: 1rem 0 0;
-    padding: 10px 14px;
-    opacity: 1;
-    visibility: visible;
-    transition:
-      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
-      margin var(--bc-motion) var(--claude-ease, var(--ease)),
-      padding var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
-      visibility 0s;
-  }
-
-  .bc-design-result {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;
-    max-height: 0;
-    margin: 0;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--paper);
-    border-color: transparent;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-6px);
-    visibility: hidden;
-    transition:
-      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
-      margin var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
-      transform var(--bc-motion) var(--claude-ease, var(--ease)),
-      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      visibility 0s linear var(--bc-motion);
-  }
-  .bc-design-result.bc-show {
-    max-height: 180px;
-    margin: 1rem 0 0.2rem;
-    border-color: var(--line);
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-    visibility: visible;
-    transition:
-      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
-      margin var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion) var(--claude-ease, var(--ease)),
-      transform var(--bc-motion) var(--claude-ease, var(--ease)),
-      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      visibility 0s;
-  }
-  .bc-design-item {
-    padding: 14px 16px;
-  }
-  .bc-design-item + .bc-design-item { border-left: 1px solid var(--line); }
-  .bc-design-k {
-    margin: 0 0 3px;
-    color: var(--muted);
-    font-size: 0.82rem;
-  }
-  .bc-design-v {
-    margin: 0;
-    color: var(--ink);
-    font-size: 1.28rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-  .bc-design-s {
-    margin: 2px 0 0;
-    color: var(--muted);
-    font-size: 0.8rem;
-  }
-  .bc-design-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .bc-design-copy {
-    min-width: 0;
-  }
-  .bc-design-param {
-    flex: 0 0 auto;
-    margin-top: 2px;
-  }
-
-  .bc-dcm-options {
-    max-height: 0;
-    margin: 0;
-    overflow: hidden;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    background: var(--paper);
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-6px);
-    visibility: hidden;
-    transition:
-      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
-      margin var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion-fast) var(--claude-ease, var(--ease)),
-      transform var(--bc-motion) var(--claude-ease, var(--ease)),
-      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      visibility 0s linear var(--bc-motion);
-  }
-  .bc-dcm-options.bc-show {
-    max-height: 132px;
-    margin: 1rem 0 0;
-    border-color: var(--line);
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-    visibility: visible;
-    transition:
-      max-height var(--bc-motion) var(--claude-ease, var(--ease)),
-      margin var(--bc-motion) var(--claude-ease, var(--ease)),
-      opacity var(--bc-motion) var(--claude-ease, var(--ease)),
-      transform var(--bc-motion) var(--claude-ease, var(--ease)),
-      border-color var(--bc-motion) var(--claude-ease, var(--ease)),
-      visibility 0s;
-  }
-  .bc-dcm-options .bc-field {
-    padding: 14px 16px;
-  }
-
-  .bc-workbench {
-    display: grid;
-    align-items: start;
-    margin: 0 0 -2rem;
-  }
-  .bc-workbench-main {
-    order: 2;
-    min-width: 0;
-    margin-bottom: -0.4rem;
-  }
-  .bc-workbench-scope {
-    display: contents;
-  }
-  .bc-workbench .bc-schematic {
-    order: 1;
-    margin: 0 0 1.6rem;
-  }
-  .bc-workbench .bc-scope {
-    order: 3;
-  }
-  .bc-workbench .bc-presets {
-    margin-top: 0;
-  }
-
-  /* --- waveform scope --- */
-  .bc-scope {
-    box-sizing: border-box;
-    margin: 1.6rem 0 2rem;
-    padding: 18px 14px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--paper);
-    touch-action: pan-y;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-  }
-  .bc-probe-control {
-    display: grid;
-    grid-template-columns: auto minmax(140px, 1fr) minmax(12rem, auto);
-    align-items: center;
-    gap: 10px;
-    margin: 0 2px 14px;
-    color: var(--muted);
-    font-family: var(--claude-sans);
-    font-size: 0.78rem;
-    line-height: 1.35;
-  }
-  .bc-probe-control label {
-    color: var(--ink);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .bc-probe-control input[type="range"] {
-    width: 100%;
-    min-height: 28px;
-    margin: 0;
-    cursor: ew-resize;
-  }
-  .bc-probe-control output {
-    color: var(--ink-soft);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-  .bc-panel { margin: 0; }
-  .bc-panel + .bc-panel { margin-top: 10px; }
-  .bc-panel svg {
-    display: block;
-    width: 100%;
-    height: auto;
-    cursor: crosshair;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bc-panel .shade { fill: var(--accent); opacity: 0.055; }
-  .bc-panel .base { stroke: var(--line); stroke-width: 1; }
-  .bc-panel .trace { stroke: var(--accent); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
-  .bc-panel .trace--drive { stroke: var(--ink-soft); stroke-width: 1.7; }
-  .bc-panel .ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 5; opacity: 0.55; }
-  .bc-panel .chan { fill: var(--muted); font: 400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-panel .chan .val { fill: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .bc-panel .tag {
-    fill: var(--muted);
-    font: 400 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-variant-numeric: tabular-nums;
-    paint-order: stroke;
-    stroke: var(--paper);
-    stroke-width: 3px;
-  }
-  .bc-panel .tag--accent { fill: var(--accent); font-weight: 500; }
-  .bc-panel .dim { stroke: var(--ink-soft); stroke-width: 1; }
-  .bc-panel .dim-name { fill: var(--ink-soft); font: 500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  .bc-panel .dim-name tspan { font-size: 9.5px; }
-  .bc-panel .dim-val { fill: var(--ink); font: 600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-variant-numeric: tabular-nums; }
-  .bc-panel .tick { stroke: var(--muted); stroke-width: 1; }
-  .bc-panel .tick--on { stroke: var(--accent); }
-  .bc-panel .tag--on { fill: var(--accent); }
-  .bc-panel .cursor { stroke: var(--ink); stroke-width: 1; opacity: 0.3; }
-  .bc-panel .range-band { fill: var(--accent); opacity: 0.09; pointer-events: none; }
-  .bc-panel .probe-dot,
-  .bc-panel .delta-dot {
-    pointer-events: none;
-    fill: var(--paper);
-    stroke-width: 1.8;
-  }
-  .bc-panel .probe-dot {
-    stroke: var(--accent);
-    filter: drop-shadow(0 0 3px rgba(138, 74, 56, 0.14));
-  }
-  .bc-panel .delta-line {
-    pointer-events: none;
-    stroke-width: 1;
-    stroke-dasharray: 3 5;
-    opacity: 0.48;
-  }
-  .bc-panel .delta-line--a,
-  .bc-panel .delta-dot--a {
-    stroke: var(--muted);
-  }
-  .bc-panel .probe-flag { pointer-events: none; }
-  .bc-panel .probe-flag rect { fill: var(--ink); }
-  .bc-panel .probe-flag--rise rect { fill: var(--accent); }
-  .bc-panel .probe-flag--fall rect { fill: var(--ink); }
-  .bc-panel .probe-flag text {
-    fill: var(--paper);
-    font: 600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-variant-numeric: tabular-nums;
-  }
-  .bc-scope .bc-scope-foot {
-    margin: 10px 2px 2px;
-    color: var(--muted);
-    font-size: 0.82rem;
-    line-height: 1.55;
-  }
-
-  @media (max-width: 700px) {
-    .bc-presets {
-      flex-wrap: nowrap;
-      align-items: center;
-      gap: 7px;
-      margin-top: 1rem;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .bc-presets::-webkit-scrollbar { display: none; }
-    .bc-presets span {
-      flex: 0 0 auto;
-      margin-right: 0;
-    }
-    .bc-presets button {
-      flex: 0 0 auto;
-      min-height: 44px;
-      padding-inline: 12px;
-      white-space: nowrap;
-    }
-    .bc-segmented button,
-    .bc-dcm-toggle {
-      min-height: 44px;
-    }
-    .bc-ticks {
-      height: 24px;
-    }
-    .bc-tick {
-      min-width: 24px;
-      min-height: 24px;
-      padding: 8px 4px 0;
-    }
-    .bc-switchers {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: end;
-      gap: 8px;
-    }
-    .bc-mode {
-      display: grid;
-      grid-template-columns: 76px minmax(0, 1fr);
-      align-items: center;
-      gap: 10px;
-    }
-    .bc-segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .bc-segmented button { min-width: 0; }
-    .bc-segmented.bc-segmented--wide button { min-width: 0; }
-    .bc-controls { grid-template-columns: 1fr; padding: 16px; }
-    .bc-field input[type="range"] { height: 28px; }
-    .bc-schematic { overflow-x: hidden; }
-    .bc-schematic svg {
-      width: 100%;
-      min-width: 0;
-      max-width: 560px;
-    }
-    .bc-schematic--animated #bc-anim-schematic {
-      width: 100%;
-      max-width: 560px;
-      margin-left: auto;
-    }
-    .bc-results {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-    .bc-design-result { grid-template-columns: 1fr; }
-    .bc-design-result.bc-show { max-height: 260px; }
-    .bc-dcm-options.bc-show { max-height: 150px; }
-    .bc-design-row { flex-wrap: wrap; }
-    .bc-design-item + .bc-design-item { border-left: 0; border-top: 1px solid var(--line); }
-  }
-
-  @media (max-width: 430px) {
-    .bc-schematic { padding: 16px 10px 12px; }
-    .bc-schematic--animated {
-      padding: 12px 10px 10px;
-    }
-    .bc-anim-main {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 5px;
-    }
-    .bc-anim-schematic-col {
-      order: 2;
-    }
-    .bc-schematic--animated #bc-anim-schematic {
-      order: initial;
-    }
-    .bc-schematic .cycle {
-      width: 100%;
-    }
-    .bc-schematic .cycle-labs span {
-      font-size: 0.62rem;
-    }
-    .bc-duty-control {
-      order: 1;
-      align-self: stretch;
-      min-height: 0;
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      grid-template-rows: auto 24px;
-      align-items: center;
-      column-gap: 8px;
-      row-gap: 1px;
-    }
-    .bc-duty-label {
-      grid-column: 1;
-      grid-row: 1;
-      align-self: center;
-      white-space: nowrap;
-      font-size: 0.58rem;
-    }
-    .bc-duty-rail {
-      grid-column: 2;
-      grid-row: 1 / span 2;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: 28px 24px;
-      align-items: center;
-      gap: 0;
-      min-width: 0;
-    }
-    .bc-duty-control input[type="range"] {
-      writing-mode: horizontal-tb;
-      direction: ltr;
-      width: 100%;
-      height: 28px;
-      background: linear-gradient(var(--line), var(--line)) center / 100% 3px no-repeat;
-    }
-    .bc-duty-ticks {
-      width: 100%;
-      height: 24px;
-    }
-    .bc-duty-tick {
-      right: auto;
-      bottom: auto;
-      top: 0;
-      min-width: 24px;
-      min-height: 24px;
-      padding: 7px 3px 0;
-      transform: translateX(-50%);
-      font-size: 0.54rem;
-    }
-    .bc-duty-tick::before {
-      top: -3px;
-      right: auto;
-      left: 50%;
-      width: 1px;
-      height: 4px;
-      transform: translateX(-50%);
-    }
-    .bc-anim-status {
-      flex-wrap: nowrap;
-      margin-top: 6px;
-      font-size: 0.72rem;
-      gap: 4px;
-    }
-    .bc-anim-sep--cap,
-    .bc-anim-cap {
-      display: none;
-    }
-    .bc-presets {
-      gap: 5px;
-      margin-bottom: 0.45rem;
-    }
-    .bc-mode-label {
-      font-size: 0.8rem;
-    }
-    .bc-presets span {
-      font-size: 0.76rem;
-    }
-    .bc-presets button {
-      font-size: 0.78rem;
-      padding: 5px 9px;
-    }
-    .bc-preset-full { display: none; }
-    .bc-preset-short { display: inline; }
-    .bc-switchers {
-      gap: 7px;
-      margin-top: 0.7rem;
-    }
-    .bc-mode {
-      grid-template-columns: 50px minmax(0, 1fr);
-      gap: 6px;
-    }
-    .bc-switchers .bc-segmented button,
-    .bc-dcm-toggle {
-      font-size: 0.82rem;
-      padding-inline: 8px;
-    }
-    .bc-dcm-toggle {
-      min-height: 40px;
-      min-width: 64px;
-    }
-    .bc-controls { padding: 14px; }
-    .bc-field-head {
-      align-items: center;
-      flex-direction: row;
-      gap: 8px;
-    }
-    .bc-field-head > label {
-      flex: 1 1 auto;
-      min-width: 0;
-      white-space: normal;
-    }
-    .bc-field-head .bc-entry {
-      flex: 0 0 auto;
-      margin-left: auto;
-    }
-    .bc-field-head--compound {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, min(220px, 58vw));
-      align-items: start;
-      column-gap: 6px;
-    }
-    .bc-field-head--compound .bc-entry--compound {
-      width: 100%;
-      margin-left: 0;
-      flex-wrap: nowrap;
-      gap: 5px;
-    }
-    .bc-field-head--compound .bc-inline-param { gap: 3px; }
-    .bc-field-head--compound .bc-inline-param .bc-unit { min-width: 0; }
-    .bc-entry--compound { justify-content: flex-end; }
-    .bc-entry input[type="number"] { width: 5em; }
-    .bc-inline-param input[type="number"] { width: 4.8em; }
-    .bc-field-head--compound .bc-inline-param input[type="number"] {
-      width: 4.05em;
-      padding-inline: 5px;
-    }
-  }
-
-  .bc-page { max-width: 740px; }
-  .bc-header { margin-bottom: 32px; }
-  .bc-header h1 { max-width: 12.5em; }
-  .bc-dek {
-    max-width: 700px;
-    font-family: var(--claude-serif);
-    font-size: 1.18rem;
-    line-height: 1.56;
-  }
-  .bc-presets,
-  .bc-mode,
-  .bc-controls,
-  .bc-results,
-  .bc-note,
-  .bc-dcm-options,
-  .bc-scope .bc-scope-foot,
-  .bc-field-head label,
-  .bc-entry,
-  .bc-unit,
-  .bc-tick,
-  .bc-card {
-    font-family: var(--claude-sans);
-  }
-  .bc-schematic,
-  .bc-controls,
-  .bc-scope {
-    border-radius: 8px;
-    background: var(--paper);
-  }
-  .bc-presets { gap: 9px; }
-  .bc-presets span,
-  .bc-card .bc-k,
-  .bc-card .bc-s,
-  .bc-scope .bc-scope-foot {
-    font-size: 0.82rem;
-    font-weight: 500;
-    line-height: 1.48;
-  }
-  .bc-presets button {
-    min-height: 34px;
-    color: var(--ink-soft);
-    font-family: var(--claude-sans);
-    font-size: 0.84rem;
-    font-weight: 500;
-    line-height: 1.08;
-    border-radius: 999px;
-    transition:
-      color var(--bc-motion) var(--claude-ease),
-      border-color var(--bc-motion) var(--claude-ease),
-      text-shadow var(--bc-motion) var(--claude-ease);
-  }
-  .bc-presets button:hover,
-  .bc-presets button:focus-visible {
-    color: var(--claude-accent-deep);
-    border-color: var(--accent);
-    background-color: transparent;
-    outline: none;
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .bc-field-head label {
-    color: var(--ink);
-    font-size: 0.88rem;
-    font-weight: 600;
-  }
-  .bc-entry input[type="number"] {
-    font-family: var(--claude-sans);
-    font-size: 0.88rem;
-    font-variant-numeric: tabular-nums;
-    transition:
-      border-color var(--bc-motion) var(--claude-ease),
-      box-shadow var(--bc-motion) var(--claude-ease);
-  }
-  .bc-entry input[type="number"]:focus-visible {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--claude-ring);
-  }
-  .bc-field input[type="range"]::-webkit-slider-thumb {
-    transition:
-      transform var(--bc-motion-fast) var(--claude-ease),
-      background-color var(--bc-motion-fast) var(--claude-ease);
-  }
-  .bc-field input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.08);
-  }
-  .bc-field input[type="range"]::-moz-range-thumb {
-    transition:
-      transform var(--bc-motion-fast) var(--claude-ease),
-      background-color var(--bc-motion-fast) var(--claude-ease);
-  }
-  .bc-field input[type="range"]::-moz-range-thumb:hover {
-    transform: scale(1.08);
-  }
-  .bc-tick {
-    font-family: var(--claude-sans);
-    font-size: 0.66rem;
-    font-weight: 500;
-    transition:
-      color var(--bc-motion) var(--claude-ease),
-      text-shadow var(--bc-motion) var(--claude-ease);
-  }
-  .bc-tick:hover,
-  .bc-tick:focus-visible {
-    color: var(--claude-accent-deep);
-    background-color: transparent;
-    outline: none;
-    text-shadow: var(--text-glow-soft, 0 0 6px rgba(138, 74, 56, 0.12));
-  }
-  .bc-card {
-    border-radius: 8px;
-    background-color: var(--paper);
-  }
-  .bc-card .bc-v {
-    color: var(--ink);
-    font-family: var(--claude-sans);
-    font-size: 1.18rem;
-    font-weight: 600;
-    letter-spacing: 0;
-    font-variant-numeric: tabular-nums;
-  }
-  .bc-panel .chan,
-  .bc-panel .tag,
-  .bc-panel .dim-name,
-  .bc-panel .dim-val,
-  .bc-schematic .lbl,
-  .bc-schematic .ph,
-  .bc-schematic .node {
-    font-family: var(--claude-sans);
-  }
-
-  @media (min-width: 1100px) {
-    .bc-page {
-      width: min(1240px, calc(100vw - 48px));
-      max-width: none;
-      margin-left: 50%;
-      transform: translateX(-50%);
-    }
-    .bc-header,
-    .bc-page > .project-body {
-      max-width: 740px;
-      margin-right: auto;
-      margin-left: auto;
-    }
-    .bc-workbench {
-      display: grid;
-      grid-template-columns: minmax(460px, 520px) minmax(0, 1fr);
-      align-items: start;
-      gap: 24px;
-      margin: 1.6rem 0 0;
-    }
-    .bc-workbench .bc-scope {
-      margin-top: 0;
-      margin-bottom: 1.4rem;
-      padding: 14px 12px 10px;
-    }
-    .bc-workbench .bc-panel + .bc-panel {
-      margin-top: 6px;
-    }
-    .bc-workbench-main,
-    .bc-workbench-scope {
-      min-width: 0;
-    }
-    .bc-workbench-main {
-      grid-column: 1;
-      grid-row: 1;
-      order: 0;
-      margin-bottom: 0;
-    }
-    .bc-workbench-scope {
-      display: block;
-      grid-column: 2;
-      grid-row: 1;
-      align-self: start;
-      position: sticky;
-      top: 72px;
-    }
-    .bc-workbench .bc-schematic {
-      margin: 0 0 12px;
-      padding: 12px 10px 10px;
-      overflow-x: hidden;
-    }
-    .bc-workbench .bc-schematic svg {
-      width: 78%;
-      max-width: none;
-    }
-    .bc-workbench .bc-schematic--animated {
-      padding: 12px 10px 10px;
-    }
-    .bc-workbench .bc-schematic--animated #bc-anim-schematic {
-      width: 100%;
-      max-width: 560px;
-      margin-left: auto;
-    }
-    .bc-workbench-main .bc-presets {
-      flex-wrap: nowrap;
-      align-items: center;
-      gap: 7px;
-    }
-    .bc-workbench-main .bc-presets span {
-      flex: 0 0 auto;
-      margin-right: 0;
-    }
-    .bc-workbench-main .bc-presets button {
-      flex: 1 1 0;
-      min-width: 0;
-      padding-inline: 8px;
-      white-space: nowrap;
-    }
-    .bc-workbench-main .bc-controls {
-      grid-template-columns: 1fr;
-      gap: 16px 20px;
-      padding: 18px;
-    }
-    .bc-workbench-main .bc-switchers {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: end;
-      gap: 10px;
-    }
-    .bc-workbench-main .bc-mode {
-      display: grid;
-      grid-template-columns: 88px minmax(0, 1fr);
-      align-items: center;
-      gap: 10px;
-    }
-    .bc-workbench-main .bc-segmented button {
-      padding-inline: 8px;
-    }
-    .bc-workbench-main .bc-field-head {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 8px 12px;
-    }
-    .bc-workbench-main .bc-field-head > label {
-      min-width: 0;
-      white-space: nowrap;
-    }
-    .bc-workbench-main .bc-field-head .bc-entry {
-      justify-content: flex-end;
-      min-width: 0;
-      margin-left: 0;
-    }
-    .bc-workbench-main .bc-entry--compound {
-      flex-wrap: nowrap;
-      justify-content: flex-end;
-      width: auto;
-    }
-    .bc-workbench-main .bc-design-result {
-      grid-template-columns: 1fr;
-    }
-    .bc-workbench-main .bc-design-result.bc-show {
-      max-height: 280px;
-    }
-    .bc-workbench-main .bc-design-item + .bc-design-item {
-      border-top: 1px solid var(--line);
-      border-left: 0;
-    }
-    .bc-workbench-main .bc-design-row {
-      align-items: center;
-    }
-    .bc-workbench-main .bc-results {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 1rem;
-    }
-    .bc-workbench-main .bc-card,
-    .bc-workbench-main .bc-card:nth-child(3n + 1),
-    .bc-workbench-main .bc-card:nth-child(odd),
-    .bc-workbench-main .bc-card:nth-child(even) {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px 11px 9px;
-      background: var(--paper);
-    }
-    .bc-workbench-main .bc-card .bc-v {
-      font-size: 1.08rem;
-      white-space: normal;
-    }
-    .bc-workbench-main .bc-card .bc-s {
-      font-size: 0.74rem;
-    }
-  }
-
-  @media (min-width: 1180px) {
-    .bc-workbench {
-      grid-template-columns: minmax(0, 520px) minmax(560px, 1fr);
-    }
-  }
-
-  @media (min-width: 1100px) and (max-height: 900px) {
-    .bc-workbench-scope {
-      max-height: calc(100vh - 84px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .bc-scope {
-      width: calc(100vw - 16px);
-      max-width: none;
-      margin-right: calc(50% - 50vw + 8px);
-      margin-left: calc(50% - 50vw + 8px);
-      padding: 14px 10px 10px;
-    }
-    .bc-panel .chan { font-size: 17px; }
-    .bc-panel .tag { font-size: 15.5px; }
-    .bc-panel .dim-name { font-size: 15.5px; }
-    .bc-panel .dim-val { font-size: 16px; }
-    .bc-panel .probe-flag text { font-size: 15px; }
-    .bc-panel .chan tspan[dy],
-    .bc-panel .tag tspan[dy] { font-size: 12px; }
-    .bc-results { row-gap: 20px; }
-    .bc-card .bc-v { font-size: 1.12rem; }
-  }
-
-  @media (max-width: 430px) {
-    .bc-probe-control {
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 4px 10px;
-    }
-    .bc-probe-control output {
-      grid-column: 1 / -1;
-      text-align: left;
-    }
-    .bc-results {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 1rem;
-    }
-    .bc-card,
-    .bc-card:nth-child(3n + 1),
-    .bc-card:nth-child(odd),
-    .bc-card:nth-child(even) {
-      border: 1px solid var(--line);
-      padding: 10px 10px 9px;
-    }
-    .bc-card .bc-k {
-      font-size: 0.72rem;
-      line-height: 1.25;
-    }
-    .bc-card .bc-v {
-      font-size: 1.04rem;
-      line-height: 1.22;
-      white-space: normal;
-    }
-    .bc-card .bc-s {
-      font-size: 0.7rem;
-      line-height: 1.3;
-    }
-  }
-
-  /* Refined field interactions: quiet at rest, crisp on intent. Numeric
-     geometry stays fixed so dense engineering rows never jump on focus. */
-  .bc-page .bc-entry input[type="number"],
-  .bc-page .bc-inline-param input[type="number"] {
-    border-color: var(--field-border, var(--line));
-    border-radius: var(--field-radius, 7px);
-    background-color: var(--field-surface, var(--paper));
-    transition:
-      background-color var(--field-motion, 150ms) var(--field-ease, ease),
-      border-color var(--field-motion, 150ms) var(--field-ease, ease),
-      box-shadow var(--field-motion, 150ms) var(--field-ease, ease),
-      color var(--field-motion, 150ms) var(--field-ease, ease);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .bc-page .bc-entry input[type="number"]:not(:disabled):hover,
-    .bc-page .bc-inline-param input[type="number"]:not(:disabled):hover {
-      border-color: var(--field-border-hover, var(--muted));
-      background-color: var(--field-surface-hover, var(--soft));
-    }
-  }
-
-  .bc-page .bc-entry input[type="number"]:focus-visible,
-  .bc-page .bc-inline-param input[type="number"]:focus-visible {
-    border-color: var(--field-border-focus, var(--accent));
-    background-color: var(--field-surface, var(--paper));
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 3px var(--field-ring, var(--claude-ring));
-  }
-
-  .bc-page .bc-entry input[type="number"]:is([aria-invalid="true"], :user-invalid),
-  .bc-page .bc-inline-param input[type="number"]:is([aria-invalid="true"], :user-invalid) {
-    border-color: var(--field-invalid, #a83f35);
-  }
-
-  .bc-page .bc-entry input[type="number"]:is([aria-invalid="true"], :user-invalid):focus-visible,
-  .bc-page .bc-inline-param input[type="number"]:is([aria-invalid="true"], :user-invalid):focus-visible {
-    box-shadow: 0 0 0 3px var(--field-invalid-ring, rgba(168, 63, 53, 0.16));
-  }
-
-  .bc-page .bc-field-head > label,
-  .bc-page .bc-inline-param label,
-  .bc-page .bc-unit {
-    transition: color var(--field-motion, 150ms) var(--field-ease, ease);
-  }
-
-  .bc-page .bc-field:focus-within > .bc-field-head > label,
-  .bc-page .bc-field:focus-within .bc-unit,
-  .bc-page .bc-inline-param:focus-within label,
-  .bc-page .bc-inline-param:focus-within .bc-unit {
-    color: var(--accent);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bc-page .bc-entry input[type="number"],
-    .bc-page .bc-inline-param input[type="number"],
-    .bc-page .bc-field-head > label,
-    .bc-page .bc-inline-param label,
-    .bc-page .bc-unit,
-    .bc-segmented::before,
-    .bc-design-result,
-    .bc-dcm-options,
-    .bc-inline-param--optional,
-    .bc-inline-param--optional.bc-show,
-    .bc-note,
-    .bc-note.bc-show {
-      transition: none !important;
-      transition-delay: 0s !important;
-    }
-    .bc-commit-settle {
-      animation: none !important;
-    }
-    .bc-field.bc-field-enter {
-      animation: none;
-    }
-  }
-
-  @media (pointer: coarse) {
-    .bc-page { --bc-thumb-size: 20px; }
-    .bc-presets button,
-    .bc-segmented button,
-    .bc-dcm-toggle { min-height: 44px; }
-    .bc-entry input[type="number"],
-    .bc-inline-param input[type="number"] {
-      min-height: 44px;
-      font-size: 16px;
-    }
-    .bc-field input[type="range"] { height: 28px; }
-    .bc-ticks { height: 24px; }
-    .bc-tick {
-      min-width: 28px;
-      padding: 8px 6px 0;
-    }
-  }
-
-  .bc-page button:focus-visible,
-  .bc-probe-control input:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--claude-ring);
-  }
-
-  @media (max-width: 700px) {
-    .bc-entry input[type="number"],
-    .bc-inline-param input[type="number"] {
-      min-height: 44px;
-      font-size: 16px;
-    }
-    .bc-presets button,
-    .bc-segmented button,
-    .bc-dcm-toggle {
-      min-height: 44px;
-    }
-  }
-
-  @media (forced-colors: active) {
-    .bc-page input:focus-visible {
-      outline-color: Highlight;
-    }
-  }
-</style>
-
 <article class="bc-page">
   <header class="bc-header">
     <p class="eyebrow">Interactive tool · Ideal-component model</p>
     <h1>Buck Converter Tool</h1>
-    <p class="bc-dek">Use it to visualize steady-state switching waveforms, calculate operating points, and understand optional fixed-frequency DCM behavior.</p>
+    <p class="bc-dek">Calculate an operating point and inspect its steady-state switching waveforms. Enable DCM to explore discontinuous conduction at a fixed switching frequency.</p>
   </header>
 
   <div class="bc-workbench">
@@ -1742,7 +96,7 @@ permalink: /tools/buck-converter/
         </div>
         <div class="bc-field" data-mode-field="analyze">
           <div class="bc-field-head bc-field-head--compound">
-            <label for="num-c">Output cap C<sub>O</sub></label>
+            <label for="num-c">Output capacitance C<sub>O</sub></label>
             <span class="bc-entry bc-entry--compound">
               <span class="bc-inline-param"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
               <span class="bc-inline-param">
@@ -1844,59 +198,51 @@ permalink: /tools/buck-converter/
       <figure class="bc-schematic bc-schematic--animated" aria-label="Animated synchronous buck converter schematic">
         <div class="bc-anim-main">
           <div class="bc-anim-schematic-col">
-            <svg id="bc-anim-schematic" viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated synchronous buck converter">
-              <!-- rails, branches, and component leads -->
-              <path class="w" d="M52 56 L52 93 M52 123 L52 160"/>
-              <path class="w" d="M52 56 L106 56"/>
-              <path class="w" d="M169 56 L240 56"/>
-              <path class="w" d="M240 56 L240 82"/>
-              <path class="w" d="M240 139 L240 160"/>
-              <path class="w" d="M240 56 L274 56"/>
-              <path class="w" d="M274 56 C274 45 291 45 291 56 C291 45 308 45 308 56 C308 45 325 45 325 56 C325 45 342 45 342 56"/>
-              <path class="w" d="M342 56 L492 56"/>
-              <path class="w" d="M420 56 L420 89 M400 89 L440 89 M400 100 L440 100 M420 100 L420 160"/>
-              <path class="w" d="M492 56 L492 93 M492 123 L492 160"/>
-              <path class="w" d="M52 160 L492 160"/>
-              <path class="w" d="M272 160 L272 166 M260 166 L284 166 M264.5 171 L279.5 171 M269 176 L275 176"/>
-
-              <!-- switch arms -->
-              <line class="halo" id="bc-halo-hs" x1="110" y1="56" x2="164" y2="56"/>
-              <circle class="contact" cx="166" cy="56" r="3.4"/>
-              <line class="arm" id="bc-arm-hs" x1="110" y1="56" x2="164" y2="56"/>
-              <circle class="pivot" cx="110" cy="56" r="2.8"/>
-              <line class="halo" id="bc-halo-ls" x1="240" y1="86" x2="240" y2="134"/>
-              <circle class="contact" cx="240" cy="136" r="3.4"/>
-              <line class="arm" id="bc-arm-ls" x1="240" y1="86" x2="240" y2="134"/>
-              <circle class="pivot" cx="240" cy="86" r="2.8"/>
-
-              <!-- comet-trail conduction paths -->
-              <path class="flow-dash dash-on" id="bc-dash-on" d="M52 56 L492 56 L492 160 L52 160 Z"/>
-              <path class="flow-dash dash-off" id="bc-dash-off" d="M240 160 L240 56 L492 56 L492 160 Z"/>
-              <path class="flow-dash flow-dash--cap dash-cap" id="bc-dash-cap" d="M420 56 L420 89 M420 100 L420 160"/>
-
-              <!-- component bodies and labels -->
-              <text class="lbl" x="22" y="112" text-anchor="middle">v<tspan dy="3">IN</tspan></text>
-              <circle class="contact" cx="52" cy="108" r="15"/>
-              <path class="w" d="M48 100.5 L56 100.5 M52 96.5 L52 104.5 M48 115.5 L56 115.5"/>
-              <circle class="contact" cx="492" cy="108" r="15"/>
-              <path class="w" d="M492 100 L492 116 M492 116 L488 110.6 M492 116 L496 110.6"/>
-              <text class="lbl" x="516" y="112">i<tspan dy="3">O</tspan></text>
-
-              <circle class="fet-node" id="bc-node-glow" cx="240" cy="56" r="7"/>
-              <circle class="dot" cx="240" cy="56" r="3.2"/>
-              <circle class="dot" cx="420" cy="56" r="3.2"/>
-              <circle class="dot" cx="240" cy="160" r="3.2"/>
-              <circle class="dot" cx="420" cy="160" r="3.2"/>
-
-              <text class="ph" id="bc-lbl-ton" x="138" y="80" text-anchor="middle">t<tspan dy="2.5">ON</tspan></text>
-              <text class="ph" id="bc-lbl-toff" x="254" y="114">t<tspan dy="2.5">OFF</tspan></text>
-              <text class="node" x="240" y="38" text-anchor="middle">v<tspan dy="2.5">SW</tspan></text>
-              <text class="lbl" x="307" y="31" text-anchor="middle">L<tspan dy="3">X</tspan></text>
-              <path class="arr" id="bc-il-arrow" d="M366 56 L390 56 M390 56 L384 52.6 M390 56 L384 59.4"/>
-              <text class="node" x="378" y="44" text-anchor="middle">i<tspan dy="2.5">L</tspan></text>
-              <text class="node" x="420" y="38" text-anchor="middle">v<tspan dy="2.5">OUT</tspan></text>
-              <text class="lbl" x="448" y="99">C<tspan dy="3">O</tspan></text>
-            </svg>
+            <div class="bc-schematic-viewport" role="region" aria-label="Ideal-switch buck schematic; scroll horizontally on narrow screens" tabindex="0">
+              <svg id="bc-anim-schematic" viewBox="0 0 560 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="bc-schematic-title bc-schematic-description">
+                <title id="bc-schematic-title">Buck converter with two ideal switches</title>
+                <desc id="bc-schematic-description">The high-side switch connects the source to the inductor. The low-side switch connects the switching node to ground. The inductor supplies the output capacitor and a constant-current load.</desc>
+                <g class="w">
+                  <path d="M56 132V72H112 M174 72H268 M348 72H512V132 M56 168V226H512V168 M226 72V118 M226 182V226"/>
+                  <path d="M268 72a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0"/>
+                  <path d="M416 72V132 M398 132H434 M398 144H434 M416 144V226"/>
+                  <path d="M284 226V234 M272 234H296 M277 240H291 M282 246H286"/>
+                </g>
+                <g class="bc-active-wire" aria-hidden="true">
+                  <path id="bc-path-high" d="M56 132V72H112 M174 72H226 M56 168V226H226"/>
+                  <path id="bc-path-low" d="M226 72V118 M226 182V226"/>
+                  <path id="bc-path-output" d="M226 72H268a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0H416 M226 226H416"/>
+                  <path id="bc-path-load" d="M416 72H512V132 M512 168V226H416"/>
+                  <path id="bc-path-cap" d="M416 72V132 M416 144V226"/>
+                </g>
+                <circle class="contact" cx="174" cy="72" r="3.5"/>
+                <line class="arm" id="bc-arm-hs" x1="116" y1="72" x2="170" y2="72"/>
+                <circle class="pivot" cx="116" cy="72" r="3"/>
+                <circle class="contact" cx="226" cy="182" r="3.5"/>
+                <line class="arm" id="bc-arm-ls" x1="226" y1="122" x2="226" y2="178" transform="rotate(28 226 122)"/>
+                <circle class="pivot" cx="226" cy="122" r="3"/>
+                <circle class="contact" cx="56" cy="150" r="18"/>
+                <path class="w" d="M51 143H61 M56 138V148 M51 158H61"/>
+                <circle class="contact" cx="512" cy="150" r="18"/>
+                <path class="w" d="M512 140V160 M507 154L512 160L517 154"/>
+                <g class="dot"><circle cx="226" cy="72" r="3"/><circle cx="416" cy="72" r="3"/><circle cx="226" cy="226" r="3"/><circle cx="416" cy="226" r="3"/></g>
+                <g class="lbl">
+                  <text x="26" y="119" text-anchor="middle">V<tspan class="sub">IN</tspan></text>
+                  <text x="144" y="106" text-anchor="middle">S<tspan class="sub">H</tspan></text>
+                  <text x="176" y="163" text-anchor="middle">S<tspan class="sub">L</tspan></text>
+                  <text x="226" y="42" text-anchor="middle">V<tspan class="sub">SW</tspan></text>
+                  <text x="308" y="108" text-anchor="middle">L<tspan class="sub">X</tspan></text>
+                  <text x="416" y="42" text-anchor="middle">V<tspan class="sub">OUT</tspan></text>
+                  <text x="386" y="163" text-anchor="middle">C<tspan class="sub">O</tspan></text>
+                  <text x="537" y="119" text-anchor="middle">i<tspan class="sub">O</tspan></text>
+                </g>
+                <g class="bc-current-arrow" id="bc-il-arrow" aria-hidden="true"><path d="M356 50H392 M386 45L392 50L386 55"/></g>
+                <text class="node" x="374" y="30" text-anchor="middle">i<tspan class="sub">L</tspan></text>
+                <g class="bc-current-arrow" id="bc-ic-arrow" aria-hidden="true"><path d="M458 148V184 M453 178L458 184L463 178"/></g>
+                <text class="node" x="458" y="136" text-anchor="middle">i<tspan class="sub">C</tspan></text>
+              </svg>
+            </div>
+            <p class="bc-schematic-scroll-hint">Scroll to inspect the full schematic →</p>
 
             <div class="cycle" aria-hidden="true">
               <div class="cycle-track">
@@ -1906,6 +252,7 @@ permalink: /tools/buck-converter/
               <div class="cycle-labs">
                 <span class="cycle-lab-on" id="bc-cycle-lab-on">t<sub>ON</sub></span>
                 <span class="cycle-lab-off" id="bc-cycle-lab-off">t<sub>OFF</sub></span>
+                <span class="cycle-lab-idle" id="bc-cycle-lab-idle" hidden>Idle</span>
               </div>
             </div>
           </div>
@@ -1919,16 +266,19 @@ permalink: /tools/buck-converter/
           </div>
         </div>
 
+        <div class="bc-playback" role="group" aria-label="Schematic playback">
+          <button type="button" id="bc-anim-play" aria-pressed="false">Play cycle</button>
+          <label for="bc-anim-position">Cycle position</label>
+          <input id="bc-anim-position" type="range" min="0" max="99.9" step="0.1" value="0" aria-label="Switching cycle position">
+          <span>Slowed: 3 s per cycle</span>
+        </div>
         <figcaption class="bc-anim-status">
-          <span class="bc-anim-pip" id="bc-anim-pip"></span>
-          <span class="bc-anim-phase" id="bc-anim-phase">ON time</span>
-          <span class="bc-anim-sep">·</span>
-          <span id="bc-anim-desc">high-side FET conducts, i<sub>L</sub> rising</span>
-          <span class="bc-anim-sep">·</span>
-          <span class="bc-anim-duty" id="bc-anim-duty">D = 25.0%</span>
-          <span class="bc-anim-sep bc-anim-sep--cap">·</span>
-          <span class="bc-anim-cap" id="bc-anim-cap">C<sub>O</sub> discharging</span>
+          <strong id="bc-anim-phase">ON time</strong>
+          <span id="bc-anim-duty">D = 27.5%</span>
+          <span id="bc-anim-desc">High-side switch closed; inductor current rising.</span>
+          <span id="bc-anim-cap">Capacitor current is iL − iO.</span>
         </figcaption>
+        <p class="bc-schematic-reference">Rincón-Mora, <a href="https://doi.org/10.1007/978-3-030-95899-2">Switched Inductor Power IC Design</a>, §3.4.1, Fig. 3.20; DCM: §3.2.5.</p>
       </figure>
 
       <div class="bc-scope" id="bc-scope">
@@ -1946,18 +296,18 @@ permalink: /tools/buck-converter/
         <figure class="bc-panel">
           <svg id="p-vout" viewBox="0 0 680 178" xmlns="http://www.w3.org/2000/svg" aria-label="Output voltage ripple waveform"></svg>
         </figure>
-        <p class="bc-scope-foot" id="bc-scope-foot">Three switching cycles; shaded bands are the ON-time t<sub>ON</sub>. Move the pointer across the plots, or focus the time probe and use the arrow keys, to inspect instantaneous values. The output trace is terminal v<sub>OUT</sub>, centered on the selected DC value and including optional ESR ripple.</p>
+        <p class="bc-scope-foot" id="bc-scope-foot">Three switching cycles; shaded bands are the ON-time t<sub>ON</sub>. The dashed blue cursor in the first cycle follows the schematic. Move the pointer across the plots, or use the separate time probe and arrow keys, to inspect any instant across all three cycles. The output trace is terminal v<sub>OUT</sub>, centered on the selected DC value and including optional ESR ripple.</p>
       </div>
     </div>
   </div>
 
   <section class="post-content project-body">
-    <h2>Steady-state Operation</h2>
-    <p>Across the ON-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the OFF-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and de-energizes into the output. Volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
+    <h2>Steady-state operation</h2>
+    <p>Across the ON-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the OFF-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and its current ramps down. In CCM, volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
-    <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold.</p>
-    <p>This model assumes no conduction or switching losses, no inductor DCR or core loss, no capacitor ESL, no dead time, and instantaneous switching. The optional C<sub>O</sub> ESR box is a first-order terminal-ripple term only: it reshapes v<sub>OUT</sub> by adding i<sub>C</sub> · R<sub>ESR</sub>, but does not change duty cycle, current ripple, or efficiency. Efficiency is exactly 1 here, so D is also the ideal conversion ratio. A real converter runs slightly higher duty to cover its losses. To see where those losses actually go — conduction, switching, gate drive, dead time, DCR, ESR, and bias — open the <a href="/tools/buck-losses/">Buck Converter Loss Tool</a>.</p>
+    <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. In DCM, duty also depends on load and the zero-current interval.</p>
+    <p>The power stage uses ideal switches, no dead time, and lossless inductors and capacitors. Optional output ESR adds i<sub>C</sub> · R<sub>ESR</sub> to voltage ripple without changing duty cycle or inductor current. For power-loss estimates, use the <a href="/tools/buck-losses/">Buck Converter Loss Tool</a>.</p>
   </section>
 </article>
 
@@ -1967,17 +317,6 @@ permalink: /tools/buck-converter/
 
   var pageScript = document.currentScript;
   var disposed = false;
-  var managedTimers = [];
-
-  function setManagedTimeout(callback, delay) {
-    var id = window.setTimeout(function () {
-      var index = managedTimers.indexOf(id);
-      if (index >= 0) { managedTimers.splice(index, 1); }
-      if (!disposed) { callback(); }
-    }, delay);
-    managedTimers.push(id);
-    return id;
-  }
 
   /* ---------- parameter definitions ---------- */
   // Internal state is SI; number inputs may use a display scale (µH, µF, kHz).
@@ -2774,9 +1113,9 @@ permalink: /tools/buck-converter/
    "out-ton", "out-toff-label", "out-toff", "out-toff-note", "out-ipk-label", "out-ipk", "out-ipk-note",
    "out-design-l", "out-design-c", "out-design-l-note", "out-design-c-note", "bc-design-result", "bc-dcm-options",
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope", "bc-probe-slider", "bc-probe-readout",
-   "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-pip", "bc-anim-phase", "bc-anim-desc",
-   "bc-anim-duty", "bc-anim-cap", "bc-arm-hs", "bc-arm-ls", "bc-halo-hs", "bc-halo-ls", "bc-node-glow",
-   "bc-lbl-ton", "bc-lbl-toff", "bc-dash-on", "bc-dash-off", "bc-dash-cap", "bc-cycle-on", "bc-cycle-head",
+   "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-play", "bc-anim-position", "bc-anim-schematic", "bc-anim-phase", "bc-anim-desc",
+   "bc-anim-duty", "bc-anim-cap", "bc-arm-hs", "bc-arm-ls", "bc-path-high", "bc-path-low", "bc-path-output", "bc-path-load", "bc-path-cap",
+   "bc-cycle-on", "bc-cycle-head", "bc-cycle-lab-idle", "bc-ic-arrow",
    "bc-cycle-lab-on", "bc-cycle-lab-off", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
@@ -2784,11 +1123,6 @@ permalink: /tools/buck-converter/
   var modeFields = Array.prototype.slice.call(document.querySelectorAll("[data-mode-field]"));
   var modeSegmented = document.querySelector(".bc-segmented");
   var dcmExtraControls = Array.prototype.slice.call(document.querySelectorAll("[data-dcm-extra]"));
-  var committedChangeSurfaces = Array.prototype.filter.call([
-    document.querySelector(".bc-results"),
-    document.querySelector(".bc-schematic--animated"),
-    document.querySelector(".bc-scope")
-  ], Boolean);
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
   var motionHandler = null;
   var raf = window.requestAnimationFrame || function (fn) { return window.setTimeout(fn, 16); };
@@ -2841,16 +1175,7 @@ permalink: /tools/buck-converter/
     }
     modeFields.forEach(function (field) {
       var active = field.getAttribute("data-mode-field") === mode;
-      var wasHidden = field.hidden;
       field.hidden = !active;
-      field.classList.remove("bc-field-enter");
-      if (active && wasHidden && !(reduceMotion && reduceMotion.matches)) {
-        void field.offsetWidth;
-        field.classList.add("bc-field-enter");
-        setManagedTimeout(function () {
-          field.classList.remove("bc-field-enter");
-        }, 240);
-      }
     });
     el["bc-design-result"].className = "bc-design-result" + (mode === "design" ? " bc-show" : "");
     el["bc-design-result"].setAttribute("aria-hidden", mode === "design" ? "false" : "true");
@@ -2875,212 +1200,128 @@ permalink: /tools/buck-converter/
     });
   }
 
-  function finishCommittedChangeSettle(event) {
-    if (event.animationName === "bcCommitSettle") {
-      event.currentTarget.classList.remove("bc-commit-settle");
-    }
-  }
-
-  committedChangeSurfaces.forEach(function (surface) {
-    surface.addEventListener("animationend", finishCommittedChangeSettle);
-  });
-
-  function settleCommittedChange() {
-    committedChangeSurfaces.forEach(function (surface) {
-      surface.classList.remove("bc-commit-settle");
-    });
-    if (disposed || !committedChangeSurfaces.length || (reduceMotion && reduceMotion.matches)) { return; }
-
-    // Flush the removed state once so a rapid second commit cancels and
-    // restarts from the newest, already-rendered engineering model.
-    void committedChangeSurfaces[0].offsetWidth;
-    committedChangeSurfaces.forEach(function (surface) {
-      surface.classList.add("bc-commit-settle");
-    });
-  }
-
-  /* ---------- animated schematic ---------- */
+  /* Instructional view: uses the same waveform samples as the plots. */
   var animDutyTickValues = [25, 90];
   var animFrame = 0;
-  var ANIM_SPEED_MULT = 0.6;
-  var ANIM_I_MIN = 0.40;
-  var ANIM_I_MAX = 1.0;
-  var ANIM_I_AVG = 0.70;
-  var ANIM_KCAP = 300;
   var animSchematic = {
-    ready: false,
-    dist: 0,
-    capOffset: 0,
-    clock: 0,
-    lastT: 0,
-    lastPhase: "",
-    state: { hsAngle: -23, lsAngle: 26, hsGlow: 0, lsGlow: 0 },
+    ready: false, playing: false, clock: 0, lastT: 0, lastPhase: "",
+    inputs: null, result: null,
     model: { D: 0.275, D2: 0.725, D3: 0, dcmValid: false, readonly: false }
   };
 
   function hasAnimatedSchematic() {
-    return !!(el["bc-duty-slider"] && el["bc-arm-hs"] && el["bc-arm-ls"] && el["bc-dash-on"] && el["bc-dash-off"] && el["bc-dash-cap"]);
-  }
-
-  function easeAnim(current, target, dt, snap) {
-    if (snap) { return target; }
-    return current + (target - current) * (1 - Math.exp(-dt / 0.08));
+    return !!(el["bc-duty-slider"] && el["bc-arm-hs"] && el["bc-arm-ls"]);
   }
 
   function currentAnimPhase() {
-    var D = clamp(animSchematic.model.D, 0.001, 0.999);
-    var c = animSchematic.clock % 1;
-    if (animSchematic.model.dcmValid) {
-      var D2 = clamp(animSchematic.model.D2, 0.001, Math.max(0.001, 1 - D));
-      var D3 = Math.max(0.001, 1 - D - D2);
-      if (c < D) {
-        return { name: "on", local: c / D };
-      }
-      if (c < D + D2) {
-        return { name: "decay", local: (c - D) / D2 };
-      }
-      return { name: "idle", local: (c - D - D2) / D3 };
-    }
-    var off = Math.max(0.001, 1 - D);
-    return c < D
-      ? { name: "on", local: c / D }
-      : { name: "off", local: (c - D) / off };
+    var m = animSchematic.model;
+    var c = animSchematic.clock;
+    if (c < m.D) { return { name: "on", local: c / m.D }; }
+    if (!m.dcmValid) { return { name: "off", local: (c - m.D) / (1 - m.D) }; }
+    if (c < m.D + m.D2) { return { name: "decay", local: (c - m.D) / m.D2 }; }
+    return { name: "idle", local: (c - m.D - m.D2) / m.D3 };
   }
 
-  function updateAnimStatus(phaseName) {
-    if (!hasAnimatedSchematic()) { return; }
-    var phase = phaseName || animSchematic.lastPhase || "on";
-    var compact = window.matchMedia && window.matchMedia("(max-width: 430px)").matches;
-    var label = "ON time";
-    var desc = "high-side FET conducts, i<sub>L</sub> rising";
-    var compactDesc = "i<sub>L</sub> rising";
-    var muted = false;
-    if (phase === "off") {
-      label = "OFF time";
-      desc = "low-side FET freewheels, i<sub>L</sub> falling";
-      compactDesc = "i<sub>L</sub> falling";
-    } else if (phase === "decay") {
-      label = "low-side decay";
-      desc = "low-side FET conducts, i<sub>L</sub> falling";
-      compactDesc = "i<sub>L</sub> falling";
-    } else if (phase === "idle") {
-      label = "tri-state idle";
-      desc = "both FETs off, no inductor-current path";
-      compactDesc = "i<sub>L</sub> zero";
-      muted = true;
-    }
-    el["bc-anim-phase"].textContent = label;
-    el["bc-anim-desc"].innerHTML = compact ? compactDesc : desc;
-    el["bc-anim-duty"].textContent = "D = " + (100 * animSchematic.model.D).toFixed(1) + "%";
-    el["bc-anim-duty"].style.whiteSpace = "nowrap";
-    el["bc-anim-pip"].style.transform = muted ? "scale(0.66)" : "scale(1)";
-    el["bc-anim-pip"].style.backgroundColor = muted ? "var(--muted)" : "var(--accent)";
-  }
-
-  function drawAnimPhase(phase, dt, snap) {
-    if (!hasAnimatedSchematic()) { return; }
+  function drawAnimPhase(phase) {
+    if (!hasAnimatedSchematic() || !animSchematic.result) { return; }
+    var s = animSchematic.inputs, r = animSchematic.result;
+    var sample = rawAt(s, r, animSchematic.clock * r.T);
+    var iL = sample.il, iC = iL - s.iload;
     var isOn = phase.name === "on";
-    var isLowSide = phase.name === "off" || phase.name === "decay";
+    var isLow = phase.name === "off" || phase.name === "decay";
     var isIdle = phase.name === "idle";
-    var iL = 0;
-    if (isOn) {
-      iL = ANIM_I_MIN + (ANIM_I_MAX - ANIM_I_MIN) * phase.local;
-    } else if (phase.name === "off") {
-      iL = ANIM_I_MAX - (ANIM_I_MAX - ANIM_I_MIN) * phase.local;
-    } else if (phase.name === "decay") {
-      iL = ANIM_I_MAX * (1 - phase.local);
-    }
-    animSchematic.state.hsAngle = easeAnim(animSchematic.state.hsAngle, isOn ? 0 : -23, dt, snap);
-    animSchematic.state.lsAngle = easeAnim(animSchematic.state.lsAngle, isLowSide ? 0 : 26, dt, snap);
-    animSchematic.state.hsGlow = easeAnim(animSchematic.state.hsGlow, isOn ? 1 : 0, dt, snap);
-    animSchematic.state.lsGlow = easeAnim(animSchematic.state.lsGlow, isLowSide ? 1 : 0, dt, snap);
-
-    el["bc-arm-hs"].setAttribute("transform", "rotate(" + animSchematic.state.hsAngle.toFixed(2) + " 110 56)");
-    el["bc-arm-ls"].setAttribute("transform", "rotate(" + animSchematic.state.lsAngle.toFixed(2) + " 240 86)");
-    el["bc-halo-hs"].style.opacity = animSchematic.state.hsGlow.toFixed(3);
-    el["bc-halo-ls"].style.opacity = animSchematic.state.lsGlow.toFixed(3);
-    el["bc-node-glow"].style.opacity = Math.max(animSchematic.state.hsGlow, 0.72 * animSchematic.state.lsGlow).toFixed(3);
-    el["bc-lbl-ton"].classList.toggle("is-live", isOn);
-    el["bc-lbl-toff"].classList.toggle("is-live", isLowSide);
-    if (el["bc-il-arrow"]) {
-      el["bc-il-arrow"].style.opacity = isIdle ? "0.18" : "1";
-    }
-
-    if (!snap) {
-      animSchematic.dist = (animSchematic.dist + dt * (34 + 118 * iL) * ANIM_SPEED_MULT) % 10000;
-    }
-    el["bc-dash-on"].style.strokeDashoffset = (-animSchematic.dist).toFixed(2);
-    el["bc-dash-off"].style.strokeDashoffset = (-animSchematic.dist).toFixed(2);
-    el["bc-dash-on"].style.opacity = (0.9 * animSchematic.state.hsGlow).toFixed(3);
-    el["bc-dash-off"].style.opacity = (0.9 * animSchematic.state.lsGlow).toFixed(3);
-
-    var iC = iL - ANIM_I_AVG;
-    if (!snap) {
-      animSchematic.capOffset -= (ANIM_KCAP * iC) * ANIM_SPEED_MULT * dt;
-    }
-    el["bc-dash-cap"].style.strokeDashoffset = animSchematic.capOffset.toFixed(2);
-    el["bc-dash-cap"].style.opacity = (0.28 + 0.62 * Math.min(1, Math.abs(iC) / ((ANIM_I_MAX - ANIM_I_MIN) / 2))).toFixed(3);
-    if (el["bc-anim-cap"]) {
-      el["bc-anim-cap"].innerHTML = "C<sub>O</sub> " + (iC >= 0 ? "charging" : "discharging");
-    }
-    if (el["bc-cycle-head"]) {
-      el["bc-cycle-head"].style.left = (100 * (animSchematic.clock % 1)).toFixed(2) + "%";
-    }
-    if (el["bc-cycle-lab-on"]) {
-      el["bc-cycle-lab-on"].classList.toggle("is-live", isOn);
-    }
-    if (el["bc-cycle-lab-off"]) {
-      el["bc-cycle-lab-off"].classList.toggle("is-live", !isOn);
-    }
+    var nonzero = Math.abs(iL) > 1e-9;
+    var ringing = isIdle && !!r.idle;
+    // Switch state is discrete. Easing contacts would imply overlap conduction.
+    el["bc-arm-hs"].setAttribute("transform", "rotate(" + (isOn ? 0 : -28) + " 116 72)");
+    el["bc-arm-ls"].setAttribute("transform", "rotate(" + (isLow ? 0 : 28) + " 226 122)");
+    el["bc-arm-hs"].classList.toggle("is-conducting", isOn && nonzero);
+    el["bc-arm-ls"].classList.toggle("is-conducting", isLow && nonzero);
+    [ ["high", isOn && nonzero], ["low", isLow && nonzero],
+      ["output", nonzero], ["load", s.iload > 0], ["cap", Math.abs(iC) > 1e-9] ].forEach(function (item) {
+      el["bc-path-" + item[0]].style.opacity = item[1] ? "1" : "0";
+    });
+    el["bc-il-arrow"].style.opacity = nonzero ? "1" : "0";
+    el["bc-il-arrow"].setAttribute("transform", iL < 0 ? "rotate(180 374 50)" : "");
+    el["bc-ic-arrow"].style.opacity = Math.abs(iC) > 1e-9 ? "1" : "0";
+    el["bc-ic-arrow"].setAttribute("transform", iC < 0 ? "rotate(180 458 166)" : "");
+    var label = isOn ? "ON time" : isLow ? "OFF time" : ringing ? "Ringing interval" : "Idle interval";
+    var desc = isOn ? "High-side switch closed; inductor current rising." : isLow
+      ? "Low-side switch closed; inductor current falling." : ringing
+      ? "Both switches open. Current exchanges with optional Cₛᵂ, omitted from this ideal schematic; inspect the waveform below."
+      : Math.abs(r.iZc || 0) > 1e-9
+        ? "Both switches open. The threshold model retains a residual current; its idle path is not represented by these ideal switches."
+        : "Both switches open. Inductor current is zero; the output capacitor supplies the load.";
+    el["bc-anim-phase"].textContent = label;
+    el["bc-anim-desc"].textContent = desc;
+    el["bc-anim-cap"].textContent = "iL = " + eng(iL, "A") + " · iC = " + eng(iC, "A") + " · capacitor " + (Math.abs(iC) < 1e-9 ? "current zero" : iC > 0 ? "charging" : "discharging");
+    el["bc-anim-duty"].textContent = "D = " + (100 * r.D).toFixed(1) + "%";
+    el["bc-anim-position"].value = (100 * animSchematic.clock).toFixed(1);
+    el["bc-anim-position"].setAttribute("aria-valuetext", (100 * animSchematic.clock).toFixed(1) + "% of cycle; " + label);
+    el["bc-cycle-head"].style.left = (100 * animSchematic.clock).toFixed(2) + "%";
+    el["bc-cycle-lab-on"].classList.toggle("is-live", isOn);
+    el["bc-cycle-lab-off"].classList.toggle("is-live", isLow);
+    el["bc-cycle-lab-idle"].classList.toggle("is-live", isIdle);
+    var svg = el["bc-anim-schematic"];
+    svg.dataset.phase = phase.name;
+    svg.dataset.highClosed = String(isOn);
+    svg.dataset.lowClosed = String(isLow);
+    svg.dataset.inductorCurrent = String(iL);
+    svg.dataset.capacitorCurrent = String(iC);
+    svg.dataset.duty = String(r.D);
+    svg.dataset.decay = String(r.D2 || 1 - r.D);
+    svg.dataset.idle = String(r.D3 || 0);
+    animSchematic.lastPhase = phase.name;
+    drawPlaybackCursor();
   }
+
+  function drawPlaybackCursor() {
+    var m = plotMargin();
+    var x = m.l + animSchematic.clock / CYCLES * (W - m.l - m.r);
+    PANEL_IDS.forEach(function (id) {
+      var svg = el[id], meta = registryCursor[id];
+      if (!svg || !meta || !meta.bh) { return; }
+      var marker = svg.querySelector(".bc-playback-cursor");
+      if (!marker) {
+        marker = mk("line", { "class": "bc-playback-cursor", "aria-hidden": "true" });
+        svg.appendChild(marker);
+      }
+      marker.setAttribute("x1", x);
+      marker.setAttribute("x2", x);
+      marker.setAttribute("y1", m.t);
+      marker.setAttribute("y2", meta.bh - m.b);
+    });
+  }
+
+  function updateAnimStatus() { drawAnimPhase(currentAnimPhase()); }
 
   function drawReducedMotionSchematic() {
-    var phase = animSchematic.model.dcmValid && animSchematic.model.D3 > 0.18
-      ? { name: "idle", local: 0.5 }
-      : { name: "on", local: 0.5 };
-    if (phase.name === "idle") {
-      animSchematic.clock = clamp(animSchematic.model.D + animSchematic.model.D2 + animSchematic.model.D3 / 2, 0, 0.999);
-    } else {
-      animSchematic.clock = clamp(animSchematic.model.D / 2, 0, 0.999);
-    }
-    animSchematic.dist = 18;
-    animSchematic.capOffset = 12;
-    animSchematic.lastPhase = phase.name;
-    drawAnimPhase(phase, 0.016, true);
-    updateAnimStatus(phase.name);
+    animSchematic.playing = false;
+    updatePlaybackControl();
+    drawAnimPhase(currentAnimPhase());
+  }
+
+  function updatePlaybackControl() {
+    el["bc-anim-play"].textContent = reduceMotion && reduceMotion.matches ? "Next interval" : animSchematic.playing ? "Pause" : "Play cycle";
+    el["bc-anim-play"].setAttribute("aria-pressed", String(animSchematic.playing));
   }
 
   function tickAnimatedSchematic(now) {
     animFrame = 0;
-    if (disposed) { return; }
-    if (!animSchematic.ready || (reduceMotion && reduceMotion.matches)) {
-      drawReducedMotionSchematic();
-      return;
-    }
-    if (!animSchematic.lastT) { animSchematic.lastT = now; }
-    var dt = Math.min(0.05, Math.max(0, (now - animSchematic.lastT) / 1000));
+    if (disposed || !animSchematic.playing) { return; }
+    if (reduceMotion && reduceMotion.matches) { drawReducedMotionSchematic(); return; }
+    var dt = animSchematic.lastT ? Math.min(0.05, (now - animSchematic.lastT) / 1000) : 0;
     animSchematic.lastT = now;
-    animSchematic.clock = (animSchematic.clock + dt / 3.0) % 1;
-    var phase = currentAnimPhase();
-    drawAnimPhase(phase, dt || 0.016, false);
-    if (phase.name !== animSchematic.lastPhase) {
-      animSchematic.lastPhase = phase.name;
-      updateAnimStatus(phase.name);
-    }
+    animSchematic.clock = (animSchematic.clock + dt / 3) % 1;
+    drawAnimPhase(currentAnimPhase());
     animFrame = raf(tickAnimatedSchematic);
   }
 
   function startAnimatedSchematic() {
     if (disposed || !animSchematic.ready) { return; }
-    if (reduceMotion && reduceMotion.matches) {
-      if (animFrame) {
-        cancelRaf(animFrame);
-        animFrame = 0;
-      }
-      drawReducedMotionSchematic();
-      return;
-    }
-    if (!animFrame) {
+    if (reduceMotion && reduceMotion.matches) { drawReducedMotionSchematic(); return; }
+    drawAnimPhase(currentAnimPhase());
+    if (animSchematic.playing && !animFrame) {
       animSchematic.lastT = 0;
       animFrame = raf(tickAnimatedSchematic);
     }
@@ -3105,19 +1346,24 @@ permalink: /tools/buck-converter/
     var displayPct = clamp(pct, 0, 100);
     el["bc-cycle-on"].style.width = displayPct.toFixed(2) + "%";
     el["bc-cycle-lab-on"].style.left = (displayPct / 2).toFixed(2) + "%";
-    el["bc-cycle-lab-off"].style.left = ((displayPct + 100) / 2).toFixed(2) + "%";
+    el["bc-cycle-lab-off"].style.left = (100 * (animSchematic.model.D + animSchematic.model.D2 / 2)).toFixed(2) + "%";
+    el["bc-cycle-lab-idle"].hidden = !animSchematic.model.dcmValid;
+    el["bc-cycle-lab-idle"].style.left = (100 * (1 - animSchematic.model.D3 / 2)).toFixed(2) + "%";
   }
 
   function syncAnimatedSchematic(s, r) {
     if (!hasAnimatedSchematic()) { return; }
     var dcmValid = !!r.dcmValid;
     var readonly = dcmValid;
-    var nextD = clamp(r.D || 0, 0.001, 0.96);
-    var nextD2 = dcmValid ? clamp(r.D2 || 0, 0.001, Math.max(0.001, 1 - nextD)) : Math.max(0.001, 1 - nextD);
-    var nextD3 = dcmValid ? Math.max(0.001, 1 - nextD - nextD2) : 0;
+    var nextD = r.D;
+    var nextD2 = dcmValid ? r.D2 : 1 - nextD;
+    var nextD3 = dcmValid ? r.D3 : 0;
     if (animSchematic.model.dcmValid !== dcmValid || animSchematic.model.readonly !== readonly) {
       animSchematic.lastPhase = "";
     }
+    if (!animSchematic.result) { animSchematic.clock = nextD / 2; }
+    animSchematic.inputs = s;
+    animSchematic.result = r;
     animSchematic.model = { D: nextD, D2: nextD2, D3: nextD3, dcmValid: dcmValid, readonly: readonly };
     syncAnimatedDutyRail(100 * nextD, readonly);
     updateAnimStatus(animSchematic.lastPhase || "on");
@@ -3168,26 +1414,18 @@ permalink: /tools/buck-converter/
       tick.textContent = pct + "%";
       tick.addEventListener("click", function () {
         if (this.getAttribute("aria-disabled") === "true") { return; }
-        var beforePct = parseFloat(el["bc-duty-slider"].value);
         applyAnimatedDutyPct(pct);
-        glideRangeThumb(el["bc-duty-slider"], beforePct, parseFloat(el["bc-duty-slider"].value), updateDutySliderAria);
       });
       el["bc-duty-ticks"].appendChild(tick);
     });
     positionAnimatedDutyTicks();
 
     el["bc-duty-slider"].addEventListener("input", function () {
-      cancelRangeThumbGlide(this);
       applyAnimatedDutyPct(parseFloat(this.value));
     });
 
     if (reduceMotion) {
       motionHandler = function () {
-        if (reduceMotion.matches) {
-          committedChangeSurfaces.forEach(function (surface) {
-            surface.classList.remove("bc-commit-settle");
-          });
-        }
         startAnimatedSchematic();
       };
       if (reduceMotion.addEventListener) {
@@ -3321,6 +1559,7 @@ permalink: /tools/buck-converter/
     if (probeClientX !== null) {
       syncProbeControl(probePointFromCoords(probeClientX, null, false));
     }
+    drawPlaybackCursor();
   }
 
   function renderNow() {
@@ -3646,12 +1885,38 @@ permalink: /tools/buck-converter/
     }
   }
 
+  document.querySelector(".bc-schematic-viewport").addEventListener("keydown", function (event) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") { return; }
+    event.preventDefault();
+    this.scrollLeft += event.key === "ArrowRight" ? 48 : -48;
+  });
+
+  el["bc-anim-play"].addEventListener("click", function () {
+    // With reduced motion, the same control advances one interval at a time.
+    if (reduceMotion && reduceMotion.matches) {
+      var m = animSchematic.model, phase = currentAnimPhase().name;
+      animSchematic.clock = phase === "on" ? m.D + m.D2 / 2 : phase !== "idle" && m.D3 > 0 ? 1 - m.D3 / 2 : m.D / 2;
+      drawAnimPhase(currentAnimPhase());
+      return;
+    }
+    animSchematic.playing = !animSchematic.playing;
+    updatePlaybackControl();
+    if (!animSchematic.playing && animFrame) { cancelRaf(animFrame); animFrame = 0; }
+    startAnimatedSchematic();
+  });
+  el["bc-anim-position"].addEventListener("input", function () {
+    animSchematic.playing = false;
+    if (animFrame) { cancelRaf(animFrame); animFrame = 0; }
+    animSchematic.clock = parseFloat(this.value) / 100;
+    updatePlaybackControl();
+    drawAnimPhase(currentAnimPhase());
+  });
+
   /* ---------- wiring ---------- */
   Object.keys(PARAMS).forEach(function (k) {
     var controls = paramControls[k];
     controls.ranges.forEach(function (range) {
       range.addEventListener("input", function () {
-        cancelRangeThumbGlide(this);
         state[k] = clampParam(k, snapSliderValue(k, fromSlider(k, +this.value)));
         enforceBuck(k);
         scheduleRender();
@@ -3683,74 +1948,6 @@ permalink: /tools/buck-converter/
     return isFinite(parsed) ? parsed : 15;
   }
 
-  function canGlideRangeThumb() {
-    return !(reduceMotion && reduceMotion.matches);
-  }
-
-  function glideNow() {
-    return window.performance && window.performance.now ? window.performance.now() : Date.now();
-  }
-
-  function easeThumbGlide(t) {
-    return 1 - Math.pow(1 - t, 3);
-  }
-
-  function cancelRangeThumbGlide(range, finalValue) {
-    if (!range) { return; }
-    if (range.bcThumbGlideFrame) {
-      cancelRaf(range.bcThumbGlideFrame);
-      range.bcThumbGlideFrame = 0;
-    }
-    if (isFinite(finalValue)) {
-      range.value = finalValue;
-    }
-  }
-
-  function updateDutySliderAria(pct) {
-    if (!el["bc-duty-slider"] || !isFinite(pct)) { return; }
-    el["bc-duty-slider"].setAttribute("aria-valuetext", "D = " + parseFloat(pct).toFixed(1) + "%");
-  }
-
-  function glideRangeThumb(range, fromValue, toValue, onUpdate) {
-    if (disposed || !range) { return; }
-    var from = parseFloat(fromValue);
-    var to = parseFloat(toValue);
-    cancelRangeThumbGlide(range);
-    if (!isFinite(from) || !isFinite(to) || Math.abs(to - from) < 0.5 || !canGlideRangeThumb()) {
-      if (isFinite(to)) {
-        range.value = to;
-        if (onUpdate) { onUpdate(to); }
-      }
-      return;
-    }
-
-    var duration = 180;
-    var startedAt = 0;
-    range.value = from;
-    if (onUpdate) { onUpdate(from); }
-
-    function step(now) {
-      if (disposed) {
-        range.bcThumbGlideFrame = 0;
-        return;
-      }
-      if (!startedAt) { startedAt = now || glideNow(); }
-      var t = clamp(((now || glideNow()) - startedAt) / duration, 0, 1);
-      var value = from + (to - from) * easeThumbGlide(t);
-      range.value = value;
-      if (onUpdate) { onUpdate(value); }
-      if (t < 1) {
-        range.bcThumbGlideFrame = raf(step);
-      } else {
-        range.bcThumbGlideFrame = 0;
-        range.value = to;
-        if (onUpdate) { onUpdate(to); }
-      }
-    }
-
-    range.bcThumbGlideFrame = raf(step);
-  }
-
   document.querySelectorAll(".bc-ticks").forEach(function (row) {
     var key = row.getAttribute("data-for");
     (TICKS[key] || []).forEach(function (tk) {
@@ -3765,12 +1962,9 @@ permalink: /tools/buck-converter/
       b.style.left = "calc(" + (100 * f).toFixed(2) + "% + " + (thumb / 2 - thumb * f).toFixed(1) + "px)";
       b.textContent = tk[1];
       b.addEventListener("click", function () {
-        var range = el["sl-" + key];
-        var beforeSlider = range ? parseFloat(range.value) : toSlider(key, state[key]);
         state[key] = clampParam(key, tk[0]);
         enforceBuck(key);
         renderNow();
-        glideRangeThumb(range, beforeSlider, range ? parseFloat(range.value) : toSlider(key, state[key]));
       });
       row.appendChild(b);
     });
@@ -3779,11 +1973,9 @@ permalink: /tools/buck-converter/
   modeButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       var nextMode = this.getAttribute("data-mode");
-      var changed = nextMode !== mode;
       mode = nextMode;
       hideProbe();
       renderNow();
-      if (changed) { settleCommittedChange(); }
     });
   });
 
@@ -3792,7 +1984,6 @@ permalink: /tools/buck-converter/
       dcmEnabled = !dcmEnabled;
       hideProbe();
       renderNow();
-      settleCommittedChange();
     });
   }
 
@@ -3804,7 +1995,6 @@ permalink: /tools/buck-converter/
       });
       state = Object.assign({}, state, preset);
       renderNow();
-      if (changed) { settleCommittedChange(); }
     });
   });
 
@@ -3831,20 +2021,8 @@ permalink: /tools/buck-converter/
     }
     renderFrameNeedsSync = false;
 
-    Object.keys(paramControls).forEach(function (key) {
-      paramControls[key].ranges.forEach(function (range) {
-        cancelRangeThumbGlide(range);
-      });
-    });
-    cancelRangeThumbGlide(el["bc-duty-slider"]);
 
-    committedChangeSurfaces.forEach(function (surface) {
-      surface.classList.remove("bc-commit-settle");
-      surface.removeEventListener("animationend", finishCommittedChangeSettle);
-    });
 
-    managedTimers.forEach(function (id) { window.clearTimeout(id); });
-    managedTimers.length = 0;
 
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
     window.removeEventListener("resize", handleWindowResize);

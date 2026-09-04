@@ -57,6 +57,12 @@ export function htmlRoutesFromSitemap(xml) {
 
 export async function settlePage(page) {
   await page.locator("body > main.page-content").waitFor({ state: "visible" });
+  // A Back/Forward URL can change while the departing main is still present.
+  // Wait for navigation to release it before querying page-specific controls.
+  await page.waitForFunction(() => {
+    const main = document.querySelector("body > main.page-content");
+    return main && !main.inert;
+  });
   const lossExplorer = page.locator("#buck-loss-explorer");
   if (await lossExplorer.count()) {
     await lossExplorer.waitFor({ state: "visible" });
@@ -70,10 +76,6 @@ export async function settlePage(page) {
     if (document.fonts?.ready) await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   });
-  await page.waitForFunction(() => (
-    !document.documentElement.classList.contains("is-content-entering") &&
-    !document.querySelector(".page-exit-layer")
-  ));
 }
 
 export async function settleVisualPage(page) {

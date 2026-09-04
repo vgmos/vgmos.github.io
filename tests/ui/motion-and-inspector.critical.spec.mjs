@@ -3,83 +3,42 @@ import { test, expect } from "./fixtures.mjs";
 import { SITE_URL, pageOverflow, settlePage } from "./site.mjs";
 
 const SAR_PROJECT = "/projects/georgia-tech-noise-shaping-sar-adc/";
-const HERO_LEDE = "I design analog and power ICs at Analog Devices, mostly low-noise DC-DC buck converters for RF, OLED, and automotive systems. This site is a working archive. The tools are small circuit-design calculators. The projects are longer write-ups from my graduate research. The notebook is where the rest goes: technical notes, loose ideas, and things that don’t quite fit on a project page.";
-
-test.describe("homepage motion", () => {
-  test("the signal trace and row reveals are finite, stable, and run once per document", async ({ page }) => {
-    await page.addInitScript(() => {
-      const nativeAnimate = Element.prototype.animate;
-      window.__vgmosSignalAnimationCalls = 0;
-      Element.prototype.animate = function animate(keyframes, options) {
-        if (this.matches?.("[data-signal-path-pulse]")) window.__vgmosSignalAnimationCalls += 1;
-        return nativeAnimate.call(this, keyframes, options);
-      };
+test.describe("immediately visible homepage", () => {
+  for (const motion of ["no-preference", "reduce"]) {
+    test(`all entries are visible with ${motion} motion`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: motion });
+      await page.goto("/");
+      await settlePage(page);
+      await expect(page.locator(".home-title")).toHaveText("Tools, projects, and notes");
+      await expect(page.locator(".hero-lede")).toContainText("low-noise DC-DC buck converters");
+      await expect(page.locator("[data-signal-path], [data-reveal], .page-exit-layer")).toHaveCount(0);
+      await expect(page.locator(".list-item")).toHaveCount(8);
+      expect(await page.locator(".list-item").evaluateAll(items => items.every(item => {
+        const style = getComputedStyle(item);
+        return style.visibility === "visible" && style.opacity === "1" && style.transform === "none";
+      }))).toBe(true);
+      const height = await page.evaluate(() => document.documentElement.scrollHeight);
+      await page.getByRole("link", {name: "About", exact: true}).click();
+      await expect(page).toHaveURL(/\/about\/$/);
+      await settlePage(page);
+      await page.goBack();
+      await settlePage(page);
+      await expect(page.locator(".list-item")).toHaveCount(8);
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(height);
     });
-
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await settlePage(page);
-
-    await expect(page.locator(".home-title")).toHaveText("Tools, projects, and notes");
-    await expect(page.locator(".hero-lede")).toHaveText(HERO_LEDE);
-
-    const signal = page.locator("[data-signal-path]");
-    await expect(signal).toHaveAttribute("role", "img");
-    await expect(signal).toHaveAttribute("aria-labelledby", "home-signal-title home-signal-description");
-    expect(await signal.locator("[data-signal-path-pulse]").evaluate((path) => path.getTotalLength())).toBeGreaterThan(100);
-    await expect(signal).toHaveAttribute("data-signal-path-state", "complete");
-    expect(await page.evaluate(() => window.__vgmosSignalAnimationCalls)).toBe(1);
-
-    const reveals = page.locator("[data-reveal]");
-    expect(await reveals.count()).toBeGreaterThan(4);
-    const finalReveal = reveals.last();
-    const heightBefore = await page.evaluate(() => document.documentElement.scrollHeight);
-    await finalReveal.scrollIntoViewIfNeeded();
-    await expect(finalReveal).toHaveAttribute("data-reveal-state", "visible");
-    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(heightBefore);
-
-    await page.getByRole("link", { name: "About", exact: true }).click();
-    await expect(page).toHaveURL(/\/about\/$/);
-    await page.goBack();
-    await expect(page).toHaveURL((url) => url.pathname === "/");
-    await expect(page.locator("[data-signal-path]")).toHaveAttribute("data-signal-path-state", "complete");
-    expect(await page.evaluate(() => window.__vgmosSignalAnimationCalls)).toBe(1);
-  });
-
-  test("reduced motion exposes the final homepage immediately", async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await settlePage(page);
-
-    await expect(page.locator('[data-reveal-state="pending"]')).toHaveCount(0);
-    const reveals = page.locator("[data-reveal]");
-    expect(await reveals.count()).toBeGreaterThan(4);
-    expect(await reveals.evaluateAll((items) => items.every((item) => {
-      const style = getComputedStyle(item);
-      return Number(style.opacity) === 1 && style.transform === "none";
-    }))).toBe(true);
-    await expect(page.locator("[data-signal-path]")).toHaveAttribute("data-signal-path-state", "complete");
-    expect(await page.locator("[data-signal-path-pulse]").evaluate((pulse) => Number(getComputedStyle(pulse).opacity))).toBe(0);
-  });
-
-  test("the homepage remains complete without JavaScript", async ({ browser }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
+  }
+  test("homepage and original figures remain complete without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({javaScriptEnabled: false});
     const page = await context.newPage();
-    await page.goto(new URL("/", SITE_URL).href, { waitUntil: "domcontentloaded" });
-
-    await expect(page.locator("[data-reveal]")).not.toHaveCount(0);
-    expect(await page.locator("[data-reveal]").evaluateAll((items) => items.every((item) => {
-      const style = getComputedStyle(item);
-      return style.visibility === "visible" && Number(style.opacity) === 1 && item.getBoundingClientRect().height > 0;
-    }))).toBe(true);
-    await expect(page.locator("[data-signal-path]")).toBeVisible();
-    expect(await page.locator("[data-signal-path-wave]").evaluate((wave) => Number(getComputedStyle(wave).opacity))).toBeGreaterThan(0.5);
-
-    await page.goto(new URL(SAR_PROJECT, SITE_URL).href, { waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", SITE_URL).href);
+    await expect(page.locator(".list-item")).toHaveCount(8);
+    for (const item of await page.locator(".list-item").all()) await expect(item).toBeVisible();
+    await expect(page.getByRole("link", {name: "Browse all notes"})).toBeVisible();
+    await expect(page.locator("[data-signal-path], [data-reveal]")).toHaveCount(0);
+    await page.goto(new URL(SAR_PROJECT, SITE_URL).href);
     await expect(page.locator("[data-figure-inspect]")).toHaveCount(0);
     await expect(page.locator(".source-figure img")).toHaveCount(2);
     await expect(page.locator(".source-figure img").first()).toBeVisible();
-
     await context.close();
   });
 });

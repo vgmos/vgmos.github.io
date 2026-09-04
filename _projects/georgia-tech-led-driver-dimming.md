@@ -19,11 +19,11 @@ links:
     url: https://doi.org/10.1109/IECON48115.2021.9589840
 ---
 
-My MS thesis at Georgia Tech was about where the energy goes when you dim an LED. I went in assuming brightness follows average LED current and the driver just supplies it. Neither holds cleanly: luminous flux bends over at high current, and a switched-inductor driver spends power differently depending on how you ask it to dim. Two methods can deliver the same average current and still produce different light from different input watts. The thesis was about pinning that down.
+My MS thesis at Georgia Tech studied where energy goes when an LED is dimmed. Luminous flux becomes less proportional to current at high current, and driver losses depend on the dimming method. Two methods can deliver the same average current yet produce different amounts of light and consume different input power. I modeled those differences.
 
 ## Problem
 
-High-power LEDs are current-controlled devices whose flux rises with current but saturates instead of scaling forever. The driver stacks its own losses on top: controller, gate drive, switches, inductor, output capacitor. So the comparison that matters is useful light out per input watt, through the whole chain.
+The controller, gate drive, switches, inductor, and output capacitor add losses. I compared useful light output per input watt across the complete LED-and-driver system.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -32,13 +32,19 @@ High-power LEDs are current-controlled devices whose flux rises with current but
   <figcaption><strong>Fig. 2 — Power stage.</strong> The synchronous buck-boost switched-inductor LED driver used for the dimming comparison.</figcaption>
 </figure>
 
-I modeled a representative 12 V automotive buck-boost driver delivering up to 1 A into four CREE XP-E2-class LEDs. The model folded together the LED's electro-optical curve, its I-V curve, and the converter's loss profile, with SPICE runs to check the pieces.
+I modeled a representative 12 V automotive buck-boost driver delivering up to 1 A into four CREE XP-E2-class LEDs. The model combined the LED's electro-optical curve, its I-V curve, and the converter's loss profile. I used SPICE simulations to check individual parts.
 
-## Dimming Methods
+## Dimming methods
 
-The thesis compared analog dimming against three PWM variants: shutdown PWM, shunt-switched PWM, and series-switched PWM. All four control perceived brightness; the differences show up in where the power goes.
+The thesis compared analog dimming against three PWM variants: shutdown PWM, shunt-switched PWM, and series-switched PWM.
 
-PWM holds the LED at a high peak current and chops time, so it keeps producing light at an operating point where the flux curve has already flattened. Analog dimming moves the operating point itself, which avoids that penalty across most of the light range. The loss breakdown makes the split visible: the PWM-specific term dominates much of the dimming range, while the shared converter losses are common to both methods.
+In the buck-boost stage studied here:
+
+- **Shutdown PWM** stops the power stage. Inductor current decays, and the output capacitor continues supplying the LEDs as it discharges, extending turn-off.
+- **Shunt-switched PWM** discharges the output capacitor through a parallel switch. The LEDs turn off faster, but the capacitor must be recharged on the next pulse, losing stored energy each cycle.
+- **Series-switched PWM** interrupts the LED current while preserving the output-capacitor voltage. Precharging the inductor before reconnecting the LEDs shortens turn-on, while the added switch introduces conduction loss and the remaining inductor energy requires overshoot control.
+
+PWM holds the LED at a high peak current during each on interval, so it keeps producing light at an operating point where the flux curve has already flattened. Analog dimming moves the operating point itself, which avoids that penalty across most of the light range.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -49,16 +55,18 @@ PWM holds the LED at a high peak current and chops time, so it keeps producing l
 
 ## Result
 
-PWM still earns its place; you want it when color consistency, control simplicity, or a very deep dimming ratio matters. But in this driver, analog dimming had better luminous efficiency over most of the range — peaking near 93 lm/W where PWM sits near 59 — and in principle it can cover the full 0–100% span if DCM operation and current sensing are handled with care.
+PWM remains useful when color consistency, control simplicity, or a very deep dimming ratio matters. In this modeled driver, analog dimming had better luminous efficiency over most of the range: a peak near 93 lm/W compared with PWM near 59 lm/W.
+
+In DCM, lengthening the switching period spaces fixed inductor-energy packets farther apart and lowers the average LED current. The output capacitor smooths the delivered current. This gives the model its theoretical 0–100% dimming range; the practical lower limit depends on current-sensing noise and offset, and on whether the LED still emits light at that current.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/led-driver-dimming/luminous-efficiency.png' | relative_url }}" alt="Original IECON luminous-efficiency plot showing analog dimming peaking near 93 lumens per watt and PWM near 59 lumens per watt." width="1656" height="670" loading="lazy" decoding="async">
   </div>
-  <figcaption><strong>Fig. 9 — Luminous efficiency.</strong> Analog peaks near 93 L/W, while PWM remains near 59 L/W in the modeled setup.</figcaption>
+  <figcaption><strong>Fig. 9 — Luminous efficiency.</strong> Analog peaks near 93 lm/W, while PWM remains near 59 lm/W in the modeled setup.</figcaption>
 </figure>
 
-That gap is where the thesis's "up to 57%" number comes from. PWM's efficiency curve is flat because the operating point never moves; analog dimming rides closer to the LED's most efficient region.
+That gap is where the thesis's "up to 57%" number comes from. In the modeled comparison above, PWM's efficiency curve is flat because its on-state operating point stays fixed. Analog dimming moves the LED closer to its most efficient region.
 
 <figure class="source-figure source-figure--table">
   <div class="source-figure__frame">
@@ -67,9 +75,7 @@ That gap is where the thesis's "up to 57%" number comes from. PWM's efficiency c
   <figcaption><strong>Table I — Method comparison.</strong> Luminous efficiency, dimming range, transient behavior, and added loss mechanisms.</figcaption>
 </figure>
 
-One caveat survived every attempt to simplify it away: at very low output, the converter's fixed losses dominate and PWM can briefly come out ahead. Rules of thumb have operating regions too.
-
-The lasting effect on me was how I read "efficiency." It's never one number. Half the job is working out which loss is active at a given operating point, which one scales, and which one is an artifact of the control method rather than the physics.
+At very low output, the converter's fixed losses dominate and PWM can briefly be more efficient. Rules of thumb have operating regions too.
 
 ## Sources
 

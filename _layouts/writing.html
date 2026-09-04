@@ -5,14 +5,14 @@ layout: page
 {{ content }}
 
 <div class="writing-index">
-  <h2>Recent Notes</h2>
+  <h2>Recent notes</h2>
   <div class="item-list">
     {% for post in site.posts %}
-      <article class="list-item">
-        <p class="item-meta">{{ post.date | date: "%B %-d, %Y" }}</p>
+      <article class="list-item list-item--note">
         <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+        <time class="item-date" datetime="{{ post.date | date: '%Y-%m-%d' }}">{{ post.date | date: "%B %-d, %Y" }}</time>
         {% if post.excerpt %}
-          <p>{{ post.excerpt | strip_html | truncate: 220 }}</p>
+          <p class="item-summary">{{ post.excerpt | strip_html | truncate: 220 }}</p>
         {% endif %}
       </article>
     {% else %}

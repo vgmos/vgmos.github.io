@@ -1,23 +1,10 @@
-/* =====================================================================
-   ui.js — single-page hub behaviour for vgmos.github.io
-     1. sliding nav underline driven by scroll position + hover
-     2. smooth in-page scrolling for nav + hero anchors (with header offset)
-     3. scroll-spy: the underline follows the section you're reading
-     4. lightweight same-origin content swaps with a normal-load fallback
-   Degrades cleanly: content is only hidden during page changes, in-page
-   links fall back to normal navigation when motion is reduced, and
-   prefers-reduced-motion is fully respected.
-   ===================================================================== */
+// Navigation preserves history, page lifecycles, and a native-load fallback.
 (function () {
   "use strict";
 
   var root = document.documentElement;
   var motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
   var reduce = motionPreference.matches;
-  var pageTransitionKey = "vgmos-page-transition";
-  var pageTransitionOutMs = 70;
-  var pageTransitionInMs = 110;
-  var contentTransitionMs = 240;
   var mathDelimiters = [
     { left: "$$", right: "$$", display: true },
     { left: "\\(", right: "\\)", display: false }
@@ -35,7 +22,6 @@
   var pageScopes = new WeakMap();
   var activePageScope = null;
   var scriptHydrationSequence = 0;
-  var exitLayerSequence = 0;
   var lifecycleBootstrap = window.vgmosPageLifecycle;
   var queuedPageCleanups = lifecycleBootstrap && Array.isArray(lifecycleBootstrap.queue)
     ? lifecycleBootstrap.queue.slice()
@@ -46,7 +32,7 @@
   if (motionPreference.addEventListener) motionPreference.addEventListener("change", syncMotionPreference);
   else if (motionPreference.addListener) motionPreference.addListener(syncMotionPreference);
 
-  /* --------------------------------------------- swapped-page lifecycle */
+  // swapped-page lifecycle
   function mainForOwner(owner) {
     if (owner && owner.nodeType === 1) {
       if (owner.matches && owner.matches("main.page-content")) return owner;
@@ -130,7 +116,7 @@
     lifecycleBootstrap.queue.length = 0;
   }
 
-  /* ----------------------------------------------------- colour theme */
+  // colour theme
   var themeStorageKey = "vgmos-theme";
   var themeQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
@@ -185,9 +171,6 @@
     var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     setTheme(next, true);
 
-    button.classList.remove("is-flipping");
-    void button.offsetWidth;
-    if (!reduce) button.classList.add("is-flipping");
   });
 
   if (themeQuery) {
@@ -298,55 +281,21 @@
     if (document.visibilityState === "hidden") flushScrollSave();
   });
 
-  if (root.classList.contains("is-transitioning-in")) {
-    try {
-      sessionStorage.removeItem(pageTransitionKey);
-    } catch (error) {}
-
-    window.requestAnimationFrame(function () {
-      window.requestAnimationFrame(function () {
-        root.classList.add("is-transition-ready");
-        window.setTimeout(function () {
-          root.classList.remove("is-transitioning-in");
-          root.classList.remove("is-transition-ready");
-        }, pageTransitionInMs + 50);
-      });
-    });
-  }
-
-  window.addEventListener("pageshow", function (event) {
-    if (event.persisted) {
-      root.classList.remove("is-transitioning-out");
-      root.classList.remove("is-transitioning-in");
-      root.classList.remove("is-transition-ready");
-    }
-  });
-
   function hashOf(a) {
     var h = a.getAttribute("href") || "";
     var i = h.indexOf("#");
     return i >= 0 ? h.slice(i + 1) : "";
   }
 
-  /* ---------------------------------------- nav underline (follows current) */
+  // Current navigation section
   var nav = document.querySelector(".site-nav");
   var trigger = nav && nav.querySelector(".trigger");
-  var underline = nav && nav.querySelector(".nav-underline");
   var navLinks = trigger ? Array.prototype.slice.call(trigger.querySelectorAll(".page-link")) : [];
   var current = navLinks.filter(function (a) { return a.classList.contains("page-link--active"); })[0] || null;
   var suppressSpyUntil = 0;
   var sectionSpy = null;
 
-  function place(link, animate) {
-    if (!underline) return;
-    if (!link) { underline.style.width = "0"; return; }
-    if (!animate) underline.style.transition = "none";
-    underline.style.width = link.offsetWidth + "px";
-    underline.style.transform = "translateX(" + link.offsetLeft + "px)";
-    if (!animate) { void underline.offsetWidth; underline.style.transition = ""; }
-  }
-
-  function setCurrent(link, animate) {
+  function setCurrent(link) {
     current = link;
     navLinks.forEach(function (a) {
       var isCurrent = a === link;
@@ -354,7 +303,6 @@
       if (isCurrent) a.setAttribute("aria-current", "location");
       else a.removeAttribute("aria-current");
     });
-    place(link, animate);
   }
 
   function cleanPath(pathname) {
@@ -378,7 +326,7 @@
     }
   }
 
-  function syncCurrentFromLocation(animate) {
+  function syncCurrentFromLocation() {
     var path = cleanPath(window.location.pathname);
     var hash = window.location.hash.replace(/^#/, "");
     var active = null;
@@ -402,25 +350,7 @@
       }
     }
 
-    setCurrent(active, animate);
-  }
-
-  if (underline && navLinks.length) {
-    place(current, false);
-    navLinks.forEach(function (a) {
-      a.addEventListener("mouseenter", function () { if (!reduce) place(a, true); });
-      a.addEventListener("focus", function () { place(a, !reduce); });
-    });
-    nav.addEventListener("mouseleave", function () { place(current, !reduce); });
-
-    var recalc = function () { place(current, false); };
-    window.addEventListener("resize", recalc, { passive: true });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(recalc);
-  }
-
-  function closeMobileNav() {
-    var toggle = document.getElementById("nav-trigger");
-    if (toggle) toggle.checked = false;
+    setCurrent(active);
   }
 
   function scrollToHash(hash, smooth) {
@@ -448,7 +378,7 @@
     );
   }
 
-  /* ---------------------------- smooth scroll for any in-page anchor link */
+  // smooth scroll for any in-page anchor link
   document.addEventListener("click", function (event) {
     var a = event.target && event.target.closest ? event.target.closest("a[data-scroll]") : null;
     if (!a) return;
@@ -460,14 +390,13 @@
     event.preventDefault();
     if (a.classList.contains("page-link")) {
       suppressSpyUntil = Date.now() + 1200;
-      setCurrent(a, !reduce);
+      setCurrent(a);
     }
     preserveHashInAddress(a);
     scrollToHash(id, true);
-    closeMobileNav();
   });
 
-  /* -------------------------------- lightweight same-origin page transition */
+  // Same-origin page navigation
   function transitionableLink(a, event) {
     if (!a || reduce || event.defaultPrevented || event.button !== 0) return null;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
@@ -491,12 +420,8 @@
     return url;
   }
 
-  function delay(ms) {
-    return new Promise(function (resolve) { window.setTimeout(resolve, ms); });
-  }
-
   function fetchDocument(url) {
-    var key = url.href;
+    var key = url.origin + url.pathname + url.search;
     if (!prefetched[key]) {
       prefetched[key] = window.fetch(key, {
         credentials: "same-origin",
@@ -817,10 +742,6 @@
 
   function fallbackNavigate(url, saveScroll) {
     if (saveScroll !== false) flushScrollSave();
-    try {
-      sessionStorage.setItem(pageTransitionKey, "1");
-    } catch (error) {}
-    root.classList.add("is-transitioning-out");
     fallbackNavigationUrl = new URL(url.href);
     if (fallbackNavigationTimer) window.clearTimeout(fallbackNavigationTimer);
     fallbackNavigationTimer = window.setTimeout(function () {
@@ -828,7 +749,7 @@
       fallbackNavigationTimer = 0;
       fallbackNavigationUrl = null;
       if (destination) window.location.href = destination.href;
-    }, pageTransitionOutMs);
+    }, 0);
   }
 
   function setupScrollSpy() {
@@ -850,88 +771,12 @@
         entries.forEach(function (en) {
           if (en.isIntersecting) {
             var link = linkFor[en.target.id];
-            if (link && link !== current) setCurrent(link, !reduce);
+            if (link && link !== current) setCurrent(link);
           }
         });
       }, { rootMargin: "-96px 0px -70% 0px", threshold: 0 });
       sections.forEach(function (s) { sectionSpy.observe(s); });
     }
-  }
-
-  function isolateExitLayerIds(clone) {
-    var prefix = "vgmos-exit-" + (++exitLayerSequence) + "-";
-    var idMap = {};
-    var identified = [];
-    if (clone.id) identified.push(clone);
-    identified = identified.concat(Array.prototype.slice.call(clone.querySelectorAll("[id]")));
-    identified.forEach(function (node) {
-      var previous = node.id;
-      var next = prefix + previous;
-      idMap[previous] = next;
-      node.id = next;
-    });
-
-    var ids = Object.keys(idMap).sort(function (a, b) { return b.length - a.length; });
-    var tokenAttributes = [
-      "for", "headers", "list", "aria-activedescendant", "aria-controls",
-      "aria-describedby", "aria-details", "aria-errormessage", "aria-flowto",
-      "aria-labelledby", "aria-owns"
-    ];
-
-    [clone].concat(Array.prototype.slice.call(clone.querySelectorAll("*"))).forEach(function (node) {
-      tokenAttributes.forEach(function (name) {
-        if (!node.hasAttribute(name)) return;
-        var tokens = (node.getAttribute(name) || "").split(/\s+/).filter(Boolean);
-        node.setAttribute(name, tokens.map(function (token) { return idMap[token] || token; }).join(" "));
-      });
-
-      ["href", "xlink:href"].forEach(function (name) {
-        var value = node.getAttribute(name);
-        if (value && value.charAt(0) === "#" && idMap[value.slice(1)]) {
-          node.setAttribute(name, "#" + idMap[value.slice(1)]);
-        }
-      });
-
-      Array.prototype.slice.call(node.attributes || []).forEach(function (attribute) {
-        var value = attribute.value;
-        ids.forEach(function (id) {
-          value = value.split("url(#" + id + ")").join("url(#" + idMap[id] + ")");
-        });
-        if (value !== attribute.value) node.setAttribute(attribute.name, value);
-      });
-    });
-
-    Array.prototype.slice.call(clone.querySelectorAll("style")).forEach(function (style) {
-      var css = style.textContent || "";
-      ids.forEach(function (id) {
-        css = css.split("#" + id).join("#" + idMap[id]);
-      });
-      style.textContent = css;
-    });
-  }
-
-  function makeExitLayer(main) {
-    if (!main) return null;
-
-    var rect = main.getBoundingClientRect();
-    var layer = document.createElement("div");
-    var clone = main.cloneNode(true);
-    isolateExitLayerIds(clone);
-
-    layer.className = "page-exit-layer";
-    layer.setAttribute("aria-hidden", "true");
-    layer.setAttribute("inert", "");
-    layer.inert = true;
-    layer.style.top = rect.top + "px";
-    layer.style.left = rect.left + "px";
-    layer.style.width = rect.width + "px";
-    layer.style.height = rect.height + "px";
-
-    clone.removeAttribute("tabindex");
-    layer.appendChild(clone);
-    document.body.appendChild(layer);
-
-    return layer;
   }
 
   function completeNavigation(
@@ -972,12 +817,11 @@
     dispatchMainLifecycle("vgmos:mainchange", replacementMain);
 
     setupScrollSpy();
-    syncCurrentFromLocation(false);
-    closeMobileNav();
+    syncCurrentFromLocation();
 
     if (url.hash) {
       if (scrollToHash(url.hash, false) && transientHash) {
-        setCurrent(navLinks.filter(function (a) { return hashOf(a) === url.hash.replace(/^#/, ""); })[0] || current, false);
+        setCurrent(navLinks.filter(function (a) { return hashOf(a) === url.hash.replace(/^#/, ""); })[0] || current);
       }
     } else if (restoreScroll) {
       scrollToPosition(restoreScroll);
@@ -1021,7 +865,7 @@
   ) {
     // Once a soft navigation has fallen back, finish with a native load. A
     // newer request may supersede its destination, but must not race the old
-    // delayed redirect or restart work behind the transition overlay.
+    // queued redirect or restart work before the native load.
     if (fallbackNavigationTimer) {
       fallbackNavigate(url, false);
       return;
@@ -1045,8 +889,8 @@
         freshReplace: !!freshReplace
       };
       // The address bar changes before popstate fires. Do not leave a Back or
-      // Forward destination queued behind an earlier page's fetch, hydration,
-      // or exit-delay timer: stop awaiting that work and drain the newest
+      // Forward destination queued behind an earlier page's fetch or hydration:
+      // stop awaiting that work and drain the newest
       // request immediately. The underlying promise may still settle, but its
       // stale continuation can no longer swap the document.
       if (activeNavigation) activeNavigation.cancel();
@@ -1081,9 +925,6 @@
       return navigation.race(preparePageStyles(doc)).then(function (styles) {
         if (pendingNavigation) return Promise.reject(navigationSuperseded);
         expectedPageStyles = styles;
-        var currentMain = document.querySelector("main.page-content");
-        var exitLayer = makeExitLayer(currentMain);
-        root.classList.add("is-content-entering");
 
         var main = completeNavigation(
           url,
@@ -1108,36 +949,19 @@
         }
 
         return navigation.race(hydratePage(doc, main)).then(function () {
-          if (main) void main.offsetWidth;
-
-          root.classList.remove("is-content-entering");
-          if (exitLayer) {
-            void exitLayer.offsetWidth;
-            exitLayer.classList.add("is-fading");
-            window.setTimeout(function () {
-              if (exitLayer.parentNode) exitLayer.parentNode.removeChild(exitLayer);
-            }, contentTransitionMs + 80);
+          finalizePageStyles(expectedPageStyles);
+          if (restoreScroll) {
+            scrollToPosition(restoreScroll);
+            saveCurrentScroll();
           }
-
-          return navigation.race(delay(contentTransitionMs + 80)).then(function () {
-            finalizePageStyles(expectedPageStyles);
-            if (restoreScroll) {
-              scrollToPosition(restoreScroll);
-              saveCurrentScroll();
-            }
-            if (!pendingNavigation && main && main.isConnected) {
-              main.inert = false;
-              main.removeAttribute("inert");
-              focusMain(main);
-            }
-          });
+          if (!pendingNavigation && main && main.isConnected) {
+            main.inert = false;
+            main.removeAttribute("inert");
+            focusMain(main);
+          }
         });
       });
     }).catch(function (error) {
-      root.classList.remove("is-content-entering");
-      Array.prototype.slice.call(document.querySelectorAll(".page-exit-layer")).forEach(function (layer) {
-        if (layer.parentNode) layer.parentNode.removeChild(layer);
-      });
       if (error !== navigationFallback && error !== navigationSuperseded) {
         if (pendingNavigation) error = navigationSuperseded;
         else {
@@ -1259,6 +1083,6 @@
     );
   });
 
-  syncCurrentFromLocation(false);
+  syncCurrentFromLocation();
   setupScrollSpy();
 })();

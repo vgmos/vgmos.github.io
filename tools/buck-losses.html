@@ -1,9 +1,8 @@
 ---
 layout: default
 title: Buck Converter Loss Tool
-description: Interactive first-order synchronous buck loss and efficiency model using EPC2090 GaN FET defaults — inspect a ranked operating-point loss budget or sweep performance across load.
+description: Interactive device-aware synchronous buck loss and efficiency model — inspect a ranked operating-point loss budget or sweep performance across load with disclosed assumptions.
 permalink: /tools/buck-losses/
-math: true
 stylesheets:
   - /css/tools/buck-losses.css
 ---
@@ -241,17 +240,17 @@ stylesheets:
     </div>
   </dialog>
 
-  <p class="blx-top-caveat">This is an analytical intuition model at a typical 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.</p>
+  <p class="blx-top-caveat">Verify a design with thermal analysis and measurement.</p>
 
   <section class="blx-equations post-content">
-    <h2>Equations in the open</h2>
+    <h2>Equations and assumptions</h2>
     <p>The tool solves regulated volt-second balance over explicit high-side, dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p>
-    <p>CCM uses two dead-time windows and excludes both from low-side channel conduction. Diode-emulation DCM ends low-side conduction at zero current. Atomic loss rows disclose their formula, Chapter 4 equation, printed page, PDF page, and parameter provenance.</p>
+    <p>CCM uses two dead-time windows and excludes both from low-side channel conduction. Diode-emulation DCM ends low-side conduction at zero current. Expand a loss row for its equation, source, and parameter conditions.</p>
     <p>Input power is reconstructed as <code>POUT + PLOSS</code>; efficiency is undefined at exactly zero load because burst, PFM, and minimum-on-time behavior are controller-dependent and out of scope.</p>
   </section>
 
   <section class="blx-caveats">
-    <h2>Scope &amp; caveats</h2>
+    <h2>Model limits</h2>
     <ol>
       <li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li>
       <li>GaN and synthetic silicon templates use typical 25 °C values without electrothermal iteration.</li>
@@ -262,8 +261,8 @@ stylesheets:
   </section>
 
   <section class="blx-related">
-    <h2>Related Links</h2>
-    <p>See the ideal waveforms behind this converter in the <a href="/tools/buck-converter/">Buck Converter Ripple Tool</a>.</p>
+    <h2>Related links</h2>
+    <p>See the ideal waveforms behind this converter in the <a href="/tools/buck-converter/">Buck Converter Tool</a>.</p>
     <div class="blx-copy">
       <input data-blx-copy-url type="text" readonly value="" aria-label="Shareable URL">
       <button type="button" data-blx-copy>Copy link</button>

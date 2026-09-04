@@ -11,6 +11,6 @@ description: About Vasu Gupta — analog IC design engineer working on power con
   </header>
   <div class="post-content">
     <h2>Contact</h2>
-    <p>The best place to reach or reference me professionally is <a href="https://www.linkedin.com/in/vgmos/">LinkedIn</a>. You can also email me at <a href="mailto:vasugupta711@gmail.com">vasugupta711@gmail.com</a>.</p>
+    <p>You can reach me on <a href="https://www.linkedin.com/in/vgmos/">LinkedIn</a> or by email at <a href="mailto:vasugupta711@gmail.com">vasugupta711@gmail.com</a>.</p>
   </div>
 </article>

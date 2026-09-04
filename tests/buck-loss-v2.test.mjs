@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { performance } from "node:perf_hooks";
@@ -23,6 +24,8 @@ import {
   computeBuckWaveformV2,
   findCcmBoundaryV2
 } from "../js/tools/buck-loss-model-v2.js";
+import * as legacyModel from "../js/tools/buck-loss-model.js";
+import * as legacySnapshot from "../js/tools/buck-loss-model-v1.js";
 
 function setup(deviceId = "epc2090", overrides = {}) {
   const merged = applyBuckLossDeviceTemplateV2({
@@ -94,10 +97,16 @@ function relSmall(actual, expected, tolerance = 1e-9) {
 }
 
 describe("buck loss v2 contracts", () => {
-  it("keeps the legacy v1 kernel as an exact frozen snapshot", () => {
-    const legacy = readFileSync(new URL("../js/tools/buck-loss-model.js", import.meta.url), "utf8");
+  it("keeps the legacy URL mapped to the frozen, hash-pinned v1 kernel", () => {
     const snapshot = readFileSync(new URL("../js/tools/buck-loss-model-v1.js", import.meta.url), "utf8");
-    assert.equal(snapshot, legacy);
+    assert.equal(
+      createHash("sha256").update(snapshot).digest("hex"),
+      "783d91fa227224df228c06f1b99526d1923cafeaa9fa44d9feaabd37c62b3138"
+    );
+    assert.deepEqual(Object.keys(legacyModel), Object.keys(legacySnapshot));
+    Object.keys(legacySnapshot).forEach((key) => {
+      assert.equal(legacyModel[key], legacySnapshot[key], `${key} must remain a direct v1 re-export`);
+    });
   });
 
   it("normalizes the canonical display-unit schema and validates a templated setup", () => {

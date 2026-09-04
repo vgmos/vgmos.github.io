@@ -1,4 +1,5 @@
 _site/
+.DS_Store
 .cache/
 data/inductors/coilcraft-loss-approval.json
 .sass-cache/
@@ -8,3 +9,5 @@ data/inductors/coilcraft-loss-approval.json
 vendor/
 node_modules/
 audit-artifacts/
+playwright-report/
+test-results/

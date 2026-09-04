@@ -25,7 +25,7 @@ const [
     getBuckLossPresetV2
   },
   { detectBuckLossUrlVersion, parseBuckLossUrlV2, serializeBuckLossUrlV2 },
-  { runAnimation },
+  { deviceName, deviceSummary },
   { dcrForMode, groupPartsBySeries, loadCoilcraftCatalog, selectIsat }
 ] = await Promise.all([
   import(versionedModuleUrl("./buck-loss-schema-v2.js")),
@@ -33,7 +33,7 @@ const [
   import(versionedModuleUrl("./buck-loss-condition-resolver-v2.js")),
   import(versionedModuleUrl("./buck-loss-presets-v2.js")),
   import(versionedModuleUrl("./buck-loss-url-v2.js")),
-  import(versionedModuleUrl("./buck-loss-motion.js")),
+  import(versionedModuleUrl("./buck-loss-copy.js")),
   import(versionedModuleUrl("./coilcraft-catalog.js"))
 ]);
 
@@ -71,7 +71,6 @@ const STEP_KEYS = Object.freeze({
 });
 
 const FIELD_STEP = new Map(Object.entries(STEP_KEYS).flatMap(([step, keys]) => keys.map((key) => [key, step])));
-const PRESET_ACKNOWLEDGEMENT_KEYS = Object.freeze([...STEP_KEYS.conditions, "cursor"]);
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -254,25 +253,22 @@ function gatewayMarkup(lastQuery) {
   const resume = Boolean(lastQuery);
   return `<div class="blx-entry-gateway" data-blx-entry-panel>
     <header class="blx-entry-gateway-head">
-      <h1>Buck Converter Loss Explorer</h1>
+      <h1>Buck Converter Loss Tool</h1>
       <p>Choose how you want to set up the model.</p>
     </header>
     <div class="blx-entry-paths">
       <section class="blx-entry-path blx-entry-path-primary" aria-labelledby="blx-entry-guided-title">
         <h2 id="blx-entry-guided-title">Guided setup</h2>
-        <p>Configure circuit conditions, switch pair, magnetics, timing, capacitors, and controller assumptions step by step.</p>
+        <p>Set the operating point and review component values step by step.</p>
         <button type="button" class="blx-entry-primary-action" data-blx-entry-start>Start guided setup</button>
-        <small>About 5–7 minutes · Every value stays editable</small>
       </section>
       <section class="blx-entry-path" aria-labelledby="blx-entry-workspace-title">
         <h2 id="blx-entry-workspace-title">Open workspace</h2>
         <p class="blx-entry-path-label">${resume ? "Resume your last setup" : "Start from a complete example"}</p>
         <p class="blx-entry-resume-summary">${escapeHtml(summary)}</p>
-        <button type="button" class="blx-entry-secondary-action" data-blx-entry-open>${resume ? "Open previous setup" : "Open seeded example"}</button>
-        <small>${resume ? "New here? The seeded example opens automatically." : "Tune every value directly in the workspace."}</small>
+        <button type="button" class="blx-entry-secondary-action" data-blx-entry-open>${resume ? "Open previous setup" : "Open example"}</button>
       </section>
     </div>
-    <p class="blx-entry-shared-note">Shared calculation links open their saved state directly.</p>
   </div>`;
 }
 
@@ -296,7 +292,7 @@ function conditioningHelp(state, key) {
   const provenance = state.rawInputs.__provenance?.[key] || "";
   if (CONDITIONED_DEVICE_KEYS.has(key)
     && state.conditioning?.errors?.some(({ code }) => code === "drive-outside-condition-domain")) {
-    return "Not resolved at this drive; the shown value is not applied until the condition is supported.";
+    return "Gate drive is outside the model range.";
   }
   if (provenance.startsWith("calculated-")) {
     return `Auto-calculated for ${displayNumber(state.rawInputs.ioutMax)} A maximum load. Edit to override.`;
@@ -331,29 +327,18 @@ function fieldMarkup(state, key, help = "") {
 function conditionsMarkup(state) {
   const contextError = state.errors.conditions || "";
   return `<header class="blx-entry-step-head"><p class="blx-entry-step-count">1 of 7</p><h1 id="blx-entry-step-title" tabindex="-1">Set circuit conditions</h1><p>Start with an application preset or enter the operating point directly.</p></header>
-    <fieldset class="blx-entry-presets"><legend>Application starting point</legend>${BUCK_LOSS_PRESETS_V2.map((preset) => `<button type="button" data-blx-entry-preset="${preset.id}" aria-pressed="${!state.customConditions && state.presetId === preset.id}"><strong>${escapeHtml(preset.name)}</strong><span>${escapeHtml(preset.prompt)}</span></button>`).join("")}</fieldset>
+    <fieldset class="blx-entry-presets"><legend>Application starting point</legend>${BUCK_LOSS_PRESETS_V2.map((preset) => `<button type="button" data-blx-entry-preset="${preset.id}" aria-pressed="${!state.customConditions && state.presetId === preset.id}"><strong>${escapeHtml(preset.name)}</strong></button>`).join("")}</fieldset>
     ${contextError ? `<p class="blx-entry-form-error" role="alert">${escapeHtml(contextError)}</p>` : ""}
     <div class="blx-entry-field-grid">${STEP_KEYS.conditions.map((key) => fieldMarkup(state, key)).join("")}
       <div class="blx-entry-field" data-blx-entry-field="cursor"><label for="blx-entry-cursor">Analysis current</label><span class="blx-entry-input-wrap"><input id="blx-entry-cursor" data-blx-entry-cursor type="number" inputmode="decimal" min="0" max="${state.rawInputs.ioutMax}" step="any" value="${state.cursor}"${state.errors.cursor ? ' aria-invalid="true" aria-describedby="blx-entry-cursor-error"' : ""}><span>A</span></span><small>Sets the operating point shown when the workspace opens.</small>${state.errors.cursor ? `<small class="blx-entry-error" id="blx-entry-cursor-error">${escapeHtml(state.errors.cursor)}</small>` : ""}</div>
     </div>`;
 }
 
-function deviceMetrics(template) {
-  const values = [
-    `${template.voltageClass} V`,
-    template.technology === "gan" ? "GaN" : "silicon",
-    Number.isFinite(template.values.rdsHigh) ? `${displayNumber(template.values.rdsHigh)} mΩ` : null,
-    Number.isFinite(template.values.qgHigh) ? `${displayNumber(template.values.qgHigh)} nC QG` : null
-  ].filter(Boolean);
-  return values.join(" · ");
-}
-
 function deviceChoiceMarkup(state, template) {
   const selected = template.id === state.deviceId;
-  const seeded = template.id === DEFAULT_DEVICE_ID;
   return `<label class="blx-entry-device-choice" data-selected="${selected}">
     <input type="radio" name="blx-entry-device" value="${template.id}" data-blx-entry-device${selected ? " checked" : ""}>
-    <span><strong>${escapeHtml(template.label)}</strong><small>${escapeHtml(deviceMetrics(template))}</small>${seeded ? "<em>Broad voltage headroom; complete seeded example.</em>" : ""}</span>
+    <span><strong>${escapeHtml(deviceName(template))}</strong><small>${escapeHtml(deviceSummary(template))}</small></span>
   </label>`;
 }
 
@@ -364,16 +349,13 @@ function switchMarkup(state) {
   const error = state.errors.device || "";
   return `<header class="blx-entry-step-head"><p class="blx-entry-step-count">2 of 7</p><h1 id="blx-entry-step-title" tabindex="-1">Choose a switch pair</h1><p>Only devices rated for the ${displayNumber(state.rawInputs.vin)} V input are shown. Template values stay editable in later steps.</p><span class="blx-entry-context">${displayNumber(state.rawInputs.vin)} V → ${displayNumber(state.rawInputs.vout)} V · ${displayNumber(state.rawInputs.ioutMax)} A max · ${displayNumber(state.rawInputs.fsw / 1000)} MHz</span></header>
     ${error ? `<p class="blx-entry-form-error" role="alert">${escapeHtml(error)}</p>` : ""}
-    <fieldset class="blx-entry-choice-group"><legend>Manufacturer-sourced</legend><div class="blx-entry-device-grid">${manufacturer.map((template) => deviceChoiceMarkup(state, template)).join("")}</div></fieldset>
+    <fieldset class="blx-entry-choice-group"><legend>Devices</legend><div class="blx-entry-device-grid">${manufacturer.map((template) => deviceChoiceMarkup(state, template)).join("")}</div></fieldset>
     <fieldset class="blx-entry-choice-group"><legend>Example FETs</legend><div class="blx-entry-device-grid blx-entry-device-grid-compact">${examples.map((template) => deviceChoiceMarkup(state, template)).join("")}</div></fieldset>
-    <aside class="blx-entry-explainer"><strong>What changes with this choice</strong><p>Selecting a switch pair preloads device-specific loss models, gate-charge and gate-resistance assumptions, reverse-recovery or ZVS behavior, and source notes. You can override any of these later.</p></aside>`;
+`;
 }
 
 function gateConditionMarkup(state) {
   const diagnostics = state.conditioning?.diagnostics || {};
-  const qgdConditionCopy = state.template?.conditionModel?.gateCharge?.qgdVoltage?.method
-    ? "VIN changes QGD through the loaded CRSS curve"
-    : "QGD stays at its source anchor unless you enter an override";
   const highLane = diagnostics.lanes?.high || {};
   const issues = [...(state.conditioning?.errors || []), ...(state.conditioning?.warnings || [])];
   const driveOutsideDomain = issues.some(({ code }) => code === "drive-outside-condition-domain");
@@ -392,8 +374,6 @@ function gateConditionMarkup(state) {
     return completeGatePath && driveHeadroomV > 0 ? "gate-charge path" : "unavailable";
   };
   const metrics = [
-    ["RDS(on)", `${displayNumber(highLane.rdsOnMohm)} mΩ`],
-    ["Total QG", `${displayNumber(highLane.totalGateChargeNc)} nC`],
     ["Miller plateau", `${displayNumber(plateauV)} V`],
     ["Drive headroom", `${displayNumber(driveHeadroomV)} V`],
     ["Turn-on overlap", transitionMetric("on")],
@@ -402,7 +382,7 @@ function gateConditionMarkup(state) {
   return `<aside class="blx-entry-condition-preview" data-blx-entry-condition-preview data-supported="${diagnostics.supported === true}">
     <div><strong>Resolved device model</strong><span>At I<sub>MAX</sub> = ${displayNumber(state.rawInputs.ioutMax)} A and V<sub>DRIVE</sub> = ${displayNumber(state.rawInputs.vDrive)} V</span></div>
     <dl>${metrics.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>
-    <p>This preview uses I<sub>MAX</sub>; the live result resolves E<sub>ON</sub>/E<sub>OFF</sub> again at valley/peak current. ${escapeHtml(qgdConditionCopy)}, while the drive rail changes headroom, RDS(on), QG, and edge time. Auto values track those controls until you override them.</p>
+    <p>This preview uses maximum load. Switching loss uses valley current at turn-on and peak current at turn-off.</p>
     ${issues.length ? `<ul>${issues.map(({ message }) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>` : ""}
   </aside>`;
 }
@@ -416,10 +396,10 @@ function gateMarkup(state) {
   const advancedHasError = advanced.some((key) => state.errors[key]);
   return `<header class="blx-entry-step-head"><p class="blx-entry-step-count">3 of 7</p><h1 id="blx-entry-step-title" tabindex="-1">Review gate drive & switching</h1><p>${escapeHtml(template.label)} supplies the starting values. Keep the defaults or replace them with condition-matched data.</p></header>
     ${error ? `<p class="blx-entry-form-error" role="alert">${escapeHtml(error)}</p>` : ""}
-    <div class="blx-entry-mode-row"><label for="blx-entry-timing-mode">Transition method</label><select id="blx-entry-timing-mode" data-blx-entry-timing-mode><option value="auto"${state.timingMode === "auto" ? " selected" : ""}>Automatic evidence hierarchy</option><option value="derived"${state.timingMode === "derived" ? " selected" : ""}>Force gate-charge derivation</option><option value="effective"${state.timingMode === "effective" ? " selected" : ""}>Force effective-time override</option></select><small>Automatic uses the best supported evidence and discloses any fallback in the results.</small></div>
+    <div class="blx-entry-mode-row"><label for="blx-entry-timing-mode">Transition method</label><select id="blx-entry-timing-mode" data-blx-entry-timing-mode><option value="auto"${state.timingMode === "auto" ? " selected" : ""}>Automatic</option><option value="derived"${state.timingMode === "derived" ? " selected" : ""}>Gate-charge model</option><option value="effective"${state.timingMode === "effective" ? " selected" : ""}>Entered switching times</option></select><small>Automatic uses gate-charge data when available, then entered switching times.</small></div>
     ${gateConditionMarkup(state)}
-    <section class="blx-entry-subsection"><h2>Drive-coupled channel & charge</h2><div class="blx-entry-field-grid">${["vDrive", "rdsHigh", "rdsLow", "qgHigh", "qgLow"].map((key) => fieldMarkup(state, key)).join("")}</div></section>
-    <details class="blx-entry-advanced"${advancedHasError ? " open" : ""}><summary>Review ${state.timingMode === "effective" ? "effective-time" : state.timingMode === "derived" ? "gate-charge" : "advanced transition"} values</summary><p>Only fields used by the selected evidence path are shown. Blank optional fields remain explicitly unavailable; they are never treated as zero.</p><div class="blx-entry-field-grid">${advanced.map((key) => fieldMarkup(state, key)).join("")}</div></details>`;
+    <section class="blx-entry-subsection"><h2>Gate drive and device parameters</h2><div class="blx-entry-field-grid">${["vDrive", "rdsHigh", "rdsLow", "qgHigh", "qgLow"].map((key) => fieldMarkup(state, key)).join("")}</div></section>
+    <details class="blx-entry-advanced"${advancedHasError ? " open" : ""}><summary>Review ${state.timingMode === "effective" ? "effective-time" : state.timingMode === "derived" ? "gate-charge" : "advanced transition"} values</summary><p>Blank fields mean missing data, not zero loss.</p><div class="blx-entry-field-grid">${advanced.map((key) => fieldMarkup(state, key)).join("")}</div></details>`;
 }
 
 function timingMarkup(state) {
@@ -462,11 +442,10 @@ function controlMarkup(state) {
 
 function reviewSummary(state) {
   const template = getBuckLossDeviceTemplateV2(state.deviceId);
-  const highLane = state.conditioning?.diagnostics?.lanes?.high || {};
   return [
     ["Operating point", `${displayNumber(state.rawInputs.vin)} V → ${displayNumber(state.rawInputs.vout)} V · ${displayNumber(state.rawInputs.ioutMax)} A max · ${displayNumber(state.rawInputs.fsw / 1000)} MHz`, 0],
-    ["Switch pair", `${template.label} · ${template.cornerLabel || template.cornerId}`, 1],
-    ["Gate drive & timing", `${displayNumber(state.rawInputs.vDrive)} V drive · ${displayNumber(highLane.plateauV)} V plateau · ${displayNumber(highLane.rdsOnMohm)} mΩ RDS(on) · ${state.timingMode === "auto" ? "automatic evidence hierarchy" : state.timingMode}`, 2],
+    ["Switch pair", deviceName(template), 1],
+    ["Gate drive & timing", `${displayNumber(state.rawInputs.vDrive)} V drive · ${state.timingMode === "auto" ? "automatic" : state.timingMode === "derived" ? "gate-charge model" : "entered switching times"}`, 2],
     ["Magnetics", state.selectedPart ? `${state.selectedPart} · ${displayNumber(state.rawInputs.inductance)} µH · ${state.dcrMode === "max" ? "maximum" : "typical"} DCR` : `Manual · ${displayNumber(state.rawInputs.inductance)} µH · ${displayNumber(state.rawInputs.dcr)} mΩ RDC`, 4],
     ["Capacitors & control", `${displayNumber(state.rawInputs.inputEsr)} mΩ input ESR · ${displayNumber(state.rawInputs.esr)} mΩ output ESR · ${state.controlMode === "auto-dcm" ? "automatic diode-emulation DCM" : "forced CCM"}`, 5]
   ];
@@ -474,15 +453,11 @@ function reviewSummary(state) {
 
 function reviewMarkup(state) {
   const template = getBuckLossDeviceTemplateV2(state.deviceId);
-  const qgdConditionCopy = template.conditionModel?.gateCharge?.qgdVoltage?.method
-    ? "VIN changes QGD through the loaded CRSS curve"
-    : "QGD stays at its source anchor unless you enter an override";
   const notices = [
-    `Auto-calculated setup values are previewed at maximum load; live EON/EOFF re-resolve at valley/peak edge current. ${qgdConditionCopy}, while drive voltage changes gate headroom, RDS(on), total gate charge, and supported edge timing.`,
-    "Transition loss may use a disclosed EPC AN030 phase-charge-scaled fallback when no condition-matched energy surface is available.",
-    "This is a 25 °C analytical intuition model, not a part-level signoff tool."
+    "Switching loss uses gate-charge data or estimated switching times, not measured EON/EOFF tables.",
+    "Component data is at 25 °C. Verify a design with thermal analysis and measurement."
   ];
-  if (template.catalogKind !== "manufacturer") notices.unshift("The selected switch pair is a deterministic teaching fixture, not a vendor part recommendation.");
+  if (template.catalogKind !== "manufacturer") notices.unshift("The switch values are illustrative, not a manufacturer part.");
   return `<header class="blx-entry-step-head"><p class="blx-entry-step-count">7 of 7</p><h1 id="blx-entry-step-title" tabindex="-1">Review assumptions</h1><p>Check what the model will use before opening the loss explorer.</p></header>
     <div class="blx-entry-review-rows">${reviewSummary(state).map(([label, value, step]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span><button type="button" data-blx-entry-edit="${step}">Edit</button></div>`).join("")}</div>
     <aside class="blx-entry-coverage"><h2>Model coverage</h2><div>${notices.map((notice) => `<p>${escapeHtml(notice)}</p>`).join("")}</div></aside>`;
@@ -644,40 +619,7 @@ function setupEntryController(root, options = {}) {
   let catalogFailed = false;
   let focusFrame = 0;
   let disposed = false;
-  const animations = new Set();
-  const presetFieldAnimations = new Set();
   const signal = options.signal;
-  const trackAnimation = (animation) => {
-    if (!animation) return animation;
-    animations.add(animation);
-    animation.finished?.catch(() => {}).finally(() => animations.delete(animation));
-    return animation;
-  };
-  const cancelPresetFieldAnimations = () => {
-    presetFieldAnimations.forEach((animation) => animation.cancel?.());
-    presetFieldAnimations.clear();
-  };
-  const animatePresetFields = (fieldKeys = []) => {
-    cancelPresetFieldAnimations();
-    fieldKeys.forEach((key, index) => {
-      const field = root.querySelector(`[data-blx-entry-field="${key}"]`);
-      const animation = runAnimation(field, [
-        { opacity: 0.72, transform: "translateY(2px)" },
-        { opacity: 1, transform: "translateY(0)" }
-      ], {
-        duration: 160,
-        delay: index * 30,
-        easing: "cubic-bezier(0.16, 1, 0.3, 1)"
-      });
-      if (!animation) return;
-      presetFieldAnimations.add(animation);
-      trackAnimation(animation);
-      animation.finished?.catch(() => {}).finally(() => {
-        presetFieldAnimations.delete(animation);
-        animation.cancel?.();
-      });
-    });
-  };
 
   const beginCatalogLoad = () => {
     if (disposed || signal?.aborted) return Promise.resolve(null);
@@ -701,7 +643,7 @@ function setupEntryController(root, options = {}) {
         state.catalog = catalog;
         state.catalogStatus = "ready";
         if (state.selectedPart) applyCatalogPartToDraft(state, state.selectedPart);
-        if (state.step === 4) renderWizard({ animate: false, focusHeading: false });
+        if (state.step === 4) renderWizard({ focusHeading: false });
         return catalog;
       })
       .catch((error) => {
@@ -710,7 +652,7 @@ function setupEntryController(root, options = {}) {
         if (state) {
           state.catalogStatus = "error";
           state.catalogError = "The catalog is unavailable; manual magnetic inputs remain editable.";
-          if (state.step === 4) renderWizard({ animate: false, focusHeading: false });
+          if (state.step === 4) renderWizard({ focusHeading: false });
         }
         console.warn("Buck-loss setup catalog unavailable", error);
         return null;
@@ -720,7 +662,6 @@ function setupEntryController(root, options = {}) {
 
   const renderGateway = ({ focus = false } = {}) => {
     if (disposed || signal?.aborted) return;
-    cancelPresetFieldAnimations();
     state = null;
     root.dataset.blxEntry = "gateway";
     root.dataset.blxStatus = "ready";
@@ -728,11 +669,10 @@ function setupEntryController(root, options = {}) {
     const lastQuery = readLastBuckLossQueryV2();
     root.innerHTML = gatewayMarkup(lastQuery);
     const panel = root.querySelector("[data-blx-entry-panel]");
-    trackAnimation(runAnimation(panel, [{ transform: "translateY(8px)" }, { transform: "translateY(0)" }], { duration: 320, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }));
     root.querySelector("[data-blx-entry-start]")?.addEventListener("click", () => {
       state = draftFromQuery(seedBuckLossQueryV2());
       beginCatalogLoad();
-      renderWizard({ direction: 1 });
+      renderWizard({});
     });
     root.querySelector("[data-blx-entry-open]")?.addEventListener("click", () => {
       const query = readLastBuckLossQueryV2() || seedBuckLossQueryV2();
@@ -746,14 +686,10 @@ function setupEntryController(root, options = {}) {
     if (focus) root.querySelector("[data-blx-entry-start]")?.focus();
   };
 
-  const renderWizard = ({ direction = 0, animate = true, focusHeading = true, focusSelector = "", acknowledgeFields = [] } = {}) => {
+  const renderWizard = ({ focusHeading = true, focusSelector = "" } = {}) => {
     if (disposed || signal?.aborted || !state) return;
-    cancelPresetFieldAnimations();
     root.dataset.blxEntry = "wizard";
     root.innerHTML = wizardMarkup(state);
-    const panel = root.querySelector(".blx-entry-step");
-    if (animate && direction) trackAnimation(runAnimation(panel, [{ transform: `translateX(${8 * direction}px)` }, { transform: "translateX(0)" }], { duration: 240, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }));
-    animatePresetFields(acknowledgeFields);
 
     const refreshConditioningUi = () => {
       const preview = root.querySelector("[data-blx-entry-condition-preview]");
@@ -787,49 +723,39 @@ function setupEntryController(root, options = {}) {
     root.querySelector("[data-blx-entry-form]")?.addEventListener("submit", (event) => {
       event.preventDefault();
       if (state.step === STEPS.length - 1) {
-        if (!persistAndOpen(state)) renderWizard({ direction: -1 });
+        if (!persistAndOpen(state)) renderWizard({});
         return;
       }
       if (!validateStep(state)) {
-        renderWizard({ animate: false, focusHeading: false });
+        renderWizard({ focusHeading: false });
         root.querySelector('[aria-invalid="true"], [role="alert"]')?.focus?.();
         return;
       }
       state.step += 1;
       state.errors = {};
-      renderWizard({ direction: 1 });
+      renderWizard({});
     });
     root.querySelector("[data-blx-entry-back]")?.addEventListener("click", () => {
       state.step = Math.max(0, state.step - 1);
       state.errors = {};
-      renderWizard({ direction: -1 });
+      renderWizard({});
     });
     root.querySelector("[data-blx-entry-exit]")?.addEventListener("click", () => renderGateway({ focus: true }));
     root.querySelectorAll("[data-blx-entry-edit]").forEach((button) => button.addEventListener("click", () => {
       state.step = Number(button.dataset.blxEntryEdit);
       state.errors = {};
-      renderWizard({ direction: -1 });
+      renderWizard({});
     }));
     root.querySelectorAll("[data-blx-entry-preset]").forEach((button) => button.addEventListener("click", () => {
-      const previousValues = new Map(PRESET_ACKNOWLEDGEMENT_KEYS.map((key) => [
-        key,
-        key === "cursor" ? state.cursor : state.rawInputs[key]
-      ]));
       applyPresetToDraft(state, button.dataset.blxEntryPreset);
-      const changedFields = PRESET_ACKNOWLEDGEMENT_KEYS.filter((key) => !Object.is(
-        previousValues.get(key),
-        key === "cursor" ? state.cursor : state.rawInputs[key]
-      ));
       renderWizard({
-        animate: false,
         focusHeading: false,
-        focusSelector: `[data-blx-entry-preset="${button.dataset.blxEntryPreset}"]`,
-        acknowledgeFields: changedFields
+        focusSelector: `[data-blx-entry-preset="${button.dataset.blxEntryPreset}"]`
       });
     }));
     root.querySelectorAll("[data-blx-entry-device]").forEach((input) => input.addEventListener("change", () => {
       applyDeviceToDraft(state, input.value);
-      renderWizard({ animate: false, focusHeading: false, focusSelector: `[data-blx-entry-device][value="${input.value}"]` });
+      renderWizard({ focusHeading: false, focusSelector: `[data-blx-entry-device][value="${input.value}"]` });
     }));
     root.querySelectorAll("[data-blx-entry-input]").forEach((input) => {
       const syncInput = () => {
@@ -896,17 +822,17 @@ function setupEntryController(root, options = {}) {
     }
     root.querySelector("[data-blx-entry-timing-mode]")?.addEventListener("change", (event) => {
       state.timingMode = event.currentTarget.value;
-      renderWizard({ animate: false, focusHeading: false, focusSelector: "[data-blx-entry-timing-mode]" });
+      renderWizard({ focusHeading: false, focusSelector: "[data-blx-entry-timing-mode]" });
     });
     root.querySelector("[data-blx-entry-control-mode]")?.addEventListener("change", (event) => { state.controlMode = event.currentTarget.value; });
     root.querySelector("[data-blx-entry-part]")?.addEventListener("change", (event) => {
       applyCatalogPartToDraft(state, event.currentTarget.value);
-      renderWizard({ animate: false, focusHeading: false, focusSelector: "[data-blx-entry-part]" });
+      renderWizard({ focusHeading: false, focusSelector: "[data-blx-entry-part]" });
     });
     root.querySelector("[data-blx-entry-dcr-mode]")?.addEventListener("change", (event) => {
       state.dcrMode = event.currentTarget.value === "max" ? "max" : "typ";
       applyCatalogPartToDraft(state, state.selectedPart);
-      renderWizard({ animate: false, focusHeading: false, focusSelector: "[data-blx-entry-dcr-mode]" });
+      renderWizard({ focusHeading: false, focusSelector: "[data-blx-entry-dcr-mode]" });
     });
 
     cancelAnimationFrame(focusFrame);
@@ -924,9 +850,6 @@ function setupEntryController(root, options = {}) {
       if (disposed) return;
       disposed = true;
       cancelAnimationFrame(focusFrame);
-      cancelPresetFieldAnimations();
-      animations.forEach((animation) => animation.cancel?.());
-      animations.clear();
       try { root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel()); } catch {}
     }
   };

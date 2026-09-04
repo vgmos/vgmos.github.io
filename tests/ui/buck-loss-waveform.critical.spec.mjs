@@ -307,7 +307,7 @@ test.describe("Buck loss switching-edge viewer", () => {
     await expect(status).toHaveAttribute("aria-live", "polite");
     await page.locator('[data-blx-waveform-mode="rising"]').click();
     expect((await waveformView(page)).mode).toBe("rising");
-    expect(await page.evaluate(() => document.querySelector("#buck-loss-explorer").blxV2State.waveformAnimation)).toBeNull();
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     await expect(page.locator('[data-blx-waveform-trace="switch-node-ringing"]')).not.toHaveAttribute("hidden", "");
     await expect(page.locator("[data-blx-waveform-ringing-status]")).toContainText("MHz");
 

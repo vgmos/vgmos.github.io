@@ -6,6 +6,10 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "build": "bundle exec jekyll build",
+    "test": "npm run test:unit",
+    "verify:fast": "npm run test:unit && npm run build && npm run test:links",
+    "verify": "npm run verify:fast && npm run test:ui",
     "data:coilcraft:loss:plan": "node scripts/coilcraft/acquire-losses.mjs plan",
     "data:coilcraft:loss:collect": "node scripts/coilcraft/acquire-losses.mjs collect",
     "data:coilcraft:loss:validate": "node scripts/coilcraft/acquire-losses.mjs validate",
@@ -37,7 +41,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
-    "@playwright/test": "1.61.1",
-    "pdfjs-dist": "5.4.624"
+    "@playwright/test": "1.61.1"
   }
 }

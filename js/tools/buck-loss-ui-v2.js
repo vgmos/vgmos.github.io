@@ -7,7 +7,7 @@ function versionedModuleUrl(path) {
 }
 
 const [
-  { animateDialog, animateFlip, animatePanelSwap, animatePointSeries, animateWaveformDomain, runAnimation },
+  { deviceName, deviceSummary, deviceModelNote },
   {
     BUCK_LOSS_GROUPS_V2,
     BUCK_LOSS_MODEL_REVISION,
@@ -51,7 +51,7 @@ const [
   { dcrForMode, groupPartsBySeries, loadCoilcraftCatalog, selectIsat },
   { rememberBuckLossQueryV2 }
 ] = await Promise.all([
-  import(versionedModuleUrl("./buck-loss-motion.js")),
+  import(versionedModuleUrl("./buck-loss-copy.js")),
   import(versionedModuleUrl("./buck-loss-schema-v2.js")),
   import(versionedModuleUrl("./buck-loss-device-templates-v2.js")),
   import(versionedModuleUrl("./buck-loss-condition-resolver-v2.js")),
@@ -89,17 +89,6 @@ const CONDITIONED_DEVICE_KEYS = new Set([
   "effectiveTurnOff"
 ]);
 const EXPLICIT_CONDITION_PROVENANCE = new Set(["entered", "url-entered", "entered-blank"]);
-const REFERENCE_CARD_MOTION = Object.freeze({
-  enterDuration: 220,
-  exitDuration: 140,
-  enterEasing: "cubic-bezier(0.22, 1, 0.36, 1)",
-  exitEasing: "cubic-bezier(0.65, 0, 0.35, 1)"
-});
-const REFERENCE_ICON_MOTION = Object.freeze({
-  duration: 140,
-  easing: "cubic-bezier(0.16, 1, 0.3, 1)"
-});
-
 const FAMILY_STYLE = Object.freeze({
   mosfetConduction: { color: "--blx-cond", short: "FET conduction" },
   magnetics: { color: "--blx-dcr", short: "Magnetics" },
@@ -112,14 +101,14 @@ const FAMILY_STYLE = Object.freeze({
 });
 
 const FAMILY_INTUITION = Object.freeze({
-  mosfetConduction: "Inductor current heats each switch while its channel is on. Because this loss follows current squared, it rises quickly with load and with RDS(on).",
-  magnetics: "The winding turns RMS current into copper heat. Ripple current also works the winding and core back and forth at the switching frequency.",
-  capacitors: "The capacitors store and return energy, but ripple current still circulates through their ESR and leaves a little heat behind each cycle.",
-  switchingTransitions: "During an edge, current is already flowing while voltage still remains across the switch. That brief overlap spends energy twice per cycle and repeats at fSW.",
-  deadTimeRecovery: "During dead time neither channel carries the inductor current, so it is forced through the reverse path. The next turn-on may also have to remove stored recovery charge.",
-  gateDrive: "Every cycle the driver fills and empties both MOSFET gates. That charge is discarded each cycle, so this loss scales with QG, drive voltage, and fSW.",
-  nodeEnergy: "The switch node charges and discharges the devices’ output capacitance every cycle. Unless that stored electric-field energy is recovered, it becomes heat.",
-  controllerBias: "The controller draws standing current even when the load is light, creating a nearly fixed loss floor that matters most near no load."
+  mosfetConduction: "Channel loss follows RMS current squared times RDS(on).",
+  magnetics: "DC resistance, AC winding resistance, and core loss heat the inductor.",
+  capacitors: "Ripple current dissipates power in capacitor ESR.",
+  switchingTransitions: "Voltage and current overlap during each switching edge.",
+  deadTimeRecovery: "Inductor current flows through the reverse path during dead time. The next turn-on removes any stored recovery charge.",
+  gateDrive: "Gate-drive loss scales with gate charge, drive voltage, and switching frequency.",
+  nodeEnergy: "Charging and discharging output capacitance dissipates energy unless it is recovered.",
+  controllerBias: "Controller bias creates a nearly fixed loss that matters most at light load."
 });
 
 const TERM_PARAMETERS = Object.freeze({
@@ -153,7 +142,7 @@ const PROVENANCE_LABELS = Object.freeze({
   "ti-evm-design-value": "TI EVM design value",
   "vendor-model-measured": "vendor measured",
   "vendor-model-test-condition": "vendor test condition",
-  "synthetic-teaching-fixture": "illustrative fixture",
+  "synthetic-teaching-fixture": "example",
   "inferred-qgs-minus-qgth": "inferred",
   "inferred-effective-overlap": "assumption",
   "inferred-gate-charge-curve": "curve inferred",
@@ -168,7 +157,7 @@ const PROVENANCE_LABELS = Object.freeze({
   "calculated-condition-plateau": "calculated at IOUT,max",
   "calculated-condition-qgs2": "calculated at IOUT,max",
   "calculated-condition-qgd": "calculated from VIN",
-  "source-held-qgd-anchor": "source-held outside VIN curve",
+  "source-held-qgd-anchor": "reference value outside VIN curve",
   "calculated-condition-total-qg": "calculated from drive + current",
   "calculated-condition-effective-time": "calculated from phase charge"
 });
@@ -195,11 +184,16 @@ const GAP_COPY = Object.freeze({
   nodeEnergyDcmCommutationUnmodeled: "DCM switch-node commutation is not modeled"
 });
 
-const SCALING_PRESENTATION = Object.freeze({
-  fixedLike: { label: "fixed", color: "var(--blx-fixed-band)" },
-  currentLike: { label: "transition + dead time", color: "var(--blx-current-band)" },
-  currentSquaredLike: { label: "conduction", color: "var(--blx-squared-band)" },
-  unclassified: { label: "unclassified", color: "var(--blx-unclassified-band)" }
+const OMITTED_LOSS_COPY = Object.freeze({
+  inductorCoreResidualMissingData: "additional AC winding and core loss",
+  inductorCoreResidualDcmWaveform: "additional AC winding and core loss in DCM",
+  switchingTransitionsMissingData: "switching-transition loss",
+  zeroLoadControlBehavior: "controller behavior at zero load",
+  reverseRecoveryMissingData: "reverse-recovery loss",
+  gateDriveMissingData: "gate-drive loss",
+  nodeEnergyMissingData: "output-capacitance loss",
+  nodeEnergyOutsideVoltageDomain: "output-capacitance loss at this voltage",
+  nodeEnergyDcmCommutationUnmodeled: "switch-node commutation loss in DCM"
 });
 
 function clamp(value, min, max) {
@@ -373,15 +367,15 @@ function catalogMarkup() {
     </div>
     <p class="blx-catalog-meta" data-blx-catalog-meta hidden></p>
     <p class="blx-catalog-message" data-blx-catalog-message role="status" hidden></p>
-    <details class="blx-catalog-source-note"><summary>Source-data note</summary><p>Coilcraft names and data identify the selected source only; this independent tool is not affiliated with or endorsed by Coilcraft. Characterized residuals use their typical-data basis, even when maximum DCR is selected for copper loss.</p></details>
+    <details class="blx-catalog-source-note"><summary>Inductor model details</summary><p>Maximum DCR changes copper loss only. AC and core loss use typical characterization data.</p></details>
   </div>`;
 }
 
 function advancedMarkup(group) {
   const controls = group.modeControl === "timing"
-    ? `<div class="blx-v2-select-row"><label for="blx-v2-timing-mode">Transition method</label><select id="blx-v2-timing-mode" data-blx-timing-mode><option value="auto">Automatic evidence hierarchy</option><option value="derived">Force gate-charge derivation</option><option value="effective">Force effective-time override</option></select></div>`
+    ? `<div class="blx-v2-select-row"><label for="blx-v2-timing-mode">Transition method</label><select id="blx-v2-timing-mode" data-blx-timing-mode><option value="auto">Automatic</option><option value="derived">Gate-charge model</option><option value="effective">Entered switching times</option></select></div>`
     : group.modeControl === "control"
-      ? `<div class="blx-v2-select-row"><label for="blx-v2-control-mode">Low-current comparison</label><select id="blx-v2-control-mode" data-blx-control-mode><option value="auto-dcm">Automatic diode-emulation DCM</option><option value="forced-ccm">Forced CCM comparison</option></select></div>`
+      ? `<div class="blx-v2-select-row"><label for="blx-v2-control-mode">Conduction mode</label><select id="blx-v2-control-mode" data-blx-control-mode><option value="auto-dcm">Automatic diode-emulation DCM</option><option value="forced-ccm">Forced CCM comparison</option></select></div>`
       : "";
   return `<details data-blx-v2-group="${group.id}">
     <summary><span>${escapeHtml(group.label)}</span><span class="blx-acc-chevron" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"></path></svg></span></summary>
@@ -396,8 +390,17 @@ function prepareMarkup(root) {
   const sticky = root.querySelector(".blx-input-sticky");
   if (sticky) sticky.innerHTML = `<div class="blx-rail-heading"><h2>Operating point</h2><button class="blx-reset" type="button" data-blx-reset>Reset</button></div>
     <div class="blx-presets" data-blx-presets role="group" aria-label="Operating-point presets"></div>
-    <p class="blx-prompt" data-blx-prompt></p>
-    <div class="blx-device-note blx-v2-device-note"><div><strong data-blx-device-label>Choose a device</strong><br><span data-blx-device-summary></span> <a data-blx-device-source hidden target="_blank" rel="noopener noreferrer">Official datasheet ↗</a> <a data-blx-device-model-source hidden target="_blank" rel="noopener noreferrer">Simulator model ↗</a> <a data-blx-device-model-guide hidden target="_blank" rel="noopener noreferrer">Model guide ↗</a><p class="blx-v2-device-condition-summary" data-blx-device-condition-summary></p><details class="blx-v2-device-conditions" data-blx-device-conditions hidden><summary>Conditions &amp; notes</summary><p class="blx-v2-device-model-note" data-blx-device-model-note hidden></p><ul class="blx-v2-device-notes" data-blx-device-notes></ul><ul data-blx-device-condition-list></ul></details></div><button type="button" data-blx-change-device>Change device</button></div>
+    <div class="blx-device-note blx-v2-device-note">
+      <div class="blx-device-heading"><strong data-blx-device-label>Choose a device</strong><span data-blx-device-summary></span></div>
+      <a data-blx-device-source hidden target="_blank" rel="noopener noreferrer">Datasheet</a>
+      <button type="button" data-blx-change-device>Change device</button>
+      <details class="blx-v2-device-conditions" data-blx-device-conditions><summary>Model details</summary>
+        <p data-blx-device-condition-summary></p>
+        <p class="blx-device-links"><a data-blx-device-model-source hidden target="_blank" rel="noopener noreferrer">SPICE model</a><a data-blx-device-model-guide hidden target="_blank" rel="noopener noreferrer">Model guide</a></p>
+        <p class="blx-v2-device-model-note" data-blx-device-model-note hidden></p>
+        <ul data-blx-device-condition-list></ul>
+      </details>
+    </div>
     <section class="blx-controls" aria-label="Primary buck inputs">${PRIMARY_KEYS.map((key) => fieldMarkup(key, { slider: true, catalog: key === "inductance" })).join("")}</section>
     <div class="blx-current-control"><div class="blx-current-head"><label for="blx-v2-current-range">Load current</label><output data-blx-out="current">—</output></div><input id="blx-v2-current-range" class="blx-current-range" data-blx-cursor-input data-blx-cursor-rail type="range" min="0" max="1000" step="1" role="slider" tabindex="0" aria-label="Selected load current"><div class="blx-current-ticks" role="group" aria-label="Load current shortcuts"><button type="button" data-blx-current-fraction="0" aria-label="Set load current to zero">0</button><button type="button" data-blx-current-fraction="0.25" aria-label="Set load current to 25 percent">25%</button><button type="button" data-blx-current-fraction="0.5" aria-label="Set load current to 50 percent">50%</button><button type="button" data-blx-current-fraction="0.75" aria-label="Set load current to 75 percent">75%</button><button type="button" data-blx-current-fraction="1" aria-label="Set load current to maximum">I<sub>MAX</sub></button></div></div>
     <section class="blx-advanced" aria-label="Advanced assumptions">${ADVANCED_GROUPS.map(advancedMarkup).join("")}</section>`;
@@ -408,7 +411,7 @@ function prepareMarkup(root) {
       <div class="blx-summary-metrics"><div class="blx-summary-metric"><strong data-blx-out="pout">—</strong><span>output</span></div><div class="blx-summary-metric"><strong data-blx-out="loss">—</strong><span data-blx-loss-label>modeled loss</span></div><div class="blx-summary-metric"><strong data-blx-out="pin">—</strong><button type="button" class="blx-term-trigger blx-metric-label" data-blx-coverage-trigger data-blx-input-label>estimated input</button></div></div>
     </div>
     <div class="blx-v2-badges" data-blx-result-badges></div>
-    <section class="blx-section blx-v2-confidence" data-blx-valid-only aria-label="Model confidence and sensitivity"><div class="blx-section-heading"><h2>Model confidence</h2><span class="blx-section-total" data-blx-confidence-status>—</span></div><div class="blx-operating-metrics" data-blx-confidence-metrics></div><p class="blx-sentence" data-blx-confidence-copy></p></section>
+    <p class="blx-v2-subtotal-copy" data-blx-estimate-limit hidden></p>
     <section class="blx-section blx-v2-failure" data-blx-model-failure hidden><div class="blx-failure-copy"><h2 data-blx-failure-title>This point cannot regulate</h2><p data-blx-failure-explanation></p><p data-blx-failure-recovery></p></div><p class="blx-failure-equation" data-blx-failure-equation></p><p>Results resume as soon as the operating point is feasible.</p><div class="blx-actions"><button type="button" data-blx-fix-output hidden>Fix output voltage</button><button type="button" data-blx-reset-invalid hidden>Reset operating point</button><button type="button" data-blx-copy>Copy link</button></div></section>
     <section class="blx-section blx-waveform-section" data-blx-valid-only aria-label="Switching waveforms and mode intervals">
       <div class="blx-section-heading"><h2>Switching cycle</h2></div>
@@ -444,44 +447,38 @@ function prepareMarkup(root) {
           <p data-blx-waveform-ringing-source></p>
         </div>
       </details>
-      <p class="blx-waveform-note">The detail plot uses exact dead-time widths and auto-fits iL vertically in edge views. The dashed trace is a calculated, step/ramp-excited first-order series-RLC response; it uses the disclosed C<small>OSS</small> seed and editable example loop-L/damping-R assumptions above and is excluded from the loss total.</p>
+      <p class="blx-waveform-note">The dashed trace estimates ringing from a first-order series-RLC model with editable C<small>OSS</small>, loop inductance, and damping. Ringing is not included in the loss total.</p>
       <div class="blx-waveform-hint" data-blx-waveform-hint><span>drag to zoom · ⌘/Ctrl+scroll to zoom · double-click to reset</span><button type="button" data-blx-waveform-hint-dismiss aria-label="Dismiss waveform interaction hint">×</button></div>
     </section>
-    <section class="blx-section" data-blx-valid-only aria-label="Ranked loss budget"><div class="blx-section-heading"><h2>Loss budget · ranked</h2><button type="button" class="blx-section-total blx-term-trigger" data-blx-coverage-trigger data-blx-out="loss-total">—</button></div><p class="blx-v2-subtotal-copy" data-blx-subtotal-copy hidden></p><ol class="blx-breakdown-list blx-v2-family-list" data-blx-family-list></ol></section>
+    <section class="blx-section" data-blx-valid-only aria-label="Ranked loss budget"><div class="blx-section-heading"><h2>Loss breakdown</h2><button type="button" class="blx-section-total blx-term-trigger" data-blx-coverage-trigger data-blx-out="loss-total">—</button></div><p class="blx-v2-subtotal-copy" data-blx-subtotal-copy hidden></p><ol class="blx-breakdown-list blx-v2-family-list" data-blx-family-list></ol></section>
     <section class="blx-section blx-v2-power-balance" data-blx-valid-only aria-label="Power balance"><div class="blx-section-heading"><h2>Power balance</h2><span class="blx-section-total" data-blx-power-copy>Output + analytical losses</span></div><div class="blx-power-balance" data-blx-power-balance></div><div class="blx-operating-metrics" data-blx-operating-metrics></div></section>
     <section class="blx-section blx-v2-reference" data-blx-valid-only data-blx-reference-card hidden></section>
-    <div class="blx-section" data-blx-valid-only><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy link</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div><div class="blx-warnings" data-blx-warnings></div><p class="blx-sentence" data-blx-insight></p></div>`;
+    <div class="blx-section" data-blx-valid-only><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy link</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div><div class="blx-warnings" data-blx-warnings></div></div>`;
 
   const load = root.querySelector('[data-blx-view-panel="load"]');
-  if (load) load.innerHTML = `<div class="blx-result-heading"><h2>Performance across load</h2><p>Peak efficiency, the CCM/DCM boundary, and the selected point stay linked.</p></div>
+  if (load) load.innerHTML = `<div class="blx-result-heading"><h2>Performance across load</h2><p>Select a load current to inspect its losses and conduction mode.</p></div>
     <div class="blx-chart-block"><p class="blx-chart-title"><span data-blx-efficiency-chart-label>Efficiency</span> <span data-blx-across-efficiency>—</span></p><div class="blx-plot" data-blx-efficiency-plot aria-label="Efficiency versus load current"></div></div>
     <div class="blx-chart-block"><p class="blx-chart-title">Loss families <span data-blx-across-loss>—</span></p><div class="blx-plot" data-blx-loss-plot aria-label="Loss-family power versus load current"></div><div class="blx-v2-series-controls" data-blx-series-controls aria-label="Loss series controls"></div></div>
     <p class="blx-v2-reference-key" data-blx-reference-key hidden></p>
-    <section class="blx-loss-character" aria-label="Dominant loss character across load"><h3>Loss character</h3><div class="blx-loss-character-track" data-blx-loss-character></div><p data-blx-causal-insight></p></section>
     <div class="blx-section"><div class="blx-actions"><button type="button" data-blx-reference><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5h7v11l-3.5-2-3.5 2z"></path></svg><span>Hold reference</span></button><button type="button" data-blx-copy>Copy link</button><a data-blx-report-mismatch target="_blank" rel="noopener noreferrer">Report a mismatch</a></div></div>`;
 
-  root.insertAdjacentHTML("beforeend", `<div class="blx-coverage-popover" data-blx-coverage-popover role="dialog" aria-modal="false" aria-labelledby="blx-coverage-title" hidden><button type="button" class="blx-coverage-close" data-blx-coverage-close aria-label="Close coverage explanation">×</button><h2 id="blx-coverage-title">Why this is a ceiling, not an estimate</h2><p data-blx-coverage-copy></p></div>`);
+  root.insertAdjacentHTML("beforeend", `<div class="blx-coverage-popover" data-blx-coverage-popover role="dialog" aria-modal="false" aria-labelledby="blx-coverage-title" hidden><button type="button" class="blx-coverage-close" data-blx-coverage-close aria-label="Close coverage explanation">×</button><h2 id="blx-coverage-title">What the efficiency estimate includes</h2><p data-blx-coverage-copy></p></div>`);
 
   const caveat = root.querySelector(".blx-top-caveat");
-  if (caveat) caveat.textContent = "This is an analytical intuition model at a disclosed 25 °C parameter corner, not a part-level signoff tool. Confirm a real design with manufacturer models, SPICE, thermal analysis, and measurement.";
+  if (caveat) caveat.textContent = "Verify a design with thermal analysis and measurement.";
   const equations = root.querySelector(".blx-equations");
-  if (equations) equations.innerHTML = `<h2>Equations in the open</h2><p>The tool solves regulated volt-second balance over explicit high-side, edge-specific dead-time, low-side, and zero-current intervals. Each interval carries exact <code>∫i dt</code> and <code>∫i² dt</code> moments.</p><p>Transition loss uses an evidence hierarchy: an in-domain measured table, an in-domain vendor-SPICE table, complete gate-charge timing, then a disclosed effective-time fallback. The analytical path follows EPC AN030: separate current and voltage phases use <code>QGS2(I)</code>, voltage-conditioned <code>QGD</code> when a CRSS curve is loaded (otherwise the source or entered QGD), the live Miller level, threshold voltage, and total source/sink gate-loop resistance. <code>EON</code> uses valley current and <code>EOFF</code> uses peak current. The surface tier is reserved for characterized data, but no shipped device template currently loads one; automatic mode exposes the fallback it selects. Table metadata declares whether EOSS or QRR is already included so those terms are never counted twice.</p><p>CCM excludes both effective dead-time windows from channel conduction; their unequal values can represent driver propagation mismatch. Reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code> on each edge. The ZVS readout is a charge-and-energy availability diagnostic and does not silently reduce EOSS.</p><p>Most non-transition atomic rows cite Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4; analytical edge timing cites EPC AN030. Input power is reconstructed as <code>POUT + known PLOSS</code>; a subtotal therefore produces a known-loss efficiency ceiling. The displayed sensitivity interval is an engineering bound on modeled terms, not a statistical confidence interval.</p>`;
+  if (equations) equations.innerHTML = `<h2>Equations and assumptions</h2><p>Volt-second balance sets the high-side, dead-time, low-side, and zero-current intervals. The model evaluates <code>∫i dt</code> and <code>∫i² dt</code> over each interval. Dead time is excluded from channel conduction; reverse-path loss uses <code>VSD,0·|i| + RSD·i²</code>.</p><p>Switching loss follows EPC AN030: <code>QGS2(I)</code>, <code>QGD</code>, Miller voltage, threshold voltage, and gate-loop resistance set the current and voltage transitions. <code>QGD</code> tracks input voltage when a CRSS curve is available. <code>EON</code> uses valley current; <code>EOFF</code> uses peak current.</p><details><summary>Model selection and accounting</summary><p>The supplied devices have no EON/EOFF tables. Automatic mode uses gate-charge timing when available, then estimated switching times.</p><p>Most other loss equations follow Gabriel Alfonso Rincón-Mora, <em>Switched Inductor Power IC Design</em>, Chapter 4. Expand a loss row for its equation, source, and parameter conditions. Input power is <code>POUT + known PLOSS</code>.</p></details>`;
   const caveats = root.querySelector(".blx-caveats");
-  if (caveats) caveats.innerHTML = `<h2>Scope &amp; caveats</h2><ol><li>Fixed-frequency diode-emulation DCM and forced CCM comparison are modeled; PFM, burst, and minimum-on-time control are not.</li><li>Manufacturer-sourced and example templates use disclosed 25 °C values without electrothermal iteration.</li><li>Catalog magnetics use RMS copper plus a characterized residual exactly once in its supported CCM waveform domain. A maximum-DCR selection changes copper only; the residual remains tied to its typical characterization.</li><li>DCM switch-node commutation remains omitted. CCM ZVS classification is diagnostic until a nonlinear COSS/QOSS commutation model or waveform measurement supports an energy credit.</li><li>Automatic transition selection falls back visibly when no condition-matched energy surface is present. Effective-time fallbacks carry the widest uncertainty bound.</li><li>The waveform viewer's linear RLC trace is a first-order parasitic estimate; ringing loss, nonlinear COSS, snubbers, probe loading, PCB/package resistance, bootstrap loss, and full IC leakage remain outside the power-loss total.</li></ol><p>Manufacturer names identify data sources only. This independent educational tool is not affiliated with or endorsed by any named device or magnetics manufacturer.</p>`;
+  if (caveats) caveats.innerHTML = `<h2>Model limits</h2><ul><li>Fixed-frequency diode-emulation DCM and forced CCM only; no PFM, burst, or minimum-on-time control.</li><li>25 °C component data; no self-heating iteration.</li><li>Catalog AC and core loss applies only within its characterized CCM range. Maximum DCR changes copper loss, not the typical-data residual.</li><li>DCM switch-node commutation is omitted. The CCM ZVS estimate checks available charge and energy; it does not reduce EOSS loss.</li><li>Ringing, nonlinear COSS, snubbers, probe loading, PCB/package resistance, bootstrap loss, and full IC leakage are excluded.</li></ul>`;
 }
 
 function chooserCard(template, preloaded) {
-  const metrics = [
-    finite(template.values.rdsHigh) ? `${displayNumber(template.values.rdsHigh, 3)} mΩ` : null,
-    finite(template.values.qgHigh) ? `${displayNumber(template.values.qgHigh, 3)} nC QG` : null,
-    finite(template.values.qrrRef) ? `${displayNumber(template.values.qrrRef, 3)} nC QRR` : null
-  ].filter(Boolean).join(" · ");
-  return `<button type="button" class="blx-device-choice" data-blx-device-choice="${template.id}"><span><strong>${escapeHtml(template.label)}</strong></span><small>${escapeHtml(metrics || "Partial analytical coverage")}</small>${preloaded ? '<em>Continue with the preloaded example →</em>' : ""}</button>`;
+  return `<button type="button" class="blx-device-choice" data-blx-device-choice="${template.id}"${preloaded ? ' aria-current="true"' : ''}><span><strong>${escapeHtml(deviceName(template))}</strong></span><small>${escapeHtml(deviceSummary(template))}</small></button>`;
 }
 
 function chooserGroup(kind, templates, selectedId) {
   if (!templates.length) return "";
-  const label = kind === "manufacturer" ? "Manufacturer-sourced" : "Example FETs";
+  const label = kind === "manufacturer" ? "Devices" : "Example FETs";
   return `<section class="blx-device-choice-group"><h3>${label}</h3><div class="blx-device-choice-grid">${templates.map((template) => chooserCard(template, template.id === selectedId)).join("")}</div></section>`;
 }
 
@@ -503,7 +500,7 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
   const manufacturer = eligible.filter((template) => template.catalogKind === "manufacturer");
   const teaching = eligible.filter((template) => template.catalogKind !== "manufacturer");
   const message = options.message ? `<p>${escapeHtml(options.message)}</p>` : "";
-  dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch-pair model")}</h2>${message}</div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
+  dialog.innerHTML = `<div class="blx-device-dialog-frame"><div class="blx-device-dialog-head"><h2 id="blx-device-dialog-title">${escapeHtml(options.title || "Choose a switch pair")}</h2>${message}</div>${chooserGroup("manufacturer", manufacturer, preloaded)}${chooserGroup("teaching", teaching, preloaded)}${options.allowCancel ? '<button class="blx-device-dialog-cancel" type="button" data-blx-device-cancel>Cancel</button>' : ""}</div>`;
   return new Promise((resolve) => {
     let settled = false;
     const abort = () => {
@@ -516,7 +513,6 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
       if (settled) return;
       settled = true;
       options.signal?.removeEventListener?.("abort", abort);
-      await animateDialog(dialog, false);
       if (dialog.open) dialog.close();
       resolve(value);
     };
@@ -528,7 +524,6 @@ export async function requestBuckLossDeviceV2(root, options = {}) {
     }, { once: true });
     options.signal?.addEventListener("abort", abort, { once: true });
     dialog.showModal();
-    animateDialog(dialog, true);
     dialog.querySelector("[data-blx-device-choice]")?.focus();
   });
 }
@@ -575,6 +570,19 @@ function sweepCacheKey(state) {
 function invalidateSweep(state) {
   state.sweepCacheKey = null;
   state.sweep = null;
+}
+
+function ensureSweep(state) {
+  const cacheKey = sweepCacheKey(state);
+  if (!state.sweep || state.sweepCacheKey !== cacheKey) {
+    state.sweep = evaluateBuckLossSweepV2(
+      state.inputs,
+      stateContext(state),
+      { points: 180, iMin: 0, iMax: state.inputs.ioutMax }
+    );
+    state.sweepCacheKey = cacheKey;
+  }
+  return state.sweep;
 }
 
 function canonicalQuery(state) {
@@ -664,14 +672,7 @@ async function copyCanonicalUrl(root, state, button) {
     button.replaceChildren(label);
   }
   button.blxCopyOriginal ??= label.textContent;
-  const swapLabel = (copy) => {
-    clearTimeout(label.blxSwapTimer);
-    label.classList.remove("blx-value-swap");
-    void label.offsetWidth;
-    label.textContent = copy;
-    label.classList.add("blx-value-swap");
-    label.blxSwapTimer = setTimeout(() => label.classList.remove("blx-value-swap"), 180);
-  };
+  const swapLabel = (copy) => { label.textContent = copy; };
   swapLabel("Copied");
   const live = root.querySelector("[data-blx-live]");
   if (live) {
@@ -759,63 +760,12 @@ function renderValidation(root, state) {
 
 function renderDevice(root, state) {
   const template = state.template;
-  setText(root, "[data-blx-device-label]", template.label);
-  const sourceKind = template.catalogKind === "manufacturer"
-    ? `${template.manufacturer}-sourced`
-    : "example values";
-  const summary = `${template.voltageClass} V ${template.technology === "gan" ? "GaN" : "silicon"} · ${sourceKind} · ${template.cornerLabel || template.cornerId}`;
-  setText(root, "[data-blx-device-summary]", summary);
-  const sourceCondition = template.id === "infineon-bsc010n04ls6-4v5"
-    ? "Reference anchors mix datasheet corners: RDS(on)/QG at VGS 4.5 V; QGD and plateau use the 10 V test; QGS2 is inferred for the source partition before the live condition calculation."
-    : template.id === "epc2090"
-      ? "Reference QG/QGD originate at their 50 V / 16 A test conditions; live QGD integrates the normalized CRSS(V) curve at VIN, QG is condition-resolved, COSS(ER) is a 0–50 V energy-equivalent scalar, and transition overlap uses a disclosed fallback."
-      : `Values use the ${template.cornerLabel || template.cornerId} corner; detailed conditions and notes are disclosed below.`;
-  const diagnostics = state.conditioning?.diagnostics || {};
-  const high = diagnostics.lanes?.high || {};
-  const driveOutsideDomain = state.conditioning?.errors?.some(({ code }) => code === "drive-outside-condition-domain");
-  const resolvedHeadroomV = finite(diagnostics.driveVoltageV) && finite(high.plateauV)
-    ? diagnostics.driveVoltageV - high.plateauV
-    : diagnostics.driveHeadroomV;
-  const effectiveTimingComplete = finite(diagnostics.effectiveTurnOnNs) && finite(diagnostics.effectiveTurnOffNs);
-  const gateChargeTimingComplete = [
-    "qgs2High",
-    "qgdHigh",
-    "plateauHigh",
-    "gateResistanceOnHigh",
-    "gateResistanceOffHigh"
-  ].every((key) => finite(state.rawInputs[key])) && resolvedHeadroomV > 0;
-  const edgeSummary = driveOutsideDomain
-    ? "conditioned channel, charge, and edge outputs unavailable outside the fitted drive domain"
-    : state.timingMode !== "derived" && effectiveTimingComplete
-    ? `conditioned edge times ${displayNumber(diagnostics.effectiveTurnOnNs, 3)}/${displayNumber(diagnostics.effectiveTurnOffNs, 3)} ns on/off`
-    : state.timingMode !== "effective" && gateChargeTimingComplete
-      ? "edge timing from the complete gate-charge path"
-      : "edge timing unavailable with the current evidence";
-  const resolvedCondition = [
-    finite(diagnostics.currentA) ? `At IOUT,max ${displayNumber(diagnostics.currentA, 3)} A` : null,
-    finite(diagnostics.driveVoltageV) ? `VDRIVE ${displayNumber(diagnostics.driveVoltageV, 3)} V` : null,
-    finite(high.rdsOnMohm) ? `RDS(on) ${displayNumber(high.rdsOnMohm, 3)} mΩ` : null,
-    finite(high.totalGateChargeNc) ? `QG ${displayNumber(high.totalGateChargeNc, 3)} nC` : null,
-    finite(high.plateauV) ? `plateau ${displayNumber(high.plateauV, 3)} V` : null,
-    finite(resolvedHeadroomV) ? `drive headroom ${displayNumber(resolvedHeadroomV, 3)} V` : null,
-    edgeSummary
-  ].filter(Boolean).join(" · ");
-  const conditionIssues = [...(state.conditioning?.errors || []), ...(state.conditioning?.warnings || [])];
-  const qgdConditionCopy = template.conditionModel?.gateCharge?.qgdVoltage?.method
-    ? "VIN changes QGD through the loaded CRSS curve"
-    : "QGD stays at its source anchor unless you enter an override";
-  const conditionCopy = [
-    resolvedCondition ? `${resolvedCondition}.` : null,
-    `The setup fields use IOUT,max as their preview current; live EON/EOFF re-resolve the transfer fit at the actual valley/peak edge currents. ${qgdConditionCopy}, while the drive rail changes headroom, RDS(on), QG, and supported edge timing.`,
-    sourceCondition,
-    conditionIssues.length ? `Condition check: ${conditionIssues.map((entry) => entry.message).join(" ")}` : null
-  ].filter(Boolean).join(" ");
-  setText(root, "[data-blx-device-condition-summary]", conditionCopy);
-  root.querySelectorAll("[data-blx-device-condition-summary]").forEach((node) => {
-    node.dataset.tone = state.conditioning?.errors?.length ? "error" : diagnostics.supported ? "calculated" : "";
-  });
+  setText(root, "[data-blx-device-label]", deviceName(template));
+  setText(root, "[data-blx-device-summary]", deviceSummary(template));
+  setText(root, "[data-blx-device-condition-summary]", deviceModelNote(template));
   const sourceLink = root.querySelector("[data-blx-device-source]");
   if (sourceLink) {
+    sourceLink.textContent = /SPICE/i.test(template.source.documentId || "") ? "Device model" : "Datasheet";
     sourceLink.hidden = !template.source.url;
     if (template.source.url) sourceLink.href = template.source.url;
     else sourceLink.removeAttribute("href");
@@ -853,14 +803,6 @@ function renderDevice(root, state) {
     modelNote.hidden = !copy;
     modelNote.textContent = copy;
   }
-  const notes = root.querySelector("[data-blx-device-notes]");
-  if (notes) {
-    notes.replaceChildren(...(template.notes || []).map((copy) => {
-      const item = document.createElement("li");
-      item.textContent = copy;
-      return item;
-    }));
-  }
   const conditionDetails = root.querySelector("[data-blx-device-conditions]");
   const conditionList = root.querySelector("[data-blx-device-condition-list]");
   if (conditionDetails && conditionList) {
@@ -888,15 +830,12 @@ function renderDevice(root, state) {
       item.textContent = `${label}: ${displayNumber(value, 3)} ${unit} ${metadata.statistic}; ${metadata.conditions}${maximum}.${qualification}`;
       return item;
     });
-    conditionDetails.hidden = rows.length === 0;
     conditionList.replaceChildren(...rows);
   }
   root.dataset.blxTechnology = template.technology;
   root.querySelectorAll("[data-blx-preset]").forEach((button) => {
     button.setAttribute("aria-pressed", !state.custom && button.dataset.blxPreset === state.presetId ? "true" : "false");
   });
-  const preset = getBuckLossPresetV2(state.presetId);
-  setText(root, "[data-blx-prompt]", preset?.prompt || "Custom operating point. Change one assumption at a time.");
 }
 
 function renderBadges(root, point, template = null) {
@@ -1036,12 +975,23 @@ function ensureOverviewWaveformScene(holder) {
   return scene;
 }
 
+function commutationLabelFor(classification) {
+  return ({
+    "full-zvs": "full ZVS estimate",
+    "partial-zvs": "partial ZVS estimate",
+    "hard-switching": "hard switching",
+    "unresolved-missing-node-data": "missing capacitance data",
+    "unresolved-dcm": "DCM commutation not modeled",
+    "unmodeled-dcm-commutation": "DCM commutation not modeled"
+  })[classification] || "not resolved";
+}
+
 function waveformCommutationCopy(edge) {
   const commutation = edge?.commutation;
   if (!commutation) return "commutation unresolved";
   const classification = commutation.classification || commutation.class || commutation.mode || "commutation resolved";
   const device = commutation.turnOnDevice || commutation.device;
-  return `${device ? `${device} · ` : ""}${String(classification).replaceAll("-", " ")}`;
+  return `${device ? `${device} · ` : ""}${commutationLabelFor(classification)}`;
 }
 
 function setWaveformCursor(cursor, sample, xForPhase, voltageY, currentY, top, bottom) {
@@ -1341,8 +1291,7 @@ function createWaveformController(root, state, holder, overview) {
     update(point) {
       if (this.destroyed || state.disposed) return;
       this.point = point;
-      state.waveformAnimation?.cancel?.();
-      state.waveformAnimation = null;
+      state.waveformGhostPhase = null;
       state.waveformView = semanticWaveformViewV2(point, state.waveformView);
       this.render();
     },
@@ -1359,39 +1308,23 @@ function createWaveformController(root, state, holder, overview) {
         this.render();
       });
     },
-    setView(next, { animate = false } = {}) {
+    setView(next) {
       if (!this.point) return;
-      const target = clampWaveformViewV2(this.point, next, next.mode || "custom");
-      state.waveformAnimation?.cancel?.();
-      if (!animate) {
-        state.waveformView = target;
-        this.schedule();
-        return;
-      }
-      const mode = target.mode;
-      state.waveformAnimation = animateWaveformDomain({
-        from: state.waveformView,
-        to: target,
-        duration: 150,
-        draw: (view) => {
-          if (this.destroyed || state.disposed) return;
-          state.waveformView = { ...view, mode, probePhase: target.probePhase };
-          this.render();
-        }
-      });
+      state.waveformView = clampWaveformViewV2(this.point, next, next.mode || "custom");
+      state.waveformGhostPhase = null;
+      this.schedule();
     },
-    setMode(mode, animate = true) {
+    setMode(mode) {
       if (!this.point) return;
-      const target = mode === "full"
+      this.setView(mode === "full"
         ? defaultWaveformViewV2(this.point, state.waveformView.probePhase)
-        : edgePresetWaveformViewV2(this.point, mode, state.waveformView.probePhase);
-      this.setView(target, { animate });
+        : edgePresetWaveformViewV2(this.point, mode, state.waveformView.probePhase));
     },
-    zoom(anchorPhase, factor, animate = false) {
-      this.setView(zoomWaveformViewV2(this.point, state.waveformView, anchorPhase, factor), { animate });
+    zoom(anchorPhase, factor) {
+      this.setView(zoomWaveformViewV2(this.point, state.waveformView, anchorPhase, factor));
     },
-    pan(deltaPhase, animate = false) {
-      this.setView(panWaveformViewV2(this.point, state.waveformView, deltaPhase), { animate });
+    pan(deltaPhase) {
+      this.setView(panWaveformViewV2(this.point, state.waveformView, deltaPhase));
     },
     setProbe(phase) {
       state.waveformView = { ...state.waveformView, probePhase: phase };
@@ -1418,7 +1351,6 @@ function createWaveformController(root, state, holder, overview) {
       this.schedule();
     },
     clear() {
-      state.waveformAnimation?.cancel?.();
       if (holder.blxWaveformScene) holder.blxWaveformScene.svg.setAttribute("hidden", "");
       if (overview.blxWaveformScene) overview.blxWaveformScene.svg.setAttribute("hidden", "");
       root.querySelectorAll("[data-blx-waveform-edge-flag]").forEach((flag) => { flag.hidden = true; });
@@ -1427,8 +1359,6 @@ function createWaveformController(root, state, holder, overview) {
       this.destroyed = true;
       cancelAnimationFrame(this.frame);
       this.frame = 0;
-      state.waveformAnimation?.cancel?.();
-      state.waveformAnimation = null;
       holder.blxWaveformController = null;
       overview.blxWaveformController = null;
     }
@@ -1622,7 +1552,7 @@ function initializeWaveformInteractions(root, state) {
   }, { passive: false });
   holder.addEventListener("dblclick", (event) => {
     event.preventDefault();
-    controller()?.setMode("full", true);
+    controller()?.setMode("full");
   });
   holder.addEventListener("keydown", (event) => {
     const api = controller();
@@ -1639,9 +1569,9 @@ function initializeWaveformInteractions(root, state) {
       : (state.waveformView.startPhase + state.waveformView.endPhase) / 2;
     if (["+", "="].includes(event.key)) api.zoom(anchor, 0.5, true);
     else if (event.key === "-") api.zoom(anchor, 2, true);
-    else if (event.key === "Home") api.setMode("full", true);
-    else if (event.key.toLowerCase() === "r") api.setMode("rising", true);
-    else if (event.key.toLowerCase() === "f") api.setMode("falling", true);
+    else if (event.key === "Home") api.setMode("full");
+    else if (event.key.toLowerCase() === "r") api.setMode("rising");
+    else if (event.key.toLowerCase() === "f") api.setMode("falling");
     else if (event.shiftKey && event.key === "ArrowLeft") api.pan(-0.15 * (state.waveformView.endPhase - state.waveformView.startPhase), true);
     else if (event.shiftKey && event.key === "ArrowRight") api.pan(0.15 * (state.waveformView.endPhase - state.waveformView.startPhase), true);
     else return;
@@ -1649,12 +1579,12 @@ function initializeWaveformInteractions(root, state) {
   });
 
   root.querySelectorAll("[data-blx-waveform-mode]").forEach((button) => {
-    button.addEventListener("click", () => controller()?.setMode(button.dataset.blxWaveformMode, true));
+    button.addEventListener("click", () => controller()?.setMode(button.dataset.blxWaveformMode));
   });
   root.querySelectorAll("[data-blx-waveform-edge-flag]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      controller()?.setMode(button.dataset.blxWaveformEdgeFlag, true);
+      controller()?.setMode(button.dataset.blxWaveformEdgeFlag);
     });
   });
   root.querySelectorAll("[data-blx-waveform-action]").forEach((button) => {
@@ -1731,18 +1661,14 @@ function initializeWaveformInteractions(root, state) {
 }
 
 function sourceCopy(source) {
-  if (!source) return "No source assigned.";
-  const relation = source.relation === "adapted" ? "Adapted" : "Direct";
-  const title = source.title === "Switched Inductor Power IC Design" ? "" : `${source.title || "Model disclosure"} · `;
-  if (source.references?.length) {
-    const references = source.references
-      .map((reference) => `Eq. ${reference.equation} · printed p. ${reference.printedPage} · PDF p. ${reference.pdfPage}`)
-      .join("; ");
-    return `${title}${references} · ${relation}`;
-  }
-  if (source.equation) return `${title}Eq. ${source.equation} · printed p. ${source.printedPage} · PDF p. ${source.pdfPage} · ${relation}`;
-  if (source.printedPage && source.pdfPage) return `${title}printed p. ${source.printedPage} · PDF p. ${source.pdfPage} · ${relation}`;
-  return `${title}${relation}`;
+  if (!source) return "No source assigned";
+  const title = source.title === "Switched Inductor Power IC Design" ? "Rincón-Mora" : source.title || "Model notes";
+  const references = source.references?.length ? source.references : [source];
+  const locations = references.map((reference) => [
+    reference.equation ? `Eq. ${reference.equation}` : "",
+    reference.printedPage ? `p. ${reference.printedPage}` : ""
+  ].filter(Boolean).join(", ")).filter(Boolean).join("; ");
+  return `${title}${locations ? `, ${locations}` : ""}${source.relation === "adapted" ? " (adapted)" : ""}`;
 }
 
 function omittedAtomicTermCount(point) {
@@ -1761,7 +1687,7 @@ function coverageExplanation(point) {
   const total = totalAtomicTermCount();
   const reasons = [...new Set(point.coverageGaps.map((gap) => GAP_COPY[gap.code] || gap.code))];
   const reasonCopy = reasons.length ? ` Omitted here: ${reasons.join("; ")}.` : "";
-  return `${formatPower(point.pLoss)} counts ${total - omitted} of ${total} analytical loss terms.${reasonCopy} Missing terms are never counted as zero, so true efficiency is at or below ${formatPercent(point.efficiency)} and true input power is at or above ${formatPower(point.pInEstimated)}.`;
+  return `${formatPower(point.pLoss)} counts ${total - omitted} of ${total} analytical loss terms.${reasonCopy} Missing terms are not counted as zero. If the included losses and operating point are accurate, adding the omitted losses lowers efficiency below ${formatPercent(point.efficiency)} and raises input power above ${formatPower(point.pInEstimated)}. Model error can change either estimate.`;
 }
 
 function setCoverageTriggerState(root, enabled) {
@@ -1906,7 +1832,6 @@ function renderFamilyList(root, state, point) {
     .sort((left, right) => Number(right.available) - Number(left.available) || right.value - left.value);
   const maximum = Math.max(...ranked.map((item) => item.value), 1e-12);
   const existing = new Map([...holder.querySelectorAll("[data-blx-family]")].map((item) => [item.dataset.blxFamily, item]));
-  const beforeRects = new Map([...existing.values()].map((item) => [item, item.getBoundingClientRect()]));
   const focusedFamily = document.activeElement?.closest?.("[data-blx-family]")?.dataset.blxFamily;
   const focusedSummary = Boolean(document.activeElement?.matches?.("summary"));
   ranked.forEach(({ family, available, value }, index) => {
@@ -1922,23 +1847,10 @@ function renderFamilyList(root, state, point) {
       const body = document.createElement("div");
       body.className = "blx-v2-atomic-list";
       details.append(summary, body);
-      summary.addEventListener("click", () => {
-        item.blxFamilyBeforeRects = new Map([...holder.children]
-          .map((sibling) => [sibling, sibling.getBoundingClientRect()]));
-      });
       details.addEventListener("toggle", () => {
         if (details.open) state.openFamilies.add(family.id);
         else state.openFamilies.delete(family.id);
         item.classList.toggle("is-open", details.open);
-        const beforeRects = item.blxFamilyBeforeRects;
-        item.blxFamilyBeforeRects = null;
-        const isSingleColumn = globalThis.matchMedia?.("(max-width: 700px)").matches;
-        if (beforeRects && !isSingleColumn) {
-          animateFlip([...holder.children], beforeRects, {
-            duration: 220,
-            easing: "cubic-bezier(0.22, 1, 0.36, 1)"
-          });
-        }
       });
       item.append(details);
     }
@@ -2010,7 +1922,6 @@ function renderFamilyList(root, state, point) {
   if (focusedFamily && focusedSummary) {
     holder.querySelector(`[data-blx-family="${focusedFamily}"] summary`)?.focus({ preventScroll: true });
   }
-  animateFlip([...holder.children], beforeRects, { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" });
 }
 
 function renderPowerBalance(root, point) {
@@ -2023,6 +1934,13 @@ function renderPowerBalance(root, point) {
   const metrics = root.querySelector("[data-blx-operating-metrics]");
   if (!metrics) return;
   const omittedTerms = omittedAtomicTermCount(point);
+  const estimateLimit = root.querySelector("[data-blx-estimate-limit]");
+  if (estimateLimit) {
+    estimateLimit.hidden = point.availability !== "subtotal";
+    estimateLimit.textContent = point.availability === "subtotal"
+      ? `Not included: ${[...new Set(point.coverageGaps.map((gap) => OMITTED_LOSS_COPY[gap.code] || "an additional loss term"))].join("; ")}.`
+      : "";
+  }
   const entries = [
     ["High-side duty", formatPercent(point.waveform.duties.highSide)],
     ["Low-side duty", formatPercent(point.waveform.duties.lowSide)],
@@ -2038,47 +1956,7 @@ function renderPowerBalance(root, point) {
     : `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 
-const TRANSITION_METHOD_LABELS = Object.freeze({
-  "measured-energy-surface": "Measured EON/EOFF table",
-  "vendor-spice-energy-surface": "Vendor-SPICE EON/EOFF table",
-  "derived-gate-charge": "Gate-charge derivation",
-  "effective-fallback": "Effective-time fallback",
-  "effective-override": "Effective-time override"
-});
-
-function renderModelConfidence(root, point) {
-  const uncertainty = point.uncertainty;
-  const metrics = root.querySelector("[data-blx-confidence-metrics]");
-  const status = root.querySelector("[data-blx-confidence-status]");
-  const copy = root.querySelector("[data-blx-confidence-copy]");
-  if (!uncertainty || !metrics) return;
-  const transitionLabel = TRANSITION_METHOD_LABELS[point.transition?.method] || "Transition loss unavailable";
-  const efficiencyRange = finite(uncertainty.efficiency?.low) && finite(uncertainty.efficiency?.high)
-    ? `${formatPercent(uncertainty.efficiency.low)}–${formatPercent(uncertainty.efficiency.high)}`
-    : "—";
-  const lossRange = finite(uncertainty.lossW?.low) && finite(uncertainty.lossW?.high)
-    ? `${formatPower(uncertainty.lossW.low)}–${formatPower(uncertainty.lossW.high)}`
-    : "—";
-  const commutation = point.commutation?.edges;
-  const commutationLabel = commutation
-    ? `LS ${commutation.highToLow.classification} · HS ${commutation.lowToHigh.classification}`
-    : "Unavailable";
-  const entries = [
-    [point.availability === "total" ? "Efficiency bound" : "Known-loss ceiling bound", efficiencyRange],
-    [point.availability === "total" ? "Loss bound" : "Known-loss bound", lossRange],
-    ["Transition evidence", `${transitionLabel} · ${point.transition?.confidence || "unavailable"}`],
-    ["Commutation diagnostic", commutationLabel]
-  ];
-  metrics.innerHTML = entries.map(([label, value]) => `<div class="blx-operating-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
-  if (status) status.textContent = `${uncertainty.confidence} confidence`;
-  const dominant = uncertainty.dominantSensitivity;
-  if (copy) {
-    const dominantLabel = dominant ? FAMILY_STYLE[dominant.family]?.short || dominant.family : "No nonzero family";
-    copy.textContent = `${dominantLabel} is the largest modeled sensitivity (${dominant ? formatPower(dominant.spanW) : "—"} low-to-high span). These are engineering bounds, not a statistical confidence interval${point.availability === "subtotal" ? "; omitted mechanisms sit outside the range" : ""}.`;
-  }
-}
-
-function renderWarningsAndInsight(root, state, point) {
+function renderWarnings(root, state, point) {
   const holder = root.querySelector("[data-blx-warnings]");
   const messages = [];
   if (point.waveform.mode === "dcm") messages.push({ copy: "Fixed-frequency diode-emulation DCM: low-side conduction stops at zero current." });
@@ -2086,7 +1964,7 @@ function renderWarningsAndInsight(root, state, point) {
   if (point.warnings.includes("isat")) messages.push({ copy: "Peak current exceeds the selected inductor saturation rating.", strong: true });
   if (state.template.voltageClass < state.rawInputs.vin) messages.push({ copy: `${state.template.label} is below the entered VIN voltage class; choose an appropriate device before design work.`, strong: true });
   if (point.warnings.includes("negative-current-commutation-approximate")) messages.push({ copy: "Approximate commutation: forced CCM has negative valley current. ZVS, signed dead-time paths, QRR, turn-on overlap, and EOSS are only first-order estimates in this reverse-current region.", strong: true });
-  else if (state.controlMode === "forced-ccm") messages.push({ copy: "Forced CCM is an expert comparison; watch the valley-current sign at light load." });
+  else if (state.controlMode === "forced-ccm") messages.push({ copy: "Forced CCM allows negative inductor current at light load." });
   if (state.selectedPart && state.dcrMode === "max") messages.push({ copy: "Maximum DCR changes copper loss only; the catalog AC/core residual remains tied to its typical characterization." });
   if (point.warnings.includes("switching-energy-surface-fallback")) messages.push({ copy: "The supplied switching-energy surface was outside its declared domain or conditions; the automatic hierarchy used the next supported method.", strong: true });
   if (point.transition?.method === "effective-fallback") {
@@ -2094,26 +1972,17 @@ function renderWarningsAndInsight(root, state, point) {
       .every((key) => state.rawInputs.__provenance?.[key] === "calculated-condition-effective-time");
     messages.push({
       copy: conditionedTiming
-        ? "Transitions use the template's illustrative effective-time anchor, scaled per edge from QGS2, QGD(VIN), the live plateau, threshold, and drive using EPC AN030 phase-charge ratios; no condition-matched EON/EOFF surface is loaded."
-        : "Transitions use a manually overridden effective-time fallback; no condition-matched EON/EOFF surface is loaded.",
+        ? "Switching times are scaled from an illustrative reference using gate charge and drive conditions, not measured EON/EOFF data."
+        : "Switching loss uses entered times, not measured EON/EOFF data.",
       strong: true
     });
   }
   (state.conditioning?.warnings || []).forEach((warning) => messages.push({ copy: warning.message, strong: true }));
   if (state.conditioning?.diagnostics?.preservedKeys?.length) {
-    messages.push({ copy: "Manual switch-parameter overrides are held fixed; use “Use calculated” beside a field to resume condition tracking." });
+    messages.push({ copy: "Manual values stay fixed. Select “Use calculated” to track operating conditions again." });
   }
   if (state.urlNotes.length) messages.push({ copy: "Some URL values were unknown or adjusted to the valid schema." });
   if (holder) holder.innerHTML = messages.map(({ copy, strong }) => `<p class="blx-note${strong ? " blx-note-strong" : ""}">${escapeHtml(copy)}</p>`).join("");
-  const advisory = point.insights.fetAreaOptimumScale;
-  const insight = finite(advisory)
-    ? advisory > 1.08
-      ? `Conduction dominates at this point: the RDS(on)·QG balance favors roughly ${displayNumber(advisory, 1)}× more switch area. Larger switches would trade extra gate-drive loss for lower channel loss. (Advisory excludes EOSS and QRR.)`
-      : advisory < 0.92
-        ? `Gate drive dominates at this point: the RDS(on)·QG balance favors roughly ${displayNumber(1 / advisory, 1)}× smaller switches. A lower-QG pair would trade a little conduction loss for much less drive loss. (Advisory excludes EOSS and QRR.)`
-        : "Channel conduction and gate-drive loss are close to the textbook FET-area balance at this point."
-    : "FET-area balance is unavailable until both channel and gate-drive loss are present.";
-  setText(root, "[data-blx-insight]", insight);
 }
 
 function chartFrame(holder, yMaximum, yTicks, yFormatter) {
@@ -2163,19 +2032,6 @@ function pathData(points) {
   return points.length ? `M${points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" L")}` : "";
 }
 
-function animateChartPath(state, key, path, points) {
-  const previous = state.chartPoints.get(key);
-  state.chartPoints.set(key, points);
-  state.chartAnimations.get(key)?.cancel?.();
-  const animation = animatePointSeries({
-    fromPoints: previous,
-    toPoints: points,
-    duration: 260,
-    draw: (next) => path.setAttribute("d", pathData(next))
-  });
-  if (animation) state.chartAnimations.set(key, animation);
-}
-
 function addVerticalAnnotation(frame, fraction, label, className) {
   if (!finite(fraction) || fraction < 0 || fraction > 1) return;
   const x = frame.margin.left + frame.innerWidth * fraction;
@@ -2212,13 +2068,13 @@ function renderEfficiencyChart(root, state) {
   const currentLine = svgNode("path", { class: "blx-chart-line blx-chart-efficiency" });
   frame.svg.append(currentLine);
   const currentPoints = valid.map((point) => [x(point.iout), y(point.efficiency)]);
-  animateChartPath(state, "efficiency", currentLine, currentPoints);
+  currentLine.setAttribute("d", pathData(currentPoints));
 
   if (state.reference?.sweep) {
     const referencePoints = state.reference.sweep.points
       .filter((point) => finite(point.efficiency) && point.iout <= state.inputs.ioutMax)
       .map((point) => [x(point.iout), y(point.efficiency)]);
-    const referenceLine = svgNode("path", { d: pathData(referencePoints), class: `blx-chart-line blx-chart-reference-line${state.referenceReveal ? " blx-reference-reveal" : ""}` });
+    const referenceLine = svgNode("path", { d: pathData(referencePoints), class: "blx-chart-line blx-chart-reference-line" });
     frame.svg.append(referenceLine);
   }
 
@@ -2348,14 +2204,14 @@ function renderLossChart(root, state) {
     const path = svgNode("path", { class: "blx-chart-line blx-chart-family-line", stroke: `var(${FAMILY_STYLE[slot.key].color})`, "data-series": slot.key });
     frame.svg.append(path);
     const points = validPoints.map((point) => [x(point.iout), y(point.groupedLosses[slot.key] || 0)]);
-    animateChartPath(state, `loss-${index}-${slot.key}`, path, points);
+    path.setAttribute("d", pathData(points));
     if (state.reference?.sweep) {
       const referencePoints = state.reference.sweep.points
         .filter((point) => point.iout <= state.inputs.ioutMax)
         .map((point) => [x(point.iout), y(point.groupedLosses[slot.key] || 0)]);
       const referencePath = svgNode("path", {
         d: pathData(referencePoints),
-        class: `blx-chart-line blx-chart-reference-line${state.referenceReveal ? " blx-reference-reveal" : ""}`,
+        class: "blx-chart-line blx-chart-reference-line",
         "data-reference-series": slot.key
       });
       referencePath.style.stroke = `var(${FAMILY_STYLE[slot.key].color})`;
@@ -2402,37 +2258,6 @@ function renderLossChart(root, state) {
   renderSeriesControls(root, state);
 }
 
-function renderLossCharacter(root, state) {
-  const holder = root.querySelector("[data-blx-loss-character]");
-  const insight = root.querySelector("[data-blx-causal-insight]");
-  if (!holder || !state.sweep?.annotations) return;
-  const regions = state.sweep.annotations.dominanceRegions || [];
-  holder.replaceChildren(...regions.map((region) => {
-    const segment = document.createElement("span");
-    const presentation = SCALING_PRESENTATION[region.kind] || SCALING_PRESENTATION.unclassified;
-    const width = state.inputs.ioutMax > 0 ? 100 * (region.endIout - region.startIout) / state.inputs.ioutMax : 0;
-    segment.style.width = `${Math.max(0, width)}%`;
-    segment.style.background = presentation.color;
-    segment.dataset.kind = region.kind;
-    segment.title = `${presentation.label}: ${formatCurrent(region.startIout)}–${formatCurrent(region.endIout)} · ${formatPercent(region.averageShare)} average share`;
-    if (width > 17) segment.textContent = presentation.label;
-    return segment;
-  }));
-  const scaling = state.point.insights?.lossScaling || {};
-  const total = Object.values(scaling).reduce((sum, value) => sum + (finite(value) ? Math.max(0, value) : 0), 0);
-  const kind = Object.keys(SCALING_PRESENTATION).reduce(
-    (best, key) => (scaling[key] || 0) > (scaling[best] || 0) ? key : best,
-    "fixedLike"
-  );
-  const share = total > 0 ? (scaling[kind] || 0) / total : null;
-  if (insight) {
-    const label = SCALING_PRESENTATION[kind]?.label || "unclassified";
-    insight.textContent = finite(share)
-      ? `At ${formatCurrent(displayedCursor(state))}, ${label} terms lead at ${formatPercent(share)} of known loss. The band shows where that balance changes across load.`
-      : "Loss character becomes available when at least one analytical term is known.";
-  }
-}
-
 function makeReference(state) {
   return {
     modelVersion: 2,
@@ -2452,92 +2277,20 @@ function makeReference(state) {
 }
 
 function renderReferenceButton(button, active) {
-  const nextActive = active ? "true" : "false";
-  const previousActive = button.dataset.active;
-  const icon = button.querySelector("svg");
-  const fromTransform = icon ? getComputedStyle(icon).transform : null;
-  button.dataset.active = nextActive;
-  const span = button.querySelector("span");
-  if (span) span.textContent = active ? "Clear reference" : "Hold reference";
-  if (!icon || previousActive === undefined || previousActive === nextActive) return;
-
-  const token = {};
-  button.blxReferenceMotionToken = token;
-  button.dataset.blxReferenceMotion = active ? "holding" : "clearing";
-  const animation = runAnimation(icon, [
-    { transform: fromTransform === "none" ? `scale(${active ? 0.94 : 1})` : fromTransform },
-    { transform: `scale(${active ? 1 : 0.94})` }
-  ], REFERENCE_ICON_MOTION);
-  if (!animation) {
-    delete button.dataset.blxReferenceMotion;
-    return;
-  }
-  animation.finished.catch(() => {}).then(() => {
-    if (button.blxReferenceMotionToken !== token) return;
-    animation.cancel();
-    delete button.dataset.blxReferenceMotion;
-  });
+  button.dataset.active = String(active);
+  const label = button.querySelector("span");
+  if (label) label.textContent = active ? "Clear reference" : "Hold reference";
 }
 
 function revealReferenceCard(card) {
-  const interruptedExit = card.dataset.blxReferenceMotion === "exit";
-  if (!card.hidden && !interruptedExit) return;
-  const computed = interruptedExit ? getComputedStyle(card) : null;
-  const token = {};
-  card.blxReferenceMotionToken = token;
   card.hidden = false;
   card.removeAttribute("aria-hidden");
-  card.dataset.blxReferenceMotion = "enter";
-  const animation = runAnimation(card, [
-    interruptedExit
-      ? { opacity: computed.opacity, transform: computed.transform === "none" ? "translateY(0)" : computed.transform }
-      : { opacity: 0, transform: "translateY(6px)" },
-    { opacity: 1, transform: "translateY(0)" }
-  ], {
-    duration: REFERENCE_CARD_MOTION.enterDuration,
-    easing: REFERENCE_CARD_MOTION.enterEasing
-  });
-  if (!animation) {
-    delete card.dataset.blxReferenceMotion;
-    return;
-  }
-  animation.finished.catch(() => {}).then(() => {
-    if (card.blxReferenceMotionToken !== token) return;
-    animation.cancel();
-    delete card.dataset.blxReferenceMotion;
-  });
 }
 
 function concealReferenceCard(card) {
-  if (card.hidden) {
-    card.replaceChildren();
-    card.removeAttribute("aria-hidden");
-    delete card.dataset.blxReferenceMotion;
-    return;
-  }
-  if (card.dataset.blxReferenceMotion === "exit") return;
-  const computed = getComputedStyle(card);
-  const token = {};
-  card.blxReferenceMotionToken = token;
-  card.setAttribute("aria-hidden", "true");
-  card.dataset.blxReferenceMotion = "exit";
-  const animation = runAnimation(card, [
-    { opacity: computed.opacity, transform: computed.transform === "none" ? "translateY(0)" : computed.transform },
-    { opacity: 0, transform: "translateY(6px)" }
-  ], {
-    duration: REFERENCE_CARD_MOTION.exitDuration,
-    easing: REFERENCE_CARD_MOTION.exitEasing
-  });
-  const finish = () => {
-    if (card.blxReferenceMotionToken !== token) return;
-    card.hidden = true;
-    card.replaceChildren();
-    animation?.cancel();
-    card.removeAttribute("aria-hidden");
-    delete card.dataset.blxReferenceMotion;
-  };
-  if (!animation) finish();
-  else animation.finished.catch(() => {}).then(finish);
+  card.hidden = true;
+  card.replaceChildren();
+  card.removeAttribute("aria-hidden");
 }
 
 function renderReference(root, state) {
@@ -2563,7 +2316,7 @@ function renderReference(root, state) {
   const lossDelta = state.point.pLoss - reference.point.pLoss;
   const deltaCopy = finite(efficiencyDelta)
     ? `${efficiencyDelta >= 0 ? "+" : ""}${displayNumber(efficiencyDelta * 100, 2)} percentage points · known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference.`
-    : `Known loss ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference. Efficiency deltas stay hidden while either run has omitted terms — subtotals cannot be subtracted honestly.`;
+    : `Loss subtotal ${lossDelta >= 0 ? "+" : "−"}${formatPower(Math.abs(lossDelta))} vs. reference. Efficiency change is not shown when either estimate omits losses.`;
   card.innerHTML = `<div class="blx-section-heading"><h2>Held reference</h2><span class="blx-section-total">${escapeHtml(reference.label)}</span></div><div class="blx-v2-reference-sides"><div><span>Reference</span><strong>${formatPercent(reference.point.efficiency)} · ${formatPower(reference.point.pLoss)}</strong><small>${reference.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(reference.mode)} · ${reference.corner} · ${reference.point.availability}</small></div><div><span>Current</span><strong>${formatPercent(state.point.efficiency)} · ${formatPower(state.point.pLoss)}</strong><small>${state.template.technology === "gan" ? "GaN" : "Silicon"} · ${compactMode(state.point.waveform.mode)} · ${state.template.cornerLabel || state.template.cornerId} · ${state.point.availability}</small></div></div><p>${deltaCopy}</p>`;
   revealReferenceCard(card);
   if (key) {
@@ -2583,6 +2336,11 @@ function setResultAvailability(root, available) {
 }
 
 function clearResultContent(root, state = null) {
+  const estimateLimit = root.querySelector("[data-blx-estimate-limit]");
+  if (estimateLimit) {
+    estimateLimit.hidden = true;
+    estimateLimit.replaceChildren();
+  }
   setText(root, '[data-blx-out="efficiency"]', "—");
   setText(root, '[data-blx-out="pout"]', "—");
   setText(root, '[data-blx-out="loss"]', "—");
@@ -2601,31 +2359,21 @@ function clearResultContent(root, state = null) {
   root.querySelector("[data-blx-family-list]")?.replaceChildren();
   root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.clear();
   if (state) {
-    state.waveformAnimation?.cancel?.();
     state.waveformView = { mode: "full", startPhase: null, endPhase: null, probePhase: 0.32 };
     state.waveformGhostPhase = null;
     state.waveformPointer = null;
     state.waveformOverviewPointer = null;
-    state.waveformAnimation = null;
   }
   root.querySelector("[data-blx-power-balance]")?.replaceChildren();
   root.querySelector("[data-blx-operating-metrics]")?.replaceChildren();
-  root.querySelector("[data-blx-confidence-metrics]")?.replaceChildren();
-  setText(root, "[data-blx-confidence-status]", "—");
-  setText(root, "[data-blx-confidence-copy]", "");
   root.querySelector("[data-blx-efficiency-plot]")?.replaceChildren();
   root.querySelector("[data-blx-loss-plot]")?.replaceChildren();
   root.querySelector("[data-blx-series-controls]")?.replaceChildren();
-  root.querySelector("[data-blx-loss-character]")?.replaceChildren();
-  setText(root, "[data-blx-causal-insight]", "");
   const card = root.querySelector("[data-blx-reference-card]");
   if (card) {
-    card.blxReferenceMotionToken = {};
-    card.getAnimations().forEach((animation) => animation.cancel());
     card.hidden = true;
     card.replaceChildren();
     card.removeAttribute("aria-hidden");
-    delete card.dataset.blxReferenceMotion;
   }
   const referenceKey = root.querySelector("[data-blx-reference-key]");
   if (referenceKey) {
@@ -2813,11 +2561,7 @@ function render(root, state, options = {}) {
   setResultAvailability(root, true);
   const failurePanel = root.querySelector("[data-blx-model-failure]");
   if (failurePanel) failurePanel.hidden = true;
-  const cacheKey = sweepCacheKey(state);
-  if (!state.sweep || state.sweepCacheKey !== cacheKey) {
-    state.sweep = evaluateBuckLossSweepV2(state.inputs, stateContext(state), { points: 180, iMin: 0, iMax: state.inputs.ioutMax });
-    state.sweepCacheKey = cacheKey;
-  }
+  if (state.view === "load") ensureSweep(state);
   root.dataset.blxMode = point.waveform.mode;
   setText(root, '[data-blx-out="efficiency"]', formatPercent(point.efficiency));
   setText(root, '[data-blx-out="pout"]', formatPower(point.pOut));
@@ -2825,11 +2569,11 @@ function render(root, state, options = {}) {
   setText(root, '[data-blx-out="pin"]', formatPower(point.pInEstimated));
   setText(root, '[data-blx-out="regime"]', compactMode(point.waveform.mode));
   setText(root, '[data-blx-out="loss-total"]', point.availability === "total" ? `Total · ${formatPower(point.pLoss)}` : `Subtotal · ${formatPower(point.pLoss)}`);
-  setText(root, "[data-blx-loss-label]", point.availability === "total" ? "total loss" : "known loss");
-  setText(root, "[data-blx-input-label]", point.availability === "total" ? "estimated input" : "input · floor");
-  setText(root, "[data-blx-efficiency-label]", point.availability === "total" ? "efficiency" : "known-loss ceiling");
+  setText(root, "[data-blx-loss-label]", point.availability === "total" ? "Total loss" : "Loss subtotal");
+  setText(root, "[data-blx-input-label]", "Estimated input");
+  setText(root, "[data-blx-efficiency-label]", "Estimated efficiency");
   setText(root, "[data-blx-availability-label]", point.availability === "total" ? "Total" : "Subtotal");
-  setText(root, "[data-blx-efficiency-chart-label]", point.availability === "total" ? "Efficiency" : "Known-loss efficiency ceiling");
+  setText(root, "[data-blx-efficiency-chart-label]", point.availability === "total" ? "Estimated efficiency" : "Estimated efficiency (incomplete)");
   setText(root, "[data-blx-power-copy]", point.availability === "total" ? "Output + analytical losses" : "Output + known analytical losses");
   setText(root, '[data-blx-out="sheet-efficiency"]', formatPercent(point.efficiency));
   setText(root, '[data-blx-out="sheet-loss"]', formatPower(point.pLoss));
@@ -2837,23 +2581,20 @@ function render(root, state, options = {}) {
   renderWaveformDiagram(root, state, point);
   renderFamilyList(root, state, point);
   renderPowerBalance(root, point);
-  renderModelConfidence(root, point);
   const omittedTerms = omittedAtomicTermCount(point);
   const subtotalCopy = root.querySelector("[data-blx-subtotal-copy]");
   if (subtotalCopy) {
     subtotalCopy.hidden = point.availability !== "subtotal";
     subtotalCopy.innerHTML = point.availability === "subtotal"
-      ? `Subtotal — ${omittedTerms} of ${totalAtomicTermCount()} loss terms lack data here and are never counted as zero. <button type="button" class="blx-term-trigger" data-blx-coverage-trigger>Why →</button>`
+      ? `${omittedTerms} of ${totalAtomicTermCount()} loss terms are omitted. <button type="button" class="blx-term-trigger" data-blx-coverage-trigger>Details</button>`
       : "";
   }
   setCoverageTriggerState(root, point.availability === "subtotal");
-  renderWarningsAndInsight(root, state, point);
+  renderWarnings(root, state, point);
   renderReference(root, state);
   if (state.view === "load") {
     renderEfficiencyChart(root, state);
     renderLossChart(root, state);
-    renderLossCharacter(root, state);
-    state.referenceReveal = false;
   }
   renderImportDelta(root, state);
   renderMismatchLinks(root, state);
@@ -3068,7 +2809,7 @@ async function applyPreset(root, state, preset) {
   if (state.template.voltageClass < preset.rawInputs.vin) {
     deviceId = await requestBuckLossDeviceV2(root, {
       title: `Choose a switch rated for ${displayNumber(preset.rawInputs.vin, 3)} V`,
-      message: `${state.template.label} is below this preset's input-voltage class. Choose a compatible device to apply the preset.`,
+      message: `${deviceName(state.template)} is below this preset's input-voltage class. Choose a compatible device to apply the preset.`,
       vin: preset.rawInputs.vin,
       allowCancel: true,
       signal: state.signal
@@ -3136,11 +2877,9 @@ function initializeAccordions(root) {
 function initializeTabs(root, state) {
   const tabs = [...root.querySelectorAll("[data-blx-view]")];
   const panels = [...root.querySelectorAll("[data-blx-view-panel]")];
-  const activate = async (view, focus = false) => {
+  const activate = (view, focus = false) => {
     if (state.disposed) return;
-    const previous = panels.find((panel) => !panel.hidden);
     const next = panels.find((panel) => panel.dataset.blxViewPanel === view);
-    const previousIndex = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
     const nextIndex = tabs.findIndex((tab) => tab.dataset.blxView === view);
     tabs.forEach((tab) => {
       const active = tab.dataset.blxView === view;
@@ -3151,20 +2890,11 @@ function initializeTabs(root, state) {
     if (tabList) tabList.dataset.activeView = view;
     state.view = view;
     if (view === "load" && state.point) {
+      ensureSweep(state);
       renderEfficiencyChart(root, state);
       renderLossChart(root, state);
-      renderLossCharacter(root, state);
-      state.referenceReveal = false;
     }
-    if (previous && next && previous !== next) {
-      const animated = await animatePanelSwap(root.querySelector("[data-blx-view-panels]"), previous, next, nextIndex >= previousIndex ? 1 : -1);
-      if (state.disposed) return;
-      if (state.view !== view) {
-        panels.forEach((panel) => { panel.hidden = panel.dataset.blxViewPanel !== state.view; });
-        return;
-      }
-      if (!animated) panels.forEach((panel) => { panel.hidden = panel !== next; });
-    } else panels.forEach((panel) => { panel.hidden = panel !== next; });
+    panels.forEach((panel) => { panel.hidden = panel !== next; });
     if (focus) tabs[nextIndex]?.focus();
   };
   tabs.forEach((tab, index) => {
@@ -3194,14 +2924,12 @@ function initializeInputSheet(root, signal) {
   const media = matchMedia("(max-width: 700px)");
   const close = async () => {
     if (!dialog.open) return;
-    await animateDialog(dialog, false);
     if (dialog.open) dialog.close();
     if (!signal?.aborted) openButton?.focus();
   };
   openButton?.addEventListener("click", async () => {
     if (!media.matches || dialog.open) return;
     dialog.showModal();
-    await animateDialog(dialog, true);
     if (!signal?.aborted) dialog.querySelector("h2")?.focus();
   });
   closeButton?.addEventListener("click", close);
@@ -3236,13 +2964,12 @@ function renderCatalogMeta(root, state) {
     return;
   }
   const isat = selectIsat(part);
-  const modeled = state.inductorAcDataset?.permission_status === "approved" && state.inductorAcDataset.parts?.[part.base_part_number];
-  meta.replaceChildren(document.createTextNode(`${part.base_part_number} · ${displayNumber(part.inductance_uh, 2)} µH · ${state.dcrMode} DCR ${displayNumber(dcrForMode(part, state.dcrMode), 2)} mΩ${isat ? ` · Isat ${displayNumber(isat.value, 2)} A (${isat.dropPct}% drop)` : ""} · ${modeled ? "characterized AC/core residual" : "AC/core residual unavailable"} · `));
+  meta.replaceChildren(document.createTextNode(`${state.dcrMode} DCR ${displayNumber(dcrForMode(part, state.dcrMode), 2)} mΩ${isat ? ` · Isat ${displayNumber(isat.value, 2)} A (${isat.dropPct}% drop)` : ""} · `));
   const link = document.createElement("a");
   link.href = part.datasheet_url;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  link.textContent = "Datasheet ↗";
+  link.textContent = "Datasheet";
   meta.append(link);
   meta.hidden = false;
   if (message) message.hidden = true;
@@ -3384,18 +3111,18 @@ function initializeActions(root, state) {
     const input = root.querySelector('[data-blx-v2-input="vout"]');
     if (matchMedia("(max-width: 700px)").matches) {
       root.querySelector("[data-blx-input-open]")?.click();
-      clearTimeout(state.focusTimer);
-      state.focusTimer = window.setTimeout(() => {
-        state.focusTimer = 0;
+      cancelAnimationFrame(state.focusFrame);
+      state.focusFrame = requestAnimationFrame(() => {
+        state.focusFrame = 0;
         if (!state.disposed) input?.focus();
-      }, 340);
+      });
     } else input?.focus();
   });
   root.querySelector("[data-blx-change-device]")?.addEventListener("click", () => changeDevice(root, state));
   root.querySelectorAll("[data-blx-reference]").forEach((button) => button.addEventListener("click", () => {
     const holding = !state.reference;
+    if (holding) ensureSweep(state);
     state.reference = holding ? makeReference(state) : null;
-    state.referenceReveal = holding;
     render(root, state);
   }));
   root.querySelectorAll("[data-blx-copy]").forEach((button) => button.addEventListener("click", () => copyCanonicalUrl(root, state, button)));
@@ -3434,10 +3161,8 @@ export async function initBuckLossExplorerV2(root, options = {}) {
     if (state) {
       state.disposed = true;
       clearTimeout(state.urlTimer);
-      clearTimeout(state.focusTimer);
+      cancelAnimationFrame(state.focusFrame);
       cancelAnimationFrame(state.renderFrame);
-      state.waveformAnimation?.cancel?.();
-      state.chartAnimations?.forEach((animation) => animation?.cancel?.());
       root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.destroy?.();
     }
     cancelAnimationFrame(resizeFrame);
@@ -3445,11 +3170,6 @@ export async function initBuckLossExplorerV2(root, options = {}) {
     root.blxResizeObserver?.disconnect?.();
     root.querySelectorAll("*").forEach((node) => {
       clearTimeout(node.blxTimer);
-      clearTimeout(node.blxSwapTimer);
-      clearTimeout(node.blxCopyTimer);
-      clearTimeout(node.blxAccordionTimer);
-      cancelAnimationFrame(node.blxAccordionFrame || 0);
-      node.blxChart?.animations?.forEach?.((animation) => animation?.cancel?.());
     });
     try { root.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel()); } catch {}
     root.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
@@ -3500,7 +3220,6 @@ export async function initBuckLossExplorerV2(root, options = {}) {
     waveformGhostPhase: null,
     waveformPointer: null,
     waveformOverviewPointer: null,
-    waveformAnimation: null,
     selectedPart: parsed.selectedInductorPart,
     dcrMode: parsed.inductorDcrMode,
     urlNotes: parsed.notes,
@@ -3512,15 +3231,12 @@ export async function initBuckLossExplorerV2(root, options = {}) {
     sweep: null,
     sweepCacheKey: null,
     reference: null,
-    referenceReveal: false,
     openFamilies: new Set(),
     seriesSlots: [],
-    chartPoints: new Map(),
-    chartAnimations: new Map(),
     renderFrame: 0,
     pendingOptions: null,
     urlTimer: 0,
-    focusTimer: 0,
+    focusFrame: 0,
     signal: lifecycle.signal,
     disposed: false,
     view: "point",
@@ -3551,7 +3267,6 @@ export async function initBuckLossExplorerV2(root, options = {}) {
         if (state.point?.valid && state.view === "load") {
           renderEfficiencyChart(root, state);
           renderLossChart(root, state);
-          renderLossCharacter(root, state);
         }
         root.querySelector("[data-blx-waveform-diagram]")?.blxWaveformController?.resize();
       });

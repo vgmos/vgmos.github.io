@@ -43,10 +43,10 @@ test.describe("Coilcraft inductor catalog", () => {
 
     const meta = page.locator("[data-blx-catalog-meta]");
     await expect(meta).toBeVisible();
-    await expect(meta).toContainText("XGL6060-222");
+    await expect(page.locator("[data-blx-catalog-part]")).toHaveValue("XGL6060-222");
+    await expect(meta).toContainText("typ DCR 4.3 mΩ");
     await expect(meta).toContainText("12.1 A");
     await expect(meta).toContainText("20% drop");
-    await expect(meta).toContainText("characterized AC/core residual");
     await expect(meta.locator("a")).toHaveAttribute("href", /coilcraft\.com/);
     const magnetics = page.locator('[data-blx-family="magnetics"]');
     await magnetics.locator("summary").click();
@@ -113,13 +113,14 @@ test.describe("Coilcraft inductor catalog", () => {
     await openInductorPanel(page);
 
     await page.locator("[data-blx-catalog-part]").selectOption("XGL6060-332");
-    await expect(page.locator("[data-blx-catalog-meta]")).toContainText("AC/core residual unavailable");
+    await expect(page.locator("[data-blx-estimate-limit]")).toContainText("Not included: additional AC winding and core loss.");
     await expect(page.locator("[data-blx-availability-label]")).toHaveText("Subtotal");
-    await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("never counted as zero");
+    await expect(page.locator("[data-blx-subtotal-copy]")).toContainText("loss terms are omitted");
 
     await page.locator("#blx-v2-inductorAcManual").fill("25");
     await page.locator("#blx-v2-inductorAcManual").press("Tab");
     await expect(page.locator("[data-blx-availability-label]")).toHaveText("Total");
+    await expect(page.locator("[data-blx-estimate-limit]")).toBeHidden();
     const magnetics = page.locator('[data-blx-family="magnetics"]');
     await magnetics.locator("summary").click();
     await expect(magnetics).toContainText("Inductor characterized core residual");

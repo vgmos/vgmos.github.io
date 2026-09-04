@@ -6,8 +6,8 @@ tags:
   - reflection
 ---
 
-I built this site to write up my past research properly: one page per project, with the original figures and the numbers I can still stand behind.
+I built this site to document my past research: one page per project, with the original figures, the numbers I can still stand behind, and their limitations.
 
-The notebook part is looser. Some notes will be technical, some won't, and I'd rather post occasionally and mean it than keep a schedule.
+The notebook is less formal. Some notes will be technical and others personal. I write when I have something useful to share, without a fixed schedule.
 
-If something here is wrong or overstated, I want to know. Email is in the footer.
+If something here is wrong or overstated, I want to know. You can email me using the link in the footer.

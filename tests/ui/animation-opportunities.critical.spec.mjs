@@ -55,8 +55,8 @@ async function readMotionProbe(page) {
   return page.evaluate(() => structuredClone(window.__opportunityMotion));
 }
 
-test.describe("purposeful tool motion", () => {
-  test("guided presets acknowledge only fields whose exact values changed", async ({ page }) => {
+test.describe("immediate tool interactions", () => {
+  test("guided presets update exact values and preserve focus immediately", async ({ page }) => {
     const issues = observeRuntimeIssues(page);
     await installMotionProbe(page);
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
@@ -77,21 +77,8 @@ test.describe("purposeful tool motion", () => {
 
     let motion = await readMotionProbe(page);
     let fieldCalls = motion.waapi.filter((call) => call.target.entryField);
-    expect(fieldCalls.map((call) => call.target.entryField).sort()).toEqual([
-      "cursor",
-      "fsw",
-      "ioutMax",
-      "vin",
-      "vout"
-    ]);
-    expect(new Set(fieldCalls.map((call) => call.duration))).toEqual(new Set([160]));
-    expect(fieldCalls.map((call) => call.delay).sort((left, right) => left - right)).toEqual([0, 30, 60, 90, 120]);
-    expect(fieldCalls.every((call) => call.keyframes.includes("translateY(2px)"))).toBe(true);
+    expect(fieldCalls).toEqual([]);
 
-    await page.waitForTimeout(320);
-    expect(await page.locator("[data-blx-entry-field]").evaluateAll((fields) => (
-      fields.every((field) => field.getAnimations().length === 0)
-    ))).toBe(true);
     await clearMotionProbe(page);
     await busPreset.click();
     motion = await readMotionProbe(page);
@@ -103,7 +90,7 @@ test.describe("purposeful tool motion", () => {
     await expect(page.locator("#blx-entry-vin")).toHaveValue("48");
     motion = await readMotionProbe(page);
     fieldCalls = motion.waapi.filter((call) => call.target.entryField);
-    expect(fieldCalls.map((call) => call.target.entryField)).toEqual(["vin"]);
+    expect(fieldCalls).toEqual([]);
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.locator("#blx-entry-vin").fill("36");
@@ -115,7 +102,7 @@ test.describe("purposeful tool motion", () => {
     expect(issues).toEqual([]);
   });
 
-  test("Buck Converter commit cues settle final surfaces but skip direct manipulation", async ({ page }) => {
+  test("Buck Converter presets and direct manipulation render immediately", async ({ page }) => {
     const issues = observeRuntimeIssues(page);
     await installMotionProbe(page);
     await page.goto("/tools/buck-converter/", { waitUntil: "domcontentloaded" });
@@ -126,25 +113,17 @@ test.describe("purposeful tool motion", () => {
     await busPreset.click();
     await expect(page.locator("#num-vin")).toHaveValue("48");
     await expect(page.locator("#num-vout")).toHaveValue("12");
-    await expect.poll(async () => (await readMotionProbe(page)).css.filter((call) => call.name === "bcCommitSettle").length).toBe(3);
     let motion = await readMotionProbe(page);
-    expect(motion.css.filter((call) => call.name === "bcCommitSettle").map((call) => call.target.className)).toEqual(expect.arrayContaining([
-      expect.stringContaining("bc-results"),
-      expect.stringContaining("bc-schematic--animated"),
-      expect.stringContaining("bc-scope")
-    ]));
+    expect(motion.css).toEqual([]);
+    expect(motion.waapi).toEqual([]);
 
-    await page.waitForTimeout(240);
-    await expect(page.locator(".bc-commit-settle")).toHaveCount(0);
     await clearMotionProbe(page);
     await busPreset.click();
-    await page.waitForTimeout(40);
     motion = await readMotionProbe(page);
     expect(motion.css.filter((call) => call.name === "bcCommitSettle")).toEqual([]);
 
     await page.locator("#num-vin").fill("24");
     await page.locator("#num-vin").press("Tab");
-    await page.waitForTimeout(40);
     await expect(page.locator("#num-vin")).toHaveValue("24");
     motion = await readMotionProbe(page);
     expect(motion.css.filter((call) => call.name === "bcCommitSettle")).toEqual([]);
@@ -152,22 +131,20 @@ test.describe("purposeful tool motion", () => {
     await clearMotionProbe(page);
     await page.locator('button[data-mode="design"]').click();
     await expect(page.locator('button[data-mode="design"]')).toHaveAttribute("aria-pressed", "true");
-    await expect.poll(async () => (await readMotionProbe(page)).css.filter((call) => call.name === "bcCommitSettle").length).toBe(3);
+    expect((await readMotionProbe(page)).css).toEqual([]);
 
-    await page.waitForTimeout(240);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await clearMotionProbe(page);
     await page.locator('button[data-preset="core"]').click();
     await expect(page.locator("#num-vin")).toHaveValue("5");
     await expect(page.locator("#num-vout")).toHaveValue("1.8");
-    await page.waitForTimeout(40);
     motion = await readMotionProbe(page);
     expect(motion.css.filter((call) => call.name === "bcCommitSettle")).toEqual([]);
     await expect(page.locator(".bc-commit-settle")).toHaveCount(0);
     expect(issues).toEqual([]);
   });
 
-  test("workspace disclosure, reference, and copy cues remain finite and reversible", async ({ page }) => {
+  test("workspace disclosure, reference, and copy feedback are immediate and reversible", async ({ page }) => {
     const issues = observeRuntimeIssues(page);
     await installMotionProbe(page);
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -181,22 +158,15 @@ test.describe("purposeful tool motion", () => {
     await familySummary.click();
     await expect(family).toHaveClass(/is-open/);
     await expect(familySummary).toBeFocused();
-    await expect.poll(async () => (await readMotionProbe(page)).css.filter((call) => call.name === "blx-v2-family-disclose").length).toBe(1);
-
     let motion = await readMotionProbe(page);
-    const familyFlips = motion.waapi.filter((call) => call.target.family && call.duration === 220);
-    expect(familyFlips.length).toBeGreaterThan(0);
-    expect(familyFlips.some((call) => {
-      const match = call.keyframes.match(/translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/);
-      return match && Math.abs(Number(match[1])) > 0.5;
-    }), "at least one grid sibling should glide across columns instead of teleporting").toBe(true);
+    expect(motion.css).toEqual([]);
+    expect(motion.waapi).toEqual([]);
     const expandedWidths = await family.evaluate((row) => ({
       row: Math.round(row.getBoundingClientRect().width),
       list: Math.round(row.parentElement.getBoundingClientRect().width)
     }));
     expect(expandedWidths.row).toBe(expandedWidths.list);
 
-    await page.waitForTimeout(260);
     expect(await page.locator("[data-blx-family]").evaluateAll((families) => (
       families.every((row) => row.getAnimations({ subtree: true }).length === 0)
     ))).toBe(true);
@@ -205,7 +175,7 @@ test.describe("purposeful tool motion", () => {
     await expect(family).not.toHaveClass(/is-open/);
     motion = await readMotionProbe(page);
     expect(motion.css.filter((call) => call.name === "blx-v2-family-disclose"), "closing keeps native details semantics without a sluggish exit").toEqual([]);
-    expect(motion.waapi.filter((call) => call.target.family && call.duration === 220).length).toBeGreaterThan(0);
+    expect(motion.waapi).toEqual([]);
 
     const referenceButton = page.locator('[data-blx-view-panel="point"] [data-blx-reference]:visible');
     const referenceCard = page.locator("[data-blx-reference-card]");
@@ -217,17 +187,16 @@ test.describe("purposeful tool motion", () => {
     await expect(referenceCard).toBeVisible();
     await expect(referenceCard).toContainText("Held reference");
     motion = await readMotionProbe(page);
-    expect(motion.waapi.some((call) => call.target.referenceCard && call.duration === 220)).toBe(true);
-    expect(motion.waapi.some((call) => call.target.referenceButton && call.duration === 140)).toBe(true);
+    expect(motion.waapi).toEqual([]);
+    expect(motion.waapi).toEqual([]);
 
-    await page.waitForTimeout(240);
     await clearMotionProbe(page);
     await referenceButton.click();
     await expect(referenceButton).toHaveAttribute("data-active", "false");
-    await expect(referenceCard).toHaveAttribute("aria-hidden", "true");
+    expect(await referenceCard.evaluate((card) => card.hidden)).toBe(true);
     motion = await readMotionProbe(page);
-    expect(motion.waapi.some((call) => call.target.referenceCard && call.duration === 140)).toBe(true);
-    expect(motion.waapi.some((call) => call.target.referenceButton && call.duration === 140)).toBe(true);
+    expect(motion.waapi).toEqual([]);
+    expect(motion.waapi).toEqual([]);
     await expect(referenceCard).toBeHidden();
     await expect(referenceCard).toBeEmpty();
 
@@ -236,7 +205,7 @@ test.describe("purposeful tool motion", () => {
     await copyButton.click();
     await expect(copyButton).toHaveText("Copied");
     await expect(page.locator("[data-blx-live]")).toHaveText("Link copied to clipboard.");
-    await expect.poll(async () => (await readMotionProbe(page)).css.filter((call) => call.name === "blx-value-fluid-swap" && call.target.copyButton).length).toBe(1);
+    expect((await readMotionProbe(page)).css).toEqual([]);
     expect(await copyButton.evaluate((button) => button.getBoundingClientRect().width)).toBeGreaterThanOrEqual(92);
     await expect(copyButton).toHaveText("Copy link", { timeout: 1800 });
     await expect(copyButton.locator("[data-blx-copy-label]")).not.toHaveClass(/blx-value-swap/);
@@ -282,7 +251,6 @@ test.describe("purposeful tool motion", () => {
     await clearMotionProbe(page);
     await family.locator("summary").click();
     await expect(family).toHaveClass(/is-open/);
-    await page.waitForTimeout(70);
 
     const overlap = await family.evaluate((row) => {
       const body = row.querySelector(".blx-v2-atomic-list").getBoundingClientRect();
@@ -300,7 +268,7 @@ test.describe("purposeful tool motion", () => {
     expect(overlap, "following loss rows must not cross the disclosed detail").toBe(false);
 
     const motion = await readMotionProbe(page);
-    expect(motion.css.filter((call) => call.name === "blx-v2-family-disclose").length).toBe(1);
+    expect(motion.css).toEqual([]);
     expect(motion.waapi.filter((call) => call.target.family)).toEqual([]);
     expect(issues).toEqual([]);
   });
