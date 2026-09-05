@@ -112,29 +112,65 @@ test.describe("global navigation", () => {
 
   test("an in-flight Loss edit cannot overwrite a Back or Forward destination", async ({ page }) => {
     const issues = observeRuntimeIssues(page);
+    await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
 
     await page.getByRole("link", { name: "Buck Converter Loss Tool", exact: true }).click();
     await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
     await settlePage(page);
+    const entryUrl = page.url();
+    await page.getByRole("button", { name: "Open example" }).click();
+    await expect(page).toHaveURL(/\/tools\/buck-losses\/\?/);
+    await settlePage(page);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+    const exampleUrl = page.url();
+
+    // Keep the edit pending even if browser automation is delayed between actions.
+    await page.clock.pauseAt(new Date("2026-01-01T01:00:00Z"));
+    await page.locator("#blx-v2-vin").fill("13");
+    await page.clock.runFor(32);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("13");
+    await expect(page).toHaveURL(exampleUrl);
+    expect(await page.locator("#buck-loss-explorer").evaluate(root => Boolean(root.blxV2State.urlTimer))).toBe(true);
+    await page.goBack();
+    await expect(page).toHaveURL(entryUrl);
+    await expect(page.getByRole("button", { name: "Start guided setup" })).toBeVisible();
+    await page.clock.runFor(350);
+    await page.clock.resume();
+    await settlePage(page);
+    await expect(page).toHaveURL(entryUrl);
+    await expect(page.getByRole("button", { name: "Start guided setup" })).toBeVisible();
+
+    await page.goForward();
+    await expect(page).toHaveURL(exampleUrl);
+    await settlePage(page);
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+    expect(issues).toEqual([]);
+  });
+
+  test("a committed Loss edit survives Back and Forward", async ({ page }) => {
+    const issues = observeRuntimeIssues(page);
+    await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    const entryUrl = page.url();
     await page.getByRole("button", { name: "Open example" }).click();
     await expect(page).toHaveURL(/\/tools\/buck-losses\/\?/);
     await settlePage(page);
     await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
 
     await page.locator("#blx-v2-vin").fill("13");
+    await expect(page).toHaveURL(url => url.searchParams.get("vin") === "13");
+    const committedUrl = page.url();
     await page.goBack();
-    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
+    await expect(page).toHaveURL(entryUrl);
     await settlePage(page);
-    await page.waitForTimeout(350);
-    await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
     await expect(page.getByRole("button", { name: "Start guided setup" })).toBeVisible();
 
     await page.goForward();
-    await expect(page).toHaveURL(/\/tools\/buck-losses\/\?/);
+    await expect(page).toHaveURL(committedUrl);
     await settlePage(page);
-    await expect(page.locator("#blx-v2-vin")).toHaveValue("12");
+    await expect(page.locator("#blx-v2-vin")).toHaveValue("13");
     expect(issues).toEqual([]);
   });
 
