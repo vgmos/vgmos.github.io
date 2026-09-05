@@ -41,8 +41,8 @@ test.describe("immediately visible homepage", () => {
     await expect(page.locator(".source-figure img").first()).toBeVisible();
     await page.goto(new URL(LT83402_PROJECT_ROUTE, SITE_URL).href);
     await expect(page.locator("[data-figure-inspect]")).toHaveCount(0);
-    await expect(page.locator(".source-figure img")).toHaveCount(4);
-    await expect(page.locator(".source-figure figcaption a")).toHaveCount(4);
+    await expect(page.locator(".source-figure img")).toHaveCount(6);
+    await expect(page.locator(".source-figure figcaption a")).toHaveCount(6);
     await context.close();
   });
 });
@@ -57,10 +57,13 @@ test.describe("project figure inspector", () => {
       await expect(page.locator(".project-facts")).toHaveCount(0);
       await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", "https://vgmos.github.io/assets/projects/lt83402/lt83402-package.png");
       const triggers = page.locator("[data-figure-inspect]");
-      await expect(triggers).toHaveCount(4);
+      await expect(triggers).toHaveCount(6);
       const figureSources = [
         "https://www.analog.com/en/products/lt83402.html",
-        ...[38, 11, 16].map(number => `https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=${number}`),
+        ...[38, 11].map(number => `https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=${number}`),
+        "https://www.analog.com/media/en/technical-documentation/data-sheets/lt83203-lt83205.pdf#page=11",
+        "https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=16",
+        "https://www.analog.com/media/en/technical-documentation/data-sheets/lt83203-lt83205.pdf#page=16",
       ];
       for (const [index, sourceURL] of figureSources.entries()) {
         const trigger = triggers.nth(index);
@@ -86,11 +89,21 @@ test.describe("project figure inspector", () => {
         await expect(dialog).toBeHidden();
         await expect(trigger).toBeFocused();
       }
-      const comparison = page.getByRole("region", { name: "Published LT83402 and LT83203 noise conditions" });
+      const comparison = page.getByRole("region", { name: "Published LT83402 and LT83205 noise at 2 MHz" });
       await expect(comparison.getByRole("columnheader")).toHaveCount(3);
-      await expect(comparison.getByRole("row", { name: "Noise-test load 2.5 A Not stated", exact: true })).toBeVisible();
-      await expect(comparison.getByRole("row", { name: "Switching frequency 2 MHz 6 MHz", exact: true })).toBeVisible();
-      await expect(page.locator(".project-body")).toContainText("they do not establish a device ranking");
+      for (const row of [
+        "Noise at 0 A 3.31 µV RMS 4.42 µV RMS",
+        "Noise at 1 A 3.32 µV RMS 4.51 µV RMS",
+        "Noise at rated load 2.80 µV RMS at 2.5 A 5.64 µV RMS at 5 A",
+        "Input / output 12 V / 3.3 V 12 V / 1 V",
+        "Switching frequency 2 MHz 2 MHz",
+        "Inductor / nominal output capacitance 2.2 µH / 88 µF 0.47 µH / 183.4 µF",
+        "SET capacitor 1 µF 2.2 µF",
+      ]) await expect(comparison.getByRole("row", { name: row, exact: true })).toBeVisible();
+      await expect(comparison).not.toContainText("1.93");
+      await expect(comparison).not.toContainText("6 MHz");
+      await expect(page.locator(".project-body")).toContainText("prevent a like-for-like noise ranking");
+      await expect(page.locator(".project-body")).toContainText("neither figure specifies switching frequency");
       if (width <= 390) {
         await comparison.focus();
         await comparison.press("ArrowRight");
