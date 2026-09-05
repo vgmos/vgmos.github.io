@@ -44,22 +44,9 @@ for (const theme of ["light", "dark"]) {
         if (name === "converter") {
           await expect(page.locator(".bc-schematic-reference a")).toHaveCSS("text-decoration-line", "underline");
         }
-        if (name === "ceeri") {
-          const table = page.getByRole("region", { name: "Reported Jetson TX1 operation timings" });
-          await expect(table.getByRole("columnheader")).toHaveCount(4);
-          await expect(table.locator("tbody tr")).toHaveCount(4);
-          await expect(table.getByRole("columnheader", { name: "GPU time (ms)" })).toBeVisible();
-          await expect(table.getByRole("row", { name: "Canny filtering 9 10 0.9×", exact: true })).toBeVisible();
-          if (width <= 390) {
-            await table.focus();
-            const before = await table.evaluate(el => el.scrollLeft);
-            await page.keyboard.press("ArrowRight");
-            await expect.poll(() => table.evaluate(el => el.scrollLeft)).toBeGreaterThan(before);
-          }
-        }
         if (name === "op-amp") {
           await expect(page.locator("h1")).toHaveText("gm/ID Op-Amp Sizing");
-          await expect(page.locator(".project-body")).toContainText("sized single-stage OTA");
+          await expect(page.locator(".project-body")).toContainText("sized a single-stage OTA");
         }
         const styles = await page.evaluate(() => {
           const style = (element) => {

@@ -13,7 +13,7 @@ topics:
 status: Practice School-I project
 date: 2017-07-12
 summary: FPGA and GPU acceleration study for image-processing kernels at CSIR-CEERI.
-description: Accelerating image-processing kernels two ways at CSIR-CEERI — Vivado HLS on a Zynq ZC702 FPGA, and CUDA/OpenCV on an NVIDIA Jetson TX1 — with measured CPU-vs-GPU timings.
+description: Image-processing kernels at CSIR-CEERI using Vivado HLS on a Zynq ZC702 FPGA and CUDA/OpenCV on an NVIDIA Jetson TX1, with attention to data-transfer costs.
 ---
 
 In summer 2017, during BITS's Practice School term at CSIR-CEERI, I studied which image-processing operations benefit from moving off the CPU and what each alternative requires.
@@ -28,27 +28,9 @@ The red-object tracker converted frames to HSV and applied hue thresholds on the
 
 ## Results
 
-The report averaged repeated timings for each operation on the Jetson TX1:
+Moving an operation to the GPU helps only when its compute savings exceed transfer and synchronization costs. The tracker still performed color conversion, thresholding, and centroid calculation on the CPU. Timing GPU kernels alone therefore does not measure the full pipeline.
 
-<p class="project-table__hint" id="timing-table-hint">Scroll horizontally to compare every column →</p>
-<div class="project-table" role="region" tabindex="0" aria-label="Reported Jetson TX1 operation timings" aria-describedby="timing-table-hint">
-  <table>
-    <thead>
-      <tr><th scope="col">Operation</th><th scope="col">CPU time (ms)</th><th scope="col">GPU time (ms)</th><th scope="col">Reported CPU/GPU ratio</th></tr>
-    </thead>
-    <tbody>
-      <tr><th scope="row">RGB to HSV</th><td>4.3</td><td>1.8</td><td>2.38×</td></tr>
-      <tr><th scope="row">Morphological operations</th><td>36.2</td><td>8.1</td><td>4.46×</td></tr>
-      <tr><th scope="row">Thresholding</th><td>4.4</td><td>0.9</td><td>4.88×</td></tr>
-      <tr><th scope="row">Canny filtering</th><td>9</td><td>10</td><td>0.9×</td></tr>
-    </tbody>
-  </table>
-</div>
+## Further reading
 
-Morphology saved the most time in this comparison; Canny was slightly slower on the GPU. In the tracker appendix, the CUDA timer starts after upload and stops before download, excluding transfers and the CPU stages. The report does not establish a common timing protocol for every table row or the complete pipeline's frame rate.
-
-## Sources
-
-- Practice School-I report at CSIR-CEERI, Pilani.
-- End-term seminar deck on implementing image-processing algorithms on FPGA and GPU.
-- Source code appendices for the FPGA binarization and GPU object-tracking pipelines.
+- Kari Pulli, Anatoly Baksheev, Kirill Kornyakov, and Victor Eruhimov, ["Real-Time Computer Vision with OpenCV,"](https://doi.org/10.1145/2184319.2184337) Communications of the ACM, vol. 55, no. 6, pp. 61–69, June 2012.
+- Xilinx, ["Vivado Design Suite User Guide: High-Level Synthesis,"](https://docs.amd.com/v/u/2014.3-English/ug902-vivado-high-level-synthesis) UG902, v2014.3, September 30, 2014.

@@ -90,3 +90,8 @@ Both traces use 12 V input. Loads and time scales differ, and neither figure spe
   </div>
   <figcaption><strong>LT83203/LT83205 switch rising edge.</strong> 12 V input and 5 A load; 5 ns/div horizontally and 2 V/div vertically. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83203-lt83205.pdf#page=16">Rev. C, Figure 38</a>.</figcaption>
 </figure>
+
+## Technical references
+
+- Analog Devices, ["LT83401/LT83402: 42V, 1A/2.5A Step-Down Silent Switcher 3 with Ultra-Low Noise Reference,"](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf) data sheet, Rev. 1, April 2026.
+- Analog Devices, ["LT83203/LT83205: 18V, 3A/5A Step-Down Silent Switcher 3 with Ultra-Low Noise Reference,"](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83203-lt83205.pdf) data sheet, Rev. C, January 2026.
