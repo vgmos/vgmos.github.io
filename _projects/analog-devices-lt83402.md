@@ -7,14 +7,16 @@ kind: project
 featured: true
 status: Released
 date: 2026-09-04
-summary: My first chip release at Analog Devices.
-description: Leading LT83402 from concept to release, with ADI's published application circuit, output-noise examples, and switch rising edge.
+summary: A 42 V, 2.5 A buck regulator, from chip design through release.
+description: LT83402 chip leadership, the circuit's reference-noise path, and ADI's published output-noise and switching examples.
 image: /assets/projects/lt83402/lt83402-package.png
 ---
 
-I led the chip from concept and design reviews through layout, validation, silicon debugging, and release, working with colleagues across applications, validation, test, and qualification. [Release post](https://www.linkedin.com/posts/vgmos_analogdevices-powerelectronics-lownoise-activity-7391518741676638208-qXI3)
+A buck regulator steps voltage down by alternating its switches. Its inductor keeps current flowing between transitions, and its output capacitor absorbs the difference between inductor and load current. Sensitive analog circuits also need the resulting supply to be quiet.
 
 The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous buck regulator with a 2.8–42 V input range and a 2.5 A output-current rating. It uses Silent Switcher 3 in a 3 × 2 mm package.
+
+I led the chip from concept and design reviews through layout, validation, silicon debugging, and release, working with colleagues across applications, validation, test, and qualification. The figures below are ADI's published characterization. [Release post](https://www.linkedin.com/posts/vgmos_analogdevices-powerelectronics-lownoise-activity-7391518741676638208-qXI3)
 
 <figure class="source-figure source-figure--compact source-figure--inspect-below">
   <div class="source-figure__frame">
@@ -24,6 +26,8 @@ The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous 
 </figure>
 
 ## Output noise
+
+In the application below, a reference current flows through the SET resistor to establish the target voltage. Feedback makes the output follow that target, so noise on SET can reach the output too. The SET capacitor filters noise from the reference current and resistor. Increasing it reduces that contribution but also takes longer to charge at startup. See the data sheet's [output-voltage setting](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=28) and [SET-capacitor guidance](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=32).
 
 <figure class="source-figure source-figure--wide source-figure--inspect-below">
   <div class="source-figure__frame">
@@ -39,7 +43,7 @@ The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous 
   <figcaption><strong>Noise across load.</strong> At 12 V input, 3.3 V output, 2 MHz, and 25 °C: 3.31, 3.32, and 2.80 µV RMS at 0, 1, and 2.5 A respectively, integrated over 10 Hz–100 kHz. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=11">Rev. 1, Figure 4</a>.</figcaption>
 </figure>
 
-The 10 Hz–100 kHz integral excludes MHz switching ripple and does not measure radiated EMI.
+The curves show where noise lies in frequency; the RMS values combine its contribution over 10 Hz–100 kHz. This band excludes MHz switching ripple and does not measure radiated electromagnetic interference (EMI).
 
 ## LT83205 comparison at 2 MHz
 
@@ -75,7 +79,7 @@ The LT83402 circuit also includes an 82 pF compensation capacitor. LT83205 compo
 
 ## Switch rising edges
 
-Both traces use 12 V input. Loads and time scales differ, and neither figure specifies switching frequency. Horizontal scales are not rise-time specifications.
+These traces zoom in on a single switch-node transition. Both use 12 V input, but loads and time scales differ, and neither figure specifies switching frequency. The horizontal scale tells us how to read each trace; it is not a rise-time specification.
 
 <figure class="source-figure source-figure--wide source-figure--inspect-below">
   <div class="source-figure__frame">

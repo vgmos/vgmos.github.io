@@ -12,7 +12,7 @@ stylesheets:
   <header class="bc-header">
     <p class="eyebrow">Interactive tool · Ideal-component model</p>
     <h1>Buck Converter Tool</h1>
-    <p class="bc-dek">Calculate an operating point and inspect its steady-state switching waveforms. Enable DCM to explore discontinuous conduction at a fixed switching frequency.</p>
+    <p class="bc-dek">Follow the inductor current as the switches alternate. Start with a preset, increase the inductance, and watch the current ripple shrink.</p>
   </header>
 
   <div class="bc-workbench">
@@ -45,6 +45,7 @@ stylesheets:
           <input id="sl-izc" type="range" min="0" max="1000" step="1" aria-label="Zero-cross current slider">
           <div class="bc-ticks" data-for="izc"></div>
         </div>
+        <p class="bc-scope-foot">Leave i<sub>ZC</sub> at 0 for ideal diode-emulation DCM. A nonzero threshold uses an approximate residual-current model; its idle-current path is not shown in the schematic.</p>
       </div>
 
       <div class="bc-controls">
@@ -191,7 +192,7 @@ stylesheets:
         </div>
       </div>
 
-      <p class="bc-note" id="dcm-note"><strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.</p>
+      <p class="bc-note" id="dcm-note"><strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. Forced CCM permits this reverse current. A diode-rectified buck, or a synchronous buck using diode emulation, stops conducting at zero current and can enter DCM. Enable DCM to explore that behavior.</p>
     </div>
 
     <div class="bc-workbench-scope">
@@ -302,10 +303,14 @@ stylesheets:
   </div>
 
   <section class="post-content project-body">
+    <h2>Follow the current</h2>
+    <p>For positive inductor current, closing the high-side switch connects a current path from the input through the inductor to the output. The inductor current rises. When the high-side opens and the low-side closes, positive current keeps flowing toward the output, returning through the low-side switch, while the inductor current falls.</p>
+    <p>The capacitor takes the difference: i<sub>C</sub> = i<sub>L</sub> − i<sub>O</sub>. It charges when the inductor supplies more current than the load needs and supplies the shortfall when the inductor supplies less. With ESR set to zero, output voltage rises while the capacitor charges and falls while it discharges.</p>
+    <p>Try increasing C<sub>O</sub> at the same operating point. The inductor current stays the same, but the same charge movement produces less voltage ripple. This separates the inductor's job from the capacitor's.</p>
     <h2>Steady-state operation</h2>
     <p>Across the ON-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the OFF-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and its current ramps down. In CCM, volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
-    <p>Δi<sub>L</sub>/i<sub>O</sub> of roughly 25–50&nbsp;% is a reasonable starting point.</p>
+    <p>At a chosen design load, a current-ripple target of roughly 25–50&nbsp;% of load current is a starting point. It is not a constraint across the full load range: at fixed voltages, frequency, and inductance in CCM, the absolute ripple stays constant as load changes.</p>
     <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. In DCM, duty also depends on load and the zero-current interval.</p>
     <p>The power stage uses ideal switches, no dead time, and lossless inductors and capacitors. Optional output ESR adds i<sub>C</sub> · R<sub>ESR</sub> to voltage ripple without changing duty cycle or inductor current. For power-loss estimates, use the <a href="/tools/buck-losses/">Buck Converter Loss Tool</a>.</p>
   </section>
@@ -1498,7 +1503,7 @@ stylesheets:
     if (r.requestedDcm && !r.dcmValid) {
       notes.push("<strong>DCM boundary:</strong> " + r.dcmReason + " The plots below use the forced-CCM boundary behavior instead of drawing a fake idle interval.");
     } else if (!dcmEnabled && r.iVal < 0) {
-      notes.push("<strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. A synchronous buck keeps operating like this (forced CCM, as drawn); a diode-rectified buck would enter discontinuous conduction, where these equations no longer hold.");
+      notes.push("<strong>Light-load note:</strong> Δi<sub>L</sub>/2 exceeds i<sub>O</sub>, so the inductor current reverses each cycle. Forced CCM permits this reverse current. A diode-rectified buck, or a synchronous buck using diode emulation, stops conducting at zero current and can enter DCM. Enable DCM to explore that behavior.");
     }
     if (notes.length) {
       el["dcm-note"].innerHTML = notes.join("<br> ");

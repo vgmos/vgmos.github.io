@@ -12,7 +12,7 @@ topics:
   - high-level synthesis
 status: Practice School-I project
 date: 2017-07-12
-summary: FPGA and GPU acceleration study for image-processing kernels at CSIR-CEERI.
+summary: Why image-processing acceleration depends on the whole pipeline, including data movement and CPU work.
 description: Image-processing kernels at CSIR-CEERI using Vivado HLS on a Zynq ZC702 FPGA and CUDA/OpenCV on an NVIDIA Jetson TX1, with attention to data-transfer costs.
 ---
 
@@ -26,9 +26,9 @@ The FPGA side ran on Vivado HLS 2014.4 and the Zynq ZC702 board. Implemented or 
 
 The red-object tracker converted frames to HSV and applied hue thresholds on the CPU, uploaded the mask for GPU erosion, dilation, and Canny filtering, then downloaded the result for centroid calculation and path drawing.
 
-## Results
+## Design lesson
 
-Moving an operation to the GPU helps only when its compute savings exceed transfer and synchronization costs. The tracker still performed color conversion, thresholding, and centroid calculation on the CPU. Timing GPU kernels alone therefore does not measure the full pipeline.
+A fast GPU kernel does not guarantee a faster tracker. The useful measure is the time from an input frame to its processed result, including data movement, synchronization, and the work that remains on the CPU. In this tracker, color conversion, thresholding, and centroid calculation still ran on the CPU. Timing GPU kernels alone therefore does not measure the full pipeline.
 
 ## Further reading
 

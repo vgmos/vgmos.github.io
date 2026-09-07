@@ -9,7 +9,7 @@ test.describe("immediately visible homepage", () => {
       await page.emulateMedia({ reducedMotion: motion });
       await page.goto("/");
       await settlePage(page);
-      await expect(page.locator(".home-title")).toHaveText("Tools, projects, and notes");
+      await expect(page.locator(".home-title")).toHaveText("Analog and power IC design");
       await expect(page.locator(".hero-lede")).toContainText("low-noise DC-DC buck converters");
       await expect(page.locator("[data-signal-path], [data-reveal], .page-exit-layer")).toHaveCount(0);
       await expect(page.locator(".list-item")).toHaveCount(9);

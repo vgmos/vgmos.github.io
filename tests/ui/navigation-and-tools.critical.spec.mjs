@@ -22,7 +22,7 @@ test.describe("global navigation", () => {
 
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Analog and power IC design" })).toBeVisible();
     await expect(page.locator("body > main.page-content")).toBeFocused();
     await expect(page.locator("html")).toHaveAttribute("data-theme", selectedTheme);
     await page.waitForTimeout(400);
@@ -74,7 +74,7 @@ test.describe("global navigation", () => {
 
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Analog and power IC design" })).toBeVisible();
     expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
 
     await page.goForward();
@@ -106,7 +106,7 @@ test.describe("global navigation", () => {
     await page.waitForTimeout(400);
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Analog and power IC design" })).toBeVisible();
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(savedScroll - 30);
   });
 
@@ -198,7 +198,7 @@ test.describe("global navigation", () => {
       url.pathname === "/" && !url.search && !url.hash
     ));
     await settlePage(page);
-    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Analog and power IC design" })).toBeVisible();
     expect(issues).toEqual([]);
   });
 
@@ -241,7 +241,7 @@ test.describe("global navigation", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
     await settlePage(page);
-    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Analog and power IC design" })).toBeVisible();
     expect(issues).toEqual([]);
   });
 
@@ -267,7 +267,7 @@ test.describe("global navigation", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" }),
+      page.getByRole("heading", { level: 1, name: "Analog and power IC design" }),
     ).toBeVisible({ timeout: 4000 });
     await settlePage(page);
     expect(issues).toEqual([]);
@@ -360,7 +360,7 @@ test.describe("global navigation", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
     await settlePage(page);
-    await expect(page.getByRole("heading", { level: 1, name: "Tools, projects, and notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Analog and power IC design" })).toBeVisible();
     expect(issues).toEqual([]);
   });
 

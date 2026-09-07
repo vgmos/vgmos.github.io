@@ -72,7 +72,7 @@
   top: 0;
   transform: translateX(-50%);
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-schematic .cycle-labs span.is-live {
   color: var(--accent);
@@ -123,7 +123,7 @@
 .bc-schematic .lbl,
 .bc-schematic .node {
   fill: var(--ink);
-  font: 400 16px/24px var(--font-sans);
+  font: 400 16px/24px var(--font-text);
 }
 .bc-schematic .node {
   fill: var(--accent);
@@ -153,14 +153,14 @@
   background: var(--paper);
   color: var(--accent);
   cursor: pointer;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-playback button:hover {
   background: var(--soft);
 }
 .bc-playback label,
 .bc-playback span {
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   color: var(--muted);
 }
 .bc-playback input {
@@ -180,7 +180,7 @@
   padding-top: 16px;
   margin: 0;
   color: var(--ink-soft);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 #bc-anim-phase {
   font-weight: 600;
@@ -197,7 +197,7 @@
 }
 .bc-schematic-reference {
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   margin: 16px 0 0;
 }
 .bc-schematic-reference a {
@@ -209,7 +209,7 @@
     display: block;
     margin: 8px 0;
     color: var(--muted);
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-anim-main {
     display: block;
@@ -233,7 +233,7 @@
 .bc-duty-label {
   display: block;
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-duty-rail {
   display: grid;
@@ -307,7 +307,7 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-duty-tick::before {
   content: "";
@@ -348,7 +348,7 @@
   align-self: center;
   color: var(--muted);
   margin-right: 4px;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-presets button {
   background: transparent;
@@ -385,7 +385,7 @@
 }
 .bc-mode-label {
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-segmented {
   display: inline-flex;
@@ -429,7 +429,7 @@
   color: var(--ink-soft);
   cursor: pointer;
   padding: 6px 14px;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-segmented button[aria-pressed="true"] {
   background: transparent;
@@ -459,7 +459,7 @@
   padding: 0 14px;
   text-align: center;
   white-space: nowrap;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-dcm-toggle[aria-pressed="true"] {
   border-color: var(--ink);
@@ -507,7 +507,7 @@
   flex: 0 0 auto;
   white-space: nowrap;
   color: var(--ink);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-field-head .bc-entry {
   display: flex;
@@ -530,7 +530,7 @@
   background: var(--paper);
   color: var(--ink);
   text-align: right;
-  font: 400 var(--type-body)/var(--leading-body) var(--font-sans);
+  font: 400 var(--type-body)/var(--leading-body) var(--font-text);
   font-variant-numeric: tabular-nums;
 }
 .bc-entry input[type="number"]::-webkit-outer-spin-button,
@@ -549,7 +549,7 @@
 .bc-inline-param .bc-unit {
   color: var(--muted);
   min-width: 2.2em;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-inline-param {
   display: inline-flex;
@@ -559,7 +559,7 @@
 }
 .bc-inline-param label {
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-inline-param input[type="number"] {
   width: 4.6em;
@@ -669,7 +669,7 @@
 .bc-card .bc-k {
   margin: 0 0 3px;
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-card .bc-v {
   margin: 0;
@@ -679,7 +679,7 @@
   margin: 2px 0 0;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 
 
@@ -702,7 +702,7 @@
   color: var(--ink-soft);
   opacity: 0;
   visibility: hidden;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-note.bc-show {
   max-height: 220px;
@@ -746,18 +746,18 @@
 .bc-design-k {
   margin: 0 0 3px;
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-design-v {
   margin: 0;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-  font: 400 var(--type-body)/var(--leading-body) var(--font-sans);
+  font: 400 var(--type-body)/var(--leading-body) var(--font-text);
 }
 .bc-design-s {
   margin: 2px 0 0;
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-design-row {
   display: flex;
@@ -842,7 +842,7 @@
   gap: 10px;
   margin: 0 2px 14px;
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-probe-control label {
   color: var(--ink);
@@ -904,7 +904,7 @@
 }
 .bc-panel .chan {
   fill: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-panel .chan .val {
   fill: var(--accent);
@@ -917,7 +917,7 @@
   paint-order: stroke;
   stroke: var(--paper);
   stroke-width: 3px;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-panel .tag--accent {
   fill: var(--accent);
@@ -929,7 +929,7 @@
 }
 .bc-panel .dim-name {
   fill: var(--ink-soft);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-panel .dim-name tspan {
   font-size: 9.5px;
@@ -937,7 +937,7 @@
 .bc-panel .dim-val {
   fill: var(--ink);
   font-variant-numeric: tabular-nums;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-panel .tick {
   stroke: var(--muted);
@@ -994,12 +994,12 @@
 .bc-panel .probe-flag text {
   fill: var(--paper);
   font-variant-numeric: tabular-nums;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-scope .bc-scope-foot {
   margin: 10px 2px 2px;
   color: var(--muted);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-panel .bc-playback-cursor {
   stroke: var(--accent);
@@ -1122,7 +1122,7 @@
     width: 100%;
   }
   .bc-schematic .cycle-labs span {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-duty-control {
     order: 1;
@@ -1140,7 +1140,7 @@
     grid-row: 1;
     align-self: center;
     white-space: nowrap;
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-duty-rail {
     grid-column: 2;
@@ -1172,7 +1172,7 @@
     min-height: 24px;
     padding: 7px 3px 0;
     transform: translateX(-50%);
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-duty-tick::before {
     top: -3px;
@@ -1187,14 +1187,14 @@
     margin-bottom: 0.45rem;
   }
   .bc-mode-label {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-presets span {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-presets button {
     padding: 5px 9px;
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-preset-full {
     display: none;
@@ -1213,7 +1213,7 @@
   .bc-switchers .bc-segmented button,
   .bc-dcm-toggle {
     padding-inline: 8px;
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-dcm-toggle {
     min-height: 40px;
@@ -1280,7 +1280,7 @@
 }
 .bc-dek {
   max-width: 700px;
-  font: 400 var(--type-body)/var(--leading-body) var(--font-sans);
+  font: 400 var(--type-body)/var(--leading-body) var(--font-text);
 }
 .bc-presets,
 .bc-mode,
@@ -1294,7 +1294,7 @@
 .bc-unit,
 .bc-tick,
 .bc-card {
-  font-family: var(--font-sans);
+  font-family: var(--font-text);
 }
 .bc-schematic,
 .bc-controls,
@@ -1309,13 +1309,13 @@
 .bc-card .bc-k,
 .bc-card .bc-s,
 .bc-scope .bc-scope-foot {
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-presets button {
   min-height: 34px;
   color: var(--ink-soft);
   border-radius: 4px;
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-presets button:hover,
 .bc-presets button:focus-visible {
@@ -1326,10 +1326,10 @@
 }
 .bc-field-head label {
   color: var(--ink);
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-entry input[type="number"] {
-  font: 400 var(--type-body)/var(--leading-body) var(--font-sans);
+  font: 400 var(--type-body)/var(--leading-body) var(--font-text);
   font-variant-numeric: tabular-nums;
 }
 .bc-entry input[type="number"]:focus-visible {
@@ -1343,7 +1343,7 @@
   transform: scale(1.08);
 }
 .bc-tick {
-  font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+  font: 400 var(--type-small)/var(--leading-small) var(--font-text);
 }
 .bc-tick:hover,
 .bc-tick:focus-visible {
@@ -1358,7 +1358,7 @@
 .bc-card .bc-v {
   color: var(--ink);
   letter-spacing: normal;
-  font: 500 var(--type-entry)/var(--leading-entry) var(--font-sans);
+  font: 500 var(--type-entry)/var(--leading-entry) var(--font-text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1499,11 +1499,11 @@
   }
   .bc-workbench-main .bc-card .bc-v {
     white-space: normal;
-    font: 500 var(--type-entry)/var(--leading-entry) var(--font-sans);
+    font: 500 var(--type-entry)/var(--leading-entry) var(--font-text);
     font-variant-numeric: tabular-nums;
   }
   .bc-workbench-main .bc-card .bc-s {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
 }
 
@@ -1528,19 +1528,19 @@
     padding: 14px 10px 10px;
   }
   .bc-panel .chan {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-panel .tag {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-panel .dim-name {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-panel .dim-val {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-panel .probe-flag text {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-panel .chan tspan[dy],
   .bc-panel .tag tspan[dy] {
@@ -1550,7 +1550,7 @@
     row-gap: 20px;
   }
   .bc-card .bc-v {
-    font: 500 var(--type-entry)/var(--leading-entry) var(--font-sans);
+    font: 500 var(--type-entry)/var(--leading-entry) var(--font-text);
     font-variant-numeric: tabular-nums;
   }
 }
@@ -1577,15 +1577,15 @@
     padding: 10px 10px 9px;
   }
   .bc-card .bc-k {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
   .bc-card .bc-v {
     white-space: normal;
-    font: 500 var(--type-entry)/var(--leading-entry) var(--font-sans);
+    font: 500 var(--type-entry)/var(--leading-entry) var(--font-text);
     font-variant-numeric: tabular-nums;
   }
   .bc-card .bc-s {
-    font: 400 var(--type-small)/var(--leading-small) var(--font-sans);
+    font: 400 var(--type-small)/var(--leading-small) var(--font-text);
   }
 }
 
@@ -1654,7 +1654,7 @@
   .bc-entry input[type="number"],
   .bc-inline-param input[type="number"] {
     min-height: 44px;
-    font: 400 var(--type-body)/var(--leading-body) var(--font-sans);
+    font: 400 var(--type-body)/var(--leading-body) var(--font-text);
     font-variant-numeric: tabular-nums;
   }
   .bc-field input[type="range"] {
@@ -1680,7 +1680,7 @@
   .bc-entry input[type="number"],
   .bc-inline-param input[type="number"] {
     min-height: 44px;
-    font: 400 var(--type-body)/var(--leading-body) var(--font-sans);
+    font: 400 var(--type-body)/var(--leading-body) var(--font-text);
     font-variant-numeric: tabular-nums;
   }
   .bc-presets button,

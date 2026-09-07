@@ -3,8 +3,8 @@ layout: default
 ---
 
 <section class="home-hero" aria-labelledby="home-title">
-  <h1 class="home-title" id="home-title">Tools, projects, and notes</h1>
-  <p class="hero-lede">I design analog and power ICs at Analog Devices, mainly low-noise DC-DC buck converters for RF, OLED, and automotive systems.</p>
+  <h1 class="home-title" id="home-title">Analog and power IC design</h1>
+  <p class="hero-lede">I design low-noise DC-DC buck converters at Analog Devices. Here I share projects, notes, and tools for understanding how circuits work, from current flow to design tradeoffs.</p>
 </section>
 
 <div class="home-shell">
@@ -15,8 +15,8 @@ layout: default
     <div class="item-list">
       {% for tool in site.data.tools %}
         <article class="list-item list-item--tool">
-          <p class="item-meta">{{ tool.meta }}</p>
           <h3><a href="{{ tool.url | relative_url }}">{{ tool.title }}</a></h3>
+          <p class="item-meta">{{ tool.meta }}</p>
           <p class="item-summary">{{ tool.summary }}</p>
         </article>
       {% else %}

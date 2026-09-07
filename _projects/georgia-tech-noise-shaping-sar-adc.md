@@ -13,27 +13,33 @@ topics:
   - SAR ADC
 status: Study preceded the group's ISSCC/JSSC 2021 chip
 date: 2021-09-09
-summary: Behavioral models of high-order noise-shaping SAR ADC loops.
+summary: Reusing conversion residue to improve resolution, and testing how sensitive the loop is to coefficient error.
 description: Behavioral modeling of EF and CIFF noise-shaping SAR ADC loops at Georgia Tech, covering NTF zeros, OSR sweeps, coefficient sensitivity, and the ISSCC/JSSC chip that followed.
 ---
 
-In fall 2019 I spent a semester with Prof. Shaolan Li's group at Georgia Tech modeling high-order noise-shaping SAR ADC loops. The group's NS-SAR line eventually produced a third-order EF-CIFF chip, published at ISSCC 2021 and in JSSC. The silicon was Tzu-Han Wang's and Ruowei Wu's design; my part was this earlier architecture study, so that's what this page covers.
+In fall 2019, I modeled noise-shaping SAR ADC loops with Prof. Shaolan Li's group at Georgia Tech. My work was an architecture study; the later chip was designed and measured by Tzu-Han Wang and Ruowei Wu.
 
 ## Why noise-shape a SAR
 
-SAR ADCs suit scaled CMOS because much of their operation is dynamic: CDAC switching, comparison, and logic. Higher resolution puts tighter requirements on input capacitance, comparator noise, residue amplification, or calibration. Noise shaping applies a technique from delta-sigma converters. Rather than discarding the conversion residue, you filter it through a loop filter `H(z)` and feed it back into later conversions. In the error-feedback form used here, the signal passes through roughly unchanged while the quantization error sees `NTF = 1 - H(z)` and is shaped out of band.
+At the end of a SAR conversion, the capacitive DAC (CDAC) holds a small voltage difference between the sampled input and the final DAC level. This is the conversion residue. A conventional SAR discards it when the next sample arrives. A noise-shaping SAR stores and filters it, then uses it to influence later conversions. The existing CDAC makes that error available without a separate precision subtractor. [Jie et al., 2021](https://doi.org/10.1109/OJSSCS.2021.3119910)
 
-Where should the NTF zeros sit? How much in-band noise remains once you integrate `|NTF|^2` over the signal band, and how much out-of-band gain does that cost? How much coefficient drift could the loop tolerate before SQNR degraded?
+An ideal first-order example makes the benefit visible: the output error becomes <code class="equation-inline">e[n] − e[n−1]</code>, where `e[n]` is the quantizer error on sample `n`. Averaging successive outputs cancels the intermediate error terms. In frequency terms, the error is suppressed near DC and increased at high frequencies. A digital low-pass filter removes the out-of-band noise before the sample rate is reduced.
+
+For the error-feedback (EF) convention used here, the noise transfer function is <code class="equation-inline">NTF(z) = 1 − H(z)</code>, with the sample delays included in `H(z)`. Setting `H(z) = z⁻¹` gives the first-order example above. Higher-order filters offer more freedom to place NTF zeros. Zeros on the unit circle create notches in the modeled quantization-noise spectrum. The signal transfer remains ideally unity.
+
+My study asked how to use that freedom: reduce the total in-band quantization noise while keeping out-of-band gain and coefficient sensitivity manageable. Higher order helps only if the required gains, timing, and internal signal swings can be realized.
 
 ## What I modeled
 
-I worked in MATLAB and Simulink with a 9-bit quantizer assumption, sweeping OSR 4 and OSR 8. For each candidate loop the procedure was the same:
+I worked in MATLAB and Simulink with a 9-bit quantizer assumption, sweeping oversampling ratios (OSRs) of 4 and 8. For a low-pass converter, `OSR = fs/(2BW)`: increasing OSR gives more samples per unit signal bandwidth, at the cost of a faster sample rate or narrower bandwidth. For each candidate loop the procedure was the same:
 
 - pick an NTF realization — second-, third-, or fourth-order, EF or CIFF style;
 - sweep `K_EF` (and `k1`, `k2`, `k3` where the structure had them);
-- compute the NTF with `freqz` and integrate `|NTF|^2` over the in-band bins to get SQNR;
+- compute the NTF with `freqz`, integrate the shaped quantization-noise power over the signal band, and compare it with signal power to estimate SQNR;
 - plot the zero movement and the SQNR curve;
 - check whether high SQNR persists across a useful range of coefficients.
+
+This frequency-domain estimate uses the additive quantization-noise model: the NTF weights the assumed noise spectrum by `|NTF|^2`. It does not by itself test overload or nonlinear loop behavior.
 
 I started from a second-order error-feedback baseline and worked upward: single-loop third-order EF, a version with optimized feed coefficients, cascaded EF-EF, CIFF-EF, and two fourth-order nested variants.
 
@@ -125,7 +131,7 @@ Peak behavioral SQNR for each candidate, at OSR 4 / OSR 8, with the coefficient 
   </table>
 </div>
 
-These are loop-level quantization-noise results. Measured SNDR also includes kT/C sampling noise, comparator noise, capacitor mismatch, settling error, jitter, and calibration residue. The table is therefore not directly comparable with the measured chip performance below.
+These are loop-level quantization-noise results. A chip's signal-to-noise-and-distortion ratio (SNDR) also reflects sampling and circuit noise, capacitor mismatch, settling error, jitter, and residual calibration error. Each error enters the loop at a different point and need not see the quantization-noise NTF. The table is therefore not directly comparable with the measured chip performance below.
 
 ## The chip
 
@@ -152,7 +158,7 @@ In 2021 the group published a third-order single-amplifier EF-CIFF NS-SAR, desig
       <tr><th>STF</th><td>Signal transfer function; ideally close to unity through the signal band.</td></tr>
       <tr><th>NTF</th><td>Noise transfer function; the transfer from quantization error to the ADC output.</td></tr>
       <tr><th>SQNR</th><td>Signal-to-quantization-noise ratio; a behavioral-model metric that counts only quantization noise.</td></tr>
-      <tr><th>SNDR</th><td>Signal-to-noise-and-distortion ratio; a measured metric that includes noise and distortion.</td></tr>
+      <tr><th>SNDR</th><td>Signal-to-noise-and-distortion ratio; includes noise and distortion, whether evaluated in simulation or measurement.</td></tr>
       <tr><th>ENOB</th><td>Effective number of bits, derived from converter dynamic performance.</td></tr>
       <tr><th>EF</th><td>Error feedback; a loop style that filters prior quantization error and feeds it back into later conversions.</td></tr>
       <tr><th>CIFF</th><td>Cascaded-integrator feed-forward; a loop-filter topology inherited from delta-sigma design.</td></tr>

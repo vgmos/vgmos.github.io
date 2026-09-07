@@ -254,7 +254,7 @@ function gatewayMarkup(lastQuery) {
   return `<div class="blx-entry-gateway" data-blx-entry-panel>
     <header class="blx-entry-gateway-head">
       <h1>Buck Converter Loss Tool</h1>
-      <p>Choose how you want to set up the model.</p>
+      <p>See where a buck converter loses power and how component choices change its efficiency.</p>
     </header>
     <div class="blx-entry-paths">
       <section class="blx-entry-path blx-entry-path-primary" aria-labelledby="blx-entry-guided-title">
@@ -264,7 +264,7 @@ function gatewayMarkup(lastQuery) {
       </section>
       <section class="blx-entry-path" aria-labelledby="blx-entry-workspace-title">
         <h2 id="blx-entry-workspace-title">Open workspace</h2>
-        <p class="blx-entry-path-label">${resume ? "Resume your last setup" : "Start from a complete example"}</p>
+        <p class="blx-entry-path-label">${resume ? "Resume your last setup" : "New here? Explore a complete example first."}</p>
         <p class="blx-entry-resume-summary">${escapeHtml(summary)}</p>
         <button type="button" class="blx-entry-secondary-action" data-blx-entry-open>${resume ? "Open previous setup" : "Open example"}</button>
       </section>

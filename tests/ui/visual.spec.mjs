@@ -22,6 +22,10 @@ test.describe("approved Chromium visual baselines", () => {
           await page.goto(route.path, { waitUntil: "domcontentloaded" });
           await settleVisualPage(page);
           await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+          if (route.name === "notebook-post") {
+            await expect(page.getByRole("link", { name: "Notebook", exact: true }))
+              .toHaveAttribute("aria-current", "location");
+          }
 
           await expect(page).toHaveScreenshot(`${route.name}-${theme}-${viewport.name}.png`, {
             fullPage: true

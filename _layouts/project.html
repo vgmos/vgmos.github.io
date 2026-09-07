@@ -12,10 +12,9 @@ layout: default
   </header>
 
   {% assign project_updated = page.last_updated | default: page.updated %}
-  {% if page.topics or project_updated %}
+  {% if project_updated %}
     <dl class="project-facts">
-      {% if page.topics %}<div><dt>Topics</dt><dd>{{ page.topics | join: ", " }}</dd></div>{% endif %}
-      {% if project_updated %}<div><dt>Last updated</dt><dd>{{ project_updated | date: "%B %-d, %Y" }}</dd></div>{% endif %}
+      <div><dt>Last updated</dt><dd>{{ project_updated | date: "%B %-d, %Y" }}</dd></div>
     </dl>
   {% endif %}
 
@@ -33,4 +32,8 @@ layout: default
   <div class="post-content project-body">
     {{ content }}
   </div>
+
+  <nav class="post_navi" aria-label="Project navigation">
+    <a class="post_navi-link" href="{{ '/#projects' | relative_url }}">← All projects</a>
+  </nav>
 </article>

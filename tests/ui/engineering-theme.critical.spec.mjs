@@ -73,8 +73,10 @@ for (const theme of ["light", "dark"]) {
             metrics: visible(
               ".bc-v, .blx-efficiency-value, .blx-summary-metric strong",
             ).map(style),
-            inter: document.fonts.check("400 16px Inter"),
-            mono: document.fonts.check('400 14px "IBM Plex Mono"'),
+            textFamilies: [...new Set(visible("body *")
+              .filter((el) => [...el.childNodes].some((node) =>
+                node.nodeType === Node.TEXT_NODE && node.textContent.trim()))
+              .map((el) => getComputedStyle(el).fontFamily))],
           };
         });
         expect(styles.heading, `${name} heading`).toMatchObject({
@@ -82,7 +84,7 @@ for (const theme of ["light", "dark"]) {
           line: width <= 700 ? "40px" : "48px",
           weight: "600",
         });
-        expect(styles.heading.family).toContain("Inter");
+        expect(styles.heading.family).toContain("Iowan Old Style");
         for (const s of styles.entries)
           expect(s).toMatchObject({
             size: "20px",
@@ -95,11 +97,11 @@ for (const theme of ["light", "dark"]) {
             line: "20px",
             weight: "400",
           });
-          expect(s.family).toContain("IBM Plex Mono");
+          expect(s.family).toContain("Iowan Old Style");
         }
         for (const s of styles.inputs) {
           expect(s.size, `${name} input`).toBe("16px");
-          expect(s.family).toContain("Inter");
+          expect(s.family).toContain("Iowan Old Style");
         }
         for (const s of styles.metrics)
           expect(s.numbers, `${name} numeric alignment`).toContain(
@@ -124,9 +126,8 @@ for (const theme of ["light", "dark"]) {
               `${testInfo.project.name}-loss-summary-${theme}-${width}.png`)});
           }
         }
-        expect(styles.inter).toBe(true);
-        // A font used only by metadata should not be fetched on a page without metadata.
-        if (styles.metadata.length) expect(styles.mono).toBe(true);
+        for (const family of styles.textFamilies)
+          expect(family, `${name} uses one text family`).toContain("Iowan Old Style");
         const overflow = await pageOverflow(page);
         expect(
           overflow.scrollWidth,
@@ -154,12 +155,7 @@ for (const theme of ["light", "dark"]) {
           });
         }
       }
-      expect(fonts.length).toBeGreaterThan(0);
-      expect(
-        fonts.every(
-          (url) => new URL(url).origin === new URL(page.url()).origin,
-        ),
-      ).toBe(true);
+      expect(fonts, "The system font should not require webfont downloads").toEqual([]);
     });
   }
 }

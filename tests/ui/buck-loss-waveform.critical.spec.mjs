@@ -290,12 +290,28 @@ test.describe("Buck loss switching-edge viewer", () => {
     expect(vertical.defaultPrevented).toBe(false);
     expect(vertical.accepted).toBe(true);
 
+    await page.emulateMedia({ reducedMotion: "reduce" });
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 568 });
       await page.waitForTimeout(50);
       const overflow = await pageOverflow(page);
       expect(overflow.scrollWidth, JSON.stringify(overflow.offenders)).toBeLessThanOrEqual(overflow.clientWidth + 1);
       expect((await waveform.boundingBox()).width).toBeLessThanOrEqual(width);
+      for (const mode of ["full", "rising", "falling"]) {
+        await page.locator(`[data-blx-waveform-mode="${mode}"]`).click();
+        await expect.poll(() => waveform.evaluate((element) => {
+          const labels = [...element.querySelectorAll(".blx-waveform-tick-label")].map((label) => ({
+            text: label.textContent,
+            rect: label.getBoundingClientRect()
+          }));
+          return {
+            mode: element.blxWaveformController.geometry.view.mode,
+            hasTicks: labels.length >= 2,
+            overlaps: labels.flatMap((label, index) => index > 0 && labels[index - 1].rect.right + 4 > label.rect.left
+              ? [`${labels[index - 1].text} / ${label.text}`] : [])
+          };
+        }), `${width}px ${mode} time-axis label spacing`).toEqual({ mode, hasTicks: true, overlaps: [] });
+      }
     }
   });
 

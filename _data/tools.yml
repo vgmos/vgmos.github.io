@@ -1,8 +1,8 @@
 - title: Buck Converter Tool
   url: /tools/buck-converter/
-  meta: Interactive tool · Ideal-component model
-  summary: Calculate duty cycle, current ripple, and output ripple. Inspect CCM and DCM waveforms.
+  meta: Ideal-component model
+  summary: Follow current through a switching cycle, then see how inductance and load change it.
 - title: Buck Converter Loss Tool
   url: /tools/buck-losses/
-  meta: Interactive tool · Loss and efficiency estimates
-  summary: Compare losses at an operating point and sweep efficiency across load.
+  meta: Loss and efficiency estimates
+  summary: Explore where power is lost and how load and component choices change efficiency.
