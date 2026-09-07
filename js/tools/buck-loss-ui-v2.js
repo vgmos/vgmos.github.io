@@ -694,7 +694,8 @@ function syncControls(root, state) {
   const driveOutsideDomain = state.conditioning?.errors?.some(({ code }) => code === "drive-outside-condition-domain");
   root.querySelectorAll("[data-blx-v2-input]").forEach((input) => {
     const key = input.dataset.blxV2Input;
-    if (document.activeElement !== input) input.value = state.rawInputs[key] ?? "";
+    const hasActiveDraft = document.activeElement === input && state.editingInput === input;
+    if (!hasActiveDraft) input.value = state.rawInputs[key] ?? "";
   });
   root.querySelectorAll("[data-blx-v2-range]").forEach((range) => {
     const key = range.dataset.blxV2Range;
@@ -2644,8 +2645,16 @@ function inputChanged(root, state, key, value, commit) {
 function initializeInputs(root, state) {
   root.querySelectorAll("[data-blx-v2-input]").forEach((input) => {
     const key = input.dataset.blxV2Input;
-    input.addEventListener("input", () => inputChanged(root, state, key, input.value, false));
+    input.addEventListener("input", () => {
+      state.editingInput = input;
+      inputChanged(root, state, key, input.value, false);
+    });
     input.addEventListener("change", () => inputChanged(root, state, key, input.value, true));
+    input.addEventListener("blur", () => {
+      if (state.editingInput !== input) return;
+      state.editingInput = null;
+      scheduleRender(root, state);
+    });
   });
   root.querySelectorAll("[data-blx-v2-range]").forEach((range) => {
     const key = range.dataset.blxV2Range;
@@ -3203,6 +3212,7 @@ export async function initBuckLossExplorerV2(root, options = {}) {
   if (!template) throw new Error("Buck loss v2 requires an explicit device template.");
   state = {
     rawInputs: cloneRaw(parsed.rawInputs),
+    editingInput: null,
     inputs: null,
     provenance: {},
     conditioning: null,

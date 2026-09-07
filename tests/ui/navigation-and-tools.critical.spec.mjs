@@ -955,6 +955,37 @@ test.describe("Buck Converter Loss Tool", () => {
     await expect(page).toHaveURL(/\/tools\/buck-converter\/$/);
   });
 
+  test("workspace conditioning refreshes a newly focused field while preserving an active draft", async ({ page }) => {
+    await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
+    await settlePage(page);
+    await page.locator('[data-blx-v2-group="drive"] > summary').click();
+    const qg = page.locator("#blx-v2-qgHigh");
+    const qgAt5V = Number(await qg.inputValue());
+
+    // Move focus as Tab would, in the same turn as the edit so rendering must follow it.
+    await page.evaluate(() => {
+      const drive = document.querySelector("#blx-v2-vDrive");
+      drive.focus();
+      drive.value = "3.3";
+      drive.dispatchEvent(new Event("input", { bubbles: true }));
+      drive.dispatchEvent(new Event("change", { bubbles: true }));
+      document.querySelector("#blx-v2-qgHigh").focus();
+    });
+    await expect(qg).toBeFocused();
+    await expect(page.locator("#blx-v2-rdsHigh")).toHaveValue("6.4");
+    await expect.poll(async () => Number(await qg.inputValue())).toBeLessThan(qgAt5V);
+    await expect.poll(() => new URL(page.url()).searchParams.has("qgh")).toBe(false);
+
+    await qg.fill("9.00");
+    await settlePage(page);
+    await expect(qg).toBeFocused();
+    await expect(qg).toHaveValue("9.00");
+    await expect(page.locator('[data-blx-condition-reset="qgHigh"]')).toBeVisible();
+    await expect.poll(() => new URL(page.url()).searchParams.get("qgh")).toBe("9");
+    await qg.press("Tab");
+    await expect(qg).toHaveValue("9");
+  });
+
   test("workspace conditioning recalculates from drive and current without turning calculated values into URL overrides", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
