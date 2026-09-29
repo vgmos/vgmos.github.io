@@ -12,11 +12,9 @@ description: LT83402 chip leadership, the circuit's reference-noise path, and AD
 image: /assets/projects/lt83402/lt83402-package.png
 ---
 
-A buck regulator steps voltage down by alternating its switches. Its inductor keeps current flowing between transitions, and its output capacitor absorbs the difference between inductor and load current. Sensitive analog circuits also need the resulting supply to be quiet.
+I led the chip from concept and design reviews through layout, validation, silicon debugging, and release, working with colleagues across applications, validation, test, and qualification. [Release post](https://www.linkedin.com/posts/vgmos_analogdevices-powerelectronics-lownoise-activity-7391518741676638208-qXI3)
 
-The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous buck regulator with a 2.8–42 V input range and a 2.5 A output-current rating. It uses Silent Switcher 3 in a 3 × 2 mm package.
-
-I led the chip from concept and design reviews through layout, validation, silicon debugging, and release, working with colleagues across applications, validation, test, and qualification. The figures below are ADI's published characterization. [Release post](https://www.linkedin.com/posts/vgmos_analogdevices-powerelectronics-lownoise-activity-7391518741676638208-qXI3)
+The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous buck regulator with a 2.8–42 V input range and a 2.5 A output-current rating. It uses Silent Switcher 3 in a 3 × 2 mm package. The figures below are ADI's published characterization.
 
 <figure class="source-figure source-figure--compact source-figure--inspect-below">
   <div class="source-figure__frame">

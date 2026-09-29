@@ -2,6 +2,7 @@
 title: Dimming DC-DC LED Driver
 institution: Georgia Tech
 period: 2020–2021
+publication: MS thesis, IECON 2021
 role: MS thesis researcher, first author
 kind: project
 featured: true
@@ -12,7 +13,7 @@ topics:
   - dimming
 status: MS thesis and IECON 2021 paper
 date: 2021-12-10
-summary: How LED current and converter losses determine the power needed to dim a light. MS thesis and IECON 2021 paper.
+summary: How LED current and converter losses determine the power needed to dim a light.
 description: MS thesis on dimming DC-DC LED drivers, comparing analog, shutdown PWM, shunt-switched PWM, and series-switched PWM by luminous efficiency, power loss, and dimming range.
 ---
 

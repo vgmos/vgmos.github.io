@@ -2,6 +2,7 @@
 title: Y-Flash Device Modeling and Trainable DAC
 institution: Technion
 period: 2018–2020
+publication: Nature Electronics 2019, DATE 2020
 role: Device modeling, Verilog-A, and the trainable-DAC study
 kind: project
 featured: true
@@ -62,7 +63,9 @@ Follow one branch in the 4×1 array: an enabled bit applies the read voltage to 
 
 Training adjusts those currents instead of relying on device matching alone. An external loop compares the output with the target code level, then applies program or erase pulses to change the threshold states. Conversion and training use different device connections and voltage levels.
 
-Amplifier offset can produce a nonzero output even at code 0000. My proposed correction adds two Y-Flash cells: first check the zero-code output, program the appropriate cell to cancel the offset, then keep that cell enabled while training the four DAC weights and during conversion. Program and erase also require separate high-voltage connections, so the sensing circuit and training interface are part of the DAC design.
+Programming takes 5 V pulses and erasing 8 V. DIDACTIC uses a 2T1R synapse, but generating those voltages on chip would need charge pumps, and the TowerJazz process offered no transistors that tolerate more than 8 V. The concept therefore uses bare Y-Flash cells (1R) and assumes the pulses come from an external test bench. For a proof of concept, that keeps the circuit simple. The sensing circuit and training interface are still part of the DAC design.
+
+Amplifier offset can produce a nonzero output even at code 0000. With an assumed maximum op-amp offset of ±2 mV, amplified 45× by the sensing chain, the output offset could reach 90 mV. Training can absorb offset in one direction but not the other, because the cells conduct only one way. My proposed correction adds two Y-Flash cells: first check the zero-code output, program the appropriate cell to cancel the offset, then keep that cell enabled while training the four DAC weights and during conversion.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
