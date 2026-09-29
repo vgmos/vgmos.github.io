@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.mjs";
-import { BUCK_LOSS_V2_ROUTE, pageOverflow, settlePage } from "./site.mjs";
+import { BUCK_LOSS_V2_ROUTE, pageOverflow, settlePage, LOSS_TOOL_SERVED, LOSS_TOOL_SKIP } from "./site.mjs";
 
 const ASYMMETRIC_ROUTE = `${BUCK_LOSS_V2_ROUTE}&tdhl=7&tdlh=1`;
 
@@ -26,6 +26,7 @@ async function dispatchWheel(waveform, options) {
 }
 
 test.describe("Buck loss switching-edge viewer", () => {
+  test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
   test("calculated ringing responds to explicit parasitics without changing loss or URL state", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);

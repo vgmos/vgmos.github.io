@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.mjs";
-import { settlePage } from "./site.mjs";
+import { LOSS_TOOL_SERVED, settlePage } from "./site.mjs";
 
 async function installLifecycleInstrumentation(page) {
   await page.addInitScript(() => {
@@ -86,7 +86,8 @@ async function waitForSoftNavigation(page, expectedPath) {
 }
 
 async function roundTrip(page, linkName, expectedPath) {
-  await page.getByRole("link", { name: linkName, exact: true }).click();
+  if (linkName) await page.getByRole("link", { name: linkName, exact: true }).click();
+  else await page.evaluate((path) => window.vgmosNavigation.navigate(path), expectedPath);
   await waitForSoftNavigation(page, expectedPath);
   await page.locator(".site-title").click();
   await waitForSoftNavigation(page, "/");
@@ -107,7 +108,7 @@ test("repeated navigation tears down tool animation and global listeners", async
   // Warm both code paths so cached documents, modules, and one-time allocations are
   // represented in the baseline before leak detection begins.
   await roundTrip(page, "Buck Converter Tool", "/tools/buck-converter/");
-  await roundTrip(page, "Buck Converter Loss Tool", "/tools/buck-losses/");
+  if (LOSS_TOOL_SERVED) await roundTrip(page, null, "/tools/buck-losses/");
 
   const cdp = await context.newCDPSession(page);
   await cdp.send("HeapProfiler.enable");
@@ -118,7 +119,7 @@ test("repeated navigation tears down tool animation and global listeners", async
     await roundTrip(page, "Buck Converter Tool", "/tools/buck-converter/");
   }
   for (let iteration = 0; iteration < 10; iteration += 1) {
-    await roundTrip(page, "Buck Converter Loss Tool", "/tools/buck-losses/");
+    if (LOSS_TOOL_SERVED) await roundTrip(page, null, "/tools/buck-losses/");
   }
 
   await page.waitForTimeout(750);

@@ -7,6 +7,7 @@ import {
   pageOverflow,
   setStoredTheme,
   settleVisualPage,
+  LOSS_TOOL_SERVED,
 } from "./site.mjs";
 
 const pages = [
@@ -23,7 +24,7 @@ const pages = [
   ["converter", "/tools/buck-converter/"],
   ["loss-entry", "/tools/buck-losses/"],
   ["loss-workspace", BUCK_LOSS_V2_ROUTE],
-];
+].filter(([, route]) => LOSS_TOOL_SERVED || !route.startsWith("/tools/buck-losses/"));
 
 for (const theme of ["light", "dark"]) {
   for (const width of [1440, 1000, 768, 390, 320, 640]) {
@@ -191,7 +192,7 @@ test("forced colors retain visible controls, content and keyboard focus", async 
 }) => {
   await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const route of ["/", "/tools/buck-converter/", BUCK_LOSS_V2_ROUTE]) {
+  for (const route of ["/", "/tools/buck-converter/", ...(LOSS_TOOL_SERVED ? [BUCK_LOSS_V2_ROUTE] : [])]) {
     await page.goto(route);
     await settleVisualPage(page);
     const toggle = page.getByRole("button", { name: /Switch to .* mode/ });

@@ -312,7 +312,7 @@ stylesheets:
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
     <p>At a chosen design load, a current-ripple target of roughly 25–50&nbsp;% of load current is a starting point. It is not a constraint across the full load range: at fixed voltages, frequency, and inductance in CCM, the absolute ripple stays constant as load changes.</p>
     <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. In DCM, duty also depends on load and the zero-current interval.</p>
-    <p>The power stage uses ideal switches, no dead time, and lossless inductors and capacitors. Optional output ESR adds i<sub>C</sub> · R<sub>ESR</sub> to voltage ripple without changing duty cycle or inductor current. For power-loss estimates, use the <a href="/tools/buck-losses/">Buck Converter Loss Tool</a>.</p>
+    <p>The power stage uses ideal switches, no dead time, and lossless inductors and capacitors. Optional output ESR adds i<sub>C</sub> · R<sub>ESR</sub> to voltage ripple without changing duty cycle or inductor current.</p>
   </section>
 </article>
 

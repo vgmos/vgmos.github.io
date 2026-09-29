@@ -44,7 +44,7 @@ export default defineConfig({
   },
   webServer: usesManagedLocalServer
     ? {
-        command: "bundle exec jekyll serve --host 127.0.0.1 --port 4000",
+        command: "bundle exec jekyll serve --unpublished --host 127.0.0.1 --port 4000",
         url: defaultSiteURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000

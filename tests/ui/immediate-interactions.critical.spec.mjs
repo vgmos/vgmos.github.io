@@ -1,9 +1,10 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { test, expect } from "./fixtures.mjs";
-import { observeRuntimeIssues, settlePage, BUCK_LOSS_V2_ROUTE } from "./site.mjs";
+import { observeRuntimeIssues, settlePage, BUCK_LOSS_V2_ROUTE, LOSS_TOOL_SERVED, LOSS_TOOL_SKIP } from "./site.mjs";
 
 test("rapid tabs and references leave no faded panels or stale chart paths", async ({ page }) => {
+  test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
   const issues = observeRuntimeIssues(page);
   await page.goto(BUCK_LOSS_V2_ROUTE);
   await settlePage(page);
@@ -47,6 +48,7 @@ test("repeated figure inspection clears content and restores keyboard focus", as
 });
 
 test("selected device is compact with optional source conditions", async ({ page }, testInfo) => {
+  test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
   await page.goto(BUCK_LOSS_V2_ROUTE.replace("device=epc2090", "device=infineon-bsc010n04ls6-4v5"));
   await settlePage(page);
   const card = page.locator(".blx-v2-device-note");
