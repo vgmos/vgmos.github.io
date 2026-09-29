@@ -24,7 +24,7 @@ I compared two approaches: Xilinx Vivado HLS to turn C++ image operations into h
 
 The FPGA side ran on Vivado HLS 2014.4 and the Zynq ZC702 board. Implemented or studied operations included pass-through video, binarization, and Sobel filtering.
 
-The red-object tracker converted frames to HSV and applied hue thresholds on the CPU, uploaded the mask for GPU erosion, dilation, and Canny filtering, then downloaded the result for centroid calculation and path drawing.
+The GPU side ended in a demo that tracked a red object. The tracker converted frames to HSV and applied hue thresholds on the CPU, uploaded the mask for GPU erosion, dilation, and Canny filtering, then downloaded the result for centroid calculation and path drawing.
 
 ## Design lesson
 
