@@ -12,7 +12,7 @@ test.describe("immediately visible homepage", () => {
       await expect(page.locator(".home-title")).toHaveText("Analog and power IC design");
       await expect(page.locator(".hero-lede")).toContainText("low-noise DC-DC buck converters");
       await expect(page.locator("[data-signal-path], [data-reveal], .page-exit-layer")).toHaveCount(0);
-      await expect(page.locator(".list-item")).toHaveCount(9);
+      await expect(page.locator(".list-item")).toHaveCount(8);
       expect(await page.locator(".list-item").evaluateAll(items => items.every(item => {
         const style = getComputedStyle(item);
         return style.visibility === "visible" && style.opacity === "1" && style.transform === "none";
@@ -23,7 +23,7 @@ test.describe("immediately visible homepage", () => {
       await settlePage(page);
       await page.goBack();
       await settlePage(page);
-      await expect(page.locator(".list-item")).toHaveCount(9);
+      await expect(page.locator(".list-item")).toHaveCount(8);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(height);
     });
   }
@@ -31,7 +31,7 @@ test.describe("immediately visible homepage", () => {
     const context = await browser.newContext({javaScriptEnabled: false});
     const page = await context.newPage();
     await page.goto(new URL("/", SITE_URL).href);
-    await expect(page.locator(".list-item")).toHaveCount(9);
+    await expect(page.locator(".list-item")).toHaveCount(8);
     for (const item of await page.locator(".list-item").all()) await expect(item).toBeVisible();
     await expect(page.getByRole("link", {name: "Browse all notes"})).toBeVisible();
     await expect(page.locator("[data-signal-path], [data-reveal]")).toHaveCount(0);

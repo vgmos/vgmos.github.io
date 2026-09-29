@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.mjs";
-import { observeRuntimeIssues, settlePage } from "./site.mjs";
+import { observeRuntimeIssues, settlePage, LOSS_TOOL_SERVED, LOSS_TOOL_SKIP } from "./site.mjs";
 
 const BUCK_LOSS_WORKSPACE = "/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=epc2090&control=auto-dcm&timing=auto&part=XGL6060-222&i=2";
 
@@ -57,6 +57,7 @@ async function readMotionProbe(page) {
 
 test.describe("immediate tool interactions", () => {
   test("guided presets update exact values and preserve focus immediately", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await installMotionProbe(page);
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
@@ -145,6 +146,7 @@ test.describe("immediate tool interactions", () => {
   });
 
   test("workspace disclosure, reference, and copy feedback are immediate and reversible", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await installMotionProbe(page);
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -240,6 +242,7 @@ test.describe("immediate tool interactions", () => {
   });
 
   test("mobile disclosure reveals detail without sliding rows across it", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await installMotionProbe(page);
     await page.setViewportSize({ width: 390, height: 844 });

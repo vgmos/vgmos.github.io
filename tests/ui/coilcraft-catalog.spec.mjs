@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "./fixtures.mjs";
-import { BUCK_LOSS_V2_ROUTE, observeRuntimeIssues, pageOverflow, settlePage } from "./site.mjs";
+import { BUCK_LOSS_V2_ROUTE, observeRuntimeIssues, pageOverflow, settlePage, LOSS_TOOL_SERVED, LOSS_TOOL_SKIP } from "./site.mjs";
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
@@ -17,6 +17,7 @@ async function openInductorPanel(page, { requireReady = true } = {}) {
 }
 
 test.describe("Coilcraft inductor catalog", () => {
+  test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
   test("dropdown loads all 33 catalog parts grouped by series", async ({ page }) => {
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);

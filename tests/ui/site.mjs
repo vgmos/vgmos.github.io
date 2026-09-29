@@ -3,6 +3,16 @@ export const LIVE_COMMIT = process.env.LIVE_COMMIT || process.env.GITHUB_SHA || 
 export const BUCK_LOSS_V2_ROUTE = "/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=epc2090&i=2";
 export const LT83402_PROJECT_ROUTE = "/projects/analog-devices-lt83402/";
 
+// The Buck Converter Loss Tool is unpublished (`published: false` in
+// tools/buck-losses.html). Local and CI runs serve it with --unpublished so its
+// tests keep running; the live site does not have it.
+export const LOSS_TOOL_SERVED = process.env.PLAYWRIGHT_LIVE !== "1";
+export const LOSS_TOOL_SKIP = "The Buck Converter Loss Tool is unpublished on the live site.";
+
+function served(route) {
+  return LOSS_TOOL_SERVED || !route.startsWith("/tools/buck-losses/");
+}
+
 export const HTML_ROUTES = [
   "/",
   "/2026/06/12/a-working-notebook.html",
@@ -17,13 +27,13 @@ export const HTML_ROUTES = [
   "/tools/buck-losses/",
   "/writing/",
   "/writing/index/"
-];
+].filter(served);
 
 export const AUDIT_ROUTES = [
   ...HTML_ROUTES.filter((route) => route !== "/tools/buck-losses/"),
   BUCK_LOSS_V2_ROUTE,
   "/404.html"
-];
+].filter(served);
 
 export const CRITICAL_VISUAL_ROUTES = [
   { name: "home", path: "/" },
@@ -33,7 +43,7 @@ export const CRITICAL_VISUAL_ROUTES = [
   { name: "sar-project", path: "/projects/georgia-tech-noise-shaping-sar-adc/" },
   { name: "notebook-post", path: "/2026/06/12/a-working-notebook.html" },
   { name: "not-found", path: "/404.html" }
-];
+].filter(({ path }) => served(path));
 
 export const TARGET_VIEWPORTS = [
   { name: "desktop-wide", width: 1440, height: 900 },

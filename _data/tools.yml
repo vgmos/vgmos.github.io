@@ -2,7 +2,3 @@
   url: /tools/buck-converter/
   meta: Ideal-component model
   summary: Follow current through a switching cycle, then see how inductance and load change it.
-- title: Buck Converter Loss Tool
-  url: /tools/buck-losses/
-  meta: Loss and efficiency estimates
-  summary: Explore where power is lost and how load and component choices change efficiency.

@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures.mjs";
-import { BUCK_LOSS_V2_ROUTE, observeRuntimeIssues, pageOverflow, settlePage } from "./site.mjs";
+import { BUCK_LOSS_V2_ROUTE, observeRuntimeIssues, pageOverflow, settlePage, LOSS_TOOL_SERVED, LOSS_TOOL_SKIP } from "./site.mjs";
 
 test.describe("global navigation", () => {
   test("soft navigation keeps metadata, theme, focus, and history coherent", async ({ page }) => {
@@ -35,6 +35,7 @@ test.describe("global navigation", () => {
   });
 
   test("tools share one soft-navigation lifecycle and restore Buck route state", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -57,7 +58,7 @@ test.describe("global navigation", () => {
     await page.locator("#num-vin").press("Tab");
     await expect(page.locator("#num-vin")).toHaveValue("24");
 
-    await page.getByRole("link", { name: "Buck Converter Loss Tool", exact: true }).click();
+    await page.evaluate(() => window.vgmosNavigation.navigate("/tools/buck-losses/"));
     await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
     await settlePage(page);
     expect(await page.evaluate(() => window.__documentBoundaryMarker)).toBe("home");
@@ -111,12 +112,13 @@ test.describe("global navigation", () => {
   });
 
   test("an in-flight Loss edit cannot overwrite a Back or Forward destination", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
 
-    await page.getByRole("link", { name: "Buck Converter Loss Tool", exact: true }).click();
+    await page.evaluate(() => window.vgmosNavigation.navigate("/tools/buck-losses/"));
     await expect(page).toHaveURL(/\/tools\/buck-losses\/$/);
     await settlePage(page);
     const entryUrl = page.url();
@@ -150,6 +152,7 @@ test.describe("global navigation", () => {
   });
 
   test("a committed Loss edit survives Back and Forward", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -274,6 +277,7 @@ test.describe("global navigation", () => {
   });
 
   test("a retried navigation still waits for its in-flight page stylesheet", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     let markCssRequested;
     let releaseCss;
@@ -311,6 +315,7 @@ test.describe("global navigation", () => {
   });
 
   test("a soft-navigated device recovery dialog is interactive before initialization settles", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     const issues = observeRuntimeIssues(page);
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -474,6 +479,7 @@ test.describe("Buck Converter Tool", () => {
 });
 
 test.describe("Buck Converter Loss Tool", () => {
+  test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
   test("the bare route offers guided setup and a resumable seeded workspace", async ({ page }) => {
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
     await settlePage(page);

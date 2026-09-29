@@ -9,7 +9,9 @@ import {
   normalizePath,
   observeRuntimeIssues,
   pageOverflow,
-  settlePage
+  settlePage,
+  LOSS_TOOL_SERVED,
+  LOSS_TOOL_SKIP,
 } from "./site.mjs";
 
 test.describe("route inventory and smoke coverage", () => {
@@ -22,6 +24,7 @@ test.describe("route inventory and smoke coverage", () => {
   });
 
   test("the Loss Explorer module graph is cache-versioned", async ({ page, request }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
 

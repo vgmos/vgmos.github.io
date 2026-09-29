@@ -7,7 +7,9 @@ import {
   LT83402_PROJECT_ROUTE,
   pageOverflow,
   setStoredTheme,
-  settlePage
+  settlePage,
+  LOSS_TOOL_SERVED,
+  LOSS_TOOL_SKIP,
 } from "./site.mjs";
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
@@ -49,6 +51,7 @@ test.describe("automated accessibility", () => {
   }
 
   test("the loss-entry gateway and guided form have accessible contracts", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     await page.goto("/tools/buck-losses/", { waitUntil: "domcontentloaded" });
     await settlePage(page);
     let results = await new AxeBuilder({ page }).include("#buck-loss-explorer").withTags(WCAG_TAGS).analyze();
@@ -63,6 +66,7 @@ test.describe("automated accessibility", () => {
   });
 
   test("the recovery device chooser retains an accessible dialog contract", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     await page.goto("/tools/buck-losses/?m=2&p=12v-to-3v3-pol&device=not-real&i=2", { waitUntil: "domcontentloaded" });
     const chooser = page.locator("[data-blx-device-dialog]");
     await expect(chooser).toBeVisible();
@@ -73,6 +77,7 @@ test.describe("automated accessibility", () => {
   });
 
   test("loss-tool selects retain a native affordance in forced colors", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     await page.emulateMedia({ forcedColors: "active" });
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
@@ -88,6 +93,7 @@ test.describe("automated accessibility", () => {
   });
 
   test("the read-only legacy viewer has no serious or critical WCAG violations", async ({ page }, testInfo) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     await auditRoute(page, "/tools/buck-losses/?p=12v-to-3v3-pol&i=2", "light", testInfo);
   });
 });
@@ -146,6 +152,7 @@ test.describe("keyboard and assistive-technology contracts", () => {
   });
 
   test("the loss plot exposes its cursor slider outside image semantics", async ({ page }) => {
+    test.skip(!LOSS_TOOL_SERVED, LOSS_TOOL_SKIP);
     await page.goto(BUCK_LOSS_V2_ROUTE, { waitUntil: "domcontentloaded" });
     await settlePage(page);
 
@@ -164,7 +171,7 @@ test.describe("keyboard and assistive-technology contracts", () => {
 });
 
 test.describe("touch targets and zoom reflow", () => {
-  for (const route of ["/tools/buck-converter/", BUCK_LOSS_V2_ROUTE]) {
+  for (const route of ["/tools/buck-converter/", ...(LOSS_TOOL_SERVED ? [BUCK_LOSS_V2_ROUTE] : [])]) {
     test(`${route} provides usable touch targets at 390px`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(route, { waitUntil: "domcontentloaded" });
