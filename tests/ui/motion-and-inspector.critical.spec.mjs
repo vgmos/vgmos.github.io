@@ -71,11 +71,11 @@ test.describe("project figure inspector", () => {
         await trigger.focus();
         await expect(trigger.locator(".figure-inspect__hint")).toHaveText("Inspect figure");
         const clearance = await trigger.evaluate(element => {
-          const image = element.querySelector("img").getBoundingClientRect();
+          const stage = element.querySelector(".figure-inspect__stage").getBoundingClientRect();
           const hint = element.querySelector(".figure-inspect__hint").getBoundingClientRect();
-          return { gap: hint.top - image.bottom, height: hint.height, right: hint.right - image.right };
+          return { gap: hint.top - stage.bottom, height: hint.height, right: hint.right - stage.right };
         });
-        expect(clearance.gap, "Inspection control must not cover any image data").toBeGreaterThanOrEqual(7.5);
+        expect(clearance.gap, "Inspection control must sit cleanly below the figure frame").toBeGreaterThanOrEqual(7.5);
         expect(clearance.height).toBeGreaterThanOrEqual(44);
         expect(clearance.right).toBeLessThanOrEqual(0.5);
         await page.keyboard.press("Enter");

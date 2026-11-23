@@ -34,7 +34,7 @@ layout: default
       {% assign sorted_projects = site.projects | sort: "date" | reverse %}
       {% for project in sorted_projects %}
         <article class="list-item list-item--project">
-          <h3><a href="{{ project.url | relative_url }}">{{ project.title }}</a></h3>
+          <h3><a href="{{ project.url | relative_url }}">{{ project.display_title | default: project.title }}</a></h3>
           <p class="item-date">{{ project.period }}</p>
           <p class="item-meta">{{ project.institution }}{% if project.publication %} · {{ project.publication }}{% endif %}</p>
           {% if project.summary %}

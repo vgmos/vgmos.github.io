@@ -16,7 +16,7 @@ I led the chip from concept and design reviews through layout, validation, silic
 
 The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous buck regulator with a 2.8–42 V input range and a 2.5 A output-current rating. It uses Silent Switcher 3 in a 3 × 2 mm package. The figures below are ADI's published characterization.
 
-<figure class="source-figure source-figure--compact source-figure--inspect-below">
+<figure class="source-figure source-figure--compact">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83402-package.png' | relative_url }}" alt="Analog Devices illustration of the LT83402 package, showing its top and underside." width="1100" height="759" loading="lazy" decoding="async">
   </div>
@@ -27,14 +27,14 @@ The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous 
 
 In the application below, a reference current flows through the SET resistor to establish the target voltage. Feedback makes the output follow that target, so noise on SET can reach the output too. The SET capacitor filters noise from the reference current and resistor. Increasing it reduces that contribution but also takes longer to charge at startup. See the data sheet's [output-voltage setting](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=28) and [SET-capacitor guidance](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=32).
 
-<figure class="source-figure source-figure--wide source-figure--inspect-below">
+<figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83402-rev1-p38-fig59-application.png' | relative_url }}" alt="LT83402 application circuit with a 2.2 µH inductor, four 22 µF output capacitors, and a 1 µF SET capacitor." width="1042" height="540" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>3.3 V, 2.5 A application.</strong> The 2 MHz noise-test circuit. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=38">LT83401/LT83402 Rev. 1, Figure 59</a>.</figcaption>
 </figure>
 
-<figure class="source-figure source-figure--wide source-figure--inspect-below">
+<figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83402-rev1-p11-fig4-noise-load.png' | relative_url }}" alt="LT83402 noise-density curves versus frequency at 0 A, 1 A, and 2.5 A load, with integrated-noise values and test conditions shown." width="815" height="617" loading="lazy" decoding="async">
   </div>
@@ -47,7 +47,7 @@ The curves show where noise lies in frequency; the RMS values combine its contri
 
 The [LT83205](https://www.analog.com/en/products/lt83205.html) is an 18 V, 5 A buck regulator. Both noise examples use 12 V input, 2 MHz switching, and 25 °C ambient temperature, with noise integrated over 10 Hz–100 kHz. The output voltages and external components differ.
 
-<figure class="source-figure source-figure--wide source-figure--inspect-below">
+<figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83205-revc-p11-fig4-noise-load.png' | relative_url }}" alt="LT83205 noise-density curves at 0 A, 1 A, 3 A, and 5 A, with integrated-noise values and the 12 V input, 1 V output, 2 MHz test conditions." width="840" height="630" loading="lazy" decoding="async">
   </div>
@@ -55,7 +55,7 @@ The [LT83205](https://www.analog.com/en/products/lt83205.html) is an 18 V, 5 A b
 </figure>
 
 <p class="project-table__hint" id="noise-comparison-hint">Scroll horizontally to compare every column →</p>
-<div class="project-table" role="region" tabindex="0" aria-label="Published LT83402 and LT83205 noise at 2 MHz" aria-describedby="noise-comparison-hint">
+<div class="project-table project-table--comparison" role="region" tabindex="0" aria-label="Published LT83402 and LT83205 noise at 2 MHz" aria-describedby="noise-comparison-hint">
   <table>
     <thead>
       <tr><th scope="col">Published noise example</th><th scope="col">LT83402, Figure 4</th><th scope="col">LT83205, Figure 4</th></tr>
@@ -68,7 +68,7 @@ The [LT83205](https://www.analog.com/en/products/lt83205.html) is an 18 V, 5 A b
       <tr><th scope="row">Switching frequency</th><td>2 MHz</td><td>2 MHz</td></tr>
       <tr><th scope="row">Inductor / nominal output capacitance</th><td>2.2 µH / 88 µF</td><td>0.47 µH / 183.4 µF</td></tr>
       <tr><th scope="row">SET capacitor</th><td>1 µF</td><td>2.2 µF</td></tr>
-      <tr><th scope="row">Compensation R<sub>C</sub> / C<sub>C</sub></th><td>1 kΩ / 4.7 nF</td><td>1.82 kΩ / 2.2 nF</td></tr>
+      <tr><th scope="row">Compensation <span class="math-inline"><var>R</var><sub>C</sub> / <var>C</var><sub>C</sub></span></th><td>1 kΩ / 4.7 nF</td><td>1.82 kΩ / 2.2 nF</td></tr>
     </tbody>
   </table>
 </div>
@@ -79,14 +79,14 @@ The LT83402 circuit also includes an 82 pF compensation capacitor. LT83205 compo
 
 These traces zoom in on a single switch-node transition. Both use 12 V input, but loads and time scales differ, and neither figure specifies switching frequency. The horizontal scale tells us how to read each trace; it is not a rise-time specification.
 
-<figure class="source-figure source-figure--wide source-figure--inspect-below">
+<figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83402-rev1-p16-fig37-switch-rising-edge.png' | relative_url }}" alt="LT83402 switch-node rising-edge trace at 12 V input and 2.5 A load, with the original 2 ns/div and 2 V/div scales." width="810" height="595" loading="lazy" decoding="async">
   </div>
   <figcaption><strong>LT83402 switch rising edge.</strong> 12 V input and 2.5 A load; 2 ns/div horizontally and 2 V/div vertically. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=16">Rev. 1, Figure 37</a>.</figcaption>
 </figure>
 
-<figure class="source-figure source-figure--wide source-figure--inspect-below">
+<figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83203-lt83205-revc-p16-fig38-switch-rising-edge.png' | relative_url }}" alt="LT83203/LT83205 family datasheet switch-node rising-edge trace at 12 V input and 5 A load, with the original 5 ns/div and 2 V/div scales." width="840" height="610" loading="lazy" decoding="async">
   </div>

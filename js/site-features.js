@@ -27,6 +27,7 @@
 
       var figure = frame.closest(".source-figure");
       var trigger = document.createElement("button");
+      var stage = document.createElement("span");
       var hint = document.createElement("span");
 
       trigger.type = "button";
@@ -36,15 +37,16 @@
       trigger.setAttribute("aria-controls", inspector.dialog.id);
       trigger.setAttribute("aria-label", "Inspect figure: " + figureName(figure, image));
 
+      stage.className = "figure-inspect__stage";
+
       hint.className = "figure-inspect__hint";
       hint.setAttribute("aria-hidden", "true");
       hint.innerHTML = "<svg viewBox=\"0 0 20 20\" focusable=\"false\"><path d=\"M8 3H3v5M12 3h5v5M17 12v5h-5M8 17H3v-5\"/></svg>";
-      if (figure.classList.contains("source-figure--inspect-below")) {
-        hint.appendChild(document.createTextNode("Inspect figure"));
-      }
+      hint.appendChild(document.createTextNode("Inspect figure"));
 
       frame.insertBefore(trigger, image);
-      trigger.appendChild(image);
+      stage.appendChild(image);
+      trigger.appendChild(stage);
       trigger.appendChild(hint);
       frame.setAttribute("data-figure-inspector-ready", "");
     });

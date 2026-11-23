@@ -137,7 +137,7 @@ test("play, pause and keyboard inspection share one cycle position", async ({
   await expect(page.getByRole("button", { name: "Play cycle" })).toBeVisible();
 });
 
-test("reduced motion advances intervals without playback; mobile schematic stays inspectable", async ({
+test("reduced motion advances intervals without playback; mobile schematic fits without cropping and disclosures do not clip", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -150,19 +150,36 @@ test("reduced motion advances intervals without playback; mobile schematic stays
       "data-phase",
       "off",
     );
-    const viewport = page.getByRole("region", {
-      name: /Ideal-switch buck schematic/,
+    const svgBox = await page
+      .locator("#bc-anim-schematic")
+      .evaluate((el) => el.getBoundingClientRect().toJSON());
+    expect(svgBox.left).toBeGreaterThanOrEqual(0);
+    expect(svgBox.right).toBeLessThanOrEqual(width + 1);
+    expect(svgBox.width).toBeGreaterThan(220);
+
+    // Phase bar labels must not collide with the Duty D control on mobile.
+    const spacing = await page.evaluate(() => {
+      const labs = document.querySelector(".bc-schematic .cycle-labs").getBoundingClientRect();
+      const duty = document.querySelector("#bc-duty-control").getBoundingClientRect();
+      return duty.top - labs.bottom;
     });
-    await viewport.focus();
-    await viewport.press("ArrowRight");
-    await expect
-      .poll(() => viewport.evaluate((el) => el.scrollLeft))
-      .toBeGreaterThan(0);
-    expect(
-      await page
-        .locator("#bc-anim-schematic")
-        .evaluate((el) => el.getBoundingClientRect().width),
-    ).toBeGreaterThanOrEqual(540);
+    expect(spacing, "Duty D control should sit cleanly below cycle phase labels").toBeGreaterThanOrEqual(8);
+
+    // DCM options and Ripple targets panels must never clip content.
+    await page.locator("#bc-dcm-toggle").click();
+    const dcmClip = await page.locator("#bc-dcm-options").evaluate((el) => ({
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    }));
+    expect(dcmClip.scrollHeight).toBeLessThanOrEqual(dcmClip.clientHeight + 2);
+
+    await page.locator('button[data-mode="design"]').click();
+    const designClip = await page.locator("#bc-design-result").evaluate((el) => ({
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    }));
+    expect(designClip.scrollHeight).toBeLessThanOrEqual(designClip.clientHeight + 2);
+
     expect((await pageOverflow(page)).scrollWidth).toBeLessThanOrEqual(
       width + 1,
     );

@@ -71,6 +71,7 @@ stylesheets:
             <span class="bc-entry"><input id="num-iload" type="number" inputmode="decimal" step="0.01"><span class="bc-unit">A</span></span>
           </div>
           <input id="sl-iload" type="range" min="0" max="1000" step="1" aria-label="Load current slider">
+          <div class="bc-ticks" data-for="iload"></div>
         </div>
         <div class="bc-field">
           <div class="bc-field-head">
@@ -81,34 +82,28 @@ stylesheets:
           <div class="bc-ticks" data-for="fsw"></div>
         </div>
         <div class="bc-field" data-mode-field="analyze">
-          <div class="bc-field-head bc-field-head--compound">
+          <div class="bc-field-head">
             <label for="num-l">Inductance L<sub>X</sub></label>
-            <span class="bc-entry bc-entry--compound">
-              <span class="bc-inline-param"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
-              <span class="bc-inline-param bc-inline-param--optional" data-dcm-extra aria-hidden="true">
-                <label for="num-csw">C<sub>SW</sub></label>
-                <input id="num-csw" data-param="csw" type="number" inputmode="decimal" step="1">
-                <span class="bc-unit">pF</span>
-              </span>
-            </span>
+            <span class="bc-entry"><input id="num-l" type="number" inputmode="decimal" step="0.1"><span class="bc-unit">µH</span></span>
           </div>
           <input id="sl-l" type="range" min="0" max="1000" step="1" aria-label="Inductance slider">
           <div class="bc-ticks" data-for="l"></div>
+          <div class="bc-field-subparam bc-field-subparam--optional" data-dcm-extra aria-hidden="true">
+            <label for="num-csw">Switch-node capacitance C<sub>SW</sub></label>
+            <span class="bc-entry"><input id="num-csw" data-param="csw" type="number" inputmode="decimal" step="1"><span class="bc-unit">pF</span></span>
+          </div>
         </div>
         <div class="bc-field" data-mode-field="analyze">
-          <div class="bc-field-head bc-field-head--compound">
+          <div class="bc-field-head">
             <label for="num-c">Output capacitance C<sub>O</sub></label>
-            <span class="bc-entry bc-entry--compound">
-              <span class="bc-inline-param"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
-              <span class="bc-inline-param">
-                <label for="num-esr">ESR</label>
-                <input id="num-esr" data-param="esr" type="number" inputmode="decimal" step="1">
-                <span class="bc-unit">mΩ</span>
-              </span>
-            </span>
+            <span class="bc-entry"><input id="num-c" type="number" inputmode="decimal" step="1"><span class="bc-unit">µF</span></span>
           </div>
           <input id="sl-c" type="range" min="0" max="1000" step="1" aria-label="Output capacitance slider">
           <div class="bc-ticks" data-for="c"></div>
+          <div class="bc-field-subparam">
+            <label for="num-esr">Output capacitor ESR</label>
+            <span class="bc-entry"><input id="num-esr" data-param="esr" type="number" inputmode="decimal" step="1"><span class="bc-unit">mΩ</span></span>
+          </div>
         </div>
         <div class="bc-field" data-mode-field="design" hidden>
           <div class="bc-field-head">
@@ -168,12 +163,12 @@ stylesheets:
         <div class="bc-card">
           <p class="bc-k" id="out-dil-label">Current ripple Δi<sub>L</sub></p>
           <p class="bc-v" id="out-dil">—</p>
-          <p class="bc-s"><span id="out-dil-pct">—</span> % of i<sub>O</sub>, pk-pk</p>
+          <p class="bc-s"><span id="out-dil-pct">—</span>% of i<sub>O</sub>, <span class="bc-nowrap">pk-pk</span></p>
         </div>
         <div class="bc-card">
           <p class="bc-k">Voltage ripple Δv<sub>OUT</sub></p>
           <p class="bc-v" id="out-dv">—</p>
-          <p class="bc-s"><span id="out-dv-pct">—</span> % of v<sub>OUT</sub>, pk-pk</p>
+          <p class="bc-s"><span id="out-dv-pct">—</span>% of v<sub>OUT</sub>, <span class="bc-nowrap">pk-pk</span></p>
         </div>
         <div class="bc-card">
           <p class="bc-k">ON-time t<sub>ON</sub></p>
@@ -199,8 +194,8 @@ stylesheets:
       <figure class="bc-schematic bc-schematic--animated" aria-label="Animated synchronous buck converter schematic">
         <div class="bc-anim-main">
           <div class="bc-anim-schematic-col">
-            <div class="bc-schematic-viewport" role="region" aria-label="Ideal-switch buck schematic; scroll horizontally on narrow screens" tabindex="0">
-              <svg id="bc-anim-schematic" viewBox="0 0 560 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="bc-schematic-title bc-schematic-description">
+            <div class="bc-schematic-viewport">
+              <svg id="bc-anim-schematic" viewBox="8 12 544 242" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="bc-schematic-title bc-schematic-description">
                 <title id="bc-schematic-title">Buck converter with two ideal switches</title>
                 <desc id="bc-schematic-description">The high-side switch connects the source to the inductor. The low-side switch connects the switching node to ground. The inductor supplies the output capacitor and a constant-current load.</desc>
                 <g class="w">
@@ -214,7 +209,7 @@ stylesheets:
                   <path id="bc-path-low" d="M226 72V118 M226 182V226"/>
                   <path id="bc-path-output" d="M226 72H268a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0H416 M226 226H416"/>
                   <path id="bc-path-load" d="M416 72H512V132 M512 168V226H416"/>
-                  <path id="bc-path-cap" d="M416 72V132 M416 144V226"/>
+                  <path id="bc-path-cap" d="M416 72V132 M398 132H434 M398 144H434 M416 144V226"/>
                 </g>
                 <circle class="contact" cx="174" cy="72" r="3.5"/>
                 <line class="arm" id="bc-arm-hs" x1="116" y1="72" x2="170" y2="72"/>
@@ -228,22 +223,21 @@ stylesheets:
                 <path class="w" d="M512 140V160 M507 154L512 160L517 154"/>
                 <g class="dot"><circle cx="226" cy="72" r="3"/><circle cx="416" cy="72" r="3"/><circle cx="226" cy="226" r="3"/><circle cx="416" cy="226" r="3"/></g>
                 <g class="lbl">
-                  <text x="26" y="119" text-anchor="middle">V<tspan class="sub">IN</tspan></text>
+                  <text x="27" y="119" text-anchor="middle">v<tspan class="sub">IN</tspan></text>
                   <text x="144" y="106" text-anchor="middle">S<tspan class="sub">H</tspan></text>
                   <text x="176" y="163" text-anchor="middle">S<tspan class="sub">L</tspan></text>
-                  <text x="226" y="42" text-anchor="middle">V<tspan class="sub">SW</tspan></text>
+                  <text x="226" y="44" text-anchor="middle">v<tspan class="sub">SW</tspan></text>
                   <text x="308" y="108" text-anchor="middle">L<tspan class="sub">X</tspan></text>
-                  <text x="416" y="42" text-anchor="middle">V<tspan class="sub">OUT</tspan></text>
-                  <text x="386" y="163" text-anchor="middle">C<tspan class="sub">O</tspan></text>
+                  <text x="436" y="44" text-anchor="middle">v<tspan class="sub">OUT</tspan></text>
+                  <text x="384" y="163" text-anchor="middle">C<tspan class="sub">O</tspan></text>
                   <text x="537" y="119" text-anchor="middle">i<tspan class="sub">O</tspan></text>
                 </g>
-                <g class="bc-current-arrow" id="bc-il-arrow" aria-hidden="true"><path d="M356 50H392 M386 45L392 50L386 55"/></g>
-                <text class="node" x="374" y="30" text-anchor="middle">i<tspan class="sub">L</tspan></text>
+                <g class="bc-current-arrow" id="bc-il-arrow" aria-hidden="true"><path d="M360 50H388 M382 45L388 50L382 55"/></g>
+                <text class="node" id="bc-il-label" x="374" y="34" text-anchor="middle">i<tspan class="sub">L</tspan></text>
                 <g class="bc-current-arrow" id="bc-ic-arrow" aria-hidden="true"><path d="M458 148V184 M453 178L458 184L463 178"/></g>
-                <text class="node" x="458" y="136" text-anchor="middle">i<tspan class="sub">C</tspan></text>
+                <text class="node" id="bc-ic-label" x="458" y="136" text-anchor="middle">i<tspan class="sub">C</tspan></text>
               </svg>
             </div>
-            <p class="bc-schematic-scroll-hint">Scroll to inspect the full schematic →</p>
 
             <div class="cycle" aria-hidden="true">
               <div class="cycle-track">
@@ -269,15 +263,19 @@ stylesheets:
 
         <div class="bc-playback" role="group" aria-label="Schematic playback">
           <button type="button" id="bc-anim-play" aria-pressed="false">Play cycle</button>
-          <label for="bc-anim-position">Cycle position</label>
-          <input id="bc-anim-position" type="range" min="0" max="99.9" step="0.1" value="0" aria-label="Switching cycle position">
-          <span>Slowed: 3 s per cycle</span>
+          <div class="bc-playback-scrub">
+            <div class="bc-playback-head">
+              <label for="bc-anim-position">Cycle position</label>
+              <span id="bc-anim-tempo">Slowed: 3 s per cycle</span>
+            </div>
+            <input id="bc-anim-position" type="range" min="0" max="99.9" step="0.1" value="0" aria-label="Switching cycle position">
+          </div>
         </div>
         <figcaption class="bc-anim-status">
           <strong id="bc-anim-phase">ON time</strong>
           <span id="bc-anim-duty">D = 27.5%</span>
           <span id="bc-anim-desc">High-side switch closed; inductor current rising.</span>
-          <span id="bc-anim-cap">Capacitor current is iL − iO.</span>
+          <span id="bc-anim-cap">Capacitor current is i<sub>L</sub> − i<sub>O</sub>.</span>
         </figcaption>
         <p class="bc-schematic-reference">Rincón-Mora, <a href="https://doi.org/10.1007/978-3-030-95899-2">Switched Inductor Power IC Design</a>, §3.4.1, Fig. 3.20; DCM: §3.2.5.</p>
       </figure>
@@ -310,7 +308,7 @@ stylesheets:
     <h2>Steady-state operation</h2>
     <p>Across the ON-time t<sub>ON</sub>, the inductor sees v<sub>IN</sub> − v<sub>OUT</sub> and its current ramps up; across the OFF-time t<sub>OFF</sub>, it sees −v<sub>OUT</sub> and its current ramps down. In CCM, volt-second balance sets the duty cycle: D = t<sub>ON</sub>/t<sub>SW</sub> = v<sub>OUT</sub>/v<sub>IN</sub>.</p>
     <p>The peak-to-peak inductor-current ripple is Δi<sub>L</sub> = t<sub>ON</sub> · (v<sub>IN</sub> − v<sub>OUT</sub>)/L<sub>X</sub>, or equivalently Δi<sub>L</sub> = (v<sub>IN</sub> − v<sub>OUT</sub>) · D/(f<sub>SW</sub> · L<sub>X</sub>).</p>
-    <p>At a chosen design load, a current-ripple target of roughly 25–50&nbsp;% of load current is a starting point. It is not a constraint across the full load range: at fixed voltages, frequency, and inductance in CCM, the absolute ripple stays constant as load changes.</p>
+    <p>At a chosen design load, a current-ripple target of roughly 25–50% of load current is a starting point. It is not a constraint across the full load range: at fixed voltages, frequency, and inductance in CCM, the absolute ripple stays constant as load changes.</p>
     <p>When DCM is enabled, the tool first checks the CCM valley current against the selected zero-cross threshold. In DCM, duty also depends on load and the zero-current interval.</p>
     <p>The power stage uses ideal switches, no dead time, and lossless inductors and capacitors. Optional output ESR adds i<sub>C</sub> · R<sub>ESR</sub> to voltage ripple without changing duty cycle or inductor current.</p>
   </section>
@@ -341,11 +339,12 @@ stylesheets:
 
   // clickable jump ticks under selected sliders: [value, label]
   var TICKS = {
-    vin:  [[5, "5"], [12, "12"], [24, "24"], [48, "48"], [100, "100"]],
-    vout: [[1, "1"], [3.3, "3.3"], [5, "5"], [12, "12"]],
-    fsw:  [[500e3, "500k"], [1e6, "1M"], [2e6, "2M"]],
-    l:    [[0.33e-6, "0.33"], [0.68e-6, "0.68"], [1e-6, "1"], [2.2e-6, "2.2"], [4.7e-6, "4.7"]],
-    c:    [[22e-6, "22"], [110e-6, "110"], [220e-6, "220"]],
+    vin:   [[5, "5"], [12, "12"], [24, "24"], [48, "48"], [100, "100"]],
+    vout:  [[1, "1"], [3.3, "3.3"], [5, "5"], [12, "12"]],
+    iload: [[0.2, "0.2"], [1, "1"], [2, "2"], [5, "5"], [10, "10"]],
+    fsw:   [[500e3, "500k"], [1e6, "1M"], [2e6, "2M"]],
+    l:     [[0.33e-6, "0.33"], [0.68e-6, "0.68"], [1e-6, "1"], [2.2e-6, "2.2"], [4.7e-6, "4.7"]],
+    c:     [[22e-6, "22"], [110e-6, "110"], [220e-6, "220"]],
     iripple: [[0.25, "25"], [0.5, "50"]],
     vripple: [[1e-3, "1"], [2e-3, "2"], [5e-3, "5"], [10e-3, "10"]],
     izc: [[0, "0"], [0.1, "100"], [0.25, "250"], [0.5, "500"], [1, "1000"]]
@@ -440,14 +439,16 @@ stylesheets:
 
   /* ---------- formatting ---------- */
   function eng(v, unit, digits) {
-    if (v === 0) { return "0 " + unit; }
+    if (v === 0) { return "0\u00a0" + unit; }
     var a = Math.abs(v);
     var table = [[1e6, "M"], [1e3, "k"], [1, ""], [1e-3, "m"], [1e-6, "µ"], [1e-9, "n"]];
     for (var i = 0; i < table.length; i++) {
       if (a >= table[i][0] * 0.9995 || i === table.length - 1) {
         var s = v / table[i][0];
         var d = (digits !== undefined) ? digits : (Math.abs(s) >= 100 ? 0 : (Math.abs(s) >= 10 ? 1 : 2));
-        return s.toFixed(d) + " " + table[i][1] + unit;
+        var mag = Math.abs(s).toFixed(d);
+        var sign = s < 0 && parseFloat(mag) !== 0 ? "\u2212" : "";
+        return sign + mag + "\u00a0" + table[i][1] + unit;
       }
     }
   }
@@ -669,7 +670,7 @@ stylesheets:
 
     var solved = buildDcmResult(s, hiD);
     if (solved) { solved.dcmSolvedCsw = true; }
-    return solved ? { r: solved } : { reason: "The DCM duty solve did not converge for this C_SW value." };
+    return solved ? { r: solved } : { reason: "The DCM duty solve did not converge for this C<sub>SW</sub> value." };
   }
 
   function interpolateIdle(idle, t) {
@@ -978,13 +979,10 @@ stylesheets:
       x1: m.l, x2: W - m.r, y1: bh - m.b, y2: bh - m.b
     }));
 
-    // dashed reference lines with quiet in-plot names
+    // dashed reference lines (drawn behind the trace)
     (opts.refs || []).forEach(function (ref) {
       var y = Y(ref.y);
       svg.appendChild(mk("line", { "class": "ref", x1: m.l, x2: W - m.r, y1: y, y2: y }));
-      if (ref.segs) {
-        svg.appendChild(segText("tag", m.l + 6, y - 5, ref.segs));
-      }
     });
 
     // trace
@@ -994,15 +992,46 @@ stylesheets:
     }
     svg.appendChild(mk("path", { "class": "trace" + (opts.drive ? " trace--drive" : ""), d: d }));
 
-    // right rail: plain labels
-    (opts.rail || []).forEach(function (rl) {
-      svg.appendChild(segText("tag", W - 4,
-        Math.max(m.t + 9, Math.min(bh - m.b - 2, Y(rl.y) + 4)), rl.segs, "end"));
+    // reference-line names (drawn above the trace with paper halo, clear of cycle-1 cursor)
+    var refLabels = (opts.refs || []).filter(function (ref) { return !!ref.segs; }).map(function (ref) {
+      return { y: Math.max(m.t + 12, Y(ref.y) - 5), segs: ref.segs };
+    }).sort(function (a, b) { return a.y - b.y; });
+    var minRefGap = mob ? 18 : 15;
+    for (var rf = 1; rf < refLabels.length; rf++) {
+      if (refLabels[rf].y - refLabels[rf - 1].y < minRefGap) {
+        refLabels[rf].y = Math.min(bh - m.b - 2, refLabels[rf - 1].y + minRefGap);
+      }
+    }
+    refLabels.forEach(function (ref) {
+      svg.appendChild(segText("tag", W - m.r - 4, ref.y, ref.segs, "end"));
+    });
+
+    // right rail: plain labels with vertical collision avoidance
+    var railItems = (opts.rail || []).map(function (rl) {
+      return {
+        y: Math.max(m.t + 10, Math.min(bh - m.b - 2, Y(rl.y) + 4)),
+        segs: rl.segs,
+        priority: rl.priority || 0
+      };
+    }).sort(function (a, b) { return a.y - b.y; });
+    var minRailGap = mob ? 19 : 16;
+    for (var ri = 1; ri < railItems.length; ri++) {
+      if (railItems[ri].y - railItems[ri - 1].y < minRailGap) {
+        if (railItems[ri].priority > railItems[ri - 1].priority) {
+          railItems[ri - 1].y = railItems[ri].y - minRailGap;
+        } else {
+          railItems[ri].y = railItems[ri - 1].y + minRailGap;
+        }
+      }
+    }
+    railItems.forEach(function (rl) {
+      var clampedY = Math.max(m.t + 10, Math.min(bh - m.b - 2, rl.y));
+      svg.appendChild(segText("tag", W - 4, clampedY, rl.segs, "end"));
     });
 
     // right rail: dimension bracket for the headline measurement
     if (opts.bracket) {
-      var bx = W - m.r + 8;
+      var bx = W - m.r + 6;
       var y1 = Y(opts.bracket.y1), y2 = Y(opts.bracket.y2);
       svg.appendChild(mk("line", { "class": "dim", x1: bx, x2: bx, y1: y1, y2: y2 }));
       [y1, y2].forEach(function (yy) {
@@ -1041,7 +1070,9 @@ stylesheets:
           x1: x, x2: x, y1: bh - m.b, y2: bh - m.b + 5
         }));
         // skip the t_ON label when it would collide with 0 or t_SW
-        if (isOn && (opts.D < 0.09 || opts.D > 0.85)) { return; }
+        var minD = mob ? 0.14 : 0.09;
+        var maxD = mob ? 0.82 : 0.85;
+        if (isOn && (opts.D < minD || opts.D > maxD)) { return; }
         svg.appendChild(segText("tag" + (isOn ? " tag--on" : ""),
           x, bh - m.b + 18, mrk[1], idx === 0 ? "start" : "middle"));
       });
@@ -1118,10 +1149,10 @@ stylesheets:
    "out-ton", "out-toff-label", "out-toff", "out-toff-note", "out-ipk-label", "out-ipk", "out-ipk-note",
    "out-design-l", "out-design-c", "out-design-l-note", "out-design-c-note", "bc-design-result", "bc-dcm-options",
    "dcm-note", "p-vsw", "p-il", "p-vout", "bc-scope", "bc-probe-slider", "bc-probe-readout",
-   "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-play", "bc-anim-position", "bc-anim-schematic", "bc-anim-phase", "bc-anim-desc",
+   "bc-duty-control", "bc-duty-slider", "bc-duty-ticks", "bc-anim-play", "bc-anim-position", "bc-anim-tempo", "bc-anim-schematic", "bc-anim-phase", "bc-anim-desc",
    "bc-anim-duty", "bc-anim-cap", "bc-arm-hs", "bc-arm-ls", "bc-path-high", "bc-path-low", "bc-path-output", "bc-path-load", "bc-path-cap",
-   "bc-cycle-on", "bc-cycle-head", "bc-cycle-lab-idle", "bc-ic-arrow",
-   "bc-cycle-lab-on", "bc-cycle-lab-off", "bc-dcm-toggle", "bc-il-arrow"].forEach(function (id) {
+   "bc-cycle-on", "bc-cycle-head", "bc-cycle-lab-idle", "bc-ic-arrow", "bc-ic-label",
+   "bc-cycle-lab-on", "bc-cycle-lab-off", "bc-dcm-toggle", "bc-il-arrow", "bc-il-label"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
   var modeButtons = Array.prototype.slice.call(document.querySelectorAll("[data-mode]"));
@@ -1206,7 +1237,7 @@ stylesheets:
   }
 
   /* Instructional view: uses the same waveform samples as the plots. */
-  var animDutyTickValues = [25, 90];
+  var animDutyTickValues = [25, 50, 75];
   var animFrame = 0;
   var animSchematic = {
     ready: false, playing: false, clock: 0, lastT: 0, lastPhase: "",
@@ -1247,19 +1278,21 @@ stylesheets:
       el["bc-path-" + item[0]].style.opacity = item[1] ? "1" : "0";
     });
     el["bc-il-arrow"].style.opacity = nonzero ? "1" : "0";
+    if (el["bc-il-label"]) { el["bc-il-label"].style.opacity = nonzero ? "1" : "0"; }
     el["bc-il-arrow"].setAttribute("transform", iL < 0 ? "rotate(180 374 50)" : "");
     el["bc-ic-arrow"].style.opacity = Math.abs(iC) > 1e-9 ? "1" : "0";
+    if (el["bc-ic-label"]) { el["bc-ic-label"].style.opacity = Math.abs(iC) > 1e-9 ? "1" : "0"; }
     el["bc-ic-arrow"].setAttribute("transform", iC < 0 ? "rotate(180 458 166)" : "");
     var label = isOn ? "ON time" : isLow ? "OFF time" : ringing ? "Ringing interval" : "Idle interval";
     var desc = isOn ? "High-side switch closed; inductor current rising." : isLow
       ? "Low-side switch closed; inductor current falling." : ringing
-      ? "Both switches open. Current exchanges with optional Cₛᵂ, omitted from this ideal schematic; inspect the waveform below."
+      ? "Both switches open. Current exchanges with optional C<sub>SW</sub>, omitted from this ideal schematic; inspect the waveform below."
       : Math.abs(r.iZc || 0) > 1e-9
         ? "Both switches open. The threshold model retains a residual current; its idle path is not represented by these ideal switches."
         : "Both switches open. Inductor current is zero; the output capacitor supplies the load.";
     el["bc-anim-phase"].textContent = label;
-    el["bc-anim-desc"].textContent = desc;
-    el["bc-anim-cap"].textContent = "iL = " + eng(iL, "A") + " · iC = " + eng(iC, "A") + " · capacitor " + (Math.abs(iC) < 1e-9 ? "current zero" : iC > 0 ? "charging" : "discharging");
+    el["bc-anim-desc"].innerHTML = desc;
+    el["bc-anim-cap"].innerHTML = "i<sub>L</sub> = " + eng(iL, "A") + " · i<sub>C</sub> = " + eng(iC, "A") + " · capacitor " + (Math.abs(iC) < 1e-9 ? "current zero" : iC > 0 ? "charging" : "discharging");
     el["bc-anim-duty"].textContent = "D = " + (100 * r.D).toFixed(1) + "%";
     el["bc-anim-position"].value = (100 * animSchematic.clock).toFixed(1);
     el["bc-anim-position"].setAttribute("aria-valuetext", (100 * animSchematic.clock).toFixed(1) + "% of cycle; " + label);
@@ -1307,8 +1340,12 @@ stylesheets:
   }
 
   function updatePlaybackControl() {
-    el["bc-anim-play"].textContent = reduceMotion && reduceMotion.matches ? "Next interval" : animSchematic.playing ? "Pause" : "Play cycle";
+    var isReduced = !!(reduceMotion && reduceMotion.matches);
+    el["bc-anim-play"].textContent = isReduced ? "Next interval" : animSchematic.playing ? "Pause" : "Play cycle";
     el["bc-anim-play"].setAttribute("aria-pressed", String(animSchematic.playing));
+    if (el["bc-anim-tempo"]) {
+      el["bc-anim-tempo"].textContent = isReduced ? "Reduced motion: steps one interval at a time" : "Slowed: 3 s per cycle";
+    }
   }
 
   function tickAnimatedSchematic(now) {
@@ -1325,6 +1362,7 @@ stylesheets:
   function startAnimatedSchematic() {
     if (disposed || !animSchematic.ready) { return; }
     if (reduceMotion && reduceMotion.matches) { drawReducedMotionSchematic(); return; }
+    updatePlaybackControl();
     drawAnimPhase(currentAnimPhase());
     if (animSchematic.playing && !animFrame) {
       animSchematic.lastT = 0;
@@ -1378,7 +1416,7 @@ stylesheets:
   function positionAnimatedDutyTicks() {
     if (!el["bc-duty-ticks"]) { return; }
     var thumb = sliderThumbSize();
-    var horizontal = window.matchMedia && window.matchMedia("(max-width: 430px)").matches;
+    var horizontal = window.matchMedia && window.matchMedia("(max-width: 700px)").matches;
     Array.prototype.slice.call(el["bc-duty-ticks"].querySelectorAll(".bc-duty-tick")).forEach(function (tick) {
       var pct = parseFloat(tick.getAttribute("data-duty"));
       var f = clamp(pct / 96, 0, 1);
@@ -1463,7 +1501,7 @@ stylesheets:
     el["out-design-c-note"].textContent = d.capNoSolution
       ? "ESR ripple exceeds target"
       : (dcmEnabled ? "CCM ripple sizing reference" : "from voltage ripple target");
-    el["out-d"].textContent = (100 * r.D).toFixed(1) + " %";
+    el["out-d"].textContent = (100 * r.D).toFixed(1) + "%";
     el["out-tsw"].textContent = eng(r.T, "s");
     el["out-dil-label"].innerHTML = "Current ripple Δi<sub>L</sub>";
     el["out-dil"].textContent = eng(r.iRipple || r.dIL, "A");
@@ -1481,7 +1519,7 @@ stylesheets:
     if (r.dcmValid) {
       el["out-toff-label"].innerHTML = "HS OFF-time";
       el["out-toff"].textContent = eng((r.D2 + r.D3) * r.T, "s");
-      el["out-toff-note"].innerHTML = "t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + "; t<sub>IDLE</sub> = " + eng(r.tIdle, "s") + "<br>D<sub>DECAY</sub> = " + (100 * r.D2).toFixed(1) + "%; D<sub>IDLE</sub> = " + (100 * r.D3).toFixed(1) + "%";
+      el["out-toff-note"].innerHTML = "<span class=\"bc-nowrap\">t<sub>DECAY</sub> = " + eng(r.tDecay, "s") + "</span>; <span class=\"bc-nowrap\">t<sub>IDLE</sub> = " + eng(r.tIdle, "s") + "</span><br><span class=\"bc-nowrap\">D<sub>DECAY</sub> = " + (100 * r.D2).toFixed(1) + "%</span>; <span class=\"bc-nowrap\">D<sub>IDLE</sub> = " + (100 * r.D3).toFixed(1) + "%</span>";
       if (r.idle) {
         el["out-ipk-label"].innerHTML = "i<sub>L</sub> peak / minimum";
         el["out-ipk"].textContent = eng(r.iMax, "A") + " / " + eng(r.iMin, "A");
@@ -1513,11 +1551,11 @@ stylesheets:
     }
 
     var vswRails = [
-      { y: s.vin, segs: [["v"], ["IN", true]] },
-      { y: 0, segs: [["0"]] }
+      { y: s.vin, segs: [["v"], ["IN", true]], priority: 2 },
+      { y: 0, segs: [["0"]], priority: 2 }
     ];
     if (r.dcmValid) {
-      vswRails.push({ y: s.vout, segs: [["v"], ["OUT", true]] });
+      vswRails.push({ y: s.vout, segs: [["v"], ["OUT", true]], priority: 1 });
     }
     panel(el["p-vsw"], 96, w.t, w.vsw, {
       D: r.D, T: r.T, tEnd: tEnd, drive: true,
@@ -1889,12 +1927,6 @@ stylesheets:
       }
     }
   }
-
-  document.querySelector(".bc-schematic-viewport").addEventListener("keydown", function (event) {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") { return; }
-    event.preventDefault();
-    this.scrollLeft += event.key === "ArrowRight" ? 48 : -48;
-  });
 
   el["bc-anim-play"].addEventListener("click", function () {
     // With reduced motion, the same control advances one interval at a time.

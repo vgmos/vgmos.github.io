@@ -18,13 +18,13 @@ summary: Modeling how stored floating-gate charge sets an analog weight, then ex
 description: Y-Flash floating-gate memristive device modeling with the Technion ASIC2 group, including Verilog-A CAD infrastructure, small-signal analysis, and a trainable DAC architecture.
 ---
 
-My BITS undergraduate thesis grew into a two-year collaboration with the ASIC2 group at the Technion. I worked on Y-Flash circuit-design tools: a Verilog-A model for Cadence, MATLAB fitting and training simulations, small-signal analysis, and a trainable-DAC concept.
+My BITS undergraduate thesis grew into a two-year collaboration with the ASIC<sup>2</sup> group at the Technion. I worked on Y-Flash circuit-design tools: a Verilog-A model for Cadence, MATLAB fitting and training simulations, small-signal analysis, and a trainable-DAC concept.
 
 ## The device
 
 The Y-Flash cell used here has two NMOS transistors sharing a floating gate: one for charge injection and one for readout, built in a commercial 180 nm CMOS flow. The floating gate stores the weight as charge. Programming adds electrons, raises the effective threshold voltage, and reduces the read current at a fixed bias. Erasing moves the state in the opposite direction. Once the pulse ends, the stored charge retains the setting. [Danial et al., 2019](https://doi.org/10.1038/s41928-019-0331-1)
 
-Reading uses a lower voltage and subthreshold current. The large-signal current is nonlinear in voltage; around a fixed read bias, a small voltage change produces an approximately proportional current change, `ΔI ≈ g_read ΔV`. The stored state sets `g_read`. This is the sense in which Y-Flash acts as a tunable conductance. The approximation requires a small enough signal and frequencies below those where device capacitances dominate. [Danial et al., DATE 2020](https://doi.org/10.23919/DATE48585.2020.9116354)
+Reading uses a lower voltage and subthreshold current. The large-signal current is nonlinear in voltage; around a fixed read bias, a small voltage change produces an approximately proportional current change, <span class="math-inline">Δ<var>I</var> ≈ <var>g</var><sub>read</sub>&thinsp;Δ<var>V</var></span>. The stored state sets <var>g</var><sub>read</sub>. This is the sense in which Y-Flash acts as a tunable conductance. The approximation requires a small enough signal and frequencies below those where device capacitances dominate. [Danial et al., DATE 2020](https://doi.org/10.23919/DATE48585.2020.9116354)
 
 That gives the circuit designer two separate questions: how a pulse changes the stored weight, and how the device reads that weight afterward. The model must capture both, together with variability and disturbances to neighboring cells.
 
@@ -32,7 +32,7 @@ That gives the circuit designer two separate questions: how a pulse changes the 
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/y-flash/y-flash-iv-hysteresis.png' | relative_url }}" alt="Y-Flash memristive I-V simulation showing asymmetric hysteresis across drain-source voltage." width="1920" height="656" loading="lazy" decoding="async">
   </div>
-  <figcaption><strong>Model-generated Y-Flash I-V behavior.</strong> The model uses effective threshold voltage as its stored state. Each state has a nonlinear read-current curve and an incremental conductance around the chosen read bias. See <a href="https://asic2.group/wp-content/uploads/2021/02/Y-flash-manual-1.pdf#page=5">Gupta et al., model manual, Fig. 8</a>.</figcaption>
+  <figcaption><strong>Model-generated Y-Flash <var>I</var>–<var>V</var> behavior.</strong> The model uses effective threshold voltage as its stored state. Each state has a nonlinear read-current curve and an incremental conductance around the chosen read bias. See <a href="https://asic2.group/wp-content/uploads/2021/02/Y-flash-manual-1.pdf#page=5">Gupta et al., model manual, Fig. 8</a>.</figcaption>
 </figure>
 
 ## The model
@@ -50,7 +50,7 @@ The DATE 2020 paper describes a top-down CAD framework, from Verilog-A through M
 
 ## The trainable DAC
 
-In a separate follow-on study, I explored a Y-Flash DAC inspired by [DIDACTIC](https://doi.org/10.1109/JETCAS.2017.2780251). The idea treats DAC calibration as a learning problem: instead of assuming a perfectly matched binary-weighted array, use analog weights and train them until the output approaches the target code levels. My earlier DAC study used a VTEAM model fitted to an HfOx memristor in a 2T1R synapse. With Y-Flash, I asked what changes when the weights are floating-gate devices with asymmetric program/erase and specific read-bias requirements.
+In a separate follow-on study, I explored a Y-Flash DAC inspired by [DIDACTIC](https://doi.org/10.1109/JETCAS.2017.2780251). The idea treats DAC calibration as a learning problem: instead of assuming a perfectly matched binary-weighted array, use analog weights and train them until the output approaches the target code levels. My earlier DAC study used a VTEAM model fitted to an HfO<sub>x</sub> memristor in a 2T1R synapse. With Y-Flash, I asked what changes when the weights are floating-gate devices with asymmetric program/erase and specific read-bias requirements.
 
 <figure class="source-figure">
   <div class="source-figure__frame">
@@ -59,7 +59,7 @@ In a separate follow-on study, I explored a Y-Flash DAC inspired by [DIDACTIC](h
   <figcaption><strong>My Y-Flash 4-bit DAC concept.</strong> Four Y-Flash devices provide trainable conductance weights; an op-amp senses the summed current while an external training loop updates the device states.</figcaption>
 </figure>
 
-Follow one branch in the 4×1 array: an enabled bit applies the read voltage to its Y-Flash cell, and the stored threshold sets that branch's current. The enabled currents meet at the amplifier's summing node. With ideal feedback during conversion, `I_sum ≈ B1 I1 + B2 I2 + B3 I3 + B4 I4` and `Vout ≈ -Rf I_sum`, where each `B` is 0 or 1 and each `I` is its cell's current at the fixed read voltage. Equal output steps require binary-weighted current contributions.
+Follow one branch in the 4×1 array: an enabled bit applies the read voltage to its Y-Flash cell, and the stored threshold sets that branch's current. The enabled currents meet at the amplifier's summing node. With ideal feedback during conversion, <var>I</var><sub>sum</sub> ≈ <span class="math-inline"><var>B</var><sub>1</sub><var>I</var><sub>1</sub></span> + <span class="math-inline"><var>B</var><sub>2</sub><var>I</var><sub>2</sub></span> + <span class="math-inline"><var>B</var><sub>3</sub><var>I</var><sub>3</sub></span> + <span class="math-inline"><var>B</var><sub>4</sub><var>I</var><sub>4</sub></span> and <span class="math-inline"><var>V</var><sub>out</sub> ≈ −<var>R</var><sub>f</sub>&thinsp;<var>I</var><sub>sum</sub></span>, where each <var>B</var> is 0 or 1 and each <var>I</var> is its cell's current at the fixed read voltage. Equal output steps require binary-weighted current contributions.
 
 Training adjusts those currents instead of relying on device matching alone. An external loop compares the output with the target code level, then applies program or erase pulses to change the threshold states. Conversion and training use different device connections and voltage levels.
 

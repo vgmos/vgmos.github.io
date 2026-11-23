@@ -75,6 +75,10 @@ for (const theme of ["light", "dark"]) {
               ".bc-v, .blx-efficiency-value, .blx-summary-metric strong",
             ).map(style),
             textFamilies: [...new Set(visible("body *")
+              .filter((el) => !el.closest(".post-content code, .post-content pre, .project-body code, .project-body pre") && [...el.childNodes].some((node) =>
+                node.nodeType === Node.TEXT_NODE && node.textContent.trim()))
+              .map((el) => getComputedStyle(el).fontFamily))],
+            codeFamilies: [...new Set(visible(".post-content code, .post-content pre, .project-body code, .project-body pre")
               .filter((el) => [...el.childNodes].some((node) =>
                 node.nodeType === Node.TEXT_NODE && node.textContent.trim()))
               .map((el) => getComputedStyle(el).fontFamily))],
@@ -129,6 +133,8 @@ for (const theme of ["light", "dark"]) {
         }
         for (const family of styles.textFamilies)
           expect(family, `${name} uses one text family`).toContain("Iowan Old Style");
+        for (const family of styles.codeFamilies)
+          expect(family, `${name} uses system monospace for code tokens`).toContain("monospace");
         const overflow = await pageOverflow(page);
         expect(
           overflow.scrollWidth,
