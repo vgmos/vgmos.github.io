@@ -7,14 +7,14 @@ kind: project
 featured: true
 status: Released
 date: 2026-09-04
-summary: A 42 V, 2.5 A buck regulator, from chip design through release.
-description: LT83402 chip leadership, the circuit's reference-noise path, and ADI's published output-noise and switching examples.
+summary: Leading a 42 V, 2.5 A ultra-low-noise buck regulator from concept to silicon release — and why its unity-gain SET reference keeps output noise to a few microvolts.
+description: LT83402 chip leadership, how its unity-gain SET-current reference filters output noise, and Analog Devices' published noise and switch-node characterization.
 image: /assets/projects/lt83402/lt83402-package.png
 ---
 
-I led the chip from concept and design reviews through layout, validation, silicon debugging, and release, working with colleagues across applications, validation, test, and qualification. [Release post](https://www.linkedin.com/posts/vgmos_analogdevices-powerelectronics-lownoise-activity-7391518741676638208-qXI3)
+Switching regulators usually sit upstream of a low-dropout linear regulator (LDO) whenever a rail powers sensitive RF, precision analog, or sensor loads — because a conventional buck amplifies its internal reference noise and injects switching artifacts onto the rail. The [LT83402](https://www.analog.com/en/products/lt83402.html) is a 2.8–42 V, 2.5 A synchronous buck regulator in a 3 × 2 mm Silent Switcher 3 package engineered to deliver microvolt-level baseband noise directly from the switcher.
 
-The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous buck regulator with a 2.8–42 V input range and a 2.5 A output-current rating. It uses Silent Switcher 3 in a 3 × 2 mm package. The figures below are ADI's published characterization.
+I led the chip from concept and design reviews through layout, validation, silicon debug, and release alongside colleagues across applications, validation, test, and qualification ([release post](https://www.linkedin.com/posts/vgmos_analogdevices-powerelectronics-lownoise-activity-7391518741676638208-qXI3)). Every curve and specification below comes from Analog Devices' published characterization.
 
 <figure class="source-figure source-figure--compact">
   <div class="source-figure__frame">
@@ -23,15 +23,17 @@ The [LT83402](https://www.analog.com/en/products/lt83402.html) is a synchronous 
   <figcaption><strong>LT83402 package illustration.</strong> Source: <a href="https://www.analog.com/en/products/lt83402.html">Analog Devices</a>.</figcaption>
 </figure>
 
-## Output noise
+## Why the SET-pin path stays quiet
 
-In the application below, a reference current flows through the SET resistor to establish the target voltage. Feedback makes the output follow that target, so noise on SET can reach the output too. The SET capacitor filters noise from the reference current and resistor. Increasing it reduces that contribution but also takes longer to charge at startup. See the data sheet's [output-voltage setting](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=28) and [SET-capacitor guidance](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=32).
+In a conventional buck regulator, a resistive divider feeds a fraction of the output back to a fixed bandgap reference. That closed loop multiplies both the bandgap reference's noise and the error amplifier's input-referred noise by the noise gain <span class="math-inline">1 + <var>R</var><sub>1</sub>/<var>R</var><sub>2</sub></span> (on top of the divider's own thermal noise) — so stepping up the target output voltage directly raises output noise at the load.
+
+The LT83402 removes that gain penalty across its unity-gain operating range (up to 15 V output) with a current-reference architecture. A precision 100 µA current out of the SET pin develops the target voltage directly across a single external resistor (<span class="math-inline"><var>R</var><sub>SET</sub> = 33.2 kΩ</span> for 3.3 V in Figure 59), and the loop senses <var>V</var><sub>OUT</sub> directly at OUTS so the output tracks SET at unity gain. Shunting <var>R</var><sub>SET</sub> with an external bypass capacitor <var>C</var><sub>SET</sub> forms a first-order RC low-pass filter right at the reference input, rolling off both the reference current's noise and <var>R</var><sub>SET</sub>'s thermal noise before they reach the error amplifier. A larger <var>C</var><sub>SET</sub> pushes that filter corner lower, at the cost of a slower natural charging ramp — which is why the IC adds fast start-up circuitry that temporarily boosts the SET current while <var>V</var><sub>OUT</sub> climbs (governed via PGFB in Figure 59). See the data sheet's [output-voltage setting](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=28) and [SET-capacitor guidance](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=32).
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
     <img src="{{ '/assets/projects/lt83402/lt83402-rev1-p38-fig59-application.png' | relative_url }}" alt="LT83402 application circuit with a 2.2 µH inductor, four 22 µF output capacitors, and a 1 µF SET capacitor." width="1042" height="540" loading="lazy" decoding="async">
   </div>
-  <figcaption><strong>3.3 V, 2.5 A application.</strong> The 2 MHz noise-test circuit. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=38">LT83401/LT83402 Rev. 1, Figure 59</a>.</figcaption>
+  <figcaption><strong>3.3 V, 2.5 A application.</strong> The 2 MHz noise-test circuit: paired 1 µF input bypass capacitors flank the twin V<sub>IN</sub>/GND pins, a 33.2 kΩ resistor and 1 µF <var>C</var><sub>SET</sub> establish and filter the reference, and OUTS senses <var>V</var><sub>OUT</sub> directly at unity gain. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=38">LT83401/LT83402 Rev. 1, Figure 59</a>.</figcaption>
 </figure>
 
 <figure class="source-figure source-figure--wide">
@@ -41,11 +43,11 @@ In the application below, a reference current flows through the SET resistor to 
   <figcaption><strong>Noise across load.</strong> At 12 V input, 3.3 V output, 2 MHz, and 25 °C: 3.31, 3.32, and 2.80 µV RMS at 0, 1, and 2.5 A respectively, integrated over 10 Hz–100 kHz. Source: Analog Devices, <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/lt83401-lt83402.pdf#page=11">Rev. 1, Figure 4</a>.</figcaption>
 </figure>
 
-The curves show where noise lies in frequency; the RMS values combine its contribution over 10 Hz–100 kHz. This band excludes MHz switching ripple and does not measure radiated electromagnetic interference (EMI).
+Reading the spectral density from left to right traces each mechanism in frequency: the <span class="math-inline"><var>R</var><sub>SET</sub> · <var>C</var><sub>SET</sub></span> pole (near 4.8 Hz here) rolls low-frequency reference noise down to a ~3.5 nV/√Hz floor around 1–3 kHz; a modest hump rises near 30–60 kHz as closed-loop gain rolls off toward crossover; and the output capacitor bank pulls the density back down above 100 kHz. Integrating that squared density over 10 Hz–100 kHz captures baseband reference, amplifier, and loop noise — distinct from MHz switching ripple and radiated electromagnetic interference (EMI), which belong to high-frequency measurements.
 
-## LT83205 comparison at 2 MHz
+## Comparing published 2 MHz noise against LT83205
 
-The [LT83205](https://www.analog.com/en/products/lt83205.html) is an 18 V, 5 A buck regulator. Both noise examples use 12 V input, 2 MHz switching, and 25 °C ambient temperature, with noise integrated over 10 Hz–100 kHz. The output voltages and external components differ.
+The [LT83205](https://www.analog.com/en/products/lt83205.html) is a companion 18 V, 5 A Silent Switcher 3 buck regulator. Its published Figure 4 noise sweep shares the same 12 V input, 2 MHz switching frequency, 25 °C ambient, and 10 Hz–100 kHz integration band, offering a clear view of how external component choices reshape the curve.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">
@@ -73,11 +75,13 @@ The [LT83205](https://www.analog.com/en/products/lt83205.html) is an 18 V, 5 A b
   </table>
 </div>
 
-The LT83402 circuit also includes an 82 pF compensation capacitor. LT83205 component values come from [the Figure 60 circuit](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83203-lt83205.pdf#page=38). Capacitances are nominal; differing output voltages and components prevent a like-for-like noise ranking.
+Even with identical input voltage and switching frequency, the two benches regulate different outputs (3.3 V vs. 1 V) with different inductors, nominal output capacitances, SET bypass capacitors, and compensation networks (the LT83402 bench also includes an 82 pF high-frequency compensation capacitor, while the LT83205 values come from [Figure 60](https://www.analog.com/media/en/technical-documentation/data-sheets/lt83203-lt83205.pdf#page=38)). Because those external impedances shift both the SET filter corner and the closed-loop noise hump near crossover, the differing output voltages and components prevent a like-for-like noise ranking.
 
 ## Switch rising edges
 
-These traces zoom in on a single switch-node transition. Both use 12 V input, but loads and time scales differ, and neither figure specifies switching frequency. The horizontal scale tells us how to read each trace; it is not a rise-time specification.
+Each time the high-side switch closes in CCM, current in the input "hot loop" steps sharply from zero to the inductor valley current. Any parasitic inductance in that loop converts fast <span class="math-inline">d<var>i</var>/d<var>t</var></span> into switch-node overshoot, high-frequency ringing, and radiated EMI; slowing the edge suppresses ringing, but widens the simultaneous voltage–current overlap and increases switching loss. Silent Switcher packaging splits the input bypass path into two symmetric halves (visible at the paired V<sub>IN</sub>/GND pins in Figure 59) so their opposing magnetic fields largely cancel, letting the switch node rise cleanly with minimal ringing.
+
+The two published captures below zoom in on a single rising edge at 12 V input. Read them with their test conditions in mind: they are taken at different loads (2.5 A vs. 5 A) and different horizontal scales (2 ns/div vs. 5 ns/div), neither figure specifies switching frequency, and the time base frames the waveform rather than defining a rise-time specification.
 
 <figure class="source-figure source-figure--wide">
   <div class="source-figure__frame">

@@ -1,4 +1,4 @@
 - title: Buck Converter Tool
   url: /tools/buck-converter/
   meta: Ideal-component model
-  summary: Follow current through a switching cycle, then see how inductance and load change it.
+  summary: Trace inductor and capacitor currents across a switching cycle to see how inductance, capacitance, and load govern ripple and DCM entry.

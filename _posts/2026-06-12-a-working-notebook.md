@@ -6,7 +6,7 @@ tags:
   - reflection
 ---
 
-I built this site to document my past research: one page per project, with the original figures, the numbers I can still stand behind, and their limitations.
+I built this site to document my research and engineering work: one page per project, with the original figures, the numbers I can still stand behind, and their limits.
 
 The notebook is less formal. Some notes will be technical and others personal. I write when I have something useful to share, without a fixed schedule.
 
